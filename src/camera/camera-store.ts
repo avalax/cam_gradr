@@ -44,6 +44,7 @@ export const useCameraStore = defineStore('camera', () => {
 
   async function start(): Promise<void> {
     release();
+    still.value = null;
     status.value = 'starting';
     errorMessage.value = null;
     try {
@@ -80,6 +81,10 @@ export const useCameraStore = defineStore('camera', () => {
     }
   }
 
+  function clearStill(): void {
+    still.value = null;
+  }
+
   async function captureStill(grabber: FrameGrabber, count = STILL_FRAME_COUNT): Promise<void> {
     errorMessage.value = null;
     try {
@@ -103,5 +108,6 @@ export const useCameraStore = defineStore('camera', () => {
     selectDevice,
     selectResolution,
     captureStill,
+    clearStill,
   };
 });

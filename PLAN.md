@@ -6,11 +6,12 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 ## 2. Ablauf (User Flow)
 
-1. **Kamera wählen & starten** (`getUserMedia`, Geräteliste, Auflösung, Spiegelung aus).
+1. **Kamera wählen & starten** (`getUserMedia`, Geräteliste, Auflösung, Spiegelung aus); die Steuerung ist Teil von Schritt 1, es gibt keinen eigenen Kamera-Schritt.
 2. **Schritt 1 – Graustufenseite (Belichtung/Helligkeit)**
    - Die beiden Graukarten (18 % und 50 % Grau) werden gemeinsam vor die Kamera gehalten und sind zusammen im Bild.
    - Zweck: Die Raumhelligkeit so einstellen, dass die Beleuchtung ideal für Schritt 2 ist. Dieser Schritt berechnet nichts für die LUT.
-   - Live-Overlay: Graupatches werden wie in Schritt 2 über vier Eckpunkte ausgerichtet, pro Patch wird die gemessene Helligkeit live mit dem Sollbereich verglichen.
+   - Eckpunkte setzt der Nutzer auf einem **Standbild** (gemittelt über mehrere Frames), nicht auf dem bewegten Livebild; auf dem Standbild lassen sie sich ziehen. Bei jedem neuen Standbild wird mit den vorhandenen Eckpunkten sofort neu gemessen.
+   - Zurück im Livebild misst die App laufend mit denselben Eckpunkten (die Karten dürfen dafür nicht bewegt werden), damit das Licht live eingestellt werden kann. Pro Feld wird die gemessene Helligkeit mit dem Sollbereich verglichen.
    - Sollbereich (konfigurierbar, in der Layout-/App-Konfiguration hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), die beiden großen Graufelder im Zielbereich (18 %-Feld ≈ sRGB 46 %, 50 %-Feld ≈ sRGB 74 %, jeweils mit Toleranz, unter Annahme einer sRGB-Kurve). Weiß- und Schwarzprüfung nutzen das hellste und dunkelste Streifenfeld. Die genauen Toleranzen werden in M2 festgelegt und getestet.
    - Anzeige: Clipping-Warnung (Lichter/Schatten) und Ampel „Raum zu dunkel / passt / zu hell“ mit Hinweis, ob Licht heller oder dunkler gestellt werden soll. Kein Histogramm.
    - Warnhinweis, Auto-Belichtung/-Weißabgleich in der Kamera-Software zu fixieren (keine Constraint-Steuerung durch die App).
@@ -100,7 +101,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 
 **Stand M1 (umgesetzt):** Kamerawahl, Auflösungswahl, Livebild, Start/Stop und Standbild (Mittelung über 8 Frames) mit Fehlermeldungen und Hinweis zur Kamera-Automatik. Die Browser-Kamera liegt hinter dem Adapter `CameraApi`; Coverage liegt bei 100 %. Offen für den Praxistest: Das Verhalten mit der echten Webcam und dem Portkeys-Workflow ist noch nicht geprüft.
 
-**Stand M2 (umgesetzt):** Wizard mit den Schritten „Kamera“ und „Schritt 1: Graukarten“. Eckpunkte beider Graukarten werden per Klick gesetzt und lassen sich ziehen; die Homographie rechnet Kartenkoordinaten ins Bild um, der Median im inneren Feldbereich liefert die Messwerte, und die Ampel (zu dunkel / passt / zu hell / zu hoher Kontrast) wertet die großen Felder sowie das hellste und dunkelste Streifenfeld aus. Das Layout liegt im Format `cam_gradr-layout/2` mit Feldrechtecken relativ zur Karte. **Offen:** Die Rechtecke und Ampel-Schwellen sind aus Fotos geschätzt und müssen an der echten Karte per Overlay geprüft und nachjustiert werden.
+**Stand M2 (umgesetzt):** Schritt 1 enthält die Kamerasteuerung. Nach dem ersten Praxistest wurde das Setzen der Eckpunkte vom Livebild auf ein Standbild verlegt (auf bewegten Bildern nicht bedienbar). Eckpunkte beider Graukarten werden auf dem Standbild per Klick gesetzt und lassen sich ziehen; die Homographie rechnet Kartenkoordinaten ins Bild um, der Median im inneren Feldbereich liefert die Messwerte, und die Ampel (zu dunkel / passt / zu hell / zu hoher Kontrast) wertet die großen Felder sowie das hellste und dunkelste Streifenfeld aus. Das Layout liegt im Format `cam_gradr-layout/2` mit Feldrechtecken relativ zur Karte. **Offen:** Die Rechtecke und Ampel-Schwellen sind aus Fotos geschätzt und müssen an der echten Karte per Overlay geprüft und nachjustiert werden.
 
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 

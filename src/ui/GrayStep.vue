@@ -3,34 +3,45 @@ import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
+import { drawFrame } from '../camera/draw-frame';
+import type { Frame } from '../camera/frame';
 import { describeExposure } from '../chart/exposure';
 import type { Verdict } from '../chart/exposure';
 import { grayLayout, useChartStore } from '../chart/chart-store';
 
-import { measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
+import CameraControls from './CameraControls.vue';
+import { frameGrid, measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
 import { buildShapes, clientToImage, instructionFor } from './overlay-geometry';
-import { attachStream } from './video-bindings';
+import { attachStream, captureFromVideo } from './video-bindings';
 
 const emit = defineEmits<{ continue: [] }>();
 
 const camera = useCameraStore();
 const chart = useChartStore();
-const { stream, actual, status } = storeToRefs(camera);
+const { stream, actual, status, still } = storeToRefs(camera);
 const { points, exposure, nextSlot, ready, corners } = storeToRefs(chart);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
+const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const dragging = ref<{ card: number; index: number } | null>(null);
 
-const size = computed(() => actual.value ?? { width: 1280, height: 720 });
+const isLive = computed(() => status.value === 'live');
+const showStill = computed(() => still.value !== null);
+const size = computed(() => still.value ?? actual.value ?? { width: 1280, height: 720 });
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
 const shapes = computed(() => buildShapes(grayLayout, corners.value));
 const handles = computed(() =>
-  Object.entries(points.value).flatMap(([card, list]) =>
-    list.map((point, index) => ({ card: Number(card), index, point })),
-  ),
+  showStill.value
+    ? Object.entries(points.value).flatMap(([card, list]) =>
+        list.map((point, index) => ({ card: Number(card), index, point })),
+      )
+    : [],
 );
-const instruction = computed(() => instructionFor(nextSlot.value));
-const isLive = computed(() => status.value === 'live');
+const instruction = computed(() =>
+  showStill.value
+    ? instructionFor(nextSlot.value)
+    : 'Beide Graukarten ruhig vor die Kamera halten und ein Standbild aufnehmen. Die Eckpunkte werden danach auf dem Standbild gesetzt.',
+);
 
 const BADGE: Readonly<Record<Verdict, string>> = {
   ok: 'bg-emerald-600',
@@ -49,7 +60,9 @@ function imagePoint(event: PointerEvent | MouseEvent) {
 }
 
 function onClick(event: MouseEvent): void {
-  chart.addCorner(imagePoint(event));
+  if (showStill.value) {
+    chart.addCorner(imagePoint(event));
+  }
 }
 
 function onMove(event: PointerEvent): void {
@@ -63,12 +76,27 @@ function endDrag(): void {
   dragging.value = null;
 }
 
+function capture(): void {
+  captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
+}
+
+function drawStill(frame: Frame | null): void {
+  const element = canvas.value;
+  const context = element?.getContext('2d');
+  if (element !== null && frame !== null && context) {
+    element.width = frame.width;
+    element.height = frame.height;
+    drawFrame(context, frame);
+  }
+}
+
 const timer = shallowRef<ReturnType<typeof setInterval>>();
 
 onMounted(() => {
   attachStream(video.value, stream.value);
+  drawStill(still.value);
   timer.value = setInterval(() => {
-    measureTick(ready.value && isLive.value, video.value, (grid) => {
+    measureTick(ready.value && isLive.value && !showStill.value, video.value, (grid) => {
       chart.measure(grid);
     });
   }, MEASURE_INTERVAL_MS);
@@ -81,27 +109,58 @@ onBeforeUnmount(() => {
 watch(stream, (next) => {
   attachStream(video.value, next);
 });
+
+watch(still, drawStill);
+
+// Auf dem Standbild wird bei jeder Änderung (neues Bild, verschobene Eckpunkte) neu gemessen.
+watch([still, points], () => {
+  const frame = still.value;
+  if (frame !== null) {
+    chart.measure(frameGrid(frame));
+  }
+});
+
+// Eckpunkte gelten nur für eine Bildgröße; bei anderer Auflösung neu beginnen.
+watch(actual, (next, previous) => {
+  if (
+    next !== null &&
+    previous !== null &&
+    (next.width !== previous.width || next.height !== previous.height)
+  ) {
+    chart.reset();
+  }
+});
 </script>
 
 <template>
   <section class="space-y-4">
+    <CameraControls />
+
     <p class="text-sm text-slate-700">
-      Beide Graukarten gemeinsam vor die Kamera halten, dann die Eckpunkte der Karten markieren. Das
-      Licht im Raum so einstellen, dass die Ampel grün wird.
+      Schritt 1 stellt die Raumhelligkeit ein. Nimm ein Standbild der beiden Graukarten auf,
+      markiere darauf die Eckpunkte und ändere dann das Licht, bis die Ampel grün wird. Danach
+      kannst du zum Livebild zurückkehren: Solange die Karten nicht bewegt werden, misst die App
+      dort laufend mit denselben Eckpunkten.
     </p>
 
-    <p v-if="!isLive" class="text-sm text-amber-800" role="alert">
-      Die Kamera läuft nicht. Bitte zuerst im Schritt „Kamera“ starten.
-    </p>
+    <p v-if="!isLive" class="text-sm text-amber-800">Bitte zuerst die Kamera starten.</p>
 
     <p class="text-sm font-medium" aria-live="polite">{{ instruction }}</p>
 
     <div class="relative max-w-3xl">
-      <video ref="video" class="w-full rounded bg-black" muted playsinline></video>
+      <video
+        v-show="!showStill"
+        ref="video"
+        class="w-full rounded bg-black"
+        muted
+        playsinline
+      ></video>
+      <canvas v-show="showStill" ref="canvas" class="w-full rounded bg-black"></canvas>
       <!-- Die Eckpunkte werden per Zeiger gesetzt; reine Tastaturbedienung ist hier nicht sinnvoll. -->
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
       <svg
-        class="absolute inset-0 h-full w-full cursor-crosshair"
+        class="absolute inset-0 h-full w-full touch-none"
+        :class="showStill ? 'cursor-crosshair' : ''"
         :viewBox="viewBox"
         @click="onClick"
         @pointermove="onMove"
@@ -134,16 +193,27 @@ watch(stream, (next) => {
       </svg>
     </div>
 
+    <p v-if="camera.errorMessage !== null && isLive" class="text-sm text-red-700" role="alert">
+      {{ camera.errorMessage }}
+    </p>
+
     <div class="flex flex-wrap items-center gap-3">
-      <span
-        v-if="exposure !== null"
-        class="rounded px-3 py-1 text-sm font-medium text-white"
-        :class="BADGE[exposure.verdict]"
-        data-testid="badge"
+      <button
+        type="button"
+        class="rounded bg-emerald-700 px-3 py-1 text-sm text-white disabled:opacity-50"
+        :disabled="!isLive"
+        @click="capture"
       >
-        {{ describeExposure(exposure) }}
-      </span>
-      <span v-else class="text-sm text-slate-600">Noch keine Messung.</span>
+        {{ showStill ? 'Neues Standbild aufnehmen' : 'Standbild aufnehmen' }}
+      </button>
+      <button
+        v-if="showStill"
+        type="button"
+        class="rounded border px-3 py-1 text-sm"
+        @click="camera.clearStill()"
+      >
+        Zurück zum Livebild
+      </button>
       <button type="button" class="rounded border px-3 py-1 text-sm" @click="chart.reset()">
         Eckpunkte zurücksetzen
       </button>
@@ -155,6 +225,18 @@ watch(stream, (next) => {
       >
         Weiter zu Schritt 2
       </button>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <span
+        v-if="exposure !== null"
+        class="rounded px-3 py-1 text-sm font-medium text-white"
+        :class="BADGE[exposure.verdict]"
+        data-testid="badge"
+      >
+        {{ describeExposure(exposure) }}
+      </span>
+      <span v-else class="text-sm text-slate-600">Noch keine Messung.</span>
     </div>
 
     <dl v-if="exposure !== null" class="grid max-w-md grid-cols-2 gap-x-4 text-sm">

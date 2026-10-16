@@ -153,6 +153,21 @@ describe('useCameraStore', () => {
     expect(store.errorMessage).toBe('Aufnahme fehlgeschlagen.');
   });
 
+  it('verwirft das Standbild beim Löschen und bei jedem Kamerastart', async () => {
+    fakeApi();
+    const store = useCameraStore();
+    const grabber = {
+      grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }),
+      nextFrame: () => Promise.resolve(),
+    };
+    await store.captureStill(grabber, 1);
+    store.clearStill();
+    expect(store.still).toBeNull();
+    await store.captureStill(grabber, 1);
+    await store.start();
+    expect(store.still).toBeNull();
+  });
+
   it('nutzt die Standardanzahl an Frames', async () => {
     fakeApi();
     const store = useCameraStore();

@@ -3,12 +3,33 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import type { Frame } from '../camera/frame';
 import { useChartStore } from '../chart/chart-store';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
 
 import GrayStep from './GrayStep.vue';
 
-function mockCanvas(value: number) {
+const CORNERS = [
+  [100, 50],
+  [500, 50],
+  [500, 650],
+  [100, 650],
+  [700, 50],
+  [1100, 50],
+  [1100, 650],
+  [700, 650],
+] as const;
+
+function stillFrame(value: number): Frame {
+  return {
+    width: 1280,
+    height: 720,
+    data: new Float32Array(1280 * 720 * 3).fill(value),
+  };
+}
+
+// Nach dem Einhängen aufrufen: ersetzt nur die Canvas-Erzeugung für den Frame-Grabber.
+function mockGrabberCanvas(value: number) {
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- Überladung für beliebige Tag-Namen
   const original = document.createElement.bind(document);
   const data = new Uint8ClampedArray(1280 * 720 * 4).fill(value);
@@ -32,8 +53,20 @@ async function mountLive() {
   return wrapper;
 }
 
-async function clickAt(wrapper: Awaited<ReturnType<typeof mountLive>>, x: number, y: number) {
+type Wrapper = Awaited<ReturnType<typeof mountLive>>;
+
+async function clickAt(wrapper: Wrapper, x: number, y: number) {
   await wrapper.get('svg').trigger('click', { clientX: x, clientY: y });
+}
+
+async function placeAll(wrapper: Wrapper) {
+  for (const [x, y] of CORNERS) {
+    await clickAt(wrapper, x, y);
+  }
+}
+
+function button(wrapper: Wrapper, text: string) {
+  return wrapper.findAll('button').find((b) => b.text().includes(text));
 }
 
 describe('GrayStep', () => {
@@ -46,6 +79,10 @@ describe('GrayStep', () => {
       width: 1280,
       height: 720,
     } as DOMRect);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
   });
 
   afterEach(() => {
@@ -53,29 +90,67 @@ describe('GrayStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('warnt, wenn die Kamera nicht läuft, und nennt den ersten Eckpunkt', () => {
+  it('enthält die Kamerasteuerung und fordert zum Start der Kamera auf', () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
-    expect(wrapper.get('[role="alert"]').text()).toContain('Kamera läuft nicht');
-    expect(wrapper.text()).toContain('oben links der linke Graukarte (50 %)');
+    expect(wrapper.text()).toContain('Kamera starten');
+    expect(wrapper.text()).toContain('Bitte zuerst die Kamera starten');
+    expect(wrapper.text()).toContain('ein Standbild aufnehmen');
     expect(wrapper.text()).toContain('Noch keine Messung');
+    expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeDefined();
   });
 
   it('verbindet den laufenden Stream mit dem Video', async () => {
     const wrapper = await mountLive();
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Bitte zuerst die Kamera starten');
   });
 
-  it('bindet einen bereits laufenden Stream beim Einhängen an', async () => {
+  it('bindet Stream und vorhandenes Standbild beim Einhängen an', async () => {
     installFakeCamera();
-    await useCameraStore().start();
+    const camera = useCameraStore();
+    await camera.start();
+    camera.still = stillFrame(0.5);
     const wrapper = mount(GrayStep);
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
+    expect(wrapper.text()).toContain('Neues Standbild aufnehmen');
   });
 
-  it('setzt Eckpunkte per Klick in Bildkoordinaten', async () => {
+  it('nimmt per Knopf ein Standbild auf und zeigt es an', async () => {
     const wrapper = await mountLive();
+    const video = wrapper.get('video').element;
+    Object.defineProperties(video, {
+      videoWidth: { value: 1280 },
+      videoHeight: { value: 720 },
+      requestVideoFrameCallback: {
+        value: (callback: () => void) => {
+          callback();
+          return 1;
+        },
+      },
+    });
+    mockGrabberCanvas(128);
+    await button(wrapper, 'Standbild aufnehmen')?.trigger('click');
+    await flushPromises();
+    expect(useCameraStore().still).not.toBeNull();
+    expect(wrapper.text()).toContain('Neues Standbild aufnehmen');
+    expect(wrapper.text()).toContain('Zurück zum Livebild');
+    expect(wrapper.text()).toContain('oben links der linke Graukarte');
+  });
+
+  it('zeigt Fehler bei der Aufnahme an', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().errorMessage = 'Aufnahme fehlgeschlagen.';
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('Aufnahme fehlgeschlagen');
+  });
+
+  it('nimmt Eckpunkte nur auf dem Standbild an', async () => {
+    const wrapper = await mountLive();
+    await clickAt(wrapper, 640, 360);
+    expect(useChartStore().points).toEqual({});
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
     await clickAt(wrapper, 640, 360);
     expect(useChartStore().points[3]).toEqual([{ x: 640, y: 360 }]);
     expect(wrapper.findAll('circle')).toHaveLength(1);
@@ -84,6 +159,8 @@ describe('GrayStep', () => {
 
   it('verschiebt einen Eckpunkt per Ziehen und beendet das Ziehen', async () => {
     const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
     await clickAt(wrapper, 100, 100);
     await wrapper.get('circle').trigger('pointerdown');
     await wrapper.get('svg').trigger('pointermove', { clientX: 300, clientY: 200 });
@@ -99,56 +176,108 @@ describe('GrayStep', () => {
 
   it('setzt beim Klick auf einen Eckpunkt keinen neuen', async () => {
     const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
     await clickAt(wrapper, 100, 100);
     await wrapper.get('circle').trigger('click');
     expect(useChartStore().points[3]).toHaveLength(1);
   });
 
-  it('zeichnet Umrisse, sobald eine Karte vollständig ist, und setzt per Knopf zurück', async () => {
+  it('misst das Standbild, sobald alle Eckpunkte gesetzt sind, und zeigt die Ampel', async () => {
     const wrapper = await mountLive();
-    for (const [x, y] of [
-      [100, 100],
-      [500, 100],
-      [500, 600],
-      [100, 600],
-    ] as const) {
-      await clickAt(wrapper, x, y);
-    }
-    expect(wrapper.findAll('polygon').length).toBeGreaterThan(5);
-    await wrapper.findAll('button')[0]?.trigger('click');
-    expect(wrapper.findAll('polygon')).toHaveLength(0);
-    expect(useChartStore().points).toEqual({});
-  });
-
-  it('misst im Takt, zeigt die Ampel und aktiviert „Weiter“ nur bei grün', async () => {
-    vi.useFakeTimers();
-    mockCanvas(190);
-    const wrapper = await mountLive();
-    const chart = useChartStore();
-    for (const [x, y] of [
-      [100, 50],
-      [500, 50],
-      [500, 650],
-      [100, 650],
-      [700, 50],
-      [1100, 50],
-      [1100, 650],
-      [700, 650],
-    ] as const) {
-      await clickAt(wrapper, x, y);
-    }
-    expect(chart.ready).toBe(true);
-    await vi.advanceTimersByTimeAsync(300);
-    expect(chart.exposure).not.toBeNull();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    expect(useChartStore().exposure).toBeNull();
+    await placeAll(wrapper);
+    await flushPromises();
+    expect(useChartStore().ready).toBe(true);
+    expect(useChartStore().exposure).not.toBeNull();
     expect(wrapper.find('[data-testid="badge"]').exists()).toBe(true);
     expect(wrapper.text()).toContain('18 %-Feld');
-    const next = wrapper.findAll('button').find((b) => b.text().includes('Weiter'));
-    const verdict = chart.exposure?.verdict;
-    expect(next?.attributes('disabled') !== undefined).toBe(verdict !== 'ok');
+    expect(wrapper.findAll('polygon').length).toBeGreaterThan(10);
   });
 
-  it('meldet „continue“, wenn die Belichtung ok ist', async () => {
+  it('misst bei einem neuen Standbild mit den vorhandenen Eckpunkten erneut', async () => {
     const wrapper = await mountLive();
+    const camera = useCameraStore();
+    camera.still = stillFrame(0.3);
+    await flushPromises();
+    await placeAll(wrapper);
+    await flushPromises();
+    const dark = useChartStore().exposure?.level18;
+    camera.still = stillFrame(0.8);
+    await flushPromises();
+    expect(useChartStore().exposure?.level18).toBeGreaterThan(dark ?? 1);
+  });
+
+  it('kehrt zum Livebild zurück und misst dort mit denselben Eckpunkten', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountLive();
+    const camera = useCameraStore();
+    const chart = useChartStore();
+    camera.still = stillFrame(0.5);
+    await flushPromises();
+    await placeAll(wrapper);
+    await flushPromises();
+    await button(wrapper, 'Zurück zum Livebild')?.trigger('click');
+    expect(camera.still).toBeNull();
+    expect(wrapper.text()).not.toContain('Zurück zum Livebild');
+    expect(wrapper.findAll('circle')).toHaveLength(0);
+    mockGrabberCanvas(60);
+    const measure = vi.spyOn(chart, 'measure');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(measure).toHaveBeenCalledTimes(1);
+  });
+
+  it('misst im Livebild nicht, solange ein Standbild angezeigt wird', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountLive();
+    const chart = useChartStore();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await placeAll(wrapper);
+    await flushPromises();
+    mockGrabberCanvas(60);
+    const measure = vi.spyOn(chart, 'measure');
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(measure).not.toHaveBeenCalled();
+  });
+
+  it('setzt per Knopf zurück', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await placeAll(wrapper);
+    await button(wrapper, 'Eckpunkte zurücksetzen')?.trigger('click');
+    expect(useChartStore().points).toEqual({});
+    expect(wrapper.findAll('polygon')).toHaveLength(0);
+  });
+
+  it('beginnt bei geänderter Auflösung neu, nicht bei gleicher oder fehlender', async () => {
+    const wrapper = await mountLive();
+    const camera = useCameraStore();
+    const chart = useChartStore();
+    camera.still = stillFrame(0.5);
+    await flushPromises();
+    await clickAt(wrapper, 100, 100);
+    camera.actual = { width: 1280, height: 720 };
+    await flushPromises();
+    expect(chart.points[3]).toHaveLength(1);
+    camera.actual = null;
+    await flushPromises();
+    expect(chart.points[3]).toHaveLength(1);
+    camera.actual = { width: 640, height: 480 };
+    await flushPromises();
+    expect(chart.points[3]).toHaveLength(1);
+    camera.actual = { width: 640, height: 400 };
+    await flushPromises();
+    expect(chart.points).toEqual({});
+  });
+
+  it('meldet „continue“ nur bei grüner Ampel', async () => {
+    const wrapper = await mountLive();
+    const next = () => button(wrapper, 'Weiter');
+    expect(next()?.attributes('disabled')).toBeDefined();
     useChartStore().exposure = {
       verdict: 'ok',
       highlightsClipped: false,
@@ -158,12 +287,10 @@ describe('GrayStep', () => {
       delta: 0,
     };
     await flushPromises();
-    const next = wrapper.findAll('button').find((b) => b.text().includes('Weiter'));
-    expect(next?.attributes('disabled')).toBeUndefined();
-    await next?.trigger('click');
+    expect(next()?.attributes('disabled')).toBeUndefined();
+    await next()?.trigger('click');
     expect(wrapper.emitted('continue')).toHaveLength(1);
     expect(wrapper.text()).toContain('Lichter');
-    expect(wrapper.text()).toContain('ok');
   });
 
   it('zeigt Clipping und abgesoffene Schatten an', async () => {
@@ -184,8 +311,7 @@ describe('GrayStep', () => {
   it('stoppt die Messung beim Entfernen', async () => {
     vi.useFakeTimers();
     const wrapper = await mountLive();
-    const chart = useChartStore();
-    const measure = vi.spyOn(chart, 'measure');
+    const measure = vi.spyOn(useChartStore(), 'measure');
     wrapper.unmount();
     await vi.advanceTimersByTimeAsync(1000);
     expect(measure).not.toHaveBeenCalled();

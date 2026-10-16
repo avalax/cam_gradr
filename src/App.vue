@@ -2,19 +2,19 @@
 import { onBeforeUnmount, ref } from 'vue';
 
 import { useCameraStore } from './camera/camera-store';
-import CameraPanel from './ui/CameraPanel.vue';
 import GrayStep from './ui/GrayStep.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
-type StepKey = 'camera' | 'gray';
+type StepKey = 'gray' | 'color';
 
-const STEPS: readonly { key: StepKey; label: string }[] = [
-  { key: 'camera', label: 'Kamera' },
-  { key: 'gray', label: 'Schritt 1: Graukarten' },
-];
-
-const step = ref<StepKey>('camera');
+const step = ref<StepKey>('gray');
+const colorUnlocked = ref(false);
 const camera = useCameraStore();
+
+function toColorStep(): void {
+  colorUnlocked.value = true;
+  step.value = 'color';
+}
 
 onBeforeUnmount(() => {
   camera.stop();
@@ -28,20 +28,30 @@ onBeforeUnmount(() => {
 
     <nav aria-label="Schritte" class="flex flex-wrap gap-2">
       <button
-        v-for="entry in STEPS"
-        :key="entry.key"
         type="button"
         class="rounded border px-3 py-1 text-sm"
-        :class="step === entry.key ? 'bg-slate-800 text-white' : ''"
-        :aria-current="step === entry.key ? 'step' : undefined"
-        @click="step = entry.key"
+        :class="step === 'gray' ? 'bg-slate-800 text-white' : ''"
+        :aria-current="step === 'gray' ? 'step' : undefined"
+        @click="step = 'gray'"
       >
-        {{ entry.label }}
+        Schritt 1: Graukarten
+      </button>
+      <button
+        type="button"
+        class="rounded border px-3 py-1 text-sm disabled:opacity-50"
+        :class="step === 'color' ? 'bg-slate-800 text-white' : ''"
+        :aria-current="step === 'color' ? 'step' : undefined"
+        :disabled="!colorUnlocked"
+        @click="step = 'color'"
+      >
+        Schritt 2: Farbkarten
       </button>
     </nav>
 
-    <CameraPanel v-if="step === 'camera'" />
-    <GrayStep v-else @continue="step = 'camera'" />
+    <GrayStep v-if="step === 'gray'" @continue="toColorStep" />
+    <p v-else class="text-sm text-slate-700">
+      Schritt 2 (Farbkarten, Referenz-Import und LUT-Berechnung) folgt.
+    </p>
 
     <footer class="text-xs text-slate-500">{{ APP_ID }}</footer>
   </main>

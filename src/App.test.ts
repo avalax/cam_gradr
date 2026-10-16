@@ -14,59 +14,72 @@ function mountApp() {
   return mount(App, { global: { plugins: [pinia] } });
 }
 
+function approve() {
+  useChartStore().exposure = {
+    verdict: 'ok',
+    highlightsClipped: false,
+    shadowsCrushed: false,
+    level18: 0.46,
+    level50: 0.74,
+    delta: 0,
+  };
+}
+
 describe('App', () => {
   beforeEach(() => {
     installMediaStubs();
   });
 
-  it('zeigt Namen, Kennung und zunächst das Kamera-Panel', () => {
+  it('zeigt Namen, Kennung und Schritt 1 mit Kamerasteuerung', () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
     expect(wrapper.text()).toContain('Kamera starten');
+    expect(wrapper.text()).toContain('Standbild');
     expect(wrapper.get('footer').text()).toBe(APP_ID);
     expect(APP_ID).toBe('avalax.cam_gradr');
   });
 
-  it('wechselt zwischen den Schritten und markiert den aktuellen', async () => {
+  it('sperrt Schritt 2, bis Schritt 1 abgeschlossen ist', () => {
     installFakeCamera();
     const wrapper = mountApp();
-    const [cameraTab, grayTab] = wrapper.findAll('nav button');
-    expect(cameraTab?.attributes('aria-current')).toBe('step');
-    await grayTab?.trigger('click');
-    expect(wrapper.text()).toContain('Beide Graukarten gemeinsam');
-    expect(grayTab?.attributes('aria-current')).toBe('step');
-    expect(cameraTab?.attributes('aria-current')).toBeUndefined();
-    await cameraTab?.trigger('click');
+    const [stepOne, stepTwo] = wrapper.findAll('nav button');
+    expect(stepOne?.attributes('aria-current')).toBe('step');
+    expect(stepTwo?.attributes('disabled')).toBeDefined();
+    expect(stepTwo?.attributes('aria-current')).toBeUndefined();
+  });
+
+  it('wechselt nach „Weiter“ zu Schritt 2 und wieder zurück', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    approve();
+    await flushPromises();
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Weiter'))
+      ?.trigger('click');
+    const [stepOne, stepTwo] = wrapper.findAll('nav button');
+    expect(wrapper.text()).toContain('Schritt 2 (Farbkarten');
+    expect(stepTwo?.attributes('aria-current')).toBe('step');
+    expect(stepTwo?.attributes('disabled')).toBeUndefined();
+    await stepOne?.trigger('click');
     expect(wrapper.text()).toContain('Kamera starten');
+    await stepTwo?.trigger('click');
+    expect(wrapper.text()).toContain('Schritt 2 (Farbkarten');
   });
 
   it('hält die Kamera beim Wechsel der Schritte am Laufen', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
-    await wrapper.findAll('nav button')[1]?.trigger('click');
+    approve();
     await flushPromises();
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Weiter'))
+      ?.trigger('click');
     expect(api.close).not.toHaveBeenCalled();
     expect(useCameraStore().status).toBe('live');
-  });
-
-  it('kehrt nach „Weiter“ zum Kamera-Schritt zurück', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    await wrapper.findAll('nav button')[1]?.trigger('click');
-    useChartStore().exposure = {
-      verdict: 'ok',
-      highlightsClipped: false,
-      shadowsCrushed: false,
-      level18: 0.46,
-      level50: 0.74,
-      delta: 0,
-    };
-    await flushPromises();
-    const next = wrapper.findAll('button').find((b) => b.text().includes('Weiter'));
-    await next?.trigger('click');
-    expect(wrapper.text()).toContain('Kamera starten');
   });
 
   it('stoppt die Kamera beim Entfernen der App', async () => {
