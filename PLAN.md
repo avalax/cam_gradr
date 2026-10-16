@@ -11,7 +11,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
    - Die beiden Graukarten (18 % und 50 % Grau) werden gemeinsam vor die Kamera gehalten und sind zusammen im Bild.
    - Zweck: Die Raumhelligkeit so einstellen, dass die Beleuchtung ideal für Schritt 2 ist. Dieser Schritt berechnet nichts für die LUT.
    - Live-Overlay: Graupatches werden wie in Schritt 2 über vier Eckpunkte ausgerichtet, pro Patch wird die gemessene Helligkeit live mit dem Sollbereich verglichen.
-   - Sollbereich (konfigurierbar, im Profil hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), mittleres Grau im vorgegebenen Zielbereich. Die genauen Werte werden in M2 festgelegt und getestet.
+   - Sollbereich (konfigurierbar, im Profil hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), die beiden großen Graufelder im Zielbereich (18 %-Feld ≈ sRGB 46 %, 50 %-Feld ≈ sRGB 74 %, jeweils mit Toleranz, unter Annahme einer sRGB-Kurve). Weiß- und Schwarzprüfung nutzen das hellste und dunkelste Streifenfeld. Die genauen Toleranzen werden in M2 festgelegt und getestet.
    - Anzeige: Clipping-Warnung (Lichter/Schatten) und Ampel „Raum zu dunkel / passt / zu hell“ mit Hinweis, ob Licht heller oder dunkler gestellt werden soll. Kein Histogramm.
    - Warnhinweis, Auto-Belichtung/-Weißabgleich in der Kamera-Software zu fixieren (keine Constraint-Steuerung durch die App).
    - Ergebnis: Der Raum hat die ideale Helligkeit (Ampel grün, nichts geclippt), danach geht es zu Schritt 2.
@@ -26,14 +26,14 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 ## 3. Funktionale Anforderungen
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
-- Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das genaue Layout (Raster, Reihenfolge) wird vor M2 gegen die reale Karte geprüft.
+- Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das Layout ist an Fotos einer SCK300 bestätigt (Details in Abschnitt 10 und in `src/data/profiles/`).
   - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur das Profil Spyder Checkr 48 (siehe Abschnitt 10). Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
   1. Weißabgleich (Gain je Kanal aus den Neutralpatches, in linearem RGB),
   2. 1D-Tonkurve je Kanal (monotone Interpolation durch die Neutralpatches, z. B. PCHIP),
   3. 3×3-Farbmatrix bzw. Root-Polynomial-Regression (Least Squares, Regularisierung) auf den Farbpatches,
-  4. Fehlermaß ΔE2000 (Lab, D50/D65 wählbar).
+  4. Fehlermaß ΔE2000 (Lab). Referenzen liegen in D50 vor, die Kamerawerte (sRGB, D65) werden per Bradford nach D50 adaptiert; der Bezugsweißpunkt ist im Profil hinterlegt.
 - LUT-Erzeugung: Das Korrekturmodell wird auf ein reguläres Gitter (N³) in sRGB-Codewerten ausgewertet. Die Korrektur muss glatt und monoton bleiben, Ausgabewerte werden auf [0, 1] begrenzt; außerhalb des gemessenen Bereichs (Nähe Schwarz/Weiß) wird sanft zur Identität bzw. zu den Extremwerten überblendet, damit keine Artefakte entstehen. Die Stärke (0–100 %) mischt zwischen Identitäts-LUT und Korrektur.
 - Live-Preview in Echtzeit (≥ 30 fps) per GPU, mit 3D-LUT als Textur.
 - LUT-Export:
@@ -81,7 +81,7 @@ src/
   lut/           3D-LUT-Erzeugung, .cube/.3dl/Hald-Export
   gl/            WebGL2-Renderer (Video → LUT → Canvas)
   ui/            Wizard-Schritte, Overlays, Helligkeits-Ampel, Export-Dialog
-  data/          spyder-checkr-photo.json (Layout + Referenzwerte)
+  data/profiles/ spyder-checkr-48.json (Farbkarten), spyder-checkr-photo-gray.json (Graukarten)
 ```
 
 Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Feedback (Ampel) → (Schritt 2) Farbmessung → Solver → 3D-LUT (Float32Array N³×3) → WebGL-Textur (Preview) und Export (Datei).
@@ -103,7 +103,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
   - jeder Meilenstein gilt erst als fertig, wenn `npm run test:coverage` die 99 % hält,
   - lokaler Hook (Husky) führt vor `git push` Lint, Typecheck und Coverage-Check aus,
   - CI (siehe Abschnitt 9) prüft dasselbe bei jedem Push und Pull Request.
-- Testarten: Unit-Tests für Farbmathe, Solver, LUT-Erzeugung und Exporter (Referenzwerte, Randfälle); Komponententests mit **@vue/test-utils** und **happy-dom**; Kamera, WebGL und Canvas werden hinter dünnen Adaptern gemockt, damit die Logik testbar bleibt.
+- Testarten: Unit-Tests für Farbmathe, Solver, LUT-Erzeugung und Exporter (Referenzwerte, Randfälle); Komponententests mit **@vue/test-utils** und **happy-dom**; Testbilder werden synthetisch im Test erzeugt, es werden keine Fotos ins Repo eingecheckt (Bilddateien sind in `.gitignore` ausgeschlossen); Kamera, WebGL und Canvas werden hinter dünnen Adaptern gemockt, damit die Logik testbar bleibt.
 - Ausschlüsse von der Coverage sind eng gefasst (z. B. reine Einstiegsdatei `main.ts`, Typdeklarationen) und in der Config begründet; Ausschlüsse werden nicht genutzt, um die Schwelle zu erreichen.
 - Grenzfall WebGL/Kamera: Die Adapter bleiben so dünn wie möglich und werden mit Fake-Objekten getestet, damit sie in der 99-%-Messung enthalten sind. Reiner Shader-Quelltext (GLSL) zählt nicht als Code; seine Mathematik wird zusätzlich als TypeScript-Referenzimplementierung getestet, die dieselbe Interpolation berechnet.
 - Coverage-Report (lcov + Text) wird in der CI als Artefakt abgelegt; ein Badge im README zeigt den Stand.
@@ -130,7 +130,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 
 ## 9. CI/CD & Releases (GitHub)
 
-- **Repository:** GitHub, Standardbranch `main`. Ablauf: initialer Commit mit dem Plan lokal, danach legt der Nutzer das GitHub-Repo an und pusht.
+- **Repository:** GitHub, Standardbranch `main`. Der lokale Git-Verlauf besteht bereits (Plan, Referenzprofile, Hilfsskript); danach legt der Nutzer das GitHub-Repo an und pusht.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), geprüft per **commitlint** (lokal über Husky und in der CI für Pull Requests).
 - **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier-Check → `vue-tsc` Typecheck → knip → `npm audit` → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Node-LTS-Version fest gepinnt.
 - **Changelog & Releases:** **release-please** (GitHub Action) liest die Conventional Commits, pflegt `CHANGELOG.md` und öffnet einen Release-PR mit Versionssprung (SemVer). Beim Mergen entstehen automatisch Git-Tag und GitHub Release mit Changelog-Eintrag und angehängtem Build-Artefakt (zip von `dist/`).
@@ -150,4 +150,6 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 ## 11. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
-- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung, andere Zuordnung der Felder) sind möglich. Die Zuordnung der Felder zu den Karten ist am Foto bestätigt (je Karte 4 Spalten × 6 Reihen, Karte 1 = A–D, Karte 2 = E–H). Die Graukarten (`spyder-checkr-photo-gray.json`) bestehen je aus einem großen Graufeld (18 % bzw. 50 % Reflexion, nominal) und einem Streifen mit 6 kleinen Feldern; für die Streifenfelder gibt es keine Referenzwerte.
+- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung) sind möglich.
+- **Graukarten:** Die Zuordnung 18 % / 50 % beruht nur auf dem Helligkeitsunterschied (auf den Karten ist keine Beschriftung sichtbar); für die 12 Streifenfelder gibt es keine Referenzwerte, die großen Felder sind nominal aus der Reflexion berechnet. Die Zuordnung ist per Konfiguration umkehrbar.
+- **Urheberrecht:** Die Farbdefinitionen stammen von Datacolor. Ob sie in einem öffentlichen Repo liegen dürfen, entscheidet der Nutzer vor dem Anlegen des GitHub-Repos (sonst privates Repo oder Import statt Einchecken).
