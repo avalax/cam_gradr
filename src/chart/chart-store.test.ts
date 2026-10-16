@@ -1,7 +1,13 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { CORNERS_PER_CARD, GRAY_CARD_ORDER, grayLayout, useChartStore } from './chart-store';
+import {
+  CORNERS_PER_CARD,
+  GRAY_CARD_ORDER,
+  useChartStore,
+  useColorChartStore,
+} from './chart-store';
+import { grayLayout } from './layouts';
 import type { PixelGrid } from './types';
 
 const point = (x: number, y: number) => ({ x, y });
@@ -103,6 +109,17 @@ describe('useChartStore', () => {
     store.measure(grid(188, 118));
     expect(Object.keys(store.measurements).toSorted((a, b) => a.localeCompare(b))).toContain('G18');
     expect(store.exposure).not.toBeNull();
+  });
+
+  it('misst bei den Farbkarten nur die Felder, ohne Raumhelligkeit zu bewerten', () => {
+    const store = useColorChartStore();
+    expect(store.nextSlot).toEqual({ card: 1, index: 0 });
+    placeCard(store, 0);
+    placeCard(store, 100);
+    store.measure(grid(188, 118));
+    expect(Object.keys(store.measurements)).toContain('3A');
+    expect(Object.keys(store.measurements)).toContain('3E');
+    expect(store.exposure).toBeNull();
   });
 
   it('hat ohne vollständige Messung kein Ergebnis', () => {

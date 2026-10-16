@@ -3,7 +3,8 @@
   "notes": [
     "Nur Geometrie/Reihenfolge, aus Fotos einer SCK300 abgeleitet. Keine Farbwerte, keine Herstellerbezeichnungen.",
     "Zwei Farbkarten im Hochformat, je 4 Spalten x 6 Reihen. Karte 1 = Spalten A-D, Karte 2 = Spalten E-H; Buchstabe = Spalte, Ziffer = Reihe von oben.",
-    "rect: Position und Größe des Feldes relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links); aus Fotos geschätzt und per Overlay zu prüfen."
+    "rect: Position und Größe des Feldes relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links); aus Fotos geschätzt und per Overlay zu prüfen.",
+    "role \"neutral\": Felder der beiden Grauleitern (Spalte D und E); sie liefern Weißabgleich und Tonkurve."
   ],
   "cards": [
     {
@@ -216,7 +217,8 @@
             "y": 0.109,
             "w": 0.18,
             "h": 0.11
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "2D",
@@ -227,7 +229,8 @@
             "y": 0.246,
             "w": 0.18,
             "h": 0.11
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "3D",
@@ -238,7 +241,8 @@
             "y": 0.383,
             "w": 0.18,
             "h": 0.11
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "4D",
@@ -249,7 +253,8 @@
             "y": 0.52,
             "w": 0.18,
             "h": 0.11
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "5D",
@@ -260,7 +265,8 @@
             "y": 0.657,
             "w": 0.18,
             "h": 0.11
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "6D",
@@ -271,7 +277,8 @@
             "y": 0.794,
             "w": 0.18,
             "h": 0.11
-          }
+          },
+          "role": "neutral"
         }
       ]
     },
@@ -287,7 +294,8 @@
             "y": 0.083,
             "w": 0.176,
             "h": 0.113
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "2E",
@@ -298,7 +306,8 @@
             "y": 0.229,
             "w": 0.176,
             "h": 0.113
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "3E",
@@ -309,7 +318,8 @@
             "y": 0.375,
             "w": 0.176,
             "h": 0.113
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "4E",
@@ -320,7 +330,8 @@
             "y": 0.521,
             "w": 0.176,
             "h": 0.113
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "5E",
@@ -331,7 +342,8 @@
             "y": 0.667,
             "w": 0.176,
             "h": 0.113
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "6E",
@@ -342,7 +354,8 @@
             "y": 0.813,
             "w": 0.176,
             "h": 0.113
-          }
+          },
+          "role": "neutral"
         },
         {
           "id": "1F",

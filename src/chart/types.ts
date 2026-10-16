@@ -19,7 +19,7 @@ export type Corners = readonly [Point, Point, Point, Point];
 export interface PatchLayout {
   id: string;
   rect: Rect;
-  role?: 'large' | 'strip';
+  role?: 'large' | 'strip' | 'neutral';
 }
 
 export interface CardLayout {

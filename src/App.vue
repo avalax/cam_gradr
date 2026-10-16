@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 
 import { useCameraStore } from './camera/camera-store';
+import ColorStep from './ui/ColorStep.vue';
 import GrayStep from './ui/GrayStep.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
@@ -10,6 +11,11 @@ type StepKey = 'gray' | 'color';
 const step = ref<StepKey>('gray');
 const colorUnlocked = ref(false);
 const camera = useCameraStore();
+
+// Ein Standbild gehört zu genau einem Schritt (andere Karten, andere Eckpunkte).
+watch(step, () => {
+  camera.clearStill();
+});
 
 function toColorStep(): void {
   colorUnlocked.value = true;
@@ -49,9 +55,7 @@ onBeforeUnmount(() => {
     </nav>
 
     <GrayStep v-if="step === 'gray'" @continue="toColorStep" />
-    <p v-else class="text-sm text-slate-700">
-      Schritt 2 (Farbkarten, Referenz-Import und LUT-Berechnung) folgt.
-    </p>
+    <ColorStep v-else />
 
     <footer class="text-xs text-slate-500">{{ APP_ID }}</footer>
   </main>

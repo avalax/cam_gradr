@@ -4,6 +4,8 @@ import type { ChartLayout, Corners } from '../chart/types';
 
 import { buildShapes, clientToImage, instructionFor } from './overlay-geometry';
 
+const NAMES = { 3: 'linke Graukarte (50 %)', 4: 'rechte Graukarte (18 %)' };
+
 describe('clientToImage', () => {
   const box = { left: 100, top: 50, width: 400, height: 200 };
   const size = { width: 1280, height: 720 };
@@ -58,19 +60,19 @@ describe('buildShapes', () => {
 
 describe('instructionFor', () => {
   it('nennt Ecke und Karte', () => {
-    expect(instructionFor({ card: 3, index: 0 })).toContain(
+    expect(instructionFor({ card: 3, index: 0 }, NAMES)).toContain(
       'oben links der linke Graukarte (50 %)',
     );
-    expect(instructionFor({ card: 4, index: 2 })).toContain(
+    expect(instructionFor({ card: 4, index: 2 }, NAMES)).toContain(
       'unten rechts der rechte Graukarte (18 %)',
     );
   });
 
   it('behandelt unbekannte Karten und Ecken', () => {
-    expect(instructionFor({ card: 9, index: 7 })).toContain('Karte 9');
+    expect(instructionFor({ card: 9, index: 7 }, NAMES)).toContain('Karte 9');
   });
 
   it('meldet Vollständigkeit', () => {
-    expect(instructionFor(null)).toContain('Alle Eckpunkte sind gesetzt');
+    expect(instructionFor(null, NAMES)).toContain('Alle Eckpunkte sind gesetzt');
   });
 });

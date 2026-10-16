@@ -59,13 +59,13 @@ describe('App', () => {
       .find((b) => b.text().includes('Weiter'))
       ?.trigger('click');
     const [stepOne, stepTwo] = wrapper.findAll('nav button');
-    expect(wrapper.text()).toContain('Schritt 2 (Farbkarten');
+    expect(wrapper.text()).toContain('Schritt 2 berechnet die Farbkorrektur');
     expect(stepTwo?.attributes('aria-current')).toBe('step');
     expect(stepTwo?.attributes('disabled')).toBeUndefined();
     await stepOne?.trigger('click');
     expect(wrapper.text()).toContain('Kamera starten');
     await stepTwo?.trigger('click');
-    expect(wrapper.text()).toContain('Schritt 2 (Farbkarten');
+    expect(wrapper.text()).toContain('Schritt 2 berechnet die Farbkorrektur');
   });
 
   it('hält die Kamera beim Wechsel der Schritte am Laufen', async () => {

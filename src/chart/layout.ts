@@ -1,5 +1,7 @@
 import type { CardLayout, ChartLayout, PatchLayout, Rect } from './types';
 
+const ROLES = new Set<unknown>(['large', 'strip', 'neutral']);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -36,7 +38,9 @@ function parsePatch(value: unknown, card: number): PatchLayout {
   }
   const { id, role } = value;
   const rect = parseRect(value.rect, `Feld ${id}`);
-  return role === 'large' || role === 'strip' ? { id, rect, role } : { id, rect };
+  return ROLES.has(role)
+    ? { id, rect, role: role as NonNullable<PatchLayout['role']> }
+    : { id, rect };
 }
 
 // Prüft eine Layout-Datei (Format cam_gradr-layout/2) und liefert typisierte Daten.

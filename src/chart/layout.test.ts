@@ -17,6 +17,18 @@ describe('parseLayout mit den mitgelieferten Dateien', () => {
     expect(layout.cards.map((card) => card.patches.length)).toEqual([24, 24]);
   });
 
+  it('markiert die zwölf Neutralfelder der Farbkarten (Spalte D und E)', () => {
+    const layout = parseLayout(colorJson);
+    const neutral = layout.cards.flatMap((card) =>
+      card.patches.filter((patch) => patch.role === 'neutral').map((patch) => patch.id),
+    );
+    expect(neutral.toSorted((a, b) => a.localeCompare(b))).toEqual(
+      ['1D', '2D', '3D', '4D', '5D', '6D', '1E', '2E', '3E', '4E', '5E', '6E'].toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
+    );
+  });
+
   it('liest das Graulayout: 2 Karten mit je einem großen Feld und 6 Streifenfeldern', () => {
     const layout = parseLayout(grayJson);
     expect(layout.cards.map((card) => card.card)).toEqual([3, 4]);
@@ -89,6 +101,9 @@ describe('parseLayout Fehlerfälle', () => {
   it('übernimmt role nur für bekannte Werte', () => {
     const layout = parseLayout(layoutWith({ id: 'a', rect, role: 'large' }));
     expect(layout.cards[0]?.patches[0]?.role).toBe('large');
+    expect(
+      parseLayout(layoutWith({ id: 'a', rect, role: 'neutral' })).cards[0]?.patches[0]?.role,
+    ).toBe('neutral');
     const other = parseLayout(layoutWith({ id: 'a', rect, role: 'foo' }));
     expect(other.cards[0]?.patches[0]).toEqual({ id: 'a', rect });
   });

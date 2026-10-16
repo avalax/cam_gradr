@@ -22,7 +22,7 @@ test.describe('Schritt 1: Raum passt', () => {
     await expect(app.details).toContainText('Lichter');
 
     await app.button('Weiter zu Schritt 2').click();
-    await expect(page.getByText('Schritt 2 (Farbkarten')).toBeVisible();
+    await expect(page.getByText('Schritt 2 berechnet die Farbkorrektur')).toBeVisible();
     await expect(app.button('Schritt 2: Farbkarten')).toBeEnabled();
   });
 
