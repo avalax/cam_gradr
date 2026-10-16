@@ -23,11 +23,9 @@ export function okBand(tolerance = DEFAULT_EXPOSURE_CONFIG.tolerance): {
   return { from: clamp(HALF - half), to: clamp(HALF + half) };
 }
 
-const SOFT = 2;
-
-// Farbverlauf der Skala: oben zu hell, Mitte passend, unten zu dunkel.
-export function scaleGradient(band = okBand()): string {
-  return `linear-gradient(to bottom, #ea580c 0%, #ea580c ${String(band.from - SOFT)}%, #16a34a ${String(band.from)}%, #16a34a ${String(band.to)}%, #1d4ed8 ${String(band.to + SOFT)}%, #1d4ed8 100%)`;
+// Graustufenverlauf der Skala: oben hell (zu hell), Mitte mittelgrau, unten dunkel (zu dunkel).
+export function scaleGradient(): string {
+  return 'linear-gradient(to bottom, #f5f5f5 0%, #737373 50%, #171717 100%)';
 }
 
 function percent(value: number): string {

@@ -41,16 +41,11 @@ describe('okBand', () => {
 });
 
 describe('scaleGradient', () => {
-  it('färbt oben orange, in der Mitte grün und unten blau', () => {
-    const gradient = scaleGradient({ from: 40, to: 60 });
-    expect(gradient).toContain('#ea580c 38%');
-    expect(gradient).toContain('#16a34a 40%');
-    expect(gradient).toContain('#16a34a 60%');
-    expect(gradient).toContain('#1d4ed8 62%');
-  });
-
-  it('nutzt standardmäßig das grüne Band der Bewertung', () => {
-    expect(scaleGradient()).toBe(scaleGradient(okBand()));
+  it('läuft in Graustufen von hell oben nach dunkel unten', () => {
+    const gradient = scaleGradient();
+    expect(gradient).toContain('to bottom');
+    expect(gradient.indexOf('#f5f5f5')).toBeLessThan(gradient.indexOf('#737373'));
+    expect(gradient.indexOf('#737373')).toBeLessThan(gradient.indexOf('#171717'));
   });
 });
 

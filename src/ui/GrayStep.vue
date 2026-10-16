@@ -130,9 +130,9 @@ watch(actual, (next, previous) => {
     <p class="text-sm text-slate-700">
       Schritt 1 stellt die Raumhelligkeit ein. Nimm ein Standbild der beiden Graukarten auf,
       markiere darauf die Eckpunkte (die Reihenfolge der Klicks ist egal, die App ordnet sie selbst)
-      und ändere dann das Licht, bis die Skala neben dem Bild im grünen Bereich steht (Details beim
-      Überfahren der Skala). Danach kannst du zum Livebild zurückkehren: Solange die Karten nicht
-      bewegt werden, misst die App dort laufend mit denselben Eckpunkten.
+      und ändere dann das Licht, bis die Marke der Skala neben dem Bild im umrahmten Zielbereich
+      steht (Details beim Überfahren der Skala). Danach kannst du zum Livebild zurückkehren: Solange
+      die Karten nicht bewegt werden, misst die App dort laufend mit denselben Eckpunkten.
     </p>
 
     <p v-if="!isLive" class="text-sm text-amber-800">Bitte zuerst die Kamera starten.</p>

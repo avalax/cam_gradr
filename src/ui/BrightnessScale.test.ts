@@ -50,6 +50,13 @@ describe('BrightnessScale', () => {
     expect(both.find('[data-testid="scale-crushed-bottom"]').exists()).toBe(true);
   });
 
+  it('zeigt den Zielbereich in der Mitte der Skala', () => {
+    const wrapper = mount(BrightnessScale, { props: { exposure } });
+    const band = wrapper.get('[data-testid="scale-ok-band"]');
+    expect(band.attributes('style')).toContain('top: 40%');
+    expect(band.attributes('style')).toContain('height: 20%');
+  });
+
   it('ist per Tastatur fokussierbar', () => {
     const wrapper = mount(BrightnessScale, { props: { exposure: null } });
     expect(wrapper.get('[data-testid="brightness-scale"]').attributes('tabindex')).toBe('0');

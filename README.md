@@ -31,8 +31,8 @@ anpassen.
 ## So funktioniert es
 
 1. **Schritt 1: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
-   aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine Ampel zeigt, ob der Raum zu dunkel,
-   zu hell oder passend ist. Das Licht so einstellen, dass die Ampel grün wird. Im Livebild misst die App
+   aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
+   zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
 2. **Schritt 2: Farbkorrektur.** Beide Farbkarten aufnehmen und daraus die Korrektur berechnen
    (in Arbeit).

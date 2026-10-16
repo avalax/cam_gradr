@@ -3,11 +3,13 @@ import { computed } from 'vue';
 
 import type { ExposureResult } from '../chart/exposure';
 
-import { detailRows, scaleGradient, scalePosition, summary } from './brightness-scale';
+import { detailRows, okBand, scaleGradient, scalePosition, summary } from './brightness-scale';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
 
 const gradient = scaleGradient();
+const band = okBand();
+const bandStyle = { top: `${String(band.from)}%`, height: `${String(band.to - band.from)}%` };
 const text = computed(() => summary(props.exposure));
 const markerTop = computed(() =>
   props.exposure === null ? null : `${String(scalePosition(props.exposure.delta))}%`,
@@ -25,19 +27,27 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
     data-testid="brightness-scale"
   >
     <div
-      class="absolute inset-0 rounded border border-slate-400"
-      :class="exposure === null ? 'bg-slate-200' : ''"
-      :style="exposure === null ? undefined : { background: gradient }"
+      class="absolute inset-0 rounded border border-slate-500"
+      :style="{ background: gradient }"
+      :class="exposure === null ? 'opacity-40' : ''"
+    ></div>
+
+    <!-- Zielbereich: so weit darf die Helligkeit vom Sollwert abweichen. -->
+    <div
+      class="pointer-events-none absolute inset-x-0 border-y-2 border-slate-900 bg-white/25"
+      :class="exposure === null ? 'opacity-40' : ''"
+      :style="bandStyle"
+      data-testid="scale-ok-band"
     ></div>
 
     <div
       v-if="exposure?.highlightsClipped"
-      class="absolute inset-x-0 top-0 h-2 rounded-t bg-red-600"
+      class="absolute inset-x-0 top-0 h-2 rounded-t border-b-2 border-slate-900 bg-white"
       data-testid="scale-clipped-top"
     ></div>
     <div
       v-if="exposure?.shadowsCrushed"
-      class="absolute inset-x-0 bottom-0 h-2 rounded-b bg-slate-900"
+      class="absolute inset-x-0 bottom-0 h-2 rounded-b border-t-2 border-white bg-black"
       data-testid="scale-crushed-bottom"
     ></div>
 
