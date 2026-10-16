@@ -27,7 +27,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
 - Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das genaue Layout (Raster, Reihenfolge) wird vor M2 gegen die reale Karte geprüft.
-  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur ein Standardprofil (siehe Abschnitt 10). Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
+  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur das Profil Spyder Checkr 48 (siehe Abschnitt 10). Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
   1. Weißabgleich (Gain je Kanal aus den Neutralpatches, in linearem RGB),
@@ -140,7 +140,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 
 ## 10. Entscheidungen (geklärt)
 
-- **Referenzwerte:** Für die 48 Farbfelder sind keine Datacolor-Werte bekannt. Zum Start gibt es ein Standardprofil auf Basis der bekannten ColorChecker-Werte (24 Felder), nur für Felder, die sich sicher zuordnen lassen; Felder ohne Referenz bleiben deaktiviert. Echte Datacolor-Werte lassen sich später als JSON/CSV importieren und in der App auswählen. Der Nutzer recherchiert die offiziellen Werte bei Datacolor.
+- **Referenzwerte:** Startprofil `src/data/profiles/spyder-checkr-48.json` mit 48 Feldern (Lab D50 + sRGB), abgetippt aus einer Drittquelle (Bartneck 2017, Ursprung Datacolor-Bitmap). Status `unverified`: nicht offiziell und nicht gegen die Checkr Photo bestätigt. Lab und sRGB passen im Mittel gut zusammen (ΔE76 ≈ 0,8; Ausreißer 1F wegen sRGB-Clipping). Echte Datacolor-Werte lassen sich später als JSON/CSV importieren und in der App auswählen.
 - **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
 - **Webcam-Automatik:** Nur Warnhinweis. Auto-Belichtung/-Weißabgleich fixiert der Nutzer in der Kamera-Software, die App setzt keine Constraints.
 - **Farbraum:** sRGB / Rec.709 für Ein- und Ausgabe.
@@ -150,4 +150,4 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 ## 11. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
-- **Referenzgenauigkeit:** Die Standardwerte sind nur eine Näherung der Datacolor-Karten, bis ein genaues Profil hinterlegt wird. Mit weniger als den 48 Feldern ist die Regression weniger robust (Regularisierung, einfachere Modelle wie 3×3-Matrix).
+- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung, andere Zuordnung der Felder) sind möglich. Die Kartenzuordnung (Spalten 1–6, Reihen A–H, zwei Karten zu je 24 Feldern) ist angenommen und wird an der realen Karte geprüft.
