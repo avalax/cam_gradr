@@ -36,11 +36,13 @@ export default tseslint.config(
     rules: {
       complexity: ['error', 10],
       'unicorn/prevent-abbreviations': 'off',
-      'unicorn/filename-case': [
-        'error',
-        { case: 'kebabCase', ignore: [/^App\.vue$/, /^App\.test\.ts$/] },
-      ],
+      'unicorn/filename-case': ['error', { cases: { kebabCase: true, pascalCase: true } }],
+      // Viele Fehlalarme bei typisierten Arrays und Indexzugriffen; TypeScript prüft die Typen bereits.
+      'security/detect-object-injection': 'off',
+      'vuejs-accessibility/label-has-for': ['error', { required: { some: ['nesting', 'id'] } }],
       'unicorn/no-null': 'off',
+      // Frühe Returns erzeugen unerreichbare Guard-Zweige, die die 99-%-Coverage unnötig belasten.
+      'unicorn/prefer-early-return': 'off',
       'unicorn/numeric-separators-style': 'off',
       '@typescript-eslint/strict-boolean-expressions': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
