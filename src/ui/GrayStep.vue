@@ -38,11 +38,6 @@ const handles = computed(() =>
       )
     : [],
 );
-// Das Bild nutzt die verfügbare Breite, wird aber nicht höher als der sichtbare Bereich,
-// damit alle Eckpunkte ohne Scrollen erreichbar bleiben.
-const imageMaxWidth = computed(
-  () => `calc((100vh - 14rem) * ${String(size.value.width / size.value.height)})`,
-);
 const instruction = computed(() =>
   showStill.value
     ? instructionFor(nextSlot.value)
@@ -148,7 +143,7 @@ watch(actual, (next, previous) => {
     <p class="text-sm font-medium" aria-live="polite">{{ instruction }}</p>
 
     <div class="flex items-stretch gap-3">
-      <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
+      <div class="relative min-w-0 flex-1">
         <video
           v-show="!showStill"
           ref="video"
