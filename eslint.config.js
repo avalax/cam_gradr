@@ -21,7 +21,6 @@ export default tseslint.config(
       'local-data/**',
       'playwright-report/**',
       'test-results/**',
-      'e2e/.generated/**',
     ],
   },
   js.configs.recommended,

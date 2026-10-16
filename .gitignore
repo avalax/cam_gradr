@@ -13,6 +13,5 @@ coverage/
 local-data/
 
 # Playwright
-e2e/.generated/
 playwright-report/
 test-results/

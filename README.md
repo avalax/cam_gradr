@@ -58,7 +58,7 @@ npm ci            # Abhängigkeiten installieren
 npm run dev       # Entwicklungsserver starten
 npm run build     # Produktions-Build
 npm run verify    # alle Prüfungen (Lint, Typecheck, knip, Tests mit Coverage)
-npm run e2e:install   # einmalig: Browser für die Akzeptanztests installieren
+npm run e2e:install   # einmalig: Firefox für die Akzeptanztests installieren (Chrome muss vorhanden sein)
 npm run e2e       # Playwright-Akzeptanztests (baut die App und startet sie)
 npm run verify:all    # verify und e2e zusammen
 ```
@@ -69,7 +69,7 @@ Die Kamera funktioniert nur über `localhost` oder HTTPS.
 
 - **Tests:** Vitest mit mindestens **99 % Coverage** (Statements, Branches, Functions, Lines). Fällt die
   Coverage darunter, schlägt der Lauf fehl.
-- **Akzeptanztests:** Playwright prüft die komplette User Story im echten Browser mit einer synthetischen Kamera (siehe `e2e/`). Sie wachsen mit jedem Meilenstein und laufen in der CI als eigener Job `acceptance`.
+- **Akzeptanztests:** Playwright prüft die komplette User Story in Chrome und Firefox mit einer synthetischen Kamera (siehe `e2e/`). Sie wachsen mit jedem Meilenstein und laufen in der CI als eigener Job `acceptance`.
 - **Linting:** ESLint (strikt, typbewusst, Vue, Barrierefreiheit), Prettier, Stylelint, markdownlint und
   knip. Warnungen gelten als Fehler.
 - **Git-Hooks (Husky):** `pre-commit` prüft die geänderten Dateien, `commit-msg` prüft das Format der

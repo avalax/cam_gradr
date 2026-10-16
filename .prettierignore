@@ -4,6 +4,5 @@ node_modules
 local-data
 package-lock.json
 CHANGELOG.md
-e2e/.generated
 playwright-report
 test-results

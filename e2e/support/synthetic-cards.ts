@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseLayout } from '../../src/chart/layout';
@@ -30,9 +30,23 @@ const LIGHTINGS = {
 
 export type LightingName = keyof typeof LIGHTINGS;
 
+// Ein gefülltes Rechteck des synthetischen Bildes (Pixel, Grauwert 0..255).
+interface SceneRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  gray: number;
+}
+
+export interface Scene {
+  width: number;
+  height: number;
+  rects: SceneRect[];
+}
+
 const SURROUND = 0.35;
 const CARD_SURFACE = 0.05;
-const FRAMES = 3;
 
 const layout = parseLayout(
   JSON.parse(
@@ -43,11 +57,8 @@ const layout = parseLayout(
   ),
 );
 
-function fill(plane: Uint8Array, x0: number, y0: number, w: number, h: number, value: number) {
-  const code = Math.round(value * 255);
-  for (let y = Math.round(y0); y < Math.round(y0 + h); y++) {
-    plane.fill(code, y * WIDTH + Math.round(x0), y * WIDTH + Math.round(x0 + w));
-  }
+function toGray(value: number): number {
+  return Math.round(value * 255);
 }
 
 function stripValue(lighting: Lighting, id: string): number {
@@ -59,49 +70,25 @@ function largeValue(lighting: Lighting, id: string): number {
   return id === 'G18' ? lighting.large18 : lighting.large50;
 }
 
-// Zeichnet beide Graukarten mit den Feldern aus dem Layout als Graustufen-Bild (Y-Ebene).
-function renderLumaPlane(lighting: Lighting): Uint8Array {
-  const plane = new Uint8Array(WIDTH * HEIGHT);
-  fill(plane, 0, 0, WIDTH, HEIGHT, SURROUND);
+// Beschreibt beide Graukarten mit den Feldern aus dem Layout als Liste gefüllter Rechtecke.
+// Der Browser zeichnet daraus per Canvas das Kamerabild.
+export function sceneFor(name: LightingName): Scene {
+  const lighting = LIGHTINGS[name];
+  const rects: SceneRect[] = [{ x: 0, y: 0, w: WIDTH, h: HEIGHT, gray: toGray(SURROUND) }];
   for (const card of layout.cards) {
     const pixels = CARD_PIXELS[card.card as CardNumber];
-    fill(plane, pixels.x, pixels.y, pixels.w, pixels.h, CARD_SURFACE);
+    rects.push({ ...pixels, gray: toGray(CARD_SURFACE) });
     for (const patch of card.patches) {
       const value =
         patch.role === 'large' ? largeValue(lighting, patch.id) : stripValue(lighting, patch.id);
-      fill(
-        plane,
-        pixels.x + patch.rect.x * pixels.w,
-        pixels.y + patch.rect.y * pixels.h,
-        patch.rect.w * pixels.w,
-        patch.rect.h * pixels.h,
-        value,
-      );
+      rects.push({
+        x: pixels.x + patch.rect.x * pixels.w,
+        y: pixels.y + patch.rect.y * pixels.h,
+        w: patch.rect.w * pixels.w,
+        h: patch.rect.h * pixels.h,
+        gray: toGray(value),
+      });
     }
   }
-  return plane;
-}
-
-// Ein Y4M-Video (4:2:0, neutrale Chroma) mit mehreren gleichen Bildern, das Chrome als Kamera abspielt.
-function buildY4m(lighting: Lighting): Buffer {
-  const luma = renderLumaPlane(lighting);
-  const chroma = new Uint8Array((WIDTH / 2) * (HEIGHT / 2)).fill(128);
-  const header = Buffer.from(
-    `YUV4MPEG2 W${String(WIDTH)} H${String(HEIGHT)} F30:1 Ip A1:1 C420jpeg\n`,
-  );
-  const frame = Buffer.concat([Buffer.from('FRAME\n'), luma, chroma, chroma]);
-  return Buffer.concat([header, ...Array.from({ length: FRAMES }, () => frame)]);
-}
-
-const GENERATED_DIR = path.join(import.meta.dirname, '..', '.generated');
-
-export function videoPath(name: LightingName): string {
-  return path.join(GENERATED_DIR, `${name}.y4m`);
-}
-
-export function writeAllVideos(): void {
-  mkdirSync(GENERATED_DIR, { recursive: true });
-  for (const name of Object.keys(LIGHTINGS) as LightingName[]) {
-    writeFileSync(videoPath(name), buildY4m(LIGHTINGS[name]));
-  }
+  return { width: WIDTH, height: HEIGHT, rects };
 }
