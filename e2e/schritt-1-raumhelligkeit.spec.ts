@@ -78,6 +78,26 @@ test.describe('Schritt 1: Raum passt', () => {
     await expect(app.details).toBeVisible();
   });
 
+  test('Das Kamerabild nutzt die verfügbare Breite', async ({ app }) => {
+    await app.page.setViewportSize({ width: 1600, height: 1200 });
+    await app.open();
+    await app.startCamera();
+
+    const box = await app.overlay.boundingBox();
+    expect(box?.width).toBeGreaterThan(1300);
+  });
+
+  test('Das Kamerabild bleibt bei flachem Fenster im sichtbaren Bereich', async ({ app }) => {
+    await app.page.setViewportSize({ width: 1900, height: 800 });
+    await app.open();
+    await app.startCamera();
+
+    const box = await app.overlay.boundingBox();
+    // höchstens Fensterhöhe minus 14 rem (224 px) für Kopfbereich und Knöpfe
+    expect(box?.height).toBeLessThanOrEqual(800 - 224 + 2);
+    expect(box?.width).toBeGreaterThan(900);
+  });
+
   test('Livebild misst mit denselben Eckpunkten weiter', async ({ app }) => {
     await app.open();
     await app.startCamera();

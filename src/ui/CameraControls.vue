@@ -31,7 +31,10 @@ function onResolution(event: Event): void {
 
 <template>
   <section class="space-y-3">
-    <p class="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="note">
+    <p
+      class="max-w-4xl rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+      role="note"
+    >
       Hinweis: Bitte Auto-Belichtung und Auto-Weißabgleich der Kamera in der Kamera-Software
       festsetzen. Automatische Anpassungen verfälschen die Messung.
     </p>

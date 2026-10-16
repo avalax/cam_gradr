@@ -38,6 +38,11 @@ const handles = computed(() =>
       )
     : [],
 );
+// Das Bild nutzt die verfügbare Breite, wird aber nicht höher als der sichtbare Bereich,
+// damit alle Eckpunkte ohne Scrollen erreichbar bleiben.
+const imageMaxWidth = computed(
+  () => `calc((100vh - 14rem) * ${String(size.value.width / size.value.height)})`,
+);
 const instruction = computed(() =>
   showStill.value
     ? instructionFor(nextSlot.value)
@@ -127,7 +132,7 @@ watch(actual, (next, previous) => {
   <section class="space-y-4">
     <CameraControls />
 
-    <p class="text-sm text-slate-700">
+    <p class="max-w-4xl text-sm text-slate-700">
       Schritt 1 stellt die Raumhelligkeit ein. Nimm ein Standbild der beiden Graukarten auf,
       markiere darauf die Eckpunkte (die Reihenfolge der Klicks ist egal, die App ordnet sie selbst)
       und ändere dann das Licht, bis die Marke der Skala neben dem Bild im umrahmten Zielbereich
@@ -142,8 +147,8 @@ watch(actual, (next, previous) => {
 
     <p class="text-sm font-medium" aria-live="polite">{{ instruction }}</p>
 
-    <div class="flex max-w-3xl items-stretch gap-3">
-      <div class="relative min-w-0 flex-1">
+    <div class="flex items-stretch gap-3">
+      <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
         <video
           v-show="!showStill"
           ref="video"

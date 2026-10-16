@@ -47,7 +47,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 - Läuft komplett im Browser, Daten verlassen den Rechner nicht (HTTPS/localhost nötig für Kamera).
 - Zielbrowser: aktuelles Chrome/Edge, Firefox, Safari (WebGL2).
-- Responsive, aber primär Desktop.
+- Responsive, aber primär Desktop. Die Seite nutzt die volle Fensterbreite; das Kamerabild wird so groß wie möglich, aber nicht höher als der sichtbare Bereich, damit alle Eckpunkte ohne Scrollen erreichbar bleiben.
 - Testbare Farbmathematik (Unit-Tests mit Referenzwerten).
 - **Code-Coverage mindestens 99 %**, laufend verifiziert (lokal, per Hook und in der CI), siehe Abschnitt 8.
 - Automatisierte Pipeline auf GitHub mit Changelog und automatischen Releases, siehe Abschnitt 10.
