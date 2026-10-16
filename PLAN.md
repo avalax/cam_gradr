@@ -140,7 +140,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 
 ## 10. Entscheidungen (geklärt)
 
-- **Referenzwerte:** Startprofil `src/data/profiles/spyder-checkr-48.json` mit 48 Feldern (Lab D50 + sRGB), abgetippt aus einer Drittquelle (Bartneck 2017, Ursprung Datacolor-Bitmap). Status `unverified`: nicht offiziell und nicht gegen die Checkr Photo bestätigt. Lab und sRGB passen im Mittel gut zusammen (ΔE76 ≈ 0,8; Ausreißer 1F wegen sRGB-Clipping). Echte Datacolor-Werte lassen sich später als JSON/CSV importieren und in der App auswählen.
+- **Referenzwerte:** Startprofil `src/data/profiles/spyder-checkr-48.json` mit 48 Feldern (Lab D50 + sRGB), abgetippt aus einer Drittquelle (Bartneck 2017, Ursprung Datacolor-Bitmap). Das Layout ist am Foto einer SCK300 visuell bestätigt, die Farbwerte sind nicht offiziell und unbestätigt. Lab und sRGB passen im Mittel gut zusammen (ΔE76 ≈ 0,8; Ausreißer 1F wegen sRGB-Clipping). Echte Datacolor-Werte lassen sich später als JSON/CSV importieren und in der App auswählen.
 - **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
 - **Webcam-Automatik:** Nur Warnhinweis. Auto-Belichtung/-Weißabgleich fixiert der Nutzer in der Kamera-Software, die App setzt keine Constraints.
 - **Farbraum:** sRGB / Rec.709 für Ein- und Ausgabe.
@@ -150,4 +150,4 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 ## 11. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
-- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung, andere Zuordnung der Felder) sind möglich. Die Kartenzuordnung (Spalten 1–6, Reihen A–H, zwei Karten zu je 24 Feldern) ist angenommen und wird an der realen Karte geprüft.
+- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung, andere Zuordnung der Felder) sind möglich. Die Zuordnung der Felder zu den Karten ist am Foto bestätigt (je Karte 4 Spalten × 6 Reihen, Karte 1 = A–D, Karte 2 = E–H).
