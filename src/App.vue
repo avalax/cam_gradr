@@ -2,25 +2,29 @@
 import { onBeforeUnmount, ref, watch } from 'vue';
 
 import { useCameraStore } from './camera/camera-store';
+import CameraTab from './ui/CameraTab.vue';
 import ColorStep from './ui/ColorStep.vue';
 import GrayStep from './ui/GrayStep.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
-type StepKey = 'gray' | 'color';
+type TabKey = 'camera' | 'gray' | 'color';
 
-const step = ref<StepKey>('gray');
-const colorUnlocked = ref(false);
+const TABS: readonly { key: TabKey; label: string }[] = [
+  { key: 'camera', label: 'Kamera' },
+  { key: 'gray', label: 'Graukarten' },
+  { key: 'color', label: 'Farbkarten' },
+];
+
+const tab = ref<TabKey>('camera');
 const camera = useCameraStore();
 
-// Ein Standbild gehört zu genau einem Schritt (andere Karten, andere Eckpunkte).
-watch(step, () => {
-  camera.clearStill();
+// Das Standbild darf zwischen Kamera-Tab und Kartentabs mitwandern. Beim direkten Wechsel zwischen
+// Grau- und Farbkarten wird es verworfen (andere Karten, andere Eckpunkte).
+watch(tab, (next, previous) => {
+  if (next !== 'camera' && previous !== 'camera') {
+    camera.clearStill();
+  }
 });
-
-function toColorStep(): void {
-  colorUnlocked.value = true;
-  step.value = 'color';
-}
 
 onBeforeUnmount(() => {
   camera.stop();
@@ -35,31 +39,29 @@ onBeforeUnmount(() => {
         <p class="text-sm text-slate-600">Webcam-LUT-Generator für die Spyder Checkr Photo.</p>
       </div>
 
-      <nav aria-label="Schritte" class="flex flex-wrap gap-2">
+      <div role="tablist" aria-label="Bereiche" class="flex flex-wrap gap-2">
         <button
+          v-for="entry in TABS"
+          :id="`tab-${entry.key}`"
+          :key="entry.key"
           type="button"
+          role="tab"
           class="rounded border px-3 py-1 text-sm"
-          :class="step === 'gray' ? 'bg-slate-800 text-white' : ''"
-          :aria-current="step === 'gray' ? 'step' : undefined"
-          @click="step = 'gray'"
+          :class="tab === entry.key ? 'bg-slate-800 text-white' : ''"
+          :aria-selected="tab === entry.key"
+          :aria-controls="`panel-${entry.key}`"
+          @click="tab = entry.key"
         >
-          Schritt 1: Graukarten
+          {{ entry.label }}
         </button>
-        <button
-          type="button"
-          class="rounded border px-3 py-1 text-sm disabled:opacity-50"
-          :class="step === 'color' ? 'bg-slate-800 text-white' : ''"
-          :aria-current="step === 'color' ? 'step' : undefined"
-          :disabled="!colorUnlocked"
-          @click="step = 'color'"
-        >
-          Schritt 2: Farbkarten
-        </button>
-      </nav>
+      </div>
     </header>
 
-    <GrayStep v-if="step === 'gray'" @continue="toColorStep" />
-    <ColorStep v-else />
+    <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
+      <CameraTab v-if="tab === 'camera'" />
+      <GrayStep v-else-if="tab === 'gray'" @continue="tab = 'color'" />
+      <ColorStep v-else />
+    </div>
 
     <footer class="text-xs text-slate-500">{{ APP_ID }}</footer>
   </main>

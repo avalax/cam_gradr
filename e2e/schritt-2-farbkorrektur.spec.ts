@@ -6,7 +6,7 @@ import { expect, test } from './support/fixtures';
 // "Als Anwender importiere ich Referenzwerte, nehme die Farbkarten auf und sehe, wie viel besser
 // die Farben der Kamera mit der berechneten Korrektur werden."
 
-test.describe('Schritt 2: Referenzwerte', () => {
+test.describe('Farbkarten: Referenzwerte', () => {
   test('Ohne Referenzwerte ist keine Berechnung möglich', async ({ app }) => {
     await app.completeStepOne();
     await expect(app.page.getByTestId('reference-hint')).toContainText('Noch keine Referenzwerte');
@@ -60,7 +60,7 @@ test.describe('Schritt 2: Referenzwerte', () => {
   });
 });
 
-test.describe('Schritt 2: Farbkorrektur', () => {
+test.describe('Farbkarten: Farbkorrektur', () => {
   test('Die Berechnung verbessert die Farben deutlich', async ({ app }) => {
     await app.completeStepOne();
     await app.importReference('referenz.json', dummyReferenceJson());

@@ -2,43 +2,38 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { useCameraStore } from '../camera/camera-store';
 import { installFakeCamera } from '../test-support/media';
 
 import CameraControls from './CameraControls.vue';
-
-function button(wrapper: ReturnType<typeof mount>, text: string) {
-  return wrapper.findAll('button').find((b) => b.text().includes(text));
-}
 
 describe('CameraControls', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });
 
-  it('zeigt Hinweis zur Kamera-Automatik und den Start-Knopf', () => {
+  it('zeigt Hinweis zur Kamera-Automatik und die Auswahl von Kamera und Auflösung', () => {
     installFakeCamera();
     const wrapper = mount(CameraControls);
     expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
-    expect(wrapper.text()).toContain('Kamera starten');
+    expect(wrapper.findAll('select')).toHaveLength(2);
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.findAll('button')).toHaveLength(0);
   });
 
-  it('startet und stoppt die Kamera und zeigt die aktive Auflösung', async () => {
-    const api = installFakeCamera();
+  it('zeigt Geräte und die aktive Auflösung, sobald die Kamera läuft', async () => {
+    installFakeCamera();
     const wrapper = mount(CameraControls);
-    await button(wrapper, 'Kamera starten')?.trigger('click');
+    await useCameraStore().start();
     await flushPromises();
     expect(wrapper.text()).toContain('Aktive Auflösung: 1280 × 720');
     expect(wrapper.text()).toContain('Webcam 2');
-    await button(wrapper, 'Kamera stoppen')?.trigger('click');
-    expect(api.close).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain('Kamera starten');
   });
 
   it('zeigt Fehlermeldungen an', async () => {
     installFakeCamera({ open: () => Promise.reject(new Error('x')) });
     const wrapper = mount(CameraControls);
-    await button(wrapper, 'Kamera starten')?.trigger('click');
+    await useCameraStore().start();
     await flushPromises();
     expect(wrapper.get('[role="alert"]').text()).toContain('nicht gestartet');
   });
@@ -46,7 +41,7 @@ describe('CameraControls', () => {
   it('wechselt Kamera und Auflösung', async () => {
     const api = installFakeCamera();
     const wrapper = mount(CameraControls);
-    await button(wrapper, 'Kamera starten')?.trigger('click');
+    await useCameraStore().start();
     await flushPromises();
     const [deviceSelect, resolutionSelect] = wrapper.findAll('select');
     await deviceSelect?.setValue('cam2');

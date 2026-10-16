@@ -7,7 +7,6 @@ import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
-import CameraControls from './CameraControls.vue';
 import CardStage from './CardStage.vue';
 import ResultReport from './ResultReport.vue';
 
@@ -62,10 +61,8 @@ function compute(): void {
   <section class="space-y-4">
     <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
       <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-        <CameraControls />
-
         <p class="text-sm text-slate-700">
-          Schritt 2 berechnet die Farbkorrektur. Importiere zuerst die Referenzwerte deiner Karten
+          Dieser Tab berechnet die Farbkorrektur. Importiere zuerst die Referenzwerte deiner Karten
           (die Datei bleibt auf deinem Rechner und wird nur lokal im Browser gespeichert). Nimm dann
           ein Standbild der beiden Farbkarten auf, markiere die Eckpunkte und starte die Berechnung.
         </p>

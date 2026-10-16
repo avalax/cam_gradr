@@ -14,15 +14,12 @@ function mountApp() {
   return mount(App, { global: { plugins: [pinia] } });
 }
 
-function approve() {
-  useChartStore().exposure = {
-    verdict: 'ok',
-    highlightsClipped: false,
-    shadowsCrushed: false,
-    level18: 0.46,
-    level50: 0.74,
-    delta: 0,
-  };
+function tabs(wrapper: ReturnType<typeof mountApp>) {
+  return wrapper.findAll('[role="tab"]');
+}
+
+function stillFrame() {
+  return { width: 4, height: 3, data: new Float32Array(4 * 3 * 3) };
 }
 
 describe('App', () => {
@@ -30,56 +27,83 @@ describe('App', () => {
     installMediaStubs();
   });
 
-  it('zeigt Namen, Kennung und Schritt 1 mit Kamerasteuerung', () => {
+  it('zeigt Namen, Kennung und zunächst den Kamera-Tab', () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
-    expect(wrapper.text()).toContain('Kamera starten');
-    expect(wrapper.text()).toContain('Standbild');
+    expect(wrapper.text()).toContain('Kamera an');
     expect(wrapper.get('footer').text()).toBe(APP_ID);
     expect(APP_ID).toBe('avalax.cam_gradr');
   });
 
-  it('sperrt Schritt 2, bis Schritt 1 abgeschlossen ist', () => {
+  it('bietet drei Tabs, die alle frei anwählbar sind', () => {
     installFakeCamera();
     const wrapper = mountApp();
-    const [stepOne, stepTwo] = wrapper.findAll('nav button');
-    expect(stepOne?.attributes('aria-current')).toBe('step');
-    expect(stepTwo?.attributes('disabled')).toBeDefined();
-    expect(stepTwo?.attributes('aria-current')).toBeUndefined();
+    const all = tabs(wrapper);
+    expect(all.map((tab) => tab.text())).toEqual(['Kamera', 'Graukarten', 'Farbkarten']);
+    expect(all.map((tab) => tab.attributes('aria-selected'))).toEqual(['true', 'false', 'false']);
+    for (const tab of all) {
+      expect(tab.attributes('disabled')).toBeUndefined();
+    }
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
+    expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-camera');
   });
 
-  it('wechselt nach „Weiter“ zu Schritt 2 und wieder zurück', async () => {
+  it('wechselt ohne Bedingungen zwischen den Tabs', async () => {
     installFakeCamera();
     const wrapper = mountApp();
-    approve();
+    await tabs(wrapper)[2]?.trigger('click');
+    expect(wrapper.text()).toContain('Dieser Tab berechnet die Farbkorrektur');
+    expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
+    await tabs(wrapper)[1]?.trigger('click');
+    expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
+    await tabs(wrapper)[0]?.trigger('click');
+    expect(wrapper.text()).toContain('Kamera an');
+  });
+
+  it('wechselt mit „Weiter“ zu den Farbkarten', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    await tabs(wrapper)[1]?.trigger('click');
+    useChartStore().exposure = {
+      verdict: 'ok',
+      highlightsClipped: false,
+      shadowsCrushed: false,
+      level18: 0.46,
+      level50: 0.74,
+      delta: 0,
+    };
     await flushPromises();
     await wrapper
       .findAll('button')
       .find((b) => b.text().includes('Weiter'))
       ?.trigger('click');
-    const [stepOne, stepTwo] = wrapper.findAll('nav button');
-    expect(wrapper.text()).toContain('Schritt 2 berechnet die Farbkorrektur');
-    expect(stepTwo?.attributes('aria-current')).toBe('step');
-    expect(stepTwo?.attributes('disabled')).toBeUndefined();
-    await stepOne?.trigger('click');
-    expect(wrapper.text()).toContain('Kamera starten');
-    await stepTwo?.trigger('click');
-    expect(wrapper.text()).toContain('Schritt 2 berechnet die Farbkorrektur');
+    expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
   });
 
-  it('hält die Kamera beim Wechsel der Schritte am Laufen', async () => {
+  it('hält die Kamera beim Wechsel der Tabs am Laufen', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
-    approve();
-    await flushPromises();
-    await wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Weiter'))
-      ?.trigger('click');
+    await tabs(wrapper)[1]?.trigger('click');
+    await tabs(wrapper)[2]?.trigger('click');
     expect(api.close).not.toHaveBeenCalled();
     expect(useCameraStore().status).toBe('live');
+  });
+
+  it('behält das Standbild zwischen Kamera- und Kartentab, verwirft es aber zwischen Grau und Farbe', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    const camera = useCameraStore();
+    camera.still = stillFrame();
+    await tabs(wrapper)[1]?.trigger('click');
+    expect(camera.still).not.toBeNull();
+    await tabs(wrapper)[0]?.trigger('click');
+    expect(camera.still).not.toBeNull();
+    await tabs(wrapper)[2]?.trigger('click');
+    expect(camera.still).not.toBeNull();
+    await tabs(wrapper)[1]?.trigger('click');
+    expect(camera.still).toBeNull();
   });
 
   it('stoppt die Kamera beim Entfernen der App', async () => {

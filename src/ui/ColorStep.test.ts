@@ -3,7 +3,6 @@ import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
@@ -182,10 +181,9 @@ describe('ColorStep', () => {
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('nutzt für die Karten dieselbe Kamera wie Schritt 1', async () => {
+  it('zeigt keine eigenen Kameraoptionen (die liegen im Kamera-Tab)', () => {
     const wrapper = mount(ColorStep);
-    await useCameraStore().start();
-    await flushPromises();
-    expect(wrapper.text()).toContain('Aktive Auflösung');
+    expect(wrapper.text()).not.toContain('Aktive Auflösung');
+    expect(wrapper.text()).toContain('Die Kamera ist aus');
   });
 });

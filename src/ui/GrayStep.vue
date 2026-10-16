@@ -5,7 +5,6 @@ import { useChartStore } from '../chart/chart-store';
 import { grayLayout } from '../chart/layouts';
 
 import BrightnessScale from './BrightnessScale.vue';
-import CameraControls from './CameraControls.vue';
 import CardStage from './CardStage.vue';
 
 const emit = defineEmits<{ continue: [] }>();
@@ -21,15 +20,13 @@ const IDLE_TEXT =
 <template>
   <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
     <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-      <CameraControls />
-
       <p class="text-sm text-slate-700">
-        Schritt 1 stellt die Raumhelligkeit ein. Nimm ein Standbild der beiden Graukarten auf,
-        markiere darauf die Eckpunkte (die Reihenfolge der Klicks ist egal, die App ordnet sie
-        selbst) und ändere dann das Licht, bis die Marke der Skala neben dem Bild im umrahmten
-        Zielbereich steht (Details beim Überfahren der Skala). Danach kannst du zum Livebild
-        zurückkehren: Solange die Karten nicht bewegt werden, misst die App dort laufend mit
-        denselben Eckpunkten.
+        Dieser Tab stellt die Raumhelligkeit ein. Nimm im Tab „Kamera“ oder hier ein Standbild der
+        beiden Graukarten auf, markiere darauf die Eckpunkte (die Reihenfolge der Klicks ist egal,
+        die App ordnet sie selbst) und ändere dann das Licht, bis die Marke der Skala neben dem Bild
+        im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Danach kannst du zum
+        Livebild zurückkehren: Solange die Karten nicht bewegt werden, misst die App dort laufend
+        mit denselben Eckpunkten.
       </p>
     </aside>
 
@@ -51,7 +48,7 @@ const IDLE_TEXT =
             :disabled="exposure?.verdict !== 'ok'"
             @click="emit('continue')"
           >
-            Weiter zu Schritt 2
+            Weiter zu den Farbkarten
           </button>
         </template>
       </CardStage>

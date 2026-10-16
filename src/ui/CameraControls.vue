@@ -8,7 +8,6 @@ import { RESOLUTIONS } from '../camera/types';
 const store = useCameraStore();
 const { devices, selectedDeviceId, resolution, status, errorMessage, actual } = storeToRefs(store);
 
-const isLive = computed(() => status.value === 'live');
 const isStarting = computed(() => status.value === 'starting');
 
 function keyOf(r: { width: number; height: number }): string {
@@ -68,19 +67,6 @@ function onResolution(event: Event): void {
           </option>
         </select>
       </label>
-
-      <button
-        v-if="!isLive"
-        type="button"
-        class="rounded bg-slate-800 px-3 py-1 text-white disabled:opacity-50"
-        :disabled="isStarting"
-        @click="store.start()"
-      >
-        Kamera starten
-      </button>
-      <button v-else type="button" class="rounded border px-3 py-1" @click="store.stop()">
-        Kamera stoppen
-      </button>
     </div>
 
     <p v-if="errorMessage !== null" class="text-sm text-red-700" role="alert">

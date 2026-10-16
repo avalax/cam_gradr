@@ -51,10 +51,27 @@ export class AppPage {
     return this.page.getByRole('button', { name });
   }
 
+  // Wechselt in den Tab "Kamera", schaltet die Kamera an und wartet auf das Livebild.
   async startCamera(): Promise<void> {
-    await this.button('Kamera starten').click();
+    await this.openTab('Kamera');
+    await this.button('Kamera an').click();
     await expect(this.page.getByText('Aktive Auflösung')).toBeVisible();
     await expect(this.button('Standbild aufnehmen')).toBeEnabled();
+  }
+
+  // Kamera anschalten und in den Tab "Graukarten" wechseln (Standardweg für Schritt 1).
+  async startGrayStage(): Promise<void> {
+    await this.startCamera();
+    await this.openTab('Graukarten');
+    await expect(this.button('Standbild aufnehmen')).toBeEnabled();
+  }
+
+  async openTab(name: 'Kamera' | 'Graukarten' | 'Farbkarten'): Promise<void> {
+    await this.page.getByRole('tab', { name, exact: true }).click();
+    await expect(this.page.getByRole('tab', { name, exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   }
 
   async captureStill(): Promise<void> {
@@ -67,15 +84,15 @@ export class AppPage {
     await showScene(this.page, scene);
   }
 
-  // Schritt 1 komplett: Kamera starten, Graukarten aufnehmen, Eckpunkte setzen, weiter zu Schritt 2.
+  // Graukarten komplett: Kamera an, Graukarten aufnehmen, Eckpunkte setzen, weiter zu den Farbkarten.
   async completeStepOne(): Promise<void> {
     await this.open();
-    await this.startCamera();
+    await this.startGrayStage();
     await this.captureStill();
     await this.placeAllCorners();
     await this.expectVerdict('Die Raumhelligkeit passt');
-    await this.button('Weiter zu Schritt 2').click();
-    await expect(this.page.getByText('Schritt 2 berechnet die Farbkorrektur')).toBeVisible();
+    await this.button('Weiter zu den Farbkarten').click();
+    await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
   }
 
   // Importiert eine Referenzdatei über das Dateifeld in Schritt 2.

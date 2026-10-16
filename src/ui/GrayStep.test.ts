@@ -91,13 +91,13 @@ describe('GrayStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('enthält die Kamerasteuerung und fordert zum Start der Kamera auf', () => {
+  it('weist bei ausgeschalteter Kamera auf den Kamera-Tab hin', () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
-    expect(wrapper.text()).toContain('Kamera starten');
-    expect(wrapper.text()).toContain('Bitte zuerst die Kamera starten');
+    expect(wrapper.text()).toContain('Die Kamera ist aus');
     expect(wrapper.text()).toContain('ein Standbild aufnehmen');
     expect(wrapper.text()).toContain('Noch keine Messung');
+    expect(wrapper.find('select').exists()).toBe(false);
     expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeDefined();
   });
 
@@ -124,7 +124,7 @@ describe('GrayStep', () => {
   it('verbindet den laufenden Stream mit dem Video', async () => {
     const wrapper = await mountLive();
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
-    expect(wrapper.text()).not.toContain('Bitte zuerst die Kamera starten');
+    expect(wrapper.text()).not.toContain('Die Kamera ist aus');
   });
 
   it('begrenzt die Bildbreite, damit Bild und Knöpfe auf einen Bildschirm passen', async () => {

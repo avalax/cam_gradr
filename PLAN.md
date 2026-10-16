@@ -6,6 +6,8 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 ## 2. Ablauf (User Flow)
 
+**Aufbau der Oberfläche (Tabs):** Die App hat drei frei anwählbare Tabs, es gibt keine Sperren. **Kamera:** ein Umschalter „Kamera an / Kamera aus“. Bei „an“ stehen alle Kameraoptionen (Kamera, Auflösung, Hinweis zur Kamera-Automatik) und das Livebild mit „Standbild aufnehmen“ zur Verfügung. Bei „aus“ werden Optionen und Livebild durch die Ansicht des aufgenommenen Standbilds ersetzt. **Graukarten:** Eckpunkte setzen und Raumhelligkeit einstellen (Schritt 1). **Farbkarten:** Referenzwerte importieren, Eckpunkte setzen, Korrektur berechnen (Schritt 2). Das Standbild wandert zwischen dem Kamera-Tab und den Kartentabs mit; beim direkten Wechsel zwischen Grau- und Farbkarten wird es verworfen. Die folgenden Abschnitte nennen die beiden Kartentabs weiter „Schritt 1“ und „Schritt 2“.
+
 1. **Kamera wählen & starten** (`getUserMedia`, Geräteliste, Auflösung, Spiegelung aus); die Steuerung ist Teil von Schritt 1, es gibt keinen eigenen Kamera-Schritt.
 2. **Schritt 1 – Graustufenseite (Belichtung/Helligkeit)**
    - Die beiden Graukarten (18 % und 50 % Grau) werden gemeinsam vor die Kamera gehalten und sind zusammen im Bild.

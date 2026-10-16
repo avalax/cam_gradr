@@ -30,11 +30,15 @@ anpassen.
 
 ## So funktioniert es
 
-1. **Schritt 1: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
+Die App hat drei Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten** und **Farbkarten**.
+Im Tab Kamera schaltest du die Kamera an oder aus: bei „an“ siehst du alle Kameraoptionen und das
+Livebild, bei „aus“ das aufgenommene Standbild.
+
+1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
    aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
-2. **Schritt 2: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, bleiben lokal im
+2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, bleiben lokal im
    Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Live-Vorschau und Export.** Die Korrektur im Kamerabild prüfen und als LUT speichern (in Arbeit).

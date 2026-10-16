@@ -1,19 +1,20 @@
 import { expect, test } from './support/fixtures';
 
-// Akzeptanztests der User Story, Stand M2:
+// Akzeptanztests der User Story (Tab "Graukarten"):
 // "Als Anwender stelle ich mit den Graukarten die Raumhelligkeit ein, bis die Ampel grün ist."
 
-test.describe('Schritt 1: Raum passt', () => {
+test.describe('Graukarten: Raum passt', () => {
   test.use({ lighting: 'ok' });
 
-  test('Ampel wird grün, danach ist Schritt 2 erreichbar', async ({ app }) => {
+  test('Skala steht im Zielbereich, danach geht es mit den Farbkarten weiter', async ({ app }) => {
     const { page } = app;
     await app.open();
 
-    await expect(page.getByRole('note')).toContainText('Auto-Belichtung');
-    await expect(app.button('Schritt 2: Farbkarten')).toBeDisabled();
+    await expect(page.getByRole('tab', { name: 'Farbkarten' })).toBeEnabled();
 
     await app.startCamera();
+    await expect(page.getByRole('note')).toContainText('Auto-Belichtung');
+    await app.openTab('Graukarten');
     await app.captureStill();
     await expect(page.getByText('oben links der linke Graukarte (50 %)')).toBeVisible();
 
@@ -21,9 +22,12 @@ test.describe('Schritt 1: Raum passt', () => {
     await app.expectVerdict('Die Raumhelligkeit passt');
     await expect(app.details).toContainText('Lichter');
 
-    await app.button('Weiter zu Schritt 2').click();
-    await expect(page.getByText('Schritt 2 berechnet die Farbkorrektur')).toBeVisible();
-    await expect(app.button('Schritt 2: Farbkarten')).toBeEnabled();
+    await app.button('Weiter zu den Farbkarten').click();
+    await expect(page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Farbkarten' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   for (const [name, order] of [
@@ -33,7 +37,7 @@ test.describe('Schritt 1: Raum passt', () => {
   ] as const) {
     test(`Das Layout liegt richtig auf beiden Karten (Ecken ${name})`, async ({ app }) => {
       await app.open();
-      await app.startCamera();
+      await app.startGrayStage();
       await app.captureStill();
       await app.placeAllCorners(order);
 
@@ -54,7 +58,7 @@ test.describe('Schritt 1: Raum passt', () => {
 
   test('Die Reihenfolge der Eckpunkte ist egal', async ({ app }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
     await app.captureStill();
     // oben links, unten links, unten rechts, oben rechts (gegen den Uhrzeigersinn)
     await app.placeAllCorners([0, 3, 2, 1]);
@@ -65,7 +69,7 @@ test.describe('Schritt 1: Raum passt', () => {
     app,
   }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
 
@@ -81,7 +85,7 @@ test.describe('Schritt 1: Raum passt', () => {
   test('Das Kamerabild nutzt den Platz neben der Steuerung', async ({ app }) => {
     await app.page.setViewportSize({ width: 1600, height: 1200 });
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
 
     const box = await app.overlay.boundingBox();
     // Fensterbreite 1600 minus Ränder, Steuerspalte (21 rem) und Skala
@@ -94,26 +98,29 @@ test.describe('Schritt 1: Raum passt', () => {
     [1600, 700],
     [1920, 900],
   ] as const) {
-    test(`Bild und Knöpfe passen auf einen Bildschirm (${String(width)}×${String(height)})`, async ({
-      app,
-    }) => {
-      await app.page.setViewportSize({ width, height });
-      await app.open();
-      await app.startCamera();
+    for (const tab of ['Kamera', 'Graukarten'] as const) {
+      test(`Bild und Knöpfe passen im Tab ${tab} auf einen Bildschirm (${String(width)}×${String(height)})`, async ({
+        app,
+      }) => {
+        await app.page.setViewportSize({ width, height });
+        await app.open();
+        await app.startCamera();
+        await app.openTab(tab);
 
-      const capture = await app.button('Standbild aufnehmen').boundingBox();
-      expect(capture?.y).toBeGreaterThan(0);
-      expect((capture?.y ?? 0) + (capture?.height ?? 0)).toBeLessThanOrEqual(height);
-      const overflow = await app.page.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-      );
-      expect(overflow).toBeLessThanOrEqual(0);
-    });
+        const capture = await app.button('Standbild aufnehmen').boundingBox();
+        expect(capture?.y).toBeGreaterThan(0);
+        expect((capture?.y ?? 0) + (capture?.height ?? 0)).toBeLessThanOrEqual(height);
+        const overflow = await app.page.evaluate(
+          () => document.documentElement.scrollHeight - window.innerHeight,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+      });
+    }
   }
 
   test('Livebild misst mit denselben Eckpunkten weiter', async ({ app }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
     await app.expectVerdict('passt');
@@ -126,19 +133,19 @@ test.describe('Schritt 1: Raum passt', () => {
 
   test('Eckpunkte lassen sich zurücksetzen', async ({ app }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
 
     await app.button('Eckpunkte zurücksetzen').click();
     await expect(app.page.locator('svg circle')).toHaveCount(0);
     await app.expectVerdict('Noch keine Messung');
-    await expect(app.button('Weiter zu Schritt 2')).toBeDisabled();
+    await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 
   test('Eckpunkte setzt man nur auf dem Standbild', async ({ app }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
 
     const box = await app.overlay.boundingBox();
     expect(box).not.toBeNull();
@@ -150,32 +157,32 @@ test.describe('Schritt 1: Raum passt', () => {
   });
 });
 
-test.describe('Schritt 1: Raum zu dunkel', () => {
+test.describe('Graukarten: Raum zu dunkel', () => {
   test.use({ lighting: 'dark' });
 
   test('Ampel verlangt mehr Licht, Weiter bleibt gesperrt', async ({ app }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
 
     await app.expectVerdict('zu dunkel');
-    await expect(app.button('Weiter zu Schritt 2')).toBeDisabled();
+    await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
 
-test.describe('Schritt 1: Raum zu hell', () => {
+test.describe('Graukarten: Raum zu hell', () => {
   test.use({ lighting: 'bright' });
 
   test('Ampel verlangt weniger Licht und meldet geclippte Lichter', async ({ app }) => {
     await app.open();
-    await app.startCamera();
+    await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
 
     await app.expectVerdict('zu hell');
     await expect(app.details).toContainText('geclippt');
     await expect(app.page.getByTestId('scale-clipped-top')).toBeVisible();
-    await expect(app.button('Weiter zu Schritt 2')).toBeDisabled();
+    await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
