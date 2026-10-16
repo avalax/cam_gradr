@@ -8,7 +8,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 1. **Kamera wählen & starten** (`getUserMedia`, Geräteliste, Auflösung, Spiegelung aus).
 2. **Schritt 1 – Graustufenseite (Belichtung/Helligkeit)**
-   - Karte mit Graustufenseite vor die Kamera halten.
+   - Die beiden Graukarten (18 % und 50 % Grau) werden gemeinsam vor die Kamera gehalten und sind zusammen im Bild.
    - Zweck: Die Raumhelligkeit so einstellen, dass die Beleuchtung ideal für Schritt 2 ist. Dieser Schritt berechnet nichts für die LUT.
    - Live-Overlay: Graupatches werden wie in Schritt 2 über vier Eckpunkte ausgerichtet, pro Patch wird die gemessene Helligkeit live mit dem Sollbereich verglichen.
    - Sollbereich (konfigurierbar, im Profil hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), mittleres Grau im vorgegebenen Zielbereich. Die genauen Werte werden in M2 festgelegt und getestet.
@@ -16,7 +16,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
    - Warnhinweis, Auto-Belichtung/-Weißabgleich in der Kamera-Software zu fixieren (keine Constraint-Steuerung durch die App).
    - Ergebnis: Der Raum hat die ideale Helligkeit (Ampel grün, nichts geclippt), danach geht es zu Schritt 2.
 3. **Schritt 2 – Farbseite (Color Patches)**
-   - Karte umdrehen, Foto/Standbild aufnehmen (Mittelung über mehrere Frames zur Rauschreduktion).
+   - Die beiden Farbkarten (zusammen 48 Farbfelder) werden gemeinsam vor die Kamera gehalten; Foto/Standbild aufnehmen (Mittelung über mehrere Frames zur Rauschreduktion). Die Aufnahme erfolgt nacheinander zu Schritt 1: erst beide Graukarten, dann beide Farbkarten.
    - Patch-Ausrichtung: 4 Eckpunkte per Klick/Drag setzen (Homographie), später optional Auto-Erkennung.
    - Patch-Messung: Median im inneren ~50 % jedes Feldes (Ränder/Reflexe ausschließen).
 4. **Berechnung** der Korrektur und Qualitätsanzeige (ΔE2000 pro Patch, Mittel/Max, vorher/nachher).
@@ -26,8 +26,8 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 ## 3. Funktionale Anforderungen
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
-- Patch-Layout der Spyder Checkr Photo als Konfigurationsdatei (JSON): Anzahl, Raster, Positionen, Referenzwerte (Lab/sRGB). Das Layout (Raster, Reihenfolge, Neutralpatches) wird vor M3 gegen die reale Karte geprüft.
-  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur das Standard-ColorChecker-Profil (siehe Abschnitt 10).
+- Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das genaue Layout (Raster, Reihenfolge) wird vor M2 gegen die reale Karte geprüft.
+  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur ein Standardprofil (siehe Abschnitt 10). Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
   1. Weißabgleich (Gain je Kanal aus den Neutralpatches, in linearem RGB),
@@ -90,8 +90,8 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 
 0. **M0 – Repo & Pipeline:** Git, Conventional Commits, Husky/lint-staged/commitlint, vollständige Lint-Konfiguration (ESLint strict, Prettier, Stylelint, markdownlint, knip, TypeScript strict), Vitest mit 99-%-Schwellwert, CI-Workflow, release-please, Pages-Deployment, `CHANGELOG.md`.
 1. **M1 – Grundgerüst:** Vite/Vue/TS, Kamera-Livebild, Kamerawahl, Standbild.
-2. **M2 – Graustufen-Schritt:** Eckpunkt-Ausrichtung, Patch-Messung, Helligkeits-Ampel mit Clipping-Warnung, Warnhinweis zur Kamera-Automatik.
-3. **M3 – Farb-Schritt & Solver:** Referenzdaten, Fit, ΔE-Report, Vorher/Nachher.
+2. **M2 – Graustufen-Schritt:** Mehrkarten-Layout (JSON), Eckpunkt-Ausrichtung je Karte, Patch-Messung, Helligkeits-Ampel mit Clipping-Warnung, Warnhinweis zur Kamera-Automatik.
+3. **M3 – Farb-Schritt & Solver:** Referenzdaten und Profilimport, Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
 4. **M4 – LUT & Live-Preview:** WebGL2-Pipeline, Split-View, Stärke-Regler.
 5. **M5 – Export:** `.cube` (+ `.3dl`, Hald), Projekt speichern/laden.
 6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Lizenz, Feinschliff.
@@ -140,12 +140,14 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 
 ## 10. Entscheidungen (geklärt)
 
-- **Referenzwerte:** Zum Start Standard-ColorChecker-Werte als einziges Profil. Weitere Referenzsätze (z. B. echte Datacolor-Werte) lassen sich als Konfigurationsdateien (JSON/CSV) hinterlegen und in der App auswählen.
-- **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; die vom Portkeys-Modell unterstützte Größe (17³/33³) ist noch gegen das Handbuch zu prüfen, die Größe bleibt im Export wählbar.
+- **Referenzwerte:** Für die 48 Farbfelder sind keine Datacolor-Werte bekannt. Zum Start gibt es ein Standardprofil auf Basis der bekannten ColorChecker-Werte (24 Felder), nur für Felder, die sich sicher zuordnen lassen; Felder ohne Referenz bleiben deaktiviert. Echte Datacolor-Werte lassen sich später als JSON/CSV importieren und in der App auswählen. Der Nutzer recherchiert die offiziellen Werte bei Datacolor.
+- **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
 - **Webcam-Automatik:** Nur Warnhinweis. Auto-Belichtung/-Weißabgleich fixiert der Nutzer in der Kamera-Software, die App setzt keine Constraints.
 - **Farbraum:** sRGB / Rec.709 für Ein- und Ausgabe.
+- **Kartenaufnahme:** Immer sind beide Graukarten oder beide Farbkarten gleichzeitig sichtbar, die Aufnahme erfolgt nacheinander (Grau, dann Farbe); jede Karte bekommt eigene Eckpunkte.
+- **Ampelwerte Schritt 1:** Weiß unter ca. 95 %, Schwarz über ca. 3 %, Mittelgrau im Zielbereich; Werte sind im Profil hinterlegt und später in der App justierbar.
 
 ## 11. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
-- **Referenzgenauigkeit:** Standard-ColorChecker-Werte sind nur eine Näherung der Datacolor-Karte, bis ein genaues Profil hinterlegt wird.
+- **Referenzgenauigkeit:** Die Standardwerte sind nur eine Näherung der Datacolor-Karten, bis ein genaues Profil hinterlegt wird. Mit weniger als den 48 Feldern ist die Regression weniger robust (Regularisierung, einfachere Modelle wie 3×3-Matrix).
