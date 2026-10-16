@@ -23,6 +23,9 @@ const props = defineProps<{
   liveMeasure: boolean;
 }>();
 
+// Höhe (in rem) von allem außer dem Bild: Seitenkopf, Hinweiszeile, Knopfleiste und Abstände.
+const CHROME_REM = 12;
+
 const camera = useCameraStore();
 const { stream, actual, status, still } = storeToRefs(camera);
 const { points, nextSlot, ready, corners } = storeToRefs(props.store);
@@ -44,6 +47,12 @@ const handles = computed(() =>
         list.map((point, index) => ({ card: Number(card), index, point })),
       )
     : [],
+);
+// Bild und Knöpfe sollen zusammen auf einen Bildschirm passen: die Bildhöhe ist auf die Fensterhöhe
+// abzüglich Kopfzeile, Hinweiszeile und Knopfleiste begrenzt (Breite = Höhe × Seitenverhältnis).
+const imageMaxWidth = computed(
+  () =>
+    `calc((100vh - ${String(CHROME_REM)}rem) * ${String(size.value.width / size.value.height)})`,
 );
 const instruction = computed(() =>
   showStill.value ? instructionFor(nextSlot.value, props.cardNames) : props.idleText,
@@ -139,7 +148,7 @@ watch(actual, (next, previous) => {
     <p class="text-sm font-medium" aria-live="polite">{{ instruction }}</p>
 
     <div class="flex items-stretch gap-3">
-      <div class="relative min-w-0 flex-1">
+      <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
         <video
           v-show="!showStill"
           ref="video"

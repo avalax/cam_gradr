@@ -78,15 +78,38 @@ test.describe('Schritt 1: Raum passt', () => {
     await expect(app.details).toBeVisible();
   });
 
-  test('Das Kamerabild nutzt die verfügbare Breite', async ({ app }) => {
+  test('Das Kamerabild nutzt den Platz neben der Steuerung', async ({ app }) => {
     await app.page.setViewportSize({ width: 1600, height: 1200 });
     await app.open();
     await app.startCamera();
 
     const box = await app.overlay.boundingBox();
-    // Fensterbreite 1600 minus Seitenränder (64) und Skala samt Abstand (40)
-    expect(box?.width).toBeGreaterThan(1450);
+    // Fensterbreite 1600 minus Ränder, Steuerspalte (21 rem) und Skala
+    expect(box?.width).toBeGreaterThan(1000);
   });
+
+  for (const [width, height] of [
+    [1280, 720],
+    [1366, 768],
+    [1600, 700],
+    [1920, 900],
+  ] as const) {
+    test(`Bild und Knöpfe passen auf einen Bildschirm (${String(width)}×${String(height)})`, async ({
+      app,
+    }) => {
+      await app.page.setViewportSize({ width, height });
+      await app.open();
+      await app.startCamera();
+
+      const capture = await app.button('Standbild aufnehmen').boundingBox();
+      expect(capture?.y).toBeGreaterThan(0);
+      expect((capture?.y ?? 0) + (capture?.height ?? 0)).toBeLessThanOrEqual(height);
+      const overflow = await app.page.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+      );
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+  }
 
   test('Livebild misst mit denselben Eckpunkten weiter', async ({ app }) => {
     await app.open();

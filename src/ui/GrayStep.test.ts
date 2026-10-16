@@ -127,6 +127,12 @@ describe('GrayStep', () => {
     expect(wrapper.text()).not.toContain('Bitte zuerst die Kamera starten');
   });
 
+  it('begrenzt die Bildbreite, damit Bild und Knöpfe auf einen Bildschirm passen', async () => {
+    const wrapper = await mountLive();
+    const style = wrapper.get('div.relative.min-w-0').attributes('style');
+    expect(style).toContain('max-width: calc((100vh - 12rem) * 1.77');
+  });
+
   it('bindet Stream und vorhandenes Standbild beim Einhängen an', async () => {
     installFakeCamera();
     const camera = useCameraStore();
