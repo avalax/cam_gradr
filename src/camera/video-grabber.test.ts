@@ -57,13 +57,25 @@ describe('createVideoGrabber.nextFrame', () => {
     expect(requestVideoFrameCallback).toHaveBeenCalledTimes(1);
   });
 
+  it('gibt auch ohne gemeldetes Videobild nach kurzer Zeit weiter', async () => {
+    vi.useFakeTimers();
+    const requestVideoFrameCallback = vi.fn(() => 1);
+    const grabber = createVideoGrabber(fakeVideo({ requestVideoFrameCallback }), () => {
+      throw new Error('nicht benötigt');
+    });
+    const pending = grabber.nextFrame();
+    await vi.advanceTimersByTimeAsync(150);
+    await expect(pending).resolves.toBeUndefined();
+    expect(requestVideoFrameCallback).toHaveBeenCalledTimes(1);
+  });
+
   it('fällt auf einen Timer zurück', async () => {
     vi.useFakeTimers();
     const grabber = createVideoGrabber(fakeVideo(), () => {
       throw new Error('nicht benötigt');
     });
     const pending = grabber.nextFrame();
-    await vi.advanceTimersByTimeAsync(40);
+    await vi.advanceTimersByTimeAsync(150);
     await expect(pending).resolves.toBeUndefined();
   });
 });

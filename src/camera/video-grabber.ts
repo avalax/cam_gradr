@@ -12,7 +12,7 @@ export interface CanvasLike {
   getContext: (id: '2d', options?: CanvasRenderingContext2DSettings) => Context2DLike | null;
 }
 
-const FALLBACK_FRAME_MS = 33;
+const FALLBACK_FRAME_MS = 100;
 
 // Dünner Adapter: liest Frames aus einem <video>-Element über ein Canvas.
 export function createVideoGrabber(
@@ -37,14 +37,16 @@ export function createVideoGrabber(
       return context.getImageData(0, 0, canvas.width, canvas.height);
     },
 
+    // Wartet auf das nächste Videobild. Der Timer ist immer scharf: Ausgeblendete oder stehende
+    // Videos melden keinen neuen Frame, die Aufnahme darf dann nicht ewig hängen.
     nextFrame(): Promise<void> {
       return new Promise((resolve) => {
+        const timer = setTimeout(resolve, FALLBACK_FRAME_MS);
         if (typeof video.requestVideoFrameCallback === 'function') {
           video.requestVideoFrameCallback(() => {
+            clearTimeout(timer);
             resolve();
           });
-        } else {
-          setTimeout(resolve, FALLBACK_FRAME_MS);
         }
       });
     },

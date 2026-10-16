@@ -27,9 +27,17 @@ function installInPage({ scene, redrawMs, frameRate }: Options): void {
       context.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
   };
+  let tick = 0;
   draw();
-  // Regelmäßiges Neuzeichnen, damit der Stream laufend Bilder liefert.
-  setInterval(draw, redrawMs);
+  // Regelmäßig neu zeichnen und einen Pixel in der Ecke wechseln, damit der Stream laufend
+  // neue Bilder liefert (identischer Inhalt würde keinen neuen Frame erzeugen).
+  setInterval(() => {
+    draw();
+    tick += 1;
+    const level = 60 + (tick % 2) * 40;
+    context.fillStyle = `rgb(${String(level)}, ${String(level)}, ${String(level)})`;
+    context.fillRect(0, 0, 2, 2);
+  }, redrawMs);
 
   const devices = navigator.mediaDevices;
   devices.getUserMedia = () => Promise.resolve(canvas.captureStream(frameRate));

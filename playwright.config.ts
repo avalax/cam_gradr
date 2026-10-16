@@ -8,8 +8,12 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
   fullyParallel: true,
+  // Zwei Browser parallel belasten kleine Rechner und CI-Runner; weniger Worker halten die Tests stabil.
+  workers: isCi ? 2 : 4,
+  expect: { timeout: 10_000 },
   forbidOnly: isCi,
   retries: isCi ? 1 : 0,
+  timeout: 45_000,
   reporter: isCi ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${String(PORT)}`,
@@ -26,6 +30,7 @@ export default defineConfig({
     command: `npm run build && npm run preview -- --port ${String(PORT)} --strictPort`,
     url: `http://localhost:${String(PORT)}`,
     reuseExistingServer: !isCi,
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 5000 },
     timeout: 300_000,
   },
 });
