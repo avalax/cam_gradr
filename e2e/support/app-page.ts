@@ -25,11 +25,20 @@ function cornerOrder(clickOrder: readonly number[]): [number, number][] {
 // Seitenobjekt der App: kapselt Bedienung und Lesen der Oberfläche für die Akzeptanztests.
 export class AppPage {
   readonly overlay: Locator;
-  readonly badge: Locator;
+  readonly scale: Locator;
+  readonly details: Locator;
 
   constructor(readonly page: Page) {
     this.overlay = page.locator('svg.absolute');
-    this.badge = page.getByTestId('badge');
+    this.scale = page.getByTestId('brightness-scale');
+    this.details = page.getByTestId('scale-details');
+  }
+
+  // Fährt über die Helligkeitsskala und prüft den Text der Detailanzeige.
+  async expectVerdict(text: string | RegExp): Promise<void> {
+    await this.scale.hover();
+    await expect(this.details).toBeVisible();
+    await expect(this.details).toContainText(text);
   }
 
   async open(): Promise<void> {

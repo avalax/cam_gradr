@@ -214,7 +214,7 @@ describe('GrayStep', () => {
     expect(useChartStore().points[3]).toHaveLength(1);
   });
 
-  it('misst das Standbild, sobald alle Eckpunkte gesetzt sind, und zeigt die Ampel', async () => {
+  it('misst das Standbild, sobald alle Eckpunkte gesetzt sind, und zeigt die Skala', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
@@ -223,7 +223,7 @@ describe('GrayStep', () => {
     await flushPromises();
     expect(useChartStore().ready).toBe(true);
     expect(useChartStore().exposure).not.toBeNull();
-    expect(wrapper.find('[data-testid="badge"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="scale-marker"]').exists()).toBe(true);
     expect(wrapper.text()).toContain('18 %-Feld');
     expect(wrapper.findAll('polygon').length).toBeGreaterThan(10);
   });
@@ -305,7 +305,7 @@ describe('GrayStep', () => {
     expect(chart.points).toEqual({});
   });
 
-  it('meldet „continue“ nur bei grüner Ampel', async () => {
+  it('meldet „continue“ nur bei grüner Skala', async () => {
     const wrapper = await mountLive();
     const next = () => button(wrapper, 'Weiter');
     expect(next()?.attributes('disabled')).toBeDefined();

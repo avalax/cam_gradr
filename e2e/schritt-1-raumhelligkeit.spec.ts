@@ -18,8 +18,8 @@ test.describe('Schritt 1: Raum passt', () => {
     await expect(page.getByText('oben links der linke Graukarte (50 %)')).toBeVisible();
 
     await app.placeAllCorners();
-    await expect(app.badge).toContainText('Die Raumhelligkeit passt');
-    await expect(page.getByText('Lichter')).toBeVisible();
+    await app.expectVerdict('Die Raumhelligkeit passt');
+    await expect(app.details).toContainText('Lichter');
 
     await app.button('Weiter zu Schritt 2').click();
     await expect(page.getByText('Schritt 2 (Farbkarten')).toBeVisible();
@@ -58,7 +58,24 @@ test.describe('Schritt 1: Raum passt', () => {
     await app.captureStill();
     // oben links, unten links, unten rechts, oben rechts (gegen den Uhrzeigersinn)
     await app.placeAllCorners([0, 3, 2, 1]);
-    await expect(app.badge).toContainText('Die Raumhelligkeit passt');
+    await app.expectVerdict('Die Raumhelligkeit passt');
+  });
+
+  test('Details der Helligkeitsskala erscheinen nur beim Überfahren oder Fokussieren', async ({
+    app,
+  }) => {
+    await app.open();
+    await app.startCamera();
+    await app.captureStill();
+    await app.placeAllCorners();
+
+    await expect(app.details).toBeHidden();
+    await app.scale.hover();
+    await expect(app.details).toBeVisible();
+    await app.page.mouse.move(0, 0);
+    await expect(app.details).toBeHidden();
+    await app.scale.focus();
+    await expect(app.details).toBeVisible();
   });
 
   test('Livebild misst mit denselben Eckpunkten weiter', async ({ app }) => {
@@ -66,12 +83,12 @@ test.describe('Schritt 1: Raum passt', () => {
     await app.startCamera();
     await app.captureStill();
     await app.placeAllCorners();
-    await expect(app.badge).toContainText('passt');
+    await app.expectVerdict('passt');
 
     await app.button('Zurück zum Livebild').click();
     await expect(app.page.locator('video')).toBeVisible();
     await expect(app.button('Zurück zum Livebild')).toBeHidden();
-    await expect(app.badge).toContainText('passt');
+    await app.expectVerdict('passt');
   });
 
   test('Eckpunkte lassen sich zurücksetzen', async ({ app }) => {
@@ -82,7 +99,7 @@ test.describe('Schritt 1: Raum passt', () => {
 
     await app.button('Eckpunkte zurücksetzen').click();
     await expect(app.page.locator('svg circle')).toHaveCount(0);
-    await expect(app.page.getByText('Noch keine Messung')).toBeVisible();
+    await app.expectVerdict('Noch keine Messung');
     await expect(app.button('Weiter zu Schritt 2')).toBeDisabled();
   });
 
@@ -109,7 +126,7 @@ test.describe('Schritt 1: Raum zu dunkel', () => {
     await app.captureStill();
     await app.placeAllCorners();
 
-    await expect(app.badge).toContainText('zu dunkel');
+    await app.expectVerdict('zu dunkel');
     await expect(app.button('Weiter zu Schritt 2')).toBeDisabled();
   });
 });
@@ -123,8 +140,9 @@ test.describe('Schritt 1: Raum zu hell', () => {
     await app.captureStill();
     await app.placeAllCorners();
 
-    await expect(app.badge).toContainText('zu hell');
-    await expect(app.page.getByText('geclippt')).toBeVisible();
+    await app.expectVerdict('zu hell');
+    await expect(app.details).toContainText('geclippt');
+    await expect(app.page.getByTestId('scale-clipped-top')).toBeVisible();
     await expect(app.button('Weiter zu Schritt 2')).toBeDisabled();
   });
 });
