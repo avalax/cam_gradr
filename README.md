@@ -19,7 +19,7 @@ Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
 | M0          | Repo, Lint, Tests mit 99-%-Coverage-Gate, CI, Releases       | fertig |
 | M1          | Kamerawahl, Livebild, Standbild                              | fertig |
 | M2          | Schritt 1: Graukarten, Eckpunkte, Helligkeits-Ampel          | fertig |
-| M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung  | offen  |
+| M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung  | fertig |
 | M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher           | offen  |
 | M5          | Export als `.cube` (optional `.3dl`, Hald-PNG), Projektdatei | offen  |
 | M6          | Optionale automatische Kartenerkennung, Feinschliff          | offen  |
@@ -34,8 +34,9 @@ anpassen.
    aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
-2. **Schritt 2: Farbkorrektur.** Beide Farbkarten aufnehmen und daraus die Korrektur berechnen
-   (in Arbeit).
+2. **Schritt 2: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, bleiben lokal im
+   Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
+   den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Live-Vorschau und Export.** Die Korrektur im Kamerabild prüfen und als LUT speichern (in Arbeit).
 
 Wichtig für brauchbare Ergebnisse: Auto-Belichtung und Auto-Weißabgleich der Kamera vorher in der
@@ -44,10 +45,21 @@ Kamera-Software festsetzen. Die App kann das nicht selbst tun und zeigt dazu ein
 ## Referenzwerte der Karten
 
 Die Farbwerte der Karten gehören dem Hersteller und sind **nicht Teil dieses Repos**. Das Repo enthält
-nur das Layout (Position der Felder). Die Referenzwerte (Lab und sRGB je Feld) importierst du beim Start
-selbst aus einer eigenen Datei. Die App speichert sie ausschließlich lokal im Browser und sendet sie nie
-irgendwohin. Der Import ist für M3 vorgesehen. Ordner wie `local-data/` sind in der `.gitignore`
-ausgeschlossen, damit solche Dateien nicht versehentlich eingecheckt werden.
+nur das Layout (Position der Felder). Die Referenzwerte importierst du in Schritt 2 selbst aus einer
+eigenen Datei. Die App speichert sie ausschließlich lokal im Browser (IndexedDB) und sendet sie nie
+irgendwohin. Ordner wie `local-data/` sind in der `.gitignore` ausgeschlossen, damit solche Dateien
+nicht versehentlich eingecheckt werden.
+
+Unterstützte Formate (Lab-Werte mit Weißpunkt D50, je Feld-ID wie `1A` bis `6H`; Ziffer = Reihe,
+Buchstabe = Spalte, Karte 1 = Spalten A–D, Karte 2 = Spalten E–H):
+
+- **JSON:** `{ "format": "cam_gradr-reference/1", "name": "Mein Satz", "illuminant": "D50",
+"patches": [{ "id": "1A", "lab": [L, a, b] }, …] }`
+- **CSV:** Spalten `id; L; a; b` (Trennzeichen Semikolon, Tabulator oder Komma, optionale Kopfzeile,
+  bei Semikolon auch Dezimalkomma).
+
+Es müssen mindestens 12 Felder enthalten sein, davon mindestens 4 Neutralfelder (Grauleitern, Spalten
+D und E). Gespeicherte Sätze lassen sich in der App auswählen und löschen.
 
 ## Entwicklung
 

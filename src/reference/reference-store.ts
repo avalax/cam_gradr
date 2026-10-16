@@ -36,7 +36,13 @@ export const useReferenceStore = defineStore('reference', () => {
   // Lädt die lokal gespeicherten Referenzsätze und wählt den ersten, falls noch keiner gewählt ist.
   async function load(): Promise<void> {
     try {
-      sets.value = await storage().list();
+      const stored = await storage().list();
+      // Zwischenzeitlich importierte Sätze gehen vor (das Laden kann länger dauern als ein Import).
+      const local = sets.value;
+      sets.value = [
+        ...stored.filter((set) => local.every((existing) => existing.name !== set.name)),
+        ...local,
+      ];
       selectedName.value ??= sets.value[0]?.name ?? null;
     } catch {
       warning.value = 'Gespeicherte Referenzen konnten nicht geladen werden.';

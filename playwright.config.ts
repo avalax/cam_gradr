@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 const isCi = Boolean(process.env.CI);
+// Hoch genug, damit das Kamerabild samt Overlay ohne Scrollen klickbar ist.
+const tallViewport = { viewport: { width: 1280, height: 1100 } };
 
 // Akzeptanztests laufen gegen den Produktions-Build (vite preview) in Chrome und Firefox mit einer synthetischen Kamera.
 export default defineConfig({
@@ -17,14 +19,12 @@ export default defineConfig({
   reporter: isCi ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${String(PORT)}`,
-    // Hoch genug, damit das Kamerabild samt Overlay ohne Scrollen klickbar ist.
-    viewport: { width: 1280, height: 1100 },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'chrome', use: { ...devices['Desktop Chrome'], channel: 'chrome' } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'chrome', use: { ...devices['Desktop Chrome'], ...tallViewport, channel: 'chrome' } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'], ...tallViewport } },
   ],
   webServer: {
     command: `npm run build && npm run preview -- --port ${String(PORT)} --strictPort`,

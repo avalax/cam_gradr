@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 
 import { setReferenceStorage, useReferenceStore } from './reference-store';
+import type { ReferenceSet } from './reference';
 import { createIndexedDbStorage } from './storage';
 import type { ReferenceStorage } from './storage';
 
@@ -81,6 +82,31 @@ describe('useReferenceStore', () => {
     // Ein Wert, der keine Zeichenkette ist, löst einen TypeError aus der Dateiauswahl aus.
     await store.importFile('a.json', null as unknown as string);
     expect(store.error).not.toBeNull();
+  });
+
+  it('behält importierte Sätze, wenn das Laden erst danach fertig wird', async () => {
+    const slowList = Promise.withResolvers<ReferenceSet[]>();
+    setReferenceStorage({
+      list: () => slowList.promise,
+      save: () => Promise.resolve(),
+      remove: () => Promise.resolve(),
+    });
+    const store = useReferenceStore();
+    const loading = store.load();
+    await store.importFile('neu.json', dummyReferenceJson('Neu'));
+    slowList.resolve([
+      { name: 'Alt', patches: {} },
+      { name: 'Neu', patches: {} },
+    ]);
+    await loading;
+    expect(store.sets.map((set) => set.name).toSorted((a, b) => a.localeCompare(b))).toEqual([
+      'Alt',
+      'Neu',
+    ]);
+    expect(Object.keys(store.sets.find((set) => set.name === 'Neu')?.patches ?? {})).toHaveLength(
+      48,
+    );
+    expect(store.selectedName).toBe('Neu');
   });
 
   it('wählt nur vorhandene Sätze', async () => {
