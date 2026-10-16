@@ -10,7 +10,8 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 2. **Schritt 1 – Graustufenseite (Belichtung/Helligkeit)**
    - Karte mit Graustufenseite vor die Kamera halten.
    - Zweck: Die Raumhelligkeit so einstellen, dass die Beleuchtung ideal für Schritt 2 ist. Dieser Schritt berechnet nichts für die LUT.
-   - Live-Overlay: Graupatches werden ausgerichtet, pro Patch wird die gemessene Helligkeit live mit dem Sollbereich verglichen.
+   - Live-Overlay: Graupatches werden wie in Schritt 2 über vier Eckpunkte ausgerichtet, pro Patch wird die gemessene Helligkeit live mit dem Sollbereich verglichen.
+   - Sollbereich (konfigurierbar, im Profil hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), mittleres Grau im vorgegebenen Zielbereich. Die genauen Werte werden in M2 festgelegt und getestet.
    - Anzeige: Clipping-Warnung (Lichter/Schatten) und Ampel „Raum zu dunkel / passt / zu hell“ mit Hinweis, ob Licht heller oder dunkler gestellt werden soll. Kein Histogramm.
    - Warnhinweis, Auto-Belichtung/-Weißabgleich in der Kamera-Software zu fixieren (keine Constraint-Steuerung durch die App).
    - Ergebnis: Der Raum hat die ideale Helligkeit (Ampel grün, nichts geclippt), danach geht es zu Schritt 2.
@@ -25,14 +26,15 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 ## 3. Funktionale Anforderungen
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
-- Patch-Layout der Spyder Checkr Photo als Konfigurationsdatei (JSON): Anzahl, Raster, Positionen, Referenzwerte (Lab/sRGB).
-  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur das Standard-ColorChecker-Profil (siehe Abschnitt 8).
+- Patch-Layout der Spyder Checkr Photo als Konfigurationsdatei (JSON): Anzahl, Raster, Positionen, Referenzwerte (Lab/sRGB). Das Layout (Raster, Reihenfolge, Neutralpatches) wird vor M3 gegen die reale Karte geprüft.
+  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur das Standard-ColorChecker-Profil (siehe Abschnitt 10).
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
   1. Weißabgleich (Gain je Kanal aus den Neutralpatches, in linearem RGB),
   2. 1D-Tonkurve je Kanal (monotone Interpolation durch die Neutralpatches, z. B. PCHIP),
   3. 3×3-Farbmatrix bzw. Root-Polynomial-Regression (Least Squares, Regularisierung) auf den Farbpatches,
   4. Fehlermaß ΔE2000 (Lab, D50/D65 wählbar).
+- LUT-Erzeugung: Das Korrekturmodell wird auf ein reguläres Gitter (N³) in sRGB-Codewerten ausgewertet. Die Korrektur muss glatt und monoton bleiben, Ausgabewerte werden auf [0, 1] begrenzt; außerhalb des gemessenen Bereichs (Nähe Schwarz/Weiß) wird sanft zur Identität bzw. zu den Extremwerten überblendet, damit keine Artefakte entstehen. Die Stärke (0–100 %) mischt zwischen Identitäts-LUT und Korrektur.
 - Live-Preview in Echtzeit (≥ 30 fps) per GPU, mit 3D-LUT als Textur.
 - LUT-Export:
   - `.cube` (Standard, 17/33/65 Stützstellen wählbar) – primär,
@@ -57,7 +59,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 | Build/Dev | **Vite** + **TypeScript** (`create-vue`) | schnell, statisch deploybar |
 | UI | **Vue 3** (Composition API, `<script setup>`) | Komponenten für Wizard-Schritte, reaktive Zustände |
 | State | **Pinia** | offizieller Vue-Store, minimal |
-| Styling | **Tailwind CSS**  | zügiges, konsistentes UI |
+| Styling | **Tailwind CSS** | zügiges, konsistentes UI |
 | Kamera | Web APIs: `getUserMedia`, `requestVideoFrameCallback` | native |
 | Live-Preview / LUT-Anwendung | **WebGL2** (eigener schlanker Fragment-Shader, 3D-Textur, trilineare Interpolation) | Echtzeit, keine schwere Lib nötig |
 | Bildanalyse | Canvas 2D / `OffscreenCanvas` + eigener Code (Homographie, Median); optional **OpenCV.js** erst für Auto-Erkennung (Phase 2) | OpenCV.js ist ~8 MB, daher nicht im MVP |
@@ -92,7 +94,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 3. **M3 – Farb-Schritt & Solver:** Referenzdaten, Fit, ΔE-Report, Vorher/Nachher.
 4. **M4 – LUT & Live-Preview:** WebGL2-Pipeline, Split-View, Stärke-Regler.
 5. **M5 – Export:** `.cube` (+ `.3dl`, Hald), Projekt speichern/laden.
-6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), Tests, Doku, Deployment (statisch, z. B. GitHub Pages).
+6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Lizenz, Feinschliff.
 
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
@@ -103,6 +105,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
   - CI (siehe Abschnitt 9) prüft dasselbe bei jedem Push und Pull Request.
 - Testarten: Unit-Tests für Farbmathe, Solver, LUT-Erzeugung und Exporter (Referenzwerte, Randfälle); Komponententests mit **@vue/test-utils** und **happy-dom**; Kamera, WebGL und Canvas werden hinter dünnen Adaptern gemockt, damit die Logik testbar bleibt.
 - Ausschlüsse von der Coverage sind eng gefasst (z. B. reine Einstiegsdatei `main.ts`, Typdeklarationen) und in der Config begründet; Ausschlüsse werden nicht genutzt, um die Schwelle zu erreichen.
+- Grenzfall WebGL/Kamera: Die Adapter bleiben so dünn wie möglich und werden mit Fake-Objekten getestet, damit sie in der 99-%-Messung enthalten sind. Reiner Shader-Quelltext (GLSL) zählt nicht als Code; seine Mathematik wird zusätzlich als TypeScript-Referenzimplementierung getestet, die dieselbe Interpolation berechnet.
 - Coverage-Report (lcov + Text) wird in der CI als Artefakt abgelegt; ein Badge im README zeigt den Stand.
 
 ### Linting & statische Analyse (Best Practices)
@@ -121,7 +124,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
   - `eslint-config-prettier`, damit Formatierung nicht mit ESLint kollidiert.
 - **TypeScript:** `strict: true` plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `noUnusedLocals/Parameters`, `verbatimModuleSyntax`; Typecheck mit `vue-tsc --noEmit`.
 - **Prettier** für Formatierung (inkl. Vue, JSON, Markdown, YAML), CI prüft mit `prettier --check`.
-- **Weitere Linter:** `stylelint` (Tailwind-/CSS-Regeln), `markdownlint-cli2` (README, Plan, Changelog), `actionlint` (GitHub-Workflows), `commitlint` (Commit-Nachrichten), `knip` (ungenutzte Dateien, Exporte und Abhängigkeiten), `dependency-cruiser` oder `import-x/no-cycle` (Architekturregeln, z. B. `color/` darf nicht von `ui/` abhängen).
+- **Weitere Linter:** `stylelint` (Tailwind-/CSS-Regeln), `markdownlint-cli2` (README, Plan, Changelog), `actionlint` (GitHub-Workflows), `commitlint` (Commit-Nachrichten), `knip` (ungenutzte Dateien, Exporte und Abhängigkeiten), `import-x/no-cycle` und `import-x/no-restricted-paths` (Architekturregeln, z. B. `color/` darf nicht von `ui/` abhängen).
 - **Sicherheit & Abhängigkeiten:** `npm audit --audit-level=high` in der CI, Dependabot, CodeQL-Workflow für JavaScript/TypeScript.
 - **Editor-Konsistenz:** `.editorconfig`, empfohlene VS-Code-Extensions und Einstellungen (`.vscode/`), `.gitattributes` für einheitliche Zeilenenden.
 
@@ -131,7 +134,8 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), geprüft per **commitlint** (lokal über Husky und in der CI für Pull Requests).
 - **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier-Check → `vue-tsc` Typecheck → knip → `npm audit` → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Node-LTS-Version fest gepinnt.
 - **Changelog & Releases:** **release-please** (GitHub Action) liest die Conventional Commits, pflegt `CHANGELOG.md` und öffnet einen Release-PR mit Versionssprung (SemVer). Beim Mergen entstehen automatisch Git-Tag und GitHub Release mit Changelog-Eintrag und angehängtem Build-Artefakt (zip von `dist/`).
-- **Deployment:** Nach einem Release automatisch Veröffentlichung auf **GitHub Pages** (statischer Build, HTTPS ist für die Kamera nötig).
+  - Hinweis: Pull Requests, die mit dem Standard-`GITHUB_TOKEN` erstellt werden, lösen keine weiteren Workflows aus. Damit die CI auch auf dem Release-PR läuft, braucht release-please ein eigenes Token (Personal Access Token oder GitHub App), das der Nutzer als Repo-Secret hinterlegt.
+- **Deployment:** Nach einem Release automatisch Veröffentlichung auf **GitHub Pages** (statischer Build, HTTPS ist für die Kamera nötig). Der Deploy-Job läuft im selben Workflow wie release-please (Bedingung: Release wurde erstellt), weil ein Release, das mit dem `GITHUB_TOKEN` entsteht, keinen separaten Workflow startet.
 - **Zusätzlich:** Dependabot für npm und GitHub Actions; Branch-Protection auf `main` (CI muss grün sein) wird beim Anlegen des Repos vom Nutzer aktiviert.
 
 ## 10. Entscheidungen (geklärt)
