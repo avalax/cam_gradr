@@ -3,6 +3,7 @@ import { computed, ref, shallowRef } from 'vue';
 
 import grayLayoutJson from '../data/layouts/spyder-checkr-photo-gray.layout.json';
 
+import { sortCorners } from './corner-order';
 import { assessExposure } from './exposure';
 import type { ExposureResult } from './exposure';
 import { measureChart, exposureInput } from './measure';
@@ -47,7 +48,8 @@ export const useChartStore = defineStore('chart', () => {
     for (const card of GRAY_CARD_ORDER) {
       const [a, b, c, d] = placed(card);
       if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
-        result[card] = [a, b, c, d];
+        // Die Reihenfolge der Klicks ist egal: die Ecken werden selbst einsortiert.
+        result[card] = sortCorners([a, b, c, d]);
       }
     }
     return result;

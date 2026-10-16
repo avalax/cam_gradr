@@ -195,6 +195,16 @@ describe('GrayStep', () => {
     expect(useChartStore().points[3]).toEqual([{ x: 300, y: 200 }]);
   });
 
+  it('nummeriert die Eckpunkte pro Karte', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await clickAt(wrapper, 100, 100);
+    await clickAt(wrapper, 300, 100);
+    const labels = wrapper.findAll('[data-testid="corner-label"]').map((label) => label.text());
+    expect(labels).toEqual(['1', '2']);
+  });
+
   it('setzt beim Klick auf einen Eckpunkt keinen neuen', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);

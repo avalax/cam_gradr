@@ -5,14 +5,18 @@ import { CARD_PIXELS, HEIGHT, WIDTH } from './synthetic-cards';
 
 // Eckpunkte in der Klickreihenfolge der App: linke Karte (3), dann rechte Karte (4);
 // je Karte oben links, oben rechts, unten rechts, unten links.
-function cornerOrder(): [number, number][] {
+function cornerOrder(clickOrder: readonly number[]): [number, number][] {
   const corners: [number, number][] = [];
   for (const card of [CARD_PIXELS[3], CARD_PIXELS[4]]) {
-    corners.push(
+    const quad: [number, number][] = [
       [card.x, card.y],
       [card.x + card.w, card.y],
       [card.x + card.w, card.y + card.h],
       [card.x, card.y + card.h],
+    ];
+    // clickOrder: Indizes der Ecken (0 = oben links, 1 = oben rechts, 2 = unten rechts, 3 = unten links).
+    corners.push(
+      ...clickOrder.map((index) => quad.at(index)).filter((corner) => corner !== undefined),
     );
   }
   return corners;
@@ -47,13 +51,22 @@ export class AppPage {
     await expect(this.button('Zurück zum Livebild')).toBeVisible();
   }
 
-  // Klickt die acht Eckpunkte der beiden Karten auf dem Standbild.
-  async placeAllCorners(): Promise<void> {
+  // Umgebendes Rechteck eines Feldumrisses (z. B. 'G18', 'S4-0') in Bildschirmkoordinaten.
+  async shapeBox(key: string): Promise<{ x: number; y: number; width: number; height: number }> {
+    const box = await this.page.locator(`polygon[data-shape="${key}"]`).boundingBox();
+    if (box === null) {
+      throw new Error(`Umriss ${key} ist nicht sichtbar.`);
+    }
+    return box;
+  }
+
+  // Klickt die acht Eckpunkte der beiden Karten auf dem Standbild, je Karte in der gewünschten Reihenfolge.
+  async placeAllCorners(clickOrder: readonly number[] = [0, 1, 2, 3]): Promise<void> {
     const box = await this.overlay.boundingBox();
     if (box === null) {
       throw new Error('Das Overlay ist nicht sichtbar.');
     }
-    for (const [x, y] of cornerOrder()) {
+    for (const [x, y] of cornerOrder(clickOrder)) {
       await this.page.mouse.click(
         box.x + (x / WIDTH) * box.width,
         box.y + (y / HEIGHT) * box.height,

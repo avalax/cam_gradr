@@ -141,9 +141,10 @@ watch(actual, (next, previous) => {
 
     <p class="text-sm text-slate-700">
       Schritt 1 stellt die Raumhelligkeit ein. Nimm ein Standbild der beiden Graukarten auf,
-      markiere darauf die Eckpunkte und ändere dann das Licht, bis die Ampel grün wird. Danach
-      kannst du zum Livebild zurückkehren: Solange die Karten nicht bewegt werden, misst die App
-      dort laufend mit denselben Eckpunkten.
+      markiere darauf die Eckpunkte (die Reihenfolge der Klicks ist egal, die App ordnet sie selbst)
+      und ändere dann das Licht, bis die Ampel grün wird. Danach kannst du zum Livebild
+      zurückkehren: Solange die Karten nicht bewegt werden, misst die App dort laufend mit denselben
+      Eckpunkten.
     </p>
 
     <p v-if="!isLive" class="text-sm text-amber-800">Bitte zuerst die Kamera starten.</p>
@@ -178,6 +179,7 @@ watch(actual, (next, previous) => {
           v-for="shape in shapes"
           :key="shape.key"
           :points="shape.points"
+          :data-shape="shape.key"
           fill="none"
           :stroke="
             shape.kind === 'card' ? '#22d3ee' : shape.kind === 'large' ? '#facc15' : '#f472b6'
@@ -197,6 +199,22 @@ watch(actual, (next, previous) => {
           @pointerdown.stop="dragging = { card: handle.card, index: handle.index }"
           @click.stop
         />
+        <text
+          v-for="handle in handles"
+          :key="`label-${String(handle.card)}-${String(handle.index)}`"
+          :x="handle.point.x + 12"
+          :y="handle.point.y - 12"
+          fill="#ffffff"
+          stroke="#0f172a"
+          stroke-width="4"
+          paint-order="stroke"
+          font-size="22"
+          font-weight="bold"
+          pointer-events="none"
+          data-testid="corner-label"
+        >
+          {{ handle.index + 1 }}
+        </text>
       </svg>
     </div>
 

@@ -26,6 +26,41 @@ test.describe('Schritt 1: Raum passt', () => {
     await expect(app.button('Schritt 2: Farbkarten')).toBeEnabled();
   });
 
+  for (const [name, order] of [
+    ['im Uhrzeigersinn', [0, 1, 2, 3]],
+    ['gegen den Uhrzeigersinn', [0, 3, 2, 1]],
+    ['beginnend unten rechts', [2, 3, 0, 1]],
+  ] as const) {
+    test(`Das Layout liegt richtig auf beiden Karten (Ecken ${name})`, async ({ app }) => {
+      await app.open();
+      await app.startCamera();
+      await app.captureStill();
+      await app.placeAllCorners(order);
+
+      // Große Felder sind hochkant; links der Karte steht der Streifen bei der rechten Karte (18 %),
+      // rechts neben dem großen Feld bei der linken Karte (50 %).
+      const [g50, g18, s3, s4] = [
+        await app.shapeBox('G50'),
+        await app.shapeBox('G18'),
+        await app.shapeBox('S3-0'),
+        await app.shapeBox('S4-0'),
+      ];
+      expect(g50.height).toBeGreaterThan(g50.width);
+      expect(g18.height).toBeGreaterThan(g18.width);
+      expect(s3.x).toBeGreaterThan(g50.x);
+      expect(s4.x).toBeLessThan(g18.x);
+    });
+  }
+
+  test('Die Reihenfolge der Eckpunkte ist egal', async ({ app }) => {
+    await app.open();
+    await app.startCamera();
+    await app.captureStill();
+    // oben links, unten links, unten rechts, oben rechts (gegen den Uhrzeigersinn)
+    await app.placeAllCorners([0, 3, 2, 1]);
+    await expect(app.badge).toContainText('Die Raumhelligkeit passt');
+  });
+
   test('Livebild misst mit denselben Eckpunkten weiter', async ({ app }) => {
     await app.open();
     await app.startCamera();

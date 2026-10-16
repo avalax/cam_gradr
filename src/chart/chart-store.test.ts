@@ -60,6 +60,17 @@ describe('useChartStore', () => {
     expect(Object.keys(store.corners)).toEqual(['3', '4']);
   });
 
+  it('ordnet die Eckpunkte unabhängig von der Klickreihenfolge', () => {
+    const store = useChartStore();
+    // Klickreihenfolge: oben links, unten links, unten rechts, oben rechts.
+    store.addCorner(point(0, 0));
+    store.addCorner(point(0, 100));
+    store.addCorner(point(100, 100));
+    store.addCorner(point(100, 0));
+    expect(store.corners[3]).toEqual([point(0, 0), point(100, 0), point(100, 100), point(0, 100)]);
+    expect(store.points[3]?.[1]).toEqual(point(0, 100));
+  });
+
   it('liefert Eckpunkte erst für vollständige Karten', () => {
     const store = useChartStore();
     store.addCorner(point(1, 1));
