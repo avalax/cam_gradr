@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Webcam-LUT-Generator mit Datacolor Spyder Checkr Photo",
+  "license": "MIT",
   "engines": {
     "node": ">=22"
   },

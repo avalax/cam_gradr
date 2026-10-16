@@ -95,7 +95,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 3. **M3 – Farb-Schritt & Solver:** Referenz-Import (Validierung, lokale Speicherung), Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
 4. **M4 – LUT & Live-Preview:** WebGL2-Pipeline, Split-View, Stärke-Regler.
 5. **M5 – Export:** `.cube` (+ `.3dl`, Hald), Projekt speichern/laden.
-6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Lizenz, Feinschliff.
+6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Feinschliff.
 
 **Stand M0 (umgesetzt):** Projektgerüst, Lint-/Format-Konfiguration, Husky-Hooks (pre-commit, commit-msg, pre-push), Vitest mit 99-%-Gate, CI-, Release-, CodeQL-Workflows und Dependabot sind im Repo; `npm run verify` läuft lokal grün. TypeScript ist auf `~6.0` festgelegt, weil `typescript-eslint` TypeScript 7 noch nicht unterstützt. Noch zu tun durch den Nutzer: GitHub-Repo anlegen, `RELEASE_PLEASE_TOKEN` als Secret setzen, Pages auf „GitHub Actions“ stellen, Branch-Protection aktivieren.
 
@@ -151,6 +151,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 - **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
 - **Webcam-Automatik:** Nur Warnhinweis. Auto-Belichtung/-Weißabgleich fixiert der Nutzer in der Kamera-Software, die App setzt keine Constraints.
 - **Farbraum:** sRGB / Rec.709 für Ein- und Ausgabe.
+- **Lizenz:** MIT, Copyright (c) 2026 Avalax. Die Lizenz gilt für den Quellcode; Herstellerdaten (Referenzwerte der Karten) sind nicht Teil des Repos und fallen nicht darunter.
 - **Anwendungs-Kennung:** `avalax.cam_gradr` (Anbieter- und App-Name, Inhaber ist der Nutzer). Sie steht als Konstante `APP_ID` in `src/ui/app-info.ts`, wird in der App angezeigt und dient als Präfix für lokale Speicherschlüssel (z. B. IndexedDB-Name für die Referenz-Importe) und für Projektdateien.
 - **Kartenaufnahme:** Immer sind beide Graukarten oder beide Farbkarten gleichzeitig sichtbar, die Aufnahme erfolgt nacheinander (Grau, dann Farbe); jede Karte bekommt eigene Eckpunkte.
 - **Ampelwerte Schritt 1:** Weiß unter ca. 95 %, Schwarz über ca. 3 %, Mittelgrau im Zielbereich; Werte sind in der Konfiguration hinterlegt und später in der App justierbar.
