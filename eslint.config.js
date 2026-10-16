@@ -3,6 +3,7 @@ import vitest from '@vitest/eslint-plugin';
 import prettier from 'eslint-config-prettier';
 import importX from 'eslint-plugin-import-x';
 import promise from 'eslint-plugin-promise';
+import playwright from 'eslint-plugin-playwright';
 import regexp from 'eslint-plugin-regexp';
 import security from 'eslint-plugin-security';
 import unicorn from 'eslint-plugin-unicorn';
@@ -12,7 +13,17 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'local-data/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      'node_modules/**',
+      'local-data/**',
+      'playwright-report/**',
+      'test-results/**',
+      'e2e/.generated/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
@@ -89,6 +100,18 @@ export default tseslint.config(
       // In Tests sind verschachtelte Aufrufe und lokale Hilfsfunktionen üblich.
       'unicorn/max-nested-calls': 'off',
       'unicorn/consistent-function-scoping': 'off',
+    },
+  },
+  {
+    ...playwright.configs['flat/recommended'],
+    files: ['e2e/**/*.ts'],
+    rules: {
+      ...playwright.configs['flat/recommended'].rules,
+      // Seitenobjekte und Szenarien sind bewusst ausführlich und tief verschachtelt.
+      'unicorn/max-nested-calls': 'off',
+      'unicorn/no-top-level-side-effects': 'off',
+      'unicorn/prefer-module': 'off',
+      'security/detect-non-literal-fs-filename': 'off',
     },
   },
   {

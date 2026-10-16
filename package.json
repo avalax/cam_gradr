@@ -23,7 +23,10 @@
     "test:coverage": "vitest run --coverage",
     "audit": "npm audit --omit=dev --audit-level=high",
     "verify": "npm run lint && npm run lint:css && npm run lint:md && npm run format:check && npm run typecheck && npm run lint:knip && npm run test:coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
+    "verify:all": "npm run verify && npm run e2e"
   },
   "dependencies": {
     "pinia": "^4.1.0",
@@ -33,6 +36,7 @@
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.5",
     "@vitejs/plugin-vue": "^6.0.10",
@@ -43,6 +47,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-playwright": "^2.12.1",
     "eslint-plugin-promise": "^7.3.0",
     "eslint-plugin-regexp": "^3.3.1",
     "eslint-plugin-security": "^4.2.0",

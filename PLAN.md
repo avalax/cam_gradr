@@ -27,7 +27,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 ## 3. Funktionale Anforderungen
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
-- Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das Layout ist an Fotos einer SCK300 bestätigt (Details in Abschnitt 10 und in `src/data/profiles/`).
+- Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das Layout ist an Fotos einer SCK300 bestätigt (Details in Abschnitt 11 und in `src/data/profiles/`).
   - **Referenzwerte sind nicht Teil des Repos.** Das Repo enthält nur das Layout (Karte, Spalte, Reihe je Feld-ID). Die Farbwerte (Lab/sRGB je ID) importiert der Nutzer beim ersten Start als Datei (JSON oder CSV, Format `cam_gradr-reference/1`), z. B. aus eigenen Datacolor-Daten. Die App prüft die Datei (alle IDs vorhanden, Wertebereiche, Weißpunkt), speichert sie nur lokal im Browser (IndexedDB) und sendet sie nie irgendwohin. Ohne importierte Werte ist die Berechnung gesperrt; Schritt 1 funktioniert ohne Import. Mehrere importierte Datensätze sind in der App auswählbar. Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
@@ -50,7 +50,8 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 - Responsive, aber primär Desktop.
 - Testbare Farbmathematik (Unit-Tests mit Referenzwerten).
 - **Code-Coverage mindestens 99 %**, laufend verifiziert (lokal, per Hook und in der CI), siehe Abschnitt 8.
-- Automatisierte Pipeline auf GitHub mit Changelog und automatischen Releases, siehe Abschnitt 9.
+- Automatisierte Pipeline auf GitHub mit Changelog und automatischen Releases, siehe Abschnitt 10.
+- **Playwright-Akzeptanztests** für die komplette User Story, inkrementell mit jedem Meilenstein erweitert und mit denselben Qualitätsanforderungen wie die App, siehe Abschnitt 9.
 - Hinweise zu Grenzen: 8-bit-Webcam, Auto-Funktionen der Kamera, Beleuchtung (Flackern, Mischlicht), Reflexionen auf der Karte.
 
 ## 5. Technologie-Stack
@@ -68,8 +69,9 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 | Farbmodell                   | eigene Module (sRGB↔XYZ↔Lab, Bradford, ΔE2000), gegen **colorjs.io** in Tests verifiziert                                    | nachprüfbar                                        |
 | Charts                       | **uPlot** oder SVG (Tonkurve, ΔE-Balken)                                                                                     | leichtgewichtig                                    |
 | Tests                        | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (Coverage ≥ 99 %)                                           | passt zu Vite                                      |
+| Akzeptanztests               | **Playwright** (`@playwright/test`, Chromium, synthetische Kamera per Y4M-Video), `eslint-plugin-playwright`                 | echter Browser, ganze User Story                   |
 | Lint/Format                  | ESLint 9 (strict, typbewusst, Vue, a11y, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | siehe Abschnitt 8                                  |
-| CI/CD                        | **GitHub Actions**, release-please, GitHub Pages, Dependabot                                                                 | siehe Abschnitt 9                                  |
+| CI/CD                        | **GitHub Actions**, release-please, GitHub Pages, Dependabot                                                                 | siehe Abschnitt 10                                 |
 
 ## 6. Architektur / Modulstruktur
 
@@ -89,7 +91,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 
 ## 7. Meilensteine
 
-0. **M0 – Repo & Pipeline:** Git, Conventional Commits, Husky/lint-staged/commitlint, vollständige Lint-Konfiguration (ESLint strict, Prettier, Stylelint, markdownlint, knip, TypeScript strict), Vitest mit 99-%-Schwellwert, CI-Workflow, release-please, Pages-Deployment, `CHANGELOG.md`.
+0. **M0 – Repo & Pipeline** (inklusive Playwright-Setup und Job `acceptance`)**:** Git, Conventional Commits, Husky/lint-staged/commitlint, vollständige Lint-Konfiguration (ESLint strict, Prettier, Stylelint, markdownlint, knip, TypeScript strict), Vitest mit 99-%-Schwellwert, CI-Workflow, release-please, Pages-Deployment, `CHANGELOG.md`.
 1. **M1 – Grundgerüst:** Vite/Vue/TS, Kamera-Livebild, Kamerawahl, Standbild.
 2. **M2 – Graustufen-Schritt:** Mehrkarten-Layout (JSON), Eckpunkt-Ausrichtung je Karte, Patch-Messung, Helligkeits-Ampel mit Clipping-Warnung, Warnhinweis zur Kamera-Automatik.
 3. **M3 – Farb-Schritt & Solver:** Referenz-Import (Validierung, lokale Speicherung), Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
@@ -109,7 +111,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 - Die Coverage wird bei der Entwicklung laufend verifiziert, nicht erst am Ende:
   - jeder Meilenstein gilt erst als fertig, wenn `npm run test:coverage` die 99 % hält,
   - lokaler Hook (Husky) führt vor `git push` Lint, Typecheck und Coverage-Check aus,
-  - CI (siehe Abschnitt 9) prüft dasselbe bei jedem Push und Pull Request.
+  - CI (siehe Abschnitt 10) prüft dasselbe bei jedem Push und Pull Request.
 - Testarten: Unit-Tests für Farbmathe, Solver, LUT-Erzeugung und Exporter (Referenzwerte, Randfälle); Komponententests mit **@vue/test-utils** und **happy-dom**; Testbilder werden synthetisch im Test erzeugt, es werden keine Fotos ins Repo eingecheckt (Bilddateien sind in `.gitignore` ausgeschlossen); Kamera, WebGL und Canvas werden hinter dünnen Adaptern gemockt, damit die Logik testbar bleibt.
 - Ausschlüsse von der Coverage sind eng gefasst (z. B. reine Einstiegsdatei `main.ts`, Typdeklarationen) und in der Config begründet; Ausschlüsse werden nicht genutzt, um die Schwelle zu erreichen.
 - Grenzfall WebGL/Kamera: Die Adapter bleiben so dünn wie möglich und werden mit Fake-Objekten getestet, damit sie in der 99-%-Messung enthalten sind. Reiner Shader-Quelltext (GLSL) zählt nicht als Code; seine Mathematik wird zusätzlich als TypeScript-Referenzimplementierung getestet, die dieselbe Interpolation berechnet.
@@ -135,17 +137,30 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 - **Sicherheit & Abhängigkeiten:** `npm audit --omit=dev --audit-level=high` in der CI (nur Produktionsabhängigkeiten; bekannte Hinweise in reinen Dev-Tools wie markdownlint-cli2 werden über Dependabot nachgezogen), Dependabot, CodeQL-Workflow für JavaScript/TypeScript.
 - **Editor-Konsistenz:** `.editorconfig`, empfohlene VS-Code-Extensions und Einstellungen (`.vscode/`), `.gitattributes` für einheitliche Zeilenenden.
 
-## 9. CI/CD & Releases (GitHub)
+## 9. Akzeptanztests (Playwright)
+
+Die komplette User Story wird mit **Playwright** durchgängig im echten Browser getestet. Die Tests wachsen **inkrementell mit den Meilensteinen**: Zu jedem Meilenstein kommen die Szenarien der neuen Schritte hinzu, bestehende Szenarien bleiben und müssen grün bleiben. Ein Meilenstein gilt erst als fertig, wenn seine Szenarien grün sind.
+
+- **Gegenstand:** die Produktions-Build-Version der App (`vite preview`), bedient wie ein Anwender (Klicks, Anzeigen, Texte), ohne Kenntnis der Interna.
+- **Synthetische Kamera:** Chromium läuft mit `--use-file-for-fake-video-capture`. Die Testvideos (Y4M) werden vor dem Lauf aus dem Layout erzeugt (`e2e/support/synthetic-cards.ts`) und nicht eingecheckt; es werden keine Fotos benötigt. Es gibt Beleuchtungsvarianten (`ok`, `dark`, `bright`), die pro Szenario gewählt werden. Spätere Meilensteine ergänzen Farbkarten-Videos mit bekannter Verzerrung und Dummy-Referenzwerte.
+- **Struktur:** `e2e/support/` (Seitenobjekt `AppPage`, Fixtures, Videogenerator), `e2e/*.spec.ts` (ein File pro Abschnitt der Story, Szenarien auf Deutsch), `playwright.config.ts`.
+- **Stand M2:** `schritt-1-raumhelligkeit.spec.ts` mit 6 Szenarien (Raum passt, Livebild-Messung, Zurücksetzen, Eckpunkte nur auf dem Standbild, zu dunkel, zu hell).
+- **Geplante Erweiterung:** M3 Referenz-Import und Farbkarten, M4 Live-Vorschau und Stärke-Regler, M5 Export (heruntergeladene `.cube`-Datei wird geprüft), zum Schluss ein durchgehendes Szenario „vom Kamerastart bis zur LUT-Datei“.
+- **Qualitätsanforderungen wie bei der App:** gleiche Lint-Regeln (ESLint strikt plus `eslint-plugin-playwright`), Prettier, strikte TypeScript-Prüfung (`e2e/` ist Teil von `vue-tsc`), knip, Commit-Konventionen und Hooks. In der CI läuft ein eigener Job `acceptance` (Pflichtprüfung für `main`) mit Browser-Installation und Report-Artefakt bei Fehlern.
+- **Coverage-Anforderung:** Die 99 % Codeabdeckung gelten für die Unit-Tests. Für die Akzeptanztests ist die sinnvolle Entsprechung die **Abdeckung der User Story**: Jeder Schritt und jeder Fehlerfall der Story hat mindestens ein Szenario, und ein Szenario darf nur mit Begründung übersprungen werden (`test.fixme`/`skip` sind verboten, `forbidOnly` ist in der CI aktiv). Eine messbare Browser-Code-Coverage der E2E-Läufe ist nicht vorgesehen.
+- **Lokal:** `npm run e2e:install` (einmalig), `npm run e2e`; `npm run verify:all` führt Unit- und Akzeptanztests zusammen aus. Der pre-push-Hook startet nur `verify`, damit Pushes schnell bleiben; die Akzeptanztests laufen verbindlich in der CI.
+
+## 10. CI/CD & Releases (GitHub)
 
 - **Repository:** GitHub, Standardbranch `main`. Der lokale Git-Verlauf besteht bereits (Plan, Layout-Dateien); danach legt der Nutzer das GitHub-Repo an und pusht.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), geprüft per **commitlint** (lokal über Husky und in der CI für Pull Requests).
-- **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier-Check → `vue-tsc` Typecheck → knip → `npm audit` → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Node-LTS-Version fest gepinnt.
+- **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier-Check → `vue-tsc` Typecheck → knip → `npm audit` → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Parallel dazu läuft der Job `acceptance` mit den Playwright-Akzeptanztests (Abschnitt 9). Node-LTS-Version fest gepinnt.
 - **Changelog & Releases:** **release-please** (GitHub Action) liest die Conventional Commits, pflegt `CHANGELOG.md` und öffnet einen Release-PR mit Versionssprung (SemVer). Beim Mergen entstehen automatisch Git-Tag und GitHub Release mit Changelog-Eintrag und angehängtem Build-Artefakt (zip von `dist/`).
   - Hinweis: Pull Requests, die mit dem Standard-`GITHUB_TOKEN` erstellt werden, lösen keine weiteren Workflows aus. Damit die CI auch auf dem Release-PR läuft, braucht release-please ein eigenes Token (Personal Access Token oder GitHub App), das der Nutzer als Repo-Secret hinterlegt.
 - **Deployment:** Nach einem Release automatisch Veröffentlichung auf **GitHub Pages** (statischer Build, HTTPS ist für die Kamera nötig). Der Deploy-Job läuft im selben Workflow wie release-please (Bedingung: Release wurde erstellt), weil ein Release, das mit dem `GITHUB_TOKEN` entsteht, keinen separaten Workflow startet.
 - **Zusätzlich:** Dependabot für npm und GitHub Actions; Branch-Protection auf `main` (CI muss grün sein) wird beim Anlegen des Repos vom Nutzer aktiviert.
 
-## 10. Entscheidungen (geklärt)
+## 11. Entscheidungen (geklärt)
 
 - **Referenzwerte:** Werden bewusst nicht ins Repo eingecheckt und nicht ausgeliefert, damit keine Urheberrechts- oder Referenzverletzung entstehen kann. Die App importiert sie beim Start aus einer vom Nutzer bereitgestellten Datei und hält sie nur lokal im Browser. Das Repo enthält nur das selbst aus Fotos abgeleitete Layout (`src/data/layouts/`, ohne Farbwerte und ohne Herstellerbezeichnungen). Die Importdatei des Nutzers liegt lokal im Ordner `local-data/`, der in `.gitignore` steht. Tests nutzen ausschließlich synthetische Dummy-Referenzen.
 - **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
@@ -156,9 +171,9 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 - **Kartenaufnahme:** Immer sind beide Graukarten oder beide Farbkarten gleichzeitig sichtbar, die Aufnahme erfolgt nacheinander (Grau, dann Farbe); jede Karte bekommt eigene Eckpunkte.
 - **Ampelwerte Schritt 1:** Weiß unter ca. 95 %, Schwarz über ca. 3 %, Mittelgrau im Zielbereich; Werte sind in der Konfiguration hinterlegt und später in der App justierbar.
 
-## 11. Risiken
+## 12. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
 - **Referenzgenauigkeit:** Die Qualität der LUT hängt von den importierten Referenzwerten ab; inoffizielle oder abgetippte Quellen können Fehler enthalten, und Abweichungen zur realen Karte (Charge, Alterung) sind möglich. Die App validiert nur Format und Wertebereiche, nicht die Richtigkeit.
 - **Graukarten:** Die Zuordnung 18 % / 50 % beruht nur auf dem Helligkeitsunterschied (auf den Karten ist keine Beschriftung sichtbar); für die 12 Streifenfelder gibt es keine Referenzwerte, die großen Felder sind nominal aus der Reflexion berechnet. Die Zuordnung ist per Konfiguration umkehrbar.
-- **Urheberrecht:** Geklärt durch den Import-Ansatz (siehe Abschnitt 10). Der lokale Git-Verlauf wurde bereinigt, sodass die Referenzwerte auch in früheren Commits nicht mehr enthalten sind (geprüft vor dem ersten Push).
+- **Urheberrecht:** Geklärt durch den Import-Ansatz (siehe Abschnitt 11). Der lokale Git-Verlauf wurde bereinigt, sodass die Referenzwerte auch in früheren Commits nicht mehr enthalten sind (geprüft vor dem ersten Push).
