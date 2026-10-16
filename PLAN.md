@@ -54,25 +54,25 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 ## 5. Technologie-Stack
 
-| Bereich | Wahl | Begründung |
-|---|---|---|
-| Build/Dev | **Vite** + **TypeScript** (`create-vue`) | schnell, statisch deploybar |
-| UI | **Vue 3** (Composition API, `<script setup>`) | Komponenten für Wizard-Schritte, reaktive Zustände |
-| State | **Pinia** | offizieller Vue-Store, minimal |
-| Styling | **Tailwind CSS** | zügiges, konsistentes UI |
-| Kamera | Web APIs: `getUserMedia`, `requestVideoFrameCallback` | native |
-| Live-Preview / LUT-Anwendung | **WebGL2** (eigener schlanker Fragment-Shader, 3D-Textur, trilineare Interpolation) | Echtzeit, keine schwere Lib nötig |
-| Bildanalyse | Canvas 2D / `OffscreenCanvas` + eigener Code (Homographie, Median); optional **OpenCV.js** erst für Auto-Erkennung (Phase 2) | OpenCV.js ist ~8 MB, daher nicht im MVP |
-| Mathe | **ml-matrix** (Least Squares / SVD) | kleine Lib für Regression |
-| Farbmodell | eigene Module (sRGB↔XYZ↔Lab, Bradford, ΔE2000), gegen **colorjs.io** in Tests verifiziert | nachprüfbar |
-| Charts | **uPlot** oder SVG (Tonkurve, ΔE-Balken) | leichtgewichtig |
-| Tests | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (Coverage ≥ 99 %) | passt zu Vite |
-| Lint/Format | ESLint 9 (strict, typbewusst, Vue, a11y, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | siehe Abschnitt 8 |
-| CI/CD | **GitHub Actions**, release-please, GitHub Pages, Dependabot | siehe Abschnitt 9 |
+| Bereich                      | Wahl                                                                                                                         | Begründung                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Build/Dev                    | **Vite** + **TypeScript** (`create-vue`)                                                                                     | schnell, statisch deploybar                        |
+| UI                           | **Vue 3** (Composition API, `<script setup>`)                                                                                | Komponenten für Wizard-Schritte, reaktive Zustände |
+| State                        | **Pinia**                                                                                                                    | offizieller Vue-Store, minimal                     |
+| Styling                      | **Tailwind CSS**                                                                                                             | zügiges, konsistentes UI                           |
+| Kamera                       | Web APIs: `getUserMedia`, `requestVideoFrameCallback`                                                                        | native                                             |
+| Live-Preview / LUT-Anwendung | **WebGL2** (eigener schlanker Fragment-Shader, 3D-Textur, trilineare Interpolation)                                          | Echtzeit, keine schwere Lib nötig                  |
+| Bildanalyse                  | Canvas 2D / `OffscreenCanvas` + eigener Code (Homographie, Median); optional **OpenCV.js** erst für Auto-Erkennung (Phase 2) | OpenCV.js ist ~8 MB, daher nicht im MVP            |
+| Mathe                        | **ml-matrix** (Least Squares / SVD)                                                                                          | kleine Lib für Regression                          |
+| Farbmodell                   | eigene Module (sRGB↔XYZ↔Lab, Bradford, ΔE2000), gegen **colorjs.io** in Tests verifiziert                                    | nachprüfbar                                        |
+| Charts                       | **uPlot** oder SVG (Tonkurve, ΔE-Balken)                                                                                     | leichtgewichtig                                    |
+| Tests                        | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (Coverage ≥ 99 %)                                           | passt zu Vite                                      |
+| Lint/Format                  | ESLint 9 (strict, typbewusst, Vue, a11y, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | siehe Abschnitt 8                                  |
+| CI/CD                        | **GitHub Actions**, release-please, GitHub Pages, Dependabot                                                                 | siehe Abschnitt 9                                  |
 
 ## 6. Architektur / Modulstruktur
 
-```
+```text
 src/
   camera/        Kamerazugriff, Frame-Capture, Mittelung
   chart/         Patch-Layout (JSON), Homographie, Patch-Sampling
@@ -96,6 +96,8 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 5. **M5 – Export:** `.cube` (+ `.3dl`, Hald), Projekt speichern/laden.
 6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Lizenz, Feinschliff.
 
+**Stand M0 (umgesetzt):** Projektgerüst, Lint-/Format-Konfiguration, Husky-Hooks (pre-commit, commit-msg, pre-push), Vitest mit 99-%-Gate, CI-, Release-, CodeQL-Workflows und Dependabot sind im Repo; `npm run verify` läuft lokal grün. TypeScript ist auf `~6.0` festgelegt, weil `typescript-eslint` TypeScript 7 noch nicht unterstützt. Noch zu tun durch den Nutzer: GitHub-Repo anlegen, `RELEASE_PLEASE_TOKEN` als Secret setzen, Pages auf „GitHub Actions“ stellen, Branch-Protection aktivieren.
+
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
 - **Vitest** mit `@vitest/coverage-v8`; Schwellwerte in `vitest.config.ts`: `statements`, `branches`, `functions`, `lines` jeweils **99 %**. Unterschreitung lässt den Testlauf fehlschlagen.
@@ -118,14 +120,14 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
   - `eslint-plugin-vuejs-accessibility` (a11y im Template),
   - `eslint-plugin-import-x` (Importreihenfolge, keine Zyklen, keine doppelten Imports),
   - `eslint-plugin-unicorn` (Code-Qualität) und die ESLint-Kernregel `complexity` (Komplexitätsgrenze),
-  - `eslint-plugin-vitest` (Testregeln, keine fokussierten/übersprungenen Tests),
+  - `@vitest/eslint-plugin` (Testregeln, keine fokussierten/übersprungenen Tests),
   - `eslint-plugin-regexp` und `eslint-plugin-promise`,
   - `eslint-plugin-security` für sicherheitsrelevante Muster,
   - `eslint-config-prettier`, damit Formatierung nicht mit ESLint kollidiert.
 - **TypeScript:** `strict: true` plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `noUnusedLocals/Parameters`, `verbatimModuleSyntax`; Typecheck mit `vue-tsc --noEmit`.
 - **Prettier** für Formatierung (inkl. Vue, JSON, Markdown, YAML), CI prüft mit `prettier --check`.
 - **Weitere Linter:** `stylelint` (Tailwind-/CSS-Regeln), `markdownlint-cli2` (README, Plan, Changelog), `actionlint` (GitHub-Workflows), `commitlint` (Commit-Nachrichten), `knip` (ungenutzte Dateien, Exporte und Abhängigkeiten), `import-x/no-cycle` und `import-x/no-restricted-paths` (Architekturregeln, z. B. `color/` darf nicht von `ui/` abhängen).
-- **Sicherheit & Abhängigkeiten:** `npm audit --audit-level=high` in der CI, Dependabot, CodeQL-Workflow für JavaScript/TypeScript.
+- **Sicherheit & Abhängigkeiten:** `npm audit --omit=dev --audit-level=high` in der CI (nur Produktionsabhängigkeiten; bekannte Hinweise in reinen Dev-Tools wie markdownlint-cli2 werden über Dependabot nachgezogen), Dependabot, CodeQL-Workflow für JavaScript/TypeScript.
 - **Editor-Konsistenz:** `.editorconfig`, empfohlene VS-Code-Extensions und Einstellungen (`.vscode/`), `.gitattributes` für einheitliche Zeilenenden.
 
 ## 9. CI/CD & Releases (GitHub)
