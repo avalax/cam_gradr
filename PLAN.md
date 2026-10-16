@@ -65,7 +65,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 | Farbmodell | eigene Module (sRGB↔XYZ↔Lab, Bradford, ΔE2000), gegen **colorjs.io** in Tests verifiziert | nachprüfbar |
 | Charts | **uPlot** oder SVG (Tonkurve, ΔE-Balken) | leichtgewichtig |
 | Tests | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (Coverage ≥ 99 %) | passt zu Vite |
-| Lint/Format | ESLint 9 (strict, typbewusst, Vue, a11y, Sonar, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | siehe Abschnitt 8 |
+| Lint/Format | ESLint 9 (strict, typbewusst, Vue, a11y, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | siehe Abschnitt 8 |
 | CI/CD | **GitHub Actions**, release-please, GitHub Pages, Dependabot | siehe Abschnitt 9 |
 
 ## 6. Architektur / Modulstruktur
@@ -114,7 +114,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
   - `eslint-plugin-vue` mit `flat/recommended` (Vue 3) plus Regeln für `<script setup>`, Typ-basierte Props/Emits und Template-Barrierefreiheit,
   - `eslint-plugin-vuejs-accessibility` (a11y im Template),
   - `eslint-plugin-import-x` (Importreihenfolge, keine Zyklen, keine doppelten Imports),
-  - `eslint-plugin-unicorn` und `eslint-plugin-sonarjs` (Code-Qualität, Komplexität, Duplikate),
+  - `eslint-plugin-unicorn` (Code-Qualität) und die ESLint-Kernregel `complexity` (Komplexitätsgrenze),
   - `eslint-plugin-vitest` (Testregeln, keine fokussierten/übersprungenen Tests),
   - `eslint-plugin-regexp` und `eslint-plugin-promise`,
   - `eslint-plugin-security` für sicherheitsrelevante Muster,
