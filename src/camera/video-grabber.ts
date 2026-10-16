@@ -21,6 +21,11 @@ export function createVideoGrabber(
 ): FrameGrabber {
   return {
     grab(): RawFrame {
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        throw new Error(
+          'Das Kamerabild ist noch nicht bereit. Bitte einen Moment warten und erneut versuchen.',
+        );
+      }
       const canvas = createCanvas();
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;

@@ -24,6 +24,8 @@ const { points, exposure, nextSlot, ready, corners } = storeToRefs(chart);
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const dragging = ref<{ card: number; index: number } | null>(null);
+// Erst wenn das Video ein Bild liefert, ist eine Aufnahme sinnvoll.
+const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
 const showStill = computed(() => still.value !== null);
@@ -107,6 +109,7 @@ onBeforeUnmount(() => {
 });
 
 watch(stream, (next) => {
+  videoReady.value = false;
   attachStream(video.value, next);
 });
 
@@ -144,6 +147,9 @@ watch(actual, (next, previous) => {
     </p>
 
     <p v-if="!isLive" class="text-sm text-amber-800">Bitte zuerst die Kamera starten.</p>
+    <p v-else-if="!videoReady" class="text-sm text-slate-600">
+      Die Kamera startet, einen Moment bitte …
+    </p>
 
     <p class="text-sm font-medium" aria-live="polite">{{ instruction }}</p>
 
@@ -154,6 +160,7 @@ watch(actual, (next, previous) => {
         class="w-full rounded bg-black"
         muted
         playsinline
+        @loadeddata="videoReady = true"
       ></video>
       <canvas v-show="showStill" ref="canvas" class="w-full rounded bg-black"></canvas>
       <!-- Die Eckpunkte werden per Zeiger gesetzt; reine Tastaturbedienung ist hier nicht sinnvoll. -->
@@ -201,7 +208,7 @@ watch(actual, (next, previous) => {
       <button
         type="button"
         class="rounded bg-emerald-700 px-3 py-1 text-sm text-white disabled:opacity-50"
-        :disabled="!isLive"
+        :disabled="!isLive || !videoReady"
         @click="capture"
       >
         {{ showStill ? 'Neues Standbild aufnehmen' : 'Standbild aufnehmen' }}

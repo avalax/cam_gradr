@@ -25,6 +25,15 @@ describe('createVideoGrabber.grab', () => {
     expect(frame.width).toBe(4);
   });
 
+  it('wirft, solange das Video noch keine Größe hat', () => {
+    const canvas: CanvasLike = { width: 0, height: 0, getContext: () => null };
+    for (const size of [{ videoWidth: 0 }, { videoHeight: 0 }]) {
+      expect(() => createVideoGrabber(fakeVideo(size), () => canvas).grab()).toThrow(
+        'noch nicht bereit',
+      );
+    }
+  });
+
   it('wirft, wenn kein 2D-Kontext verfügbar ist', () => {
     const canvas: CanvasLike = { width: 0, height: 0, getContext: () => null };
     expect(() => createVideoGrabber(fakeVideo(), () => canvas).grab()).toThrow('Canvas-Kontext');

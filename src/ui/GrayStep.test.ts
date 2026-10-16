@@ -50,6 +50,7 @@ async function mountLive() {
   const wrapper = mount(GrayStep);
   await useCameraStore().start();
   await flushPromises();
+  await wrapper.get('video').trigger('loadeddata');
   return wrapper;
 }
 
@@ -97,6 +98,26 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('Bitte zuerst die Kamera starten');
     expect(wrapper.text()).toContain('ein Standbild aufnehmen');
     expect(wrapper.text()).toContain('Noch keine Messung');
+    expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeDefined();
+  });
+
+  it('erlaubt die Aufnahme erst, wenn das Video ein Bild liefert', async () => {
+    installFakeCamera();
+    const wrapper = mount(GrayStep);
+    await useCameraStore().start();
+    await flushPromises();
+    expect(wrapper.text()).toContain('Die Kamera startet');
+    expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeDefined();
+    await wrapper.get('video').trigger('loadeddata');
+    expect(wrapper.text()).not.toContain('Die Kamera startet');
+    expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeUndefined();
+  });
+
+  it('sperrt die Aufnahme erneut, wenn der Stream wechselt', async () => {
+    const wrapper = await mountLive();
+    expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeUndefined();
+    await useCameraStore().start();
+    await flushPromises();
     expect(button(wrapper, 'Standbild aufnehmen')?.attributes('disabled')).toBeDefined();
   });
 
