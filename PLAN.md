@@ -150,4 +150,4 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 ## 11. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
-- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung, andere Zuordnung der Felder) sind möglich. Die Zuordnung der Felder zu den Karten ist am Foto bestätigt (je Karte 4 Spalten × 6 Reihen, Karte 1 = A–D, Karte 2 = E–H).
+- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung, andere Zuordnung der Felder) sind möglich. Die Zuordnung der Felder zu den Karten ist am Foto bestätigt (je Karte 4 Spalten × 6 Reihen, Karte 1 = A–D, Karte 2 = E–H). Die Graukarten (`spyder-checkr-photo-gray.json`) bestehen je aus einem großen Graufeld (18 % bzw. 50 % Reflexion, nominal) und einem Streifen mit 6 kleinen Feldern; für die Streifenfelder gibt es keine Referenzwerte.
