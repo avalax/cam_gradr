@@ -65,7 +65,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 | Farbmodell | eigene Module (sRGB↔XYZ↔Lab, Bradford, ΔE2000), gegen **colorjs.io** in Tests verifiziert | nachprüfbar |
 | Charts | **uPlot** oder SVG (Tonkurve, ΔE-Balken) | leichtgewichtig |
 | Tests | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (Coverage ≥ 99 %) | passt zu Vite |
-| Lint/Format | ESLint + Prettier, Husky, commitlint | |
+| Lint/Format | ESLint 9 (strict, typbewusst, Vue, a11y, Sonar, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | siehe Abschnitt 8 |
 | CI/CD | **GitHub Actions**, release-please, GitHub Pages, Dependabot | siehe Abschnitt 9 |
 
 ## 6. Architektur / Modulstruktur
@@ -86,7 +86,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 
 ## 7. Meilensteine
 
-0. **M0 – Repo & Pipeline:** Git, Conventional Commits, Husky/commitlint, Vitest mit 99-%-Schwellwert, CI-Workflow, release-please, Pages-Deployment, `CHANGELOG.md`.
+0. **M0 – Repo & Pipeline:** Git, Conventional Commits, Husky/lint-staged/commitlint, vollständige Lint-Konfiguration (ESLint strict, Prettier, Stylelint, markdownlint, knip, TypeScript strict), Vitest mit 99-%-Schwellwert, CI-Workflow, release-please, Pages-Deployment, `CHANGELOG.md`.
 1. **M1 – Grundgerüst:** Vite/Vue/TS, Kamera-Livebild, Kamerawahl, Standbild.
 2. **M2 – Graustufen-Schritt:** Eckpunkt-Ausrichtung, Patch-Messung, Helligkeits-Ampel mit Clipping-Warnung, Warnhinweis zur Kamera-Automatik.
 3. **M3 – Farb-Schritt & Solver:** Referenzdaten, Fit, ΔE-Report, Vorher/Nachher.
@@ -105,11 +105,31 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 - Ausschlüsse von der Coverage sind eng gefasst (z. B. reine Einstiegsdatei `main.ts`, Typdeklarationen) und in der Config begründet; Ausschlüsse werden nicht genutzt, um die Schwelle zu erreichen.
 - Coverage-Report (lcov + Text) wird in der CI als Artefakt abgelegt; ein Badge im README zeigt den Stand.
 
+### Linting & statische Analyse (Best Practices)
+
+Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-staged**), vor dem Push und in der CI. Warnungen zählen als Fehler (`--max-warnings 0`).
+
+- **ESLint 9 (Flat Config)** mit:
+  - `typescript-eslint` im Modus `strictTypeChecked` + `stylisticTypeChecked` (typbewusste Regeln, z. B. `no-floating-promises`, `no-unsafe-*`, `strict-boolean-expressions`),
+  - `eslint-plugin-vue` mit `flat/recommended` (Vue 3) plus Regeln für `<script setup>`, Typ-basierte Props/Emits und Template-Barrierefreiheit,
+  - `eslint-plugin-vuejs-accessibility` (a11y im Template),
+  - `eslint-plugin-import-x` (Importreihenfolge, keine Zyklen, keine doppelten Imports),
+  - `eslint-plugin-unicorn` und `eslint-plugin-sonarjs` (Code-Qualität, Komplexität, Duplikate),
+  - `eslint-plugin-vitest` (Testregeln, keine fokussierten/übersprungenen Tests),
+  - `eslint-plugin-regexp` und `eslint-plugin-promise`,
+  - `eslint-plugin-security` für sicherheitsrelevante Muster,
+  - `eslint-config-prettier`, damit Formatierung nicht mit ESLint kollidiert.
+- **TypeScript:** `strict: true` plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `noUnusedLocals/Parameters`, `verbatimModuleSyntax`; Typecheck mit `vue-tsc --noEmit`.
+- **Prettier** für Formatierung (inkl. Vue, JSON, Markdown, YAML), CI prüft mit `prettier --check`.
+- **Weitere Linter:** `stylelint` (Tailwind-/CSS-Regeln), `markdownlint-cli2` (README, Plan, Changelog), `actionlint` (GitHub-Workflows), `commitlint` (Commit-Nachrichten), `knip` (ungenutzte Dateien, Exporte und Abhängigkeiten), `dependency-cruiser` oder `import-x/no-cycle` (Architekturregeln, z. B. `color/` darf nicht von `ui/` abhängen).
+- **Sicherheit & Abhängigkeiten:** `npm audit --audit-level=high` in der CI, Dependabot, CodeQL-Workflow für JavaScript/TypeScript.
+- **Editor-Konsistenz:** `.editorconfig`, empfohlene VS-Code-Extensions und Einstellungen (`.vscode/`), `.gitattributes` für einheitliche Zeilenenden.
+
 ## 9. CI/CD & Releases (GitHub)
 
 - **Repository:** GitHub, Standardbranch `main`. Ablauf: initialer Commit mit dem Plan lokal, danach legt der Nutzer das GitHub-Repo an und pusht.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), geprüft per **commitlint** (lokal über Husky und in der CI für Pull Requests).
-- **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint → Prettier-Check → `vue-tsc` Typecheck → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Node-LTS-Version fest gepinnt.
+- **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier-Check → `vue-tsc` Typecheck → knip → `npm audit` → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Node-LTS-Version fest gepinnt.
 - **Changelog & Releases:** **release-please** (GitHub Action) liest die Conventional Commits, pflegt `CHANGELOG.md` und öffnet einen Release-PR mit Versionssprung (SemVer). Beim Mergen entstehen automatisch Git-Tag und GitHub Release mit Changelog-Eintrag und angehängtem Build-Artefakt (zip von `dist/`).
 - **Deployment:** Nach einem Release automatisch Veröffentlichung auf **GitHub Pages** (statischer Build, HTTPS ist für die Kamera nötig).
 - **Zusätzlich:** Dependabot für npm und GitHub Actions; Branch-Protection auf `main` (CI muss grün sein) wird beim Anlegen des Repos vom Nutzer aktiviert.
