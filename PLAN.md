@@ -100,6 +100,8 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 
 **Stand M1 (umgesetzt):** Kamerawahl, Auflösungswahl, Livebild, Start/Stop und Standbild (Mittelung über 8 Frames) mit Fehlermeldungen und Hinweis zur Kamera-Automatik. Die Browser-Kamera liegt hinter dem Adapter `CameraApi`; Coverage liegt bei 100 %. Offen für den Praxistest: Das Verhalten mit der echten Webcam und dem Portkeys-Workflow ist noch nicht geprüft.
 
+**Stand M2 (umgesetzt):** Wizard mit den Schritten „Kamera“ und „Schritt 1: Graukarten“. Eckpunkte beider Graukarten werden per Klick gesetzt und lassen sich ziehen; die Homographie rechnet Kartenkoordinaten ins Bild um, der Median im inneren Feldbereich liefert die Messwerte, und die Ampel (zu dunkel / passt / zu hell / zu hoher Kontrast) wertet die großen Felder sowie das hellste und dunkelste Streifenfeld aus. Das Layout liegt im Format `cam_gradr-layout/2` mit Feldrechtecken relativ zur Karte. **Offen:** Die Rechtecke und Ampel-Schwellen sind aus Fotos geschätzt und müssen an der echten Karte per Overlay geprüft und nachjustiert werden.
+
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
 - **Vitest** mit `@vitest/coverage-v8`; Schwellwerte in `vitest.config.ts`: `statements`, `branches`, `functions`, `lines` jeweils **99 %**. Unterschreitung lässt den Testlauf fehlschlagen.

@@ -41,8 +41,17 @@ export default tseslint.config(
       'security/detect-object-injection': 'off',
       'vuejs-accessibility/label-has-for': ['error', { required: { some: ['nesting', 'id'] } }],
       'unicorn/no-null': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^_', argsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
       // Frühe Returns erzeugen unerreichbare Guard-Zweige, die die 99-%-Coverage unnötig belasten.
       'unicorn/prefer-early-return': 'off',
+      // Rein stilistische Regeln, die bei Mathe-/Messcode eher stören.
+      'unicorn/prefer-continue': 'off',
+      'unicorn/prefer-ternary': 'off',
+      'unicorn/consistent-boolean-name': 'off',
+      'unicorn/name-replacements': 'off',
       'unicorn/numeric-separators-style': 'off',
       '@typescript-eslint/strict-boolean-expressions': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
@@ -71,7 +80,17 @@ export default tseslint.config(
       ],
     },
   },
-  { ...vitest.configs.recommended, files: ['**/*.test.ts'] },
+  {
+    ...vitest.configs.recommended,
+    files: ['**/*.test.ts'],
+    rules: {
+      ...vitest.configs.recommended.rules,
+      'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'expectPoint'] }],
+      // In Tests sind verschachtelte Aufrufe und lokale Hilfsfunktionen üblich.
+      'unicorn/max-nested-calls': 'off',
+      'unicorn/consistent-function-scoping': 'off',
+    },
+  },
   {
     files: ['*.config.{js,ts}'],
     languageOptions: { globals: { ...globals.node } },

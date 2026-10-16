@@ -11,7 +11,13 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
       // Eng gefasste Ausschlüsse: nur Einstiegspunkt und reine Typdeklarationen.
-      exclude: ['src/main.ts', 'src/**/*.test.ts', 'src/**/*.d.ts', 'src/data/**'],
+      exclude: [
+        'src/main.ts',
+        'src/**/*.test.ts',
+        'src/**/*.d.ts',
+        'src/data/**',
+        'src/test-support/**',
+      ],
       thresholds: {
         statements: 99,
         branches: 99,

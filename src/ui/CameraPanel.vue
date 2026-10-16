@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, useTemplateRef, watch } from 'vue';
+import { computed, onMounted, useTemplateRef, watch } from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
@@ -52,8 +52,8 @@ function capture(): void {
   captureFromVideo(video.value, (grabber) => store.captureStill(grabber));
 }
 
-onBeforeUnmount(() => {
-  store.stop();
+onMounted(() => {
+  attachStream(video.value, stream.value);
 });
 </script>
 

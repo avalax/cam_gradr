@@ -174,12 +174,10 @@ describe('CameraPanel', () => {
     wrapper.unmount();
   });
 
-  it('stoppt die Kamera beim Entfernen der Komponente', async () => {
-    const api = fakeApi();
+  it('bindet einen bereits laufenden Stream beim Einhängen an', async () => {
+    fakeApi();
+    await useCameraStore().start();
     const wrapper = mountPanel();
-    await wrapper.get('button').trigger('click');
-    await flushPromises();
-    wrapper.unmount();
-    expect(api.close).toHaveBeenCalledTimes(1);
+    expect(wrapper.get('video').element.srcObject).toBe(STREAM);
   });
 });

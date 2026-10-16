@@ -1,28 +1,177 @@
 {
-  "name": "Spyder Checkr Photo (SCK300) – Graukarten",
-  "status": "layout-from-photo-values-nominal",
+  "format": "cam_gradr-layout/2",
   "notes": [
-    "Layout aus einem Webcam-Foto der beiden Graukarten abgeleitet (Karte 3 links, Karte 4 rechts im aufgeklappten Etui).",
-    "Jede Graukarte hat ein großes Graufeld und einen Streifen mit 6 kleinen Feldern (Reihe 0 = oben = Schwarz, Reihe 5 = unten = fast Weiß). Karte 3: Streifen rechts vom Großfeld, Karte 4: Streifen links.",
-    "Gesamtzahl passt zu Datacolors Angabe von 62 Farbzielen: 48 Farbfelder + 2 große Grauflächen + 12 Streifenfelder.",
-    "Nominalwerte der großen Felder: aus der Reflexion berechnet (L* = 116*Y^(1/3) - 16), neutral (a* = b* = 0). Es sind keine Messwerte von Datacolor.",
-    "Zuordnung 18 % / 50 %: Karte 3 (links, heller) = 50 %, Karte 4 (rechts, dunkler) = 18 %; Helligkeitsunterschied vom Nutzer bestätigt, auf den Karten ist keine Beschriftung sichtbar.",
-    "Für die 12 Streifenfelder sind keine Referenzwerte bekannt (null); sie liefern in Schritt 1 nur die Reihenfolge (Schwarz bis fast Weiß), z. B. für Clipping-Prüfungen."
+    "Layout aus Fotos der beiden Graukarten einer SCK300 abgeleitet (Karte 3 links, Karte 4 rechts im aufgeklappten Etui). Rechtecke sind relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links) und geschätzt.",
+    "Jede Graukarte hat ein großes Graufeld und einen Streifen mit 6 kleinen Feldern (Index 0 = oben = Schwarz, 5 = unten = fast Weiß). Karte 3: Streifen rechts vom Großfeld, Karte 4: Streifen links.",
+    "Große Felder: Nominalwerte aus der Reflexion berechnet (L* = 116*Y^(1/3) - 16), neutral. Keine Messwerte von Datacolor.",
+    "Zuordnung: Karte 3 (links, heller) = 50 %, Karte 4 (rechts, dunkler) = 18 %; Helligkeitsunterschied vom Nutzer bestätigt, auf den Karten ist keine Beschriftung sichtbar."
   ],
   "cards": [
     {
       "card": 3,
-      "large": { "reflectance": 0.5, "lab": [76.07, 0, 0], "nominal": true },
-      "strip": { "side": "right", "patches": [0, 1, 2, 3, 4, 5] }
+      "patches": [
+        {
+          "id": "G50",
+          "role": "large",
+          "reflectance": 0.5,
+          "nominalLab": [76.07, 0, 0],
+          "rect": {
+            "x": 0.07,
+            "y": 0.094,
+            "w": 0.58,
+            "h": 0.806
+          }
+        },
+        {
+          "id": "S3-0",
+          "role": "strip",
+          "index": 0,
+          "rect": {
+            "x": 0.74,
+            "y": 0.082,
+            "w": 0.19,
+            "h": 0.112
+          }
+        },
+        {
+          "id": "S3-1",
+          "role": "strip",
+          "index": 1,
+          "rect": {
+            "x": 0.74,
+            "y": 0.223,
+            "w": 0.19,
+            "h": 0.112
+          }
+        },
+        {
+          "id": "S3-2",
+          "role": "strip",
+          "index": 2,
+          "rect": {
+            "x": 0.74,
+            "y": 0.365,
+            "w": 0.19,
+            "h": 0.112
+          }
+        },
+        {
+          "id": "S3-3",
+          "role": "strip",
+          "index": 3,
+          "rect": {
+            "x": 0.74,
+            "y": 0.506,
+            "w": 0.19,
+            "h": 0.112
+          }
+        },
+        {
+          "id": "S3-4",
+          "role": "strip",
+          "index": 4,
+          "rect": {
+            "x": 0.74,
+            "y": 0.648,
+            "w": 0.19,
+            "h": 0.112
+          }
+        },
+        {
+          "id": "S3-5",
+          "role": "strip",
+          "index": 5,
+          "rect": {
+            "x": 0.74,
+            "y": 0.789,
+            "w": 0.19,
+            "h": 0.112
+          }
+        }
+      ]
     },
     {
       "card": 4,
-      "large": { "reflectance": 0.18, "lab": [49.5, 0, 0], "nominal": true },
-      "strip": { "side": "left", "patches": [0, 1, 2, 3, 4, 5] }
+      "patches": [
+        {
+          "id": "G18",
+          "role": "large",
+          "reflectance": 0.18,
+          "nominalLab": [49.5, 0, 0],
+          "rect": {
+            "x": 0.328,
+            "y": 0.02,
+            "w": 0.59,
+            "h": 0.886
+          }
+        },
+        {
+          "id": "S4-0",
+          "role": "strip",
+          "index": 0,
+          "rect": {
+            "x": 0.064,
+            "y": 0.043,
+            "w": 0.17,
+            "h": 0.118
+          }
+        },
+        {
+          "id": "S4-1",
+          "role": "strip",
+          "index": 1,
+          "rect": {
+            "x": 0.064,
+            "y": 0.19,
+            "w": 0.17,
+            "h": 0.118
+          }
+        },
+        {
+          "id": "S4-2",
+          "role": "strip",
+          "index": 2,
+          "rect": {
+            "x": 0.064,
+            "y": 0.337,
+            "w": 0.17,
+            "h": 0.118
+          }
+        },
+        {
+          "id": "S4-3",
+          "role": "strip",
+          "index": 3,
+          "rect": {
+            "x": 0.064,
+            "y": 0.484,
+            "w": 0.17,
+            "h": 0.118
+          }
+        },
+        {
+          "id": "S4-4",
+          "role": "strip",
+          "index": 4,
+          "rect": {
+            "x": 0.064,
+            "y": 0.631,
+            "w": 0.17,
+            "h": 0.118
+          }
+        },
+        {
+          "id": "S4-5",
+          "role": "strip",
+          "index": 5,
+          "rect": {
+            "x": 0.064,
+            "y": 0.778,
+            "w": 0.17,
+            "h": 0.118
+          }
+        }
+      ]
     }
-  ],
-  "stripPatches": {
-    "rowOrder": "top-to-bottom, dark to light",
-    "lab": [null, null, null, null, null, null]
-  }
+  ]
 }
