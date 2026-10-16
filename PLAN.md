@@ -11,7 +11,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
    - Die beiden Graukarten (18 % und 50 % Grau) werden gemeinsam vor die Kamera gehalten und sind zusammen im Bild.
    - Zweck: Die Raumhelligkeit so einstellen, dass die Beleuchtung ideal für Schritt 2 ist. Dieser Schritt berechnet nichts für die LUT.
    - Live-Overlay: Graupatches werden wie in Schritt 2 über vier Eckpunkte ausgerichtet, pro Patch wird die gemessene Helligkeit live mit dem Sollbereich verglichen.
-   - Sollbereich (konfigurierbar, im Profil hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), die beiden großen Graufelder im Zielbereich (18 %-Feld ≈ sRGB 46 %, 50 %-Feld ≈ sRGB 74 %, jeweils mit Toleranz, unter Annahme einer sRGB-Kurve). Weiß- und Schwarzprüfung nutzen das hellste und dunkelste Streifenfeld. Die genauen Toleranzen werden in M2 festgelegt und getestet.
+   - Sollbereich (konfigurierbar, in der Layout-/App-Konfiguration hinterlegt): Weißfeld nicht geclippt (Kanäle unter ca. 95 %), Schwarzfeld nicht abgesoffen (über ca. 3 %), die beiden großen Graufelder im Zielbereich (18 %-Feld ≈ sRGB 46 %, 50 %-Feld ≈ sRGB 74 %, jeweils mit Toleranz, unter Annahme einer sRGB-Kurve). Weiß- und Schwarzprüfung nutzen das hellste und dunkelste Streifenfeld. Die genauen Toleranzen werden in M2 festgelegt und getestet.
    - Anzeige: Clipping-Warnung (Lichter/Schatten) und Ampel „Raum zu dunkel / passt / zu hell“ mit Hinweis, ob Licht heller oder dunkler gestellt werden soll. Kein Histogramm.
    - Warnhinweis, Auto-Belichtung/-Weißabgleich in der Kamera-Software zu fixieren (keine Constraint-Steuerung durch die App).
    - Ergebnis: Der Raum hat die ideale Helligkeit (Ampel grün, nichts geclippt), danach geht es zu Schritt 2.
@@ -27,13 +27,13 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
 - Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das Layout ist an Fotos einer SCK300 bestätigt (Details in Abschnitt 10 und in `src/data/profiles/`).
-  - Referenzprofile liegen als Konfigurationsdateien (JSON/CSV) vor und sind in der App auswählbar; zum Start gibt es nur das Profil Spyder Checkr 48 (siehe Abschnitt 10). Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
+  - **Referenzwerte sind nicht Teil des Repos.** Das Repo enthält nur das Layout (Karte, Spalte, Reihe je Feld-ID). Die Farbwerte (Lab/sRGB je ID) importiert der Nutzer beim ersten Start als Datei (JSON oder CSV, Format `cam_gradr-reference/1`), z. B. aus eigenen Datacolor-Daten. Die App prüft die Datei (alle IDs vorhanden, Wertebereiche, Weißpunkt), speichert sie nur lokal im Browser (IndexedDB) und sendet sie nie irgendwohin. Ohne importierte Werte ist die Berechnung gesperrt; Schritt 1 funktioniert ohne Import. Mehrere importierte Datensätze sind in der App auswählbar. Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
   1. Weißabgleich (Gain je Kanal aus den Neutralpatches, in linearem RGB),
   2. 1D-Tonkurve je Kanal (monotone Interpolation durch die Neutralpatches, z. B. PCHIP),
   3. 3×3-Farbmatrix bzw. Root-Polynomial-Regression (Least Squares, Regularisierung) auf den Farbpatches,
-  4. Fehlermaß ΔE2000 (Lab). Referenzen liegen in D50 vor, die Kamerawerte (sRGB, D65) werden per Bradford nach D50 adaptiert; der Bezugsweißpunkt ist im Profil hinterlegt.
+  4. Fehlermaß ΔE2000 (Lab). Referenzen liegen in D50 vor, die Kamerawerte (sRGB, D65) werden per Bradford nach D50 adaptiert; der Bezugsweißpunkt steht in den importierten Referenzdaten.
 - LUT-Erzeugung: Das Korrekturmodell wird auf ein reguläres Gitter (N³) in sRGB-Codewerten ausgewertet. Die Korrektur muss glatt und monoton bleiben, Ausgabewerte werden auf [0, 1] begrenzt; außerhalb des gemessenen Bereichs (Nähe Schwarz/Weiß) wird sanft zur Identität bzw. zu den Extremwerten überblendet, damit keine Artefakte entstehen. Die Stärke (0–100 %) mischt zwischen Identitäts-LUT und Korrektur.
 - Live-Preview in Echtzeit (≥ 30 fps) per GPU, mit 3D-LUT als Textur.
 - LUT-Export:
@@ -81,7 +81,7 @@ src/
   lut/           3D-LUT-Erzeugung, .cube/.3dl/Hald-Export
   gl/            WebGL2-Renderer (Video → LUT → Canvas)
   ui/            Wizard-Schritte, Overlays, Helligkeits-Ampel, Export-Dialog
-  data/profiles/ spyder-checkr-48.json (Farbkarten), spyder-checkr-photo-gray.json (Graukarten)
+  data/layouts/  *.layout.json (Karten-Geometrie ohne Farbwerte); Referenzwerte kommen zur Laufzeit per Import
 ```
 
 Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Feedback (Ampel) → (Schritt 2) Farbmessung → Solver → 3D-LUT (Float32Array N³×3) → WebGL-Textur (Preview) und Export (Datei).
@@ -91,7 +91,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 0. **M0 – Repo & Pipeline:** Git, Conventional Commits, Husky/lint-staged/commitlint, vollständige Lint-Konfiguration (ESLint strict, Prettier, Stylelint, markdownlint, knip, TypeScript strict), Vitest mit 99-%-Schwellwert, CI-Workflow, release-please, Pages-Deployment, `CHANGELOG.md`.
 1. **M1 – Grundgerüst:** Vite/Vue/TS, Kamera-Livebild, Kamerawahl, Standbild.
 2. **M2 – Graustufen-Schritt:** Mehrkarten-Layout (JSON), Eckpunkt-Ausrichtung je Karte, Patch-Messung, Helligkeits-Ampel mit Clipping-Warnung, Warnhinweis zur Kamera-Automatik.
-3. **M3 – Farb-Schritt & Solver:** Referenzdaten und Profilimport, Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
+3. **M3 – Farb-Schritt & Solver:** Referenz-Import (Validierung, lokale Speicherung), Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
 4. **M4 – LUT & Live-Preview:** WebGL2-Pipeline, Split-View, Stärke-Regler.
 5. **M5 – Export:** `.cube` (+ `.3dl`, Hald), Projekt speichern/laden.
 6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Lizenz, Feinschliff.
@@ -130,7 +130,7 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 
 ## 9. CI/CD & Releases (GitHub)
 
-- **Repository:** GitHub, Standardbranch `main`. Der lokale Git-Verlauf besteht bereits (Plan, Referenzprofile, Hilfsskript); danach legt der Nutzer das GitHub-Repo an und pusht.
+- **Repository:** GitHub, Standardbranch `main`. Der lokale Git-Verlauf besteht bereits (Plan, Layout-Dateien); danach legt der Nutzer das GitHub-Repo an und pusht.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), geprüft per **commitlint** (lokal über Husky und in der CI für Pull Requests).
 - **CI-Workflow** (`.github/workflows/ci.yml`, bei Push und Pull Request): Install (`npm ci`, Cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier-Check → `vue-tsc` Typecheck → knip → `npm audit` → Vitest mit Coverage-Schwellwert 99 % → Production-Build. Node-LTS-Version fest gepinnt.
 - **Changelog & Releases:** **release-please** (GitHub Action) liest die Conventional Commits, pflegt `CHANGELOG.md` und öffnet einen Release-PR mit Versionssprung (SemVer). Beim Mergen entstehen automatisch Git-Tag und GitHub Release mit Changelog-Eintrag und angehängtem Build-Artefakt (zip von `dist/`).
@@ -140,16 +140,16 @@ Alle Prüfungen laufen lokal (`npm run lint`, Husky `pre-commit` über **lint-st
 
 ## 10. Entscheidungen (geklärt)
 
-- **Referenzwerte:** Startprofil `src/data/profiles/spyder-checkr-48.json` mit 48 Feldern (Lab D50 + sRGB), abgetippt aus einer Drittquelle (Bartneck 2017, Ursprung Datacolor-Bitmap). Das Layout ist am Foto einer SCK300 visuell bestätigt, die Farbwerte sind nicht offiziell und unbestätigt. Lab und sRGB passen im Mittel gut zusammen (ΔE76 ≈ 0,8; Ausreißer 1F wegen sRGB-Clipping). Echte Datacolor-Werte lassen sich später als JSON/CSV importieren und in der App auswählen.
+- **Referenzwerte:** Werden bewusst nicht ins Repo eingecheckt und nicht ausgeliefert, damit keine Urheberrechts- oder Referenzverletzung entstehen kann. Die App importiert sie beim Start aus einer vom Nutzer bereitgestellten Datei und hält sie nur lokal im Browser. Das Repo enthält nur das selbst aus Fotos abgeleitete Layout (`src/data/layouts/`, ohne Farbwerte und ohne Herstellerbezeichnungen). Die Importdatei des Nutzers liegt lokal im Ordner `local-data/`, der in `.gitignore` steht. Tests nutzen ausschließlich synthetische Dummy-Referenzen.
 - **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
 - **Webcam-Automatik:** Nur Warnhinweis. Auto-Belichtung/-Weißabgleich fixiert der Nutzer in der Kamera-Software, die App setzt keine Constraints.
 - **Farbraum:** sRGB / Rec.709 für Ein- und Ausgabe.
 - **Kartenaufnahme:** Immer sind beide Graukarten oder beide Farbkarten gleichzeitig sichtbar, die Aufnahme erfolgt nacheinander (Grau, dann Farbe); jede Karte bekommt eigene Eckpunkte.
-- **Ampelwerte Schritt 1:** Weiß unter ca. 95 %, Schwarz über ca. 3 %, Mittelgrau im Zielbereich; Werte sind im Profil hinterlegt und später in der App justierbar.
+- **Ampelwerte Schritt 1:** Weiß unter ca. 95 %, Schwarz über ca. 3 %, Mittelgrau im Zielbereich; Werte sind in der Konfiguration hinterlegt und später in der App justierbar.
 
 ## 11. Risiken
 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
-- **Referenzgenauigkeit:** Das Startprofil ist eine inoffizielle Transkription; Abweichungen zur realen Karte (Charge, Alterung) sind möglich.
+- **Referenzgenauigkeit:** Die Qualität der LUT hängt von den importierten Referenzwerten ab; inoffizielle oder abgetippte Quellen können Fehler enthalten, und Abweichungen zur realen Karte (Charge, Alterung) sind möglich. Die App validiert nur Format und Wertebereiche, nicht die Richtigkeit.
 - **Graukarten:** Die Zuordnung 18 % / 50 % beruht nur auf dem Helligkeitsunterschied (auf den Karten ist keine Beschriftung sichtbar); für die 12 Streifenfelder gibt es keine Referenzwerte, die großen Felder sind nominal aus der Reflexion berechnet. Die Zuordnung ist per Konfiguration umkehrbar.
-- **Urheberrecht:** Die Farbdefinitionen stammen von Datacolor. Ob sie in einem öffentlichen Repo liegen dürfen, entscheidet der Nutzer vor dem Anlegen des GitHub-Repos (sonst privates Repo oder Import statt Einchecken).
+- **Urheberrecht:** Geklärt durch den Import-Ansatz (siehe Abschnitt 10). Der lokale Git-Verlauf wurde bereinigt, sodass die Referenzwerte auch in früheren Commits nicht mehr enthalten sind (geprüft vor dem ersten Push).
