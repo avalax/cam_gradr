@@ -8,3 +8,6 @@ coverage/
 *.jpeg
 *.png
 *.webp
+
+# Lokale Referenzwerte (Herstellerdaten) nie einchecken
+local-data/

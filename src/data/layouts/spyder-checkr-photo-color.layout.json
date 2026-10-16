@@ -1,0 +1,298 @@
+{
+  "format": "cam_gradr-layout/1",
+  "notes": [
+    "Nur Geometrie/Reihenfolge, aus Fotos einer SCK300 abgeleitet. Keine Farbwerte, keine Herstellerbezeichnungen.",
+    "Zwei Farbkarten im Hochformat, je 4 Spalten x 6 Reihen. Karte 1 = Spalten A-D, Karte 2 = Spalten E-H; Buchstabe = Spalte, Ziffer = Reihe von oben.",
+    "column und row zählen ab 0 von links bzw. oben. Referenzwerte werden zur Laufzeit per ID importiert."
+  ],
+  "patches": [
+    {
+      "id": "1A",
+      "card": 1,
+      "column": 0,
+      "row": 0
+    },
+    {
+      "id": "2A",
+      "card": 1,
+      "column": 0,
+      "row": 1
+    },
+    {
+      "id": "3A",
+      "card": 1,
+      "column": 0,
+      "row": 2
+    },
+    {
+      "id": "4A",
+      "card": 1,
+      "column": 0,
+      "row": 3
+    },
+    {
+      "id": "5A",
+      "card": 1,
+      "column": 0,
+      "row": 4
+    },
+    {
+      "id": "6A",
+      "card": 1,
+      "column": 0,
+      "row": 5
+    },
+    {
+      "id": "1B",
+      "card": 1,
+      "column": 1,
+      "row": 0
+    },
+    {
+      "id": "2B",
+      "card": 1,
+      "column": 1,
+      "row": 1
+    },
+    {
+      "id": "3B",
+      "card": 1,
+      "column": 1,
+      "row": 2
+    },
+    {
+      "id": "4B",
+      "card": 1,
+      "column": 1,
+      "row": 3
+    },
+    {
+      "id": "5B",
+      "card": 1,
+      "column": 1,
+      "row": 4
+    },
+    {
+      "id": "6B",
+      "card": 1,
+      "column": 1,
+      "row": 5
+    },
+    {
+      "id": "1C",
+      "card": 1,
+      "column": 2,
+      "row": 0
+    },
+    {
+      "id": "2C",
+      "card": 1,
+      "column": 2,
+      "row": 1
+    },
+    {
+      "id": "3C",
+      "card": 1,
+      "column": 2,
+      "row": 2
+    },
+    {
+      "id": "4C",
+      "card": 1,
+      "column": 2,
+      "row": 3
+    },
+    {
+      "id": "5C",
+      "card": 1,
+      "column": 2,
+      "row": 4
+    },
+    {
+      "id": "6C",
+      "card": 1,
+      "column": 2,
+      "row": 5
+    },
+    {
+      "id": "1D",
+      "card": 1,
+      "column": 3,
+      "row": 0
+    },
+    {
+      "id": "2D",
+      "card": 1,
+      "column": 3,
+      "row": 1
+    },
+    {
+      "id": "3D",
+      "card": 1,
+      "column": 3,
+      "row": 2
+    },
+    {
+      "id": "4D",
+      "card": 1,
+      "column": 3,
+      "row": 3
+    },
+    {
+      "id": "5D",
+      "card": 1,
+      "column": 3,
+      "row": 4
+    },
+    {
+      "id": "6D",
+      "card": 1,
+      "column": 3,
+      "row": 5
+    },
+    {
+      "id": "1E",
+      "card": 2,
+      "column": 0,
+      "row": 0
+    },
+    {
+      "id": "2E",
+      "card": 2,
+      "column": 0,
+      "row": 1
+    },
+    {
+      "id": "3E",
+      "card": 2,
+      "column": 0,
+      "row": 2
+    },
+    {
+      "id": "4E",
+      "card": 2,
+      "column": 0,
+      "row": 3
+    },
+    {
+      "id": "5E",
+      "card": 2,
+      "column": 0,
+      "row": 4
+    },
+    {
+      "id": "6E",
+      "card": 2,
+      "column": 0,
+      "row": 5
+    },
+    {
+      "id": "1F",
+      "card": 2,
+      "column": 1,
+      "row": 0
+    },
+    {
+      "id": "2F",
+      "card": 2,
+      "column": 1,
+      "row": 1
+    },
+    {
+      "id": "3F",
+      "card": 2,
+      "column": 1,
+      "row": 2
+    },
+    {
+      "id": "4F",
+      "card": 2,
+      "column": 1,
+      "row": 3
+    },
+    {
+      "id": "5F",
+      "card": 2,
+      "column": 1,
+      "row": 4
+    },
+    {
+      "id": "6F",
+      "card": 2,
+      "column": 1,
+      "row": 5
+    },
+    {
+      "id": "1G",
+      "card": 2,
+      "column": 2,
+      "row": 0
+    },
+    {
+      "id": "2G",
+      "card": 2,
+      "column": 2,
+      "row": 1
+    },
+    {
+      "id": "3G",
+      "card": 2,
+      "column": 2,
+      "row": 2
+    },
+    {
+      "id": "4G",
+      "card": 2,
+      "column": 2,
+      "row": 3
+    },
+    {
+      "id": "5G",
+      "card": 2,
+      "column": 2,
+      "row": 4
+    },
+    {
+      "id": "6G",
+      "card": 2,
+      "column": 2,
+      "row": 5
+    },
+    {
+      "id": "1H",
+      "card": 2,
+      "column": 3,
+      "row": 0
+    },
+    {
+      "id": "2H",
+      "card": 2,
+      "column": 3,
+      "row": 1
+    },
+    {
+      "id": "3H",
+      "card": 2,
+      "column": 3,
+      "row": 2
+    },
+    {
+      "id": "4H",
+      "card": 2,
+      "column": 3,
+      "row": 3
+    },
+    {
+      "id": "5H",
+      "card": 2,
+      "column": 3,
+      "row": 4
+    },
+    {
+      "id": "6H",
+      "card": 2,
+      "column": 3,
+      "row": 5
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "name": "Spyder Checkr Photo (SCK300) – Graukarten",
+  "status": "layout-from-photo-values-nominal",
+  "notes": [
+    "Layout aus einem Webcam-Foto der beiden Graukarten abgeleitet (Karte 3 links, Karte 4 rechts im aufgeklappten Etui).",
+    "Jede Graukarte hat ein großes Graufeld und einen Streifen mit 6 kleinen Feldern (Reihe 0 = oben = Schwarz, Reihe 5 = unten = fast Weiß). Karte 3: Streifen rechts vom Großfeld, Karte 4: Streifen links.",
+    "Gesamtzahl passt zu Datacolors Angabe von 62 Farbzielen: 48 Farbfelder + 2 große Grauflächen + 12 Streifenfelder.",
+    "Nominalwerte der großen Felder: aus der Reflexion berechnet (L* = 116*Y^(1/3) - 16), neutral (a* = b* = 0). Es sind keine Messwerte von Datacolor.",
+    "Zuordnung 18 % / 50 %: Karte 3 (links, heller) = 50 %, Karte 4 (rechts, dunkler) = 18 %; Helligkeitsunterschied vom Nutzer bestätigt, auf den Karten ist keine Beschriftung sichtbar.",
+    "Für die 12 Streifenfelder sind keine Referenzwerte bekannt (null); sie liefern in Schritt 1 nur die Reihenfolge (Schwarz bis fast Weiß), z. B. für Clipping-Prüfungen."
+  ],
+  "cards": [
+    {
+      "card": 3,
+      "large": { "reflectance": 0.5, "lab": [76.07, 0, 0], "nominal": true },
+      "strip": { "side": "right", "patches": [0, 1, 2, 3, 4, 5] }
+    },
+    {
+      "card": 4,
+      "large": { "reflectance": 0.18, "lab": [49.5, 0, 0], "nominal": true },
+      "strip": { "side": "left", "patches": [0, 1, 2, 3, 4, 5] }
+    }
+  ],
+  "stripPatches": {
+    "rowOrder": "top-to-bottom, dark to light",
+    "lab": [null, null, null, null, null, null]
+  }
+}
