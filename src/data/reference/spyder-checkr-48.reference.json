@@ -1,0 +1,254 @@
+{
+  "format": "cam_gradr-reference/1",
+  "name": "Spyder Checkr 48 (inoffizielle Transkription)",
+  "illuminant": "D50",
+  "source": "https://www.bartneck.de/2017/10/24/patch-color-definitions-for-datacolor-spydercheckr-48/",
+  "notes": [
+    "Quelle nennt Transkriptionsfehler bei 5C, 6C, 5H (Beschriftung, hier korrigiert) und 2G; dort wurde sRGB 58/88/159 laut Leserhinweis statt 99/86/156 verwendet, passt besser zu Lab.",
+    "Modell des Nutzers: SCK300 (laut Händlerseiten baugleich zur SCK310 mit anderem Gehäuse; 4 Karten, 62 Farbziele insgesamt). Dass die 48 Farbfelder mit der SpyderCheckr 48 identisch sind, ist wahrscheinlich, aber nicht belegt.",
+    "Layout (am Foto einer SCK300 visuell bestätigt): zwei Farbkarten im Hochformat, je 4 Spalten x 6 Reihen. Karte 1 = Spalten A-D, Karte 2 = Spalten E-H; der Buchstabe der ID ist die Spalte, die Ziffer die Reihe (von oben, 1-6). column und row zählen ab 0 von links bzw. oben. Die Farbwerte selbst bleiben unbestätigt.",
+    "\"check\" ist dE76 zwischen angegebenem Lab und aus sRGB (D65->D50) berechnetem Lab, nur als Plausibilitätstest."
+  ],
+  "patches": [
+    {
+      "id": "1A",
+      "lab": [61.35, 34.81, 18.38],
+      "srgb": [210, 121, 117]
+    },
+    {
+      "id": "2A",
+      "lab": [75.5, 5.84, 50.42],
+      "srgb": [216, 179, 90]
+    },
+    {
+      "id": "3A",
+      "lab": [66.82, -25.1, 23.47],
+      "srgb": [127, 175, 120]
+    },
+    {
+      "id": "4A",
+      "lab": [60.53, -22.6, -20.4],
+      "srgb": [66, 157, 179]
+    },
+    {
+      "id": "5A",
+      "lab": [59.66, -2.03, -28.46],
+      "srgb": [116, 147, 194]
+    },
+    {
+      "id": "6A",
+      "lab": [59.15, 30.83, -5.72],
+      "srgb": [190, 121, 154]
+    },
+    {
+      "id": "1B",
+      "lab": [82.68, 5.03, 3.02],
+      "srgb": [218, 203, 201]
+    },
+    {
+      "id": "2B",
+      "lab": [82.25, -2.42, 3.78],
+      "srgb": [203, 205, 196]
+    },
+    {
+      "id": "3B",
+      "lab": [82.29, 2.2, -2.04],
+      "srgb": [206, 203, 208]
+    },
+    {
+      "id": "4B",
+      "lab": [24.89, 4.43, 0.78],
+      "srgb": [66, 57, 58]
+    },
+    {
+      "id": "5B",
+      "lab": [25.16, -3.88, 2.13],
+      "srgb": [54, 61, 56]
+    },
+    {
+      "id": "6B",
+      "lab": [26.13, 2.61, -5.03],
+      "srgb": [63, 60, 69]
+    },
+    {
+      "id": "1C",
+      "lab": [85.42, 9.41, 14.49],
+      "srgb": [237, 206, 186]
+    },
+    {
+      "id": "2C",
+      "lab": [74.28, 9.05, 27.21],
+      "srgb": [211, 175, 133]
+    },
+    {
+      "id": "3C",
+      "lab": [64.57, 12.39, 37.24],
+      "srgb": [193, 149, 91]
+    },
+    {
+      "id": "4C",
+      "lab": [44.49, 17.23, 26.24],
+      "srgb": [139, 93, 61]
+    },
+    {
+      "id": "5C",
+      "lab": [25.29, 7.95, 8.87],
+      "srgb": [74, 55, 46]
+    },
+    {
+      "id": "6C",
+      "lab": [22.67, 2.11, -1.1],
+      "srgb": [57, 54, 56]
+    },
+    {
+      "id": "1D",
+      "lab": [92.72, 1.89, 2.76],
+      "srgb": [241, 233, 229]
+    },
+    {
+      "id": "2D",
+      "lab": [88.85, 1.59, 2.27],
+      "srgb": [229, 222, 220]
+    },
+    {
+      "id": "3D",
+      "lab": [73.42, 0.99, 1.89],
+      "srgb": [182, 178, 176]
+    },
+    {
+      "id": "4D",
+      "lab": [57.15, 0.57, 1.19],
+      "srgb": [139, 136, 135]
+    },
+    {
+      "id": "5D",
+      "lab": [41.57, 0.24, 1.45],
+      "srgb": [100, 99, 97]
+    },
+    {
+      "id": "6D",
+      "lab": [25.65, 1.24, 0.05],
+      "srgb": [63, 61, 62]
+    },
+    {
+      "id": "1E",
+      "lab": [96.04, 2.16, 2.6],
+      "srgb": [249, 242, 238]
+    },
+    {
+      "id": "2E",
+      "lab": [80.44, 1.17, 2.05],
+      "srgb": [202, 198, 195]
+    },
+    {
+      "id": "3E",
+      "lab": [65.52, 0.69, 1.86],
+      "srgb": [161, 157, 154]
+    },
+    {
+      "id": "4E",
+      "lab": [49.62, 0.58, 1.56],
+      "srgb": [122, 118, 116]
+    },
+    {
+      "id": "5E",
+      "lab": [33.55, 0.35, 1.4],
+      "srgb": [80, 80, 78]
+    },
+    {
+      "id": "6E",
+      "lab": [16.91, 1.43, -0.81],
+      "srgb": [43, 41, 43]
+    },
+    {
+      "id": "1F",
+      "lab": [47.12, -32.5, -28.75],
+      "srgb": [0, 127, 159]
+    },
+    {
+      "id": "2F",
+      "lab": [50.49, 53.45, -13.55],
+      "srgb": [192, 75, 145]
+    },
+    {
+      "id": "3F",
+      "lab": [83.61, 3.36, 87.02],
+      "srgb": [245, 205, 0]
+    },
+    {
+      "id": "4F",
+      "lab": [41.05, 60.75, 31.17],
+      "srgb": [186, 26, 51]
+    },
+    {
+      "id": "5F",
+      "lab": [54.14, -40.8, 34.75],
+      "srgb": [57, 146, 64]
+    },
+    {
+      "id": "6F",
+      "lab": [24.75, 13.78, -49.48],
+      "srgb": [25, 55, 135]
+    },
+    {
+      "id": "1G",
+      "lab": [60.94, 38.21, 61.31],
+      "srgb": [222, 118, 32]
+    },
+    {
+      "id": "2G",
+      "lab": [37.8, 7.3, -43.04],
+      "srgb": [58, 88, 159]
+    },
+    {
+      "id": "3G",
+      "lab": [49.81, 48.5, 15.76],
+      "srgb": [195, 79, 95]
+    },
+    {
+      "id": "4G",
+      "lab": [28.88, 19.36, -24.48],
+      "srgb": [83, 58, 106]
+    },
+    {
+      "id": "5G",
+      "lab": [72.45, -23.6, 60.47],
+      "srgb": [157, 188, 54]
+    },
+    {
+      "id": "6G",
+      "lab": [71.65, 23.74, 72.28],
+      "srgb": [236, 158, 25]
+    },
+    {
+      "id": "1H",
+      "lab": [70.19, -31.9, 1.98],
+      "srgb": [98, 187, 166]
+    },
+    {
+      "id": "2H",
+      "lab": [54.38, 8.84, -25.71],
+      "srgb": [126, 125, 174]
+    },
+    {
+      "id": "3H",
+      "lab": [42.03, -15.8, 22.93],
+      "srgb": [82, 106, 60]
+    },
+    {
+      "id": "4H",
+      "lab": [48.82, -5.11, -23.08],
+      "srgb": [87, 120, 155]
+    },
+    {
+      "id": "5H",
+      "lab": [65.1, 18.14, 18.68],
+      "srgb": [197, 145, 125]
+    },
+    {
+      "id": "6H",
+      "lab": [36.13, 14.15, 15.78],
+      "srgb": [112, 76, 60]
+    }
+  ]
+}

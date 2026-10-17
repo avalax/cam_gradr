@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 
 import { useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
+import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
@@ -14,8 +15,7 @@ const chart = useColorChartStore();
 const references = useReferenceStore();
 const solve = useSolveStore();
 const { ready, measurements } = storeToRefs(chart);
-const { sets, selected, error, warning, lastSaved, lastRemoved, loading } = storeToRefs(references);
-const address = ref('');
+const { sets, selected, error, warning, lastSaved, lastRemoved } = storeToRefs(references);
 const { result, error: solveError } = storeToRefs(solve);
 
 const CARD_NAMES = {
@@ -43,10 +43,6 @@ async function onFile(event: Event): Promise<void> {
   input.value = '';
 }
 
-async function onUrl(): Promise<void> {
-  await references.importUrl(address.value);
-}
-
 function onSelect(event: Event): void {
   references.select((event.target as HTMLSelectElement).value);
 }
@@ -67,9 +63,10 @@ function compute(): void {
     <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
       <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
         <p class="text-sm text-slate-700">
-          Dieser Tab berechnet die Farbkorrektur. Importiere zuerst die Referenzwerte deiner Karten
-          (die Datei bleibt auf deinem Rechner und wird nur lokal im Browser gespeichert). Nimm dann
-          ein Standbild der beiden Farbkarten auf, markiere die Eckpunkte und starte die Berechnung.
+          Dieser Tab berechnet die Farbkorrektur. Lade zuerst die Referenzwerte deiner Karten: den
+          mitgelieferten Satz oder eine eigene Datei (sie bleibt auf deinem Rechner und wird nur
+          lokal im Browser gespeichert). Nimm dann ein Standbild der beiden Farbkarten auf, markiere
+          die Eckpunkte und starte die Berechnung.
         </p>
 
         <div class="space-y-2 rounded border border-slate-300 p-3">
@@ -116,29 +113,29 @@ function compute(): void {
               Satz herunterladen
             </button>
           </div>
-          <form class="flex flex-wrap items-end gap-2" @submit.prevent="onUrl">
-            <label class="flex min-w-0 grow flex-col text-sm">
-              Oder von einer Adresse laden (JSON oder CSV)
-              <input
-                v-model="address"
-                type="url"
-                inputmode="url"
-                placeholder="https://…/referenz.json"
-                class="rounded border p-1"
-                data-testid="reference-url"
-              />
-            </label>
+          <div class="flex flex-wrap items-center gap-2">
             <button
-              type="submit"
-              class="rounded border px-3 py-1 text-sm disabled:opacity-50"
-              :disabled="loading || address.trim() === ''"
-              data-testid="reference-url-load"
+              type="button"
+              class="rounded border px-3 py-1 text-sm"
+              data-testid="reference-bundled"
+              @click="references.importBundled()"
             >
-              {{ loading ? 'Lädt …' : 'Laden' }}
+              Mitgelieferten Satz laden
             </button>
-          </form>
+          </div>
+          <p class="text-xs text-slate-600" data-testid="reference-source">
+            „{{ BUNDLED_NAME }}“ stammt aus dem Blogbeitrag
+            <a
+              :href="BUNDLED_SOURCE_URL"
+              class="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+              >bartneck.de</a
+            >
+            und ist keine Datei von Datacolor. Abweichungen zur eigenen Karte sind möglich.
+          </p>
           <p v-if="selected === null" class="text-sm text-amber-800" data-testid="reference-hint">
-            Noch keine Referenzwerte importiert. Format: JSON mit
+            Noch keine Referenzwerte geladen. Format: JSON mit
             <code>cam_gradr-reference/1</code> oder CSV mit den Spalten id, L, a, b (Lab, D50).
           </p>
           <p v-else class="text-sm text-slate-700" data-testid="reference-active">

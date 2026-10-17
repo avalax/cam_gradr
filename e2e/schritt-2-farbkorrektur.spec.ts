@@ -63,41 +63,20 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await expect(app.page.getByTestId('reference-hint')).toBeVisible();
   });
 
-  test('Referenzwerte lassen sich von einer Adresse laden', async ({ app }) => {
-    await app.page.route('https://referenzen.test/**', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: { 'access-control-allow-origin': '*' },
-        body: dummyReferenceJson('Von extern'),
-      }),
-    );
+  test('Der mitgelieferte Satz lässt sich laden und nennt seine Quelle', async ({ app }) => {
     await app.completeStepOne();
-    await app.page.getByTestId('reference-url').fill('https://referenzen.test/satz.json');
-    await app.page.getByTestId('reference-url-load').click();
+    await expect(app.page.getByTestId('reference-source').getByRole('link')).toHaveAttribute(
+      'href',
+      /bartneck\.de/,
+    );
+    await app.page.getByTestId('reference-bundled').click();
 
-    await expect(app.page.getByTestId('reference-active')).toContainText('Von extern');
+    await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
     await expect(app.page.getByTestId('reference-saved')).toBeVisible();
-    // Der Satz bleibt danach lokal verfügbar, die Adresse wird nicht mehr gebraucht.
+    // Der Satz bleibt danach lokal verfügbar.
     await app.page.reload();
     await app.completeStepOne();
-    await expect(app.page.getByTestId('reference-active')).toContainText('Von extern');
-  });
-
-  test('Ein Fehler beim Laden von einer Adresse wird gemeldet', async ({ app }) => {
-    await app.page.route('https://referenzen.test/**', (route) =>
-      route.fulfill({
-        status: 404,
-        headers: { 'access-control-allow-origin': '*' },
-        body: 'nicht da',
-      }),
-    );
-    await app.completeStepOne();
-    await app.page.getByTestId('reference-url').fill('https://referenzen.test/fehlt.json');
-    await app.page.getByTestId('reference-url-load').click();
-
-    await expect(app.page.getByRole('alert').filter({ hasText: 'HTTP 404' })).toBeVisible();
-    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
+    await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
   });
 
   test('Der aktive Satz lässt sich als Datei herunterladen und wieder importieren', async ({

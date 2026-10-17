@@ -5,11 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
-import {
-  setReferenceFetch,
-  setReferenceStorage,
-  useReferenceStore,
-} from '../reference/reference-store';
+import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
+import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../reference/storage';
 import { useSolveStore } from '../solve/solve-store';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
@@ -110,24 +107,17 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
   });
 
-  it('lädt Referenzwerte von einer Adresse', async () => {
-    setReferenceFetch(vi.fn(() => Promise.resolve(new Response(dummyReferenceJson('Extern')))));
+  it('lädt den mitgelieferten Satz und nennt die Quelle', async () => {
     const wrapper = mount(ColorStep);
-    const load = wrapper.get('[data-testid="reference-url-load"]');
-    expect(load.attributes('disabled')).toBeDefined();
-    await wrapper.get('[data-testid="reference-url"]').setValue('https://example.test/a.json');
-    expect(load.attributes('disabled')).toBeUndefined();
-    await wrapper.get('form').trigger('submit');
+    const source = wrapper.get('[data-testid="reference-source"]');
+    expect(source.text()).toContain('keine Datei von Datacolor');
+    expect(source.get('a').attributes('href')).toBe(BUNDLED_SOURCE_URL);
+    expect(source.get('a').attributes('rel')).toBe('noopener noreferrer');
+    await wrapper.get('[data-testid="reference-bundled"]').trigger('click');
     await flushPromises();
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Extern');
-  });
-
-  it('zeigt Fehler beim Laden von einer Adresse', async () => {
-    const wrapper = mount(ColorStep);
-    await wrapper.get('[data-testid="reference-url"]').setValue('kein link');
-    await wrapper.get('form').trigger('submit');
-    await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toContain('gültige Adresse');
+    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
+      `${BUNDLED_NAME} (48 Felder)`,
+    );
   });
 
   it('lädt den aktiven Satz als Datei herunter', async () => {

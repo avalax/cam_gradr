@@ -4,17 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 
-import { setReferenceFetch, setReferenceStorage, useReferenceStore } from './reference-store';
+import { BUNDLED_NAME } from './bundled';
+import { setReferenceStorage, useReferenceStore } from './reference-store';
 import type { ReferenceSet } from './reference';
 import { createIndexedDbStorage } from './storage';
 import type { ReferenceStorage } from './storage';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
-
-function respond(body: string, init: ResponseInit = {}): typeof fetch {
-  return vi.fn(() => Promise.resolve(new Response(body, init)));
-}
 
 function failingStorage(): ReferenceStorage {
   const fail = () => Promise.reject(new Error('kaputt'));
@@ -187,81 +184,15 @@ describe('useReferenceStore', () => {
     expect(store.warning).not.toBeNull();
   });
 
-  describe('von einer Adresse', () => {
-    it('lädt eine JSON-Datei, wählt den Satz und speichert ihn lokal', async () => {
-      const fetcher = respond(dummyReferenceJson('Extern'));
-      setReferenceFetch(fetcher);
+  describe('mitgelieferter Satz', () => {
+    it('wird geprüft, gewählt und lokal gespeichert', async () => {
       const store = useReferenceStore();
-      await store.importUrl(' https://example.test/daten/referenz.json ');
+      await store.importBundled();
       expect(store.error).toBeNull();
-      expect(store.selected?.name).toBe('Extern');
-      expect(store.loading).toBe(false);
+      expect(store.selected?.name).toBe(BUNDLED_NAME);
+      expect(Object.keys(store.selected?.patches ?? {})).toHaveLength(48);
       const saved = await storage.list();
-      expect(saved.map((set) => set.name)).toEqual(['Extern']);
-      expect(fetcher).toHaveBeenCalledWith(new URL('https://example.test/daten/referenz.json'), {
-        credentials: 'omit',
-        referrerPolicy: 'no-referrer',
-      });
-    });
-
-    it('nimmt den Dateinamen aus der Adresse als Namen einer CSV-Datei', async () => {
-      setReferenceFetch(respond(dummyReferenceCsv()));
-      const store = useReferenceStore();
-      await store.importUrl('https://example.test/mein%20satz.csv?x=1');
-      expect(store.selected?.name).toBe('mein satz');
-    });
-
-    it('nutzt "Import", wenn die Adresse keinen Dateinamen hat', async () => {
-      setReferenceFetch(respond(dummyReferenceCsv()));
-      const store = useReferenceStore();
-      await store.importUrl('https://example.test/');
-      expect(store.selected?.name).toBe('Import');
-    });
-
-    it('lehnt ungültige und fremde Adressen ab, ohne etwas abzurufen', async () => {
-      const fetcher = respond('');
-      setReferenceFetch(fetcher);
-      const store = useReferenceStore();
-      await store.importUrl('kein link');
-      expect(store.error).toContain('gültige Adresse');
-      await store.importUrl('file:///C:/daten.json');
-      expect(store.error).toContain('gültige Adresse');
-      expect(fetcher).not.toHaveBeenCalled();
-    });
-
-    it('meldet HTTP-Fehler', async () => {
-      setReferenceFetch(respond('weg', { status: 404 }));
-      const store = useReferenceStore();
-      await store.importUrl('https://example.test/a.json');
-      expect(store.error).toContain('HTTP 404');
-      expect(store.loading).toBe(false);
-    });
-
-    it('weist auf CORS hin, wenn der Abruf scheitert', async () => {
-      setReferenceFetch(() => Promise.reject(new TypeError('Failed to fetch')));
-      const store = useReferenceStore();
-      await store.importUrl('https://example.test/a.json');
-      expect(store.error).toContain('CORS');
-      expect(store.loading).toBe(false);
-    });
-
-    it('meldet eine ungültige Datei von der Adresse', async () => {
-      setReferenceFetch(respond('{"format":"x"}'));
-      const store = useReferenceStore();
-      await store.importUrl('https://example.test/a.json');
-      expect(store.error).toContain('Unbekanntes Format');
-      expect(store.selected).toBeNull();
-    });
-
-    it('nutzt ohne Austauschpunkt das fetch des Browsers', async () => {
-      setReferenceFetch(null);
-      const spy = vi
-        .spyOn(globalThis, 'fetch')
-        .mockImplementation(respond(dummyReferenceJson('Global')));
-      const store = useReferenceStore();
-      await store.importUrl('https://example.test/a.json');
-      expect(store.selected?.name).toBe('Global');
-      spy.mockRestore();
+      expect(saved.map((set) => set.name)).toEqual([BUNDLED_NAME]);
     });
   });
 
