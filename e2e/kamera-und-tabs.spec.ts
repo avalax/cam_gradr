@@ -33,7 +33,7 @@ test.describe('Kameraschalter', () => {
   test('Der Schalter startet und stoppt die Kamera, ohne den Tab zu wechseln', async ({ app }) => {
     await app.open();
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
-    await expect(app.cameraSwitch).toHaveText('Kamera aus');
+    await expect(app.cameraSwitch).toHaveText('Kamera starten');
     await expect(app.button('Standbild aufnehmen')).toBeDisabled();
 
     await app.openTab('Vorschau');
@@ -49,7 +49,7 @@ test.describe('Kameraschalter', () => {
     await expect(app.button('Standbild aufnehmen')).toBeEnabled();
 
     await app.stopCamera();
-    await expect(app.cameraSwitch).toHaveText('Kamera aus');
+    await expect(app.cameraSwitch).toHaveText('Kamera starten');
     await expect(app.page.getByText('Die Kamera ist aus')).toBeVisible();
   });
 
