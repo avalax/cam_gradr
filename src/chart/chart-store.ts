@@ -86,6 +86,16 @@ function defineChartStore(options: ChartStoreOptions) {
       exposure.value = null;
     }
 
+    // Stellt gespeicherte Eckpunkte und Messwerte wieder her (Projekt laden).
+    function restore(state: { points: Record<number, Point[]>; measurements: Measurements }): void {
+      points.value = state.points;
+      measurements.value = state.measurements;
+      if (options.assessLighting) {
+        const input = exposureInput(state.measurements);
+        exposure.value = input === null ? null : assessExposure(input);
+      }
+    }
+
     // Misst die Felder im aktuellen Bild (bei den Graukarten zusätzlich die Raumhelligkeit).
     function measure(grid: PixelGrid): void {
       measurements.value = measureChart(options.layout, corners.value, grid);
@@ -105,6 +115,7 @@ function defineChartStore(options: ChartStoreOptions) {
       addCorner,
       moveCorner,
       reset,
+      restore,
       measure,
     };
   });

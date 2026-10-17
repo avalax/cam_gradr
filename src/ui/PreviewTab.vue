@@ -24,7 +24,7 @@ const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
 const { stream, status, still } = storeToRefs(camera);
-const { result } = storeToRefs(solve);
+const { model } = storeToRefs(solve);
 const { strength, split } = storeToRefs(preview);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
@@ -32,9 +32,7 @@ const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const error = ref<string | null>(null);
 
 const isLive = computed(() => status.value === 'live');
-const lut = computed(() =>
-  result.value === null ? null : buildLut(result.value.model, PREVIEW_LUT_SIZE),
-);
+const lut = computed(() => (model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE)));
 const hasSource = computed(() => isLive.value || still.value !== null);
 const aspect = ref(16 / 9);
 const maxWidth = computed(
@@ -149,7 +147,7 @@ function onSplit(event: Event): void {
         Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie
         siehst du das Original, rechts das korrigierte Bild.
       </p>
-      <p v-if="result === null" class="text-sm text-amber-800" data-testid="preview-no-model">
+      <p v-if="model === null" class="text-sm text-amber-800" data-testid="preview-no-model">
         Es gibt noch keine Farbkorrektur. Berechne sie zuerst im Tab „Farbkarten“.
       </p>
       <p v-else-if="!hasSource" class="text-sm text-amber-800" data-testid="preview-no-source">
@@ -188,13 +186,13 @@ function onSplit(event: Event): void {
         <!-- Das Video dient nur als Bildquelle und bleibt unsichtbar. -->
         <video ref="video" class="hidden" muted playsinline></video>
         <canvas
-          v-show="result !== null && hasSource"
+          v-show="model !== null && hasSource"
           ref="canvas"
           class="w-full rounded bg-black"
           data-testid="preview-canvas"
         ></canvas>
         <div
-          v-if="result !== null && hasSource"
+          v-if="model !== null && hasSource"
           class="pointer-events-none absolute inset-y-0 w-0.5 bg-white shadow"
           :style="{ left: `${String(split)}%` }"
           data-testid="split-line"

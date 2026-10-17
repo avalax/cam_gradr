@@ -33,7 +33,23 @@ describe('useSolveStore', () => {
     store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
     store.compute({ measurements: {}, reference, neutralIds: NEUTRAL_IDS });
     expect(store.result).toBeNull();
+    expect(store.model).toBeNull();
     expect(store.error).toContain('Zu wenige Messwerte');
+  });
+
+  it('stellt das Modell bereit, auch ohne Bericht nach dem Laden', () => {
+    const store = useSolveStore();
+    store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
+    const model = store.model;
+    expect(model).not.toBeNull();
+    store.reset();
+    expect(store.model).toBeNull();
+    if (model !== null) {
+      store.loadModel(model);
+    }
+    expect(store.model).toBe(model);
+    expect(store.result).toBeNull();
+    expect(store.error).toBeNull();
   });
 
   it('setzt zurück', () => {

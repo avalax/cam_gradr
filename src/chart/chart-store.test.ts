@@ -128,6 +128,29 @@ describe('useChartStore', () => {
     expect(store.exposure).toBeNull();
   });
 
+  it('stellt gespeicherte Eckpunkte und Messwerte wieder her und bewertet das Licht neu', () => {
+    const store = useChartStore();
+    const measured: Record<string, [number, number, number]> = {
+      G18: [0.46, 0.46, 0.46],
+      G50: [0.74, 0.74, 0.74],
+      'S3-0': [0.1, 0.1, 0.1],
+      'S3-5': [0.85, 0.85, 0.85],
+    };
+    store.restore({ points: { 3: [point(1, 1)] }, measurements: measured });
+    expect(store.points[3]).toEqual([point(1, 1)]);
+    expect(store.measurements).toEqual(measured);
+    expect(store.exposure?.verdict).toBe('ok');
+    store.restore({ points: {}, measurements: {} });
+    expect(store.exposure).toBeNull();
+  });
+
+  it('übernimmt bei den Farbkarten Messwerte ohne Helligkeitsbewertung', () => {
+    const store = useColorChartStore();
+    store.restore({ points: { 1: [point(2, 2)] }, measurements: { '3A': [0.1, 0.2, 0.3] } });
+    expect(store.measurements).toEqual({ '3A': [0.1, 0.2, 0.3] });
+    expect(store.exposure).toBeNull();
+  });
+
   it('setzt alles zurück', () => {
     const store = useChartStore();
     placeCard(store, 0);
