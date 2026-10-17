@@ -98,11 +98,13 @@ export function assessExposure(
 }
 
 const HINTS: Readonly<Record<Verdict, string>> = {
-  ok: 'Die Raumhelligkeit passt. Weiter mit Schritt 2.',
-  'too-dark': 'Der Raum ist zu dunkel. Bitte das Licht heller stellen.',
-  'too-bright': 'Der Raum ist zu hell. Bitte das Licht dunkler stellen.',
+  ok: 'Die Helligkeit befindet sich im Normalbereich. Weiter mit den Farbkarten.',
+  'too-dark':
+    'Die Helligkeit ist zu niedrig und muss erhöht werden (Beleuchtung verstärken oder Belichtung der Kamera erhöhen).',
+  'too-bright':
+    'Die Helligkeit ist zu hoch und muss verringert werden (Beleuchtung abschwächen oder Belichtung der Kamera verringern).',
   'high-contrast':
-    'Lichter und Schatten sind gleichzeitig am Anschlag. Bitte das Licht gleichmäßiger und ohne Reflexe auf der Karte ausrichten.',
+    'Lichter und Schatten sind gleichzeitig am Anschlag. Die Beleuchtung muss gleichmäßiger ausgerichtet und Reflexe auf der Karte müssen vermieden werden.',
 };
 
 export function describeExposure(result: ExposureResult): string {
@@ -110,10 +112,10 @@ export function describeExposure(result: ExposureResult): string {
 }
 
 const CONTRAST_HINTS = {
-  ok: 'Der Kontrast passt.',
+  ok: 'Der Kontrast befindet sich im Normalbereich.',
   harsh:
-    'Der Kontrast ist zu hoch. Bitte den Kontrast der Kamera senken oder das Licht weicher stellen.',
-  flat: 'Der Kontrast ist zu niedrig. Bitte den Kontrast der Kamera erhöhen.',
+    'Der Kontrast ist zu hoch und muss verringert werden (Kontrast der Kamera senken oder weicheres Licht verwenden).',
+  flat: 'Der Kontrast ist zu niedrig und muss erhöht werden (Kontrast der Kamera erhöhen).',
 } as const;
 
 // Hinweis zum Kontrast: Abstand der beiden großen Felder im Vergleich zum Soll.

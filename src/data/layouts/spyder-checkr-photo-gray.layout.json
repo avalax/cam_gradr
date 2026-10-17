@@ -4,7 +4,8 @@
     "Layout aus Fotos der beiden Graukarten einer SCK300 abgeleitet (Karte 3 links, Karte 4 rechts im aufgeklappten Etui). Rechtecke sind relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links) und geschätzt.",
     "Jede Graukarte hat ein großes Graufeld und einen Streifen mit 6 kleinen Feldern (Index 0 = oben = Schwarz, 5 = unten = fast Weiß). Karte 3: Streifen rechts vom Großfeld, Karte 4: Streifen links.",
     "Große Felder: Nominalwerte aus der Reflexion berechnet (L* = 116*Y^(1/3) - 16), neutral. Keine Messwerte von Datacolor.",
-    "Zuordnung: Karte 3 (links, heller) = 50 %, Karte 4 (rechts, dunkler) = 18 %; Helligkeitsunterschied vom Nutzer bestätigt, auf den Karten ist keine Beschriftung sichtbar."
+    "Zuordnung: Karte 3 (links, heller) = 50 %, Karte 4 (rechts, dunkler) = 18 %; Helligkeitsunterschied vom Nutzer bestätigt, auf den Karten ist keine Beschriftung sichtbar.",
+    "Karte 4 (rechts) nachgemessen an einem scharfen Foto: Großfeld x 0,345 / y 0,095 / Breite 0,57 / Höhe 0,81, Streifenfelder x 0,065 / Breite 0,185 / Höhe 0,112 mit denselben Zeilenabständen wie bei Karte 3 (Quelle der Zeilen: Helligkeitsprofil entlang der Karte)."
   ],
   "cards": [
     {
@@ -99,10 +100,10 @@
           "reflectance": 0.18,
           "nominalLab": [49.5, 0, 0],
           "rect": {
-            "x": 0.328,
-            "y": 0.02,
-            "w": 0.59,
-            "h": 0.886
+            "x": 0.345,
+            "y": 0.095,
+            "w": 0.57,
+            "h": 0.81
           }
         },
         {
@@ -110,10 +111,10 @@
           "role": "strip",
           "index": 0,
           "rect": {
-            "x": 0.064,
-            "y": 0.043,
-            "w": 0.17,
-            "h": 0.118
+            "x": 0.065,
+            "y": 0.082,
+            "w": 0.185,
+            "h": 0.112
           }
         },
         {
@@ -121,10 +122,10 @@
           "role": "strip",
           "index": 1,
           "rect": {
-            "x": 0.064,
-            "y": 0.19,
-            "w": 0.17,
-            "h": 0.118
+            "x": 0.065,
+            "y": 0.223,
+            "w": 0.185,
+            "h": 0.112
           }
         },
         {
@@ -132,10 +133,10 @@
           "role": "strip",
           "index": 2,
           "rect": {
-            "x": 0.064,
-            "y": 0.337,
-            "w": 0.17,
-            "h": 0.118
+            "x": 0.065,
+            "y": 0.365,
+            "w": 0.185,
+            "h": 0.112
           }
         },
         {
@@ -143,10 +144,10 @@
           "role": "strip",
           "index": 3,
           "rect": {
-            "x": 0.064,
-            "y": 0.484,
-            "w": 0.17,
-            "h": 0.118
+            "x": 0.065,
+            "y": 0.506,
+            "w": 0.185,
+            "h": 0.112
           }
         },
         {
@@ -154,10 +155,10 @@
           "role": "strip",
           "index": 4,
           "rect": {
-            "x": 0.064,
-            "y": 0.631,
-            "w": 0.17,
-            "h": 0.118
+            "x": 0.065,
+            "y": 0.648,
+            "w": 0.185,
+            "h": 0.112
           }
         },
         {
@@ -165,10 +166,10 @@
           "role": "strip",
           "index": 5,
           "rect": {
-            "x": 0.064,
-            "y": 0.778,
-            "w": 0.17,
-            "h": 0.118
+            "x": 0.065,
+            "y": 0.789,
+            "w": 0.185,
+            "h": 0.112
           }
         }
       ]

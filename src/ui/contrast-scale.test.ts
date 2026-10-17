@@ -65,6 +65,6 @@ describe('contrastRows und contrastSummary', () => {
 
   it('fasst ohne Messung und mit Messung zusammen', () => {
     expect(contrastSummary(null)).toBe('Noch keine Messung.');
-    expect(contrastSummary(exposure)).toContain('zu hoch');
+    expect(contrastSummary(exposure)).toContain('verringert werden');
   });
 });

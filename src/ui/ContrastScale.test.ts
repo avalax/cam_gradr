@@ -32,11 +32,11 @@ describe('ContrastScale', () => {
     );
     const details = wrapper.get('[data-testid="contrast-details"]');
     expect(details.attributes('role')).toBe('tooltip');
-    expect(details.text()).toContain('zu niedrig');
+    expect(details.text()).toContain('erhöht werden');
     expect(details.text()).toContain('Abstand');
     expect(details.text()).toContain('−8 Punkte');
     expect(wrapper.get('[data-testid="contrast-scale"]').attributes('aria-label')).toContain(
-      'zu niedrig',
+      'erhöht werden',
     );
   });
 

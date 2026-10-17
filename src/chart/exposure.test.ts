@@ -108,10 +108,10 @@ describe('Kontrast', () => {
 
   it('nennt je nach Abweichung einen anderen Hinweis', () => {
     const at = (contrast: number) => ({ ...assessExposure(input()), contrast });
-    expect(describeContrast(at(0))).toContain('passt');
-    expect(describeContrast(at(0.1))).toContain('zu hoch');
-    expect(describeContrast(at(-0.1))).toContain('zu niedrig');
-    expect(describeContrast(at(0.08), 0.1)).toContain('passt');
+    expect(describeContrast(at(0))).toContain('Normalbereich');
+    expect(describeContrast(at(0.1))).toContain('verringert werden');
+    expect(describeContrast(at(-0.1))).toContain('erhöht werden');
+    expect(describeContrast(at(0.08), 0.1)).toContain('Normalbereich');
   });
 });
 

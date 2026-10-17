@@ -71,6 +71,6 @@ describe('detailRows', () => {
 describe('summary', () => {
   it('nennt fehlende Messung oder das Urteil', () => {
     expect(summary(null)).toBe('Noch keine Messung.');
-    expect(summary(exposure)).toContain('Raumhelligkeit passt');
+    expect(summary(exposure)).toContain('Normalbereich');
   });
 });
