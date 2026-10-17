@@ -6,7 +6,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 ## 2. Ablauf (User Flow)
 
-**Aufbau der Oberfläche (Tabs):** Die App hat drei frei anwählbare Tabs, es gibt keine Sperren. **Kamera:** ein Umschalter „Kamera an / Kamera aus“. Bei „an“ stehen alle Kameraoptionen (Kamera, Auflösung, Hinweis zur Kamera-Automatik) und das Livebild mit „Standbild aufnehmen“ zur Verfügung. Bei „aus“ werden Optionen und Livebild durch die Ansicht des aufgenommenen Standbilds ersetzt. **Graukarten:** Eckpunkte setzen und Raumhelligkeit einstellen (Schritt 1). **Farbkarten:** Referenzwerte importieren, Eckpunkte setzen, Korrektur berechnen (Schritt 2). Das Standbild wandert zwischen dem Kamera-Tab und den Kartentabs mit; beim direkten Wechsel zwischen Grau- und Farbkarten wird es verworfen. Die folgenden Abschnitte nennen die beiden Kartentabs weiter „Schritt 1“ und „Schritt 2“.
+**Aufbau der Oberfläche:** Neben den Tabs steht der Schalter „Kamera“ (an/aus, Zustand per `aria-checked`); er ändert den Tab nicht, Fehler beim Start erscheinen daneben. Rechts oben öffnet das Zahnrad-Menü die Kameraeinstellungen (Kamera, Auflösung, Hinweis zur Kamera-Automatik), die Referenzwerte und Projekt speichern/laden. Es gibt vier frei anwählbare Tabs ohne Sperren, zuerst steht **Graukarten** offen: **Graukarten** (Eckpunkte setzen und Raumhelligkeit einstellen, Schritt 1), **Farbkarten** (Eckpunkte setzen, Korrektur mit dem aktiven Referenzsatz berechnen, Schritt 2), **Vorschau** und **Export**. Livebild und Standbild liegen in den Kartentabs; das Standbild wandert zwischen Tabs mit, beim direkten Wechsel zwischen Grau- und Farbkarten wird es verworfen. Die folgenden Abschnitte nennen die beiden Kartentabs weiter „Schritt 1“ und „Schritt 2“.
 
 1. **Kamera wählen & starten** (`getUserMedia`, Geräteliste, Auflösung, Spiegelung aus); die Steuerung ist Teil von Schritt 1, es gibt keinen eigenen Kamera-Schritt.
 2. **Schritt 1 – Graustufenseite (Belichtung/Helligkeit)**
@@ -30,7 +30,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 
 - Webcam-Zugriff, Kamerawahl, Auflösung (bis 1080p/4K wenn verfügbar), Standbild-Aufnahme.
 - Die Spyder Checkr Photo besteht aus 4 Karten: 2 Graukarten (18 % und 50 % Grau) und 2 Farbkarten mit zusammen 48 Farbfeldern. Das Patch-Layout ist daher mehrkartig als Konfigurationsdatei (JSON) beschrieben: Karten mit je eigenem Raster, Positionen, Neutralfeldern und Referenzwerten (Lab/sRGB). Pro Aufnahme sind immer zwei Karten sichtbar (Graupaar oder Farbpaar), jede Karte bekommt eigene vier Eckpunkte. Das Layout ist an Fotos einer SCK300 bestätigt (Details in Abschnitt 11 und in `src/data/profiles/`).
-  - **Referenzwerte sind nicht Teil des Repos.** Das Repo enthält nur das Layout (Karte, Spalte, Reihe je Feld-ID). Die Farbwerte (Lab/sRGB je ID) importiert der Nutzer beim ersten Start als Datei (JSON oder CSV, Format `cam_gradr-reference/1`), z. B. aus eigenen Datacolor-Daten. Die App prüft die Datei (alle IDs vorhanden, Wertebereiche, Weißpunkt), speichert sie nur lokal im Browser (IndexedDB) und sendet sie nie irgendwohin. Ohne importierte Werte ist die Berechnung gesperrt; Schritt 1 funktioniert ohne Import. Mehrere importierte Datensätze sind in der App auswählbar. Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
+  - **Referenzwerte:** Das Repo enthält neben dem Layout einen mitgelieferten Referenzsatz (`src/data/reference/spyder-checkr-48.reference.json`). Er ist keine Herstellerdatei, sondern eine inoffizielle Transkription aus einem Blogbeitrag (bartneck.de, Quelle in Datei, README und Oberfläche genannt). Zusätzlich kann der Nutzer eigene Dateien importieren (JSON oder CSV, Format `cam_gradr-reference/1`) und den aktiven Satz als JSON herunterladen. Die App prüft jeden Satz (alle IDs bekannt, Wertebereiche, Weißpunkt), speichert ihn nur lokal im Browser (IndexedDB) und sendet nie etwas irgendwohin. Ohne geladenen Satz ist die Berechnung gesperrt; Schritt 1 funktioniert ohne. Mehrere Sätze sind auswählbar. Felder ohne Referenzwert werden bei der Berechnung ausgelassen.
 - Linearisierung der Kamerawerte (sRGB-Decode als Annahme, per Neutralpatches der Farbseite korrigierbar).
 - Korrekturmodell (alles aus den Messwerten der Farbseite aus Schritt 2, inklusive deren Neutralpatches):
   1. 1D-Tonkurve je Kanal inklusive Weißabgleich (monotone Interpolation, PCHIP, durch die Neutralpatches),
@@ -86,7 +86,8 @@ src/
   lut/           3D-LUT-Erzeugung, .cube-Export
   gl/            WebGL2-Renderer (Video → LUT → Canvas)
   ui/            Wizard-Schritte, Overlays, Helligkeits-Ampel, Export-Dialog
-  data/layouts/  *.layout.json (Karten-Geometrie ohne Farbwerte); Referenzwerte kommen zur Laufzeit per Import
+  data/layouts/  *.layout.json (Karten-Geometrie ohne Farbwerte)
+  data/reference/  mitgelieferter Referenzsatz (inoffizielle Transkription)
 ```
 
 Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Feedback (Ampel) → (Schritt 2) Farbmessung → Solver → 3D-LUT (Float32Array N³×3) → WebGL-Textur (Preview) und Export (Datei).
@@ -115,9 +116,11 @@ Umgesetztes Korrekturmodell (Abweichung vom ursprünglichen Plan): Weißabgleich
 
 Die Shader-Mathematik wird zusätzlich durch eine TypeScript-Referenzimplementierung (`sampleLut`) abgesichert; der WebGL-Adapter ist mit einer Attrappe getestet. Die Akzeptanztests prüfen echte Pixel der Vorschau in Chrome und Firefox (Software-Rendering, damit sie auch auf CI-Rechnern ohne Grafikkarte laufen).
 
-**Stand M5 (umgesetzt):** Neuer Tab „Export“ mit der Größe 17³, 33³ (Standard) oder 65³. Die LUT wird aus dem Modell berechnet, die in der Vorschau gewählte Stärke wird fest eingerechnet und die Datei als `cam_gradr-<Größe>.cube` heruntergeladen (Format mit Dezimalpunkt und Zeilenumbruch `\n`, Werte 0..1, Rot am schnellsten; der Export wird in Tests wieder eingelesen und gegen das Modell geprüft). In der Kopfzeile stehen „Projekt speichern“ und „Projekt laden“: Die Projektdatei ist JSON, wird beim Laden streng geprüft (Format, Karten, Felder, Wertebereiche, Modell) und ändert bei einer fehlerhaften Datei nichts am bisherigen Stand.
+**Stand M5 (umgesetzt):** Neuer Tab „Export“ mit der Größe 17³, 33³ (Standard) oder 65³. Die LUT wird aus dem Modell berechnet, die in der Vorschau gewählte Stärke wird fest eingerechnet und die Datei als `cam_gradr-<Größe>.cube` heruntergeladen (Format mit Dezimalpunkt und Zeilenumbruch `\n`, Werte 0..1, Rot am schnellsten; der Export wird in Tests wieder eingelesen und gegen das Modell geprüft). Im Zahnrad-Menü rechts oben stehen „Projekt speichern“ und „Projekt laden“ (Meldungen dazu erscheinen in der Kopfzeile): Die Projektdatei ist JSON, wird beim Laden streng geprüft (Format, Karten, Felder, Wertebereiche, Modell) und ändert bei einer fehlerhaften Datei nichts am bisherigen Stand.
 
 **Software-Fallback der Vorschau:** Ist WebGL2 nicht verfügbar, rechnet die Vorschau die LUT auf der CPU (auf höchstens 480 Pixel Breite verkleinert) und zeigt die Darstellungsart an. Die LUT-Textur der Grafikkarte nutzt 8 Bit je Kanal (RGBA8), weil das auch mit Software-GL überall läuft.
+
+**Referenzwerte und Menü:** Ein Zahnrad-Menü rechts oben bündelt Referenzwerte, Projekt speichern und Projekt laden (schließt mit Escape, Klick außerhalb oder dem Zahnrad). Der mitgelieferte Satz (inoffizielle Transkription, Quelle verlinkt) wird beim Start immer geladen und ist vorgewählt, kann aber nicht gelöscht werden; ein eigener Satz gleichen Namens hat Vorrang. Das Menü bietet außerdem Datei-Import und `Satz herunterladen` (JSON `cam_gradr-reference/1`); der Tab Farbkarten zeigt nur den aktiven Satz. Ein Abruf von einer Internetadresse wurde bewusst nicht umgesetzt.
 
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
@@ -180,11 +183,11 @@ Die komplette User Story wird mit **Playwright** durchgängig im echten Browser 
 
 ## 11. Entscheidungen (geklärt)
 
-- **Referenzwerte:** Werden bewusst nicht ins Repo eingecheckt und nicht ausgeliefert, damit keine Urheberrechts- oder Referenzverletzung entstehen kann. Die App importiert sie beim Start aus einer vom Nutzer bereitgestellten Datei und hält sie nur lokal im Browser. Das Repo enthält nur das selbst aus Fotos abgeleitete Layout (`src/data/layouts/`, ohne Farbwerte und ohne Herstellerbezeichnungen). Die Importdatei des Nutzers liegt lokal im Ordner `local-data/`, der in `.gitignore` steht. Tests nutzen ausschließlich synthetische Dummy-Referenzen.
+- **Referenzwerte:** Der mitgelieferte Satz ist eine inoffizielle Transkription aus einem Blogbeitrag (bartneck.de) und keine Herstellerdatei; die Quelle wird in der Oberfläche, in der README und in der Datei selbst genannt. Offizielle Herstellerdaten werden nicht ausgeliefert. Tests nutzen weiterhin synthetische Dummy-Referenzen; der mitgelieferte Satz wird nur auf Gültigkeit geprüft. Eigene Dateien liegen lokal in `local-data/` (in `.gitignore`).
 - **Einsatzzweck:** Die LUT wird für die Webcam bzw. den Portkeys-Kameramonitor erzeugt und manuell dort hochgeladen. Die App erzeugt nur die LUT-Datei, es gibt keine Geräteanbindung. Primärformat `.cube`; welche Größe der Monitor akzeptiert, testet der Nutzer selbst. Export wahlweise 17³/33³/65³, Standard 33³.
 - **Webcam-Automatik:** Nur Warnhinweis. Auto-Belichtung/-Weißabgleich fixiert der Nutzer in der Kamera-Software, die App setzt keine Constraints.
 - **Farbraum:** sRGB / Rec.709 für Ein- und Ausgabe.
-- **Lizenz:** MIT, Copyright (c) 2026 Avalax. Die Lizenz gilt für den Quellcode; Herstellerdaten (Referenzwerte der Karten) sind nicht Teil des Repos und fallen nicht darunter.
+- **Lizenz:** MIT, Copyright (c) 2026 Avalax. Die Lizenz gilt für den Quellcode; der mitgelieferte Referenzsatz stammt aus einer fremden, inoffiziellen Quelle und fällt nicht darunter.
 - **Anwendungs-Kennung:** `avalax.cam_gradr` (Anbieter- und App-Name, Inhaber ist der Nutzer). Sie steht als Konstante `APP_ID` in `src/ui/app-info.ts`, wird in der App angezeigt und dient als Präfix für lokale Speicherschlüssel (z. B. IndexedDB-Name für die Referenz-Importe) und für Projektdateien.
 - **Kartenaufnahme:** Immer sind beide Graukarten oder beide Farbkarten gleichzeitig sichtbar, die Aufnahme erfolgt nacheinander (Grau, dann Farbe); jede Karte bekommt eigene Eckpunkte.
 - **Ampelwerte Schritt 1:** Weiß unter ca. 95 %, Schwarz über ca. 3 %, Mittelgrau im Zielbereich; Werte sind in der Konfiguration hinterlegt und später in der App justierbar.
@@ -194,4 +197,4 @@ Die komplette User Story wird mit **Playwright** durchgängig im echten Browser 
 - **Dynamikumfang:** 8-bit-Video und Kamera-Tonemapping begrenzen die Genauigkeit; die LUT korrigiert nur den fixierten Kamerazustand (bei geänderter Beleuchtung/Einstellung neu kalibrieren).
 - **Referenzgenauigkeit:** Die Qualität der LUT hängt von den importierten Referenzwerten ab; inoffizielle oder abgetippte Quellen können Fehler enthalten, und Abweichungen zur realen Karte (Charge, Alterung) sind möglich. Die App validiert nur Format und Wertebereiche, nicht die Richtigkeit.
 - **Graukarten:** Die Zuordnung 18 % / 50 % beruht nur auf dem Helligkeitsunterschied (auf den Karten ist keine Beschriftung sichtbar); für die 12 Streifenfelder gibt es keine Referenzwerte, die großen Felder sind nominal aus der Reflexion berechnet. Die Zuordnung ist per Konfiguration umkehrbar.
-- **Urheberrecht:** Geklärt durch den Import-Ansatz (siehe Abschnitt 11). Der lokale Git-Verlauf wurde bereinigt, sodass die Referenzwerte auch in früheren Commits nicht mehr enthalten sind (geprüft vor dem ersten Push).
+- **Urheberrecht:** Der mitgelieferte Satz ist eine inoffizielle Transkription mit genannter Quelle; die Entscheidung, ihn ins Repo zu legen, hat der Inhaber getroffen. Der Hinweis in der Oberfläche macht klar, dass es keine Herstellerdatei ist.

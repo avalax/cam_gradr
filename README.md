@@ -30,16 +30,15 @@ anpassen.
 
 ## So funktioniert es
 
-Die App hat fünf Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten**, **Farbkarten**,
-**Vorschau** und **Export**.
-Im Tab Kamera schaltest du die Kamera an oder aus: bei „an“ siehst du alle Kameraoptionen und das
-Livebild, bei „aus“ das aufgenommene Standbild.
+Links oben schaltet der Schalter **Kamera** die Kamera an oder aus, ohne den Tab zu wechseln. Die Kameraauswahl,
+die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ oben rechts. Die App hat vier Tabs,
+die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 
 1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
    aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
-2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, bleiben lokal im
+2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten laden (mitgelieferter Satz oder eigene JSON-/CSV-Datei, bleiben lokal im
    Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen: ein Regler stellt die Stärke
@@ -50,8 +49,8 @@ Livebild, bei „aus“ das aufgenommene Standbild.
 
 Ohne WebGL2 zeichnet die Vorschau in einer verkleinerten Software-Darstellung; im Tab steht, welche Darstellung aktiv ist.
 
-In der Kopfzeile sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
-(Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte der Hersteller stehen nicht
+Im Zahnrad-Menü ⚙ oben rechts sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
+(Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte stehen nicht
 in der Datei, nur der Name des gewählten Satzes.
 
 Wichtig für brauchbare Ergebnisse: Auto-Belichtung und Auto-Weißabgleich der Kamera vorher in der
@@ -59,11 +58,18 @@ Kamera-Software festsetzen. Die App kann das nicht selbst tun und zeigt dazu ein
 
 ## Referenzwerte der Karten
 
-Die Farbwerte der Karten gehören dem Hersteller und sind **nicht Teil dieses Repos**. Das Repo enthält
-nur das Layout (Position der Felder). Die Referenzwerte importierst du in Schritt 2 selbst aus einer
-eigenen Datei. Die App speichert sie ausschließlich lokal im Browser (IndexedDB) und sendet sie nie
-irgendwohin. Ordner wie `local-data/` sind in der `.gitignore` ausgeschlossen, damit solche Dateien
-nicht versehentlich eingecheckt werden.
+Das Repo enthält neben dem Layout (Position der Felder) einen Referenzsatz mit den Lab-Werten der 48
+Farbfelder (`src/data/reference/`). Er ist **keine Herstellerdatei**: Datacolor veröffentlicht die Werte
+nicht in maschinenlesbarer Form. Der Satz ist eine inoffizielle Transkription aus dem Blogbeitrag
+[Patch color definitions for Datacolor SpyderCheckr 48](https://www.bartneck.de/2017/10/24/patch-color-definitions-for-datacolor-spydercheckr-48/)
+(bartneck.de). Der Beitrag nennt selbst Tippfehler bei einigen Feldern, sie sind in der Datei
+korrigiert. Ob die Werte genau zur eigenen Karte passen (Charge, Alterung), ist nicht belegt.
+
+Der mitgelieferte Satz wird beim Start immer geladen und ist vorgewählt. Im Zahnrad-Menü ⚙ oben rechts wechselst du den Satz oder importierst eine eigene Datei. Die App
+speichert den Satz ausschließlich lokal im Browser (IndexedDB) und sendet nie etwas irgendwohin. Mit
+**Satz herunterladen** sicherst du den aktiven Satz als JSON-Datei, die sich später wieder importieren
+lässt. Der Ordner `local-data/` ist in der `.gitignore` ausgeschlossen, falls du eigene Dateien
+ablegen willst.
 
 Unterstützte Formate (Lab-Werte mit Weißpunkt D50, je Feld-ID wie `1A` bis `6H`; Ziffer = Reihe,
 Buchstabe = Spalte, Karte 1 = Spalten A–D, Karte 2 = Spalten E–H):
@@ -119,5 +125,5 @@ entstehen Tag und GitHub-Release mit Build-Artefakt, und die App wird auf GitHub
 
 ## Lizenz
 
-[MIT](LICENSE). Die Lizenz gilt für den Quellcode. Herstellerdaten wie die Referenzwerte der Karten sind
-davon ausgenommen und nicht im Repo enthalten.
+[MIT](LICENSE). Die Lizenz gilt für den Quellcode. Der mitgelieferte Referenzsatz stammt aus einer fremden, inoffiziellen
+Quelle (siehe oben) und fällt nicht unter diese Lizenz.

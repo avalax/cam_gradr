@@ -5,16 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
+import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../reference/storage';
 import { useSolveStore } from '../solve/solve-store';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
-import {
-  dummyIds,
-  dummyLab,
-  dummyReferenceCsv,
-  dummyReferenceJson,
-} from '../test-support/dummy-reference';
+import { dummyIds, dummyLab, dummyReferenceJson } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
 
 import ColorStep from './ColorStep.vue';
@@ -30,20 +26,6 @@ const CORNERS = [
   [700, 650],
 ] as const;
 
-function fakeFile(name: string, text: string) {
-  return { name, text: () => Promise.resolve(text) };
-}
-
-async function chooseFile(wrapper: ReturnType<typeof mount>, name: string, text: string) {
-  const input = wrapper.get('[data-testid="reference-file"]');
-  Object.defineProperty(input.element, 'files', {
-    value: [fakeFile(name, text)],
-    configurable: true,
-  });
-  await input.trigger('change');
-  await flushPromises();
-}
-
 // Setzt Eckpunkte und Messwerte so, als wäre ein Standbild der Farbkarten ausgewertet worden.
 function prepareMeasurements() {
   const chart = useColorChartStore();
@@ -56,8 +38,8 @@ function prepareMeasurements() {
   return chart;
 }
 
-function button(wrapper: ReturnType<typeof mount>, text: string) {
-  return wrapper.findAll('button').find((b) => b.text().includes(text));
+function computeButton(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findAll('button').find((b) => b.text().includes('Farbkorrektur berechnen'));
 }
 
 describe('ColorStep', () => {
@@ -72,96 +54,34 @@ describe('ColorStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('verlangt zuerst Referenzwerte und sperrt die Berechnung', async () => {
+  it('zeigt den vorgewählten Referenzsatz und sperrt die Berechnung bis zur Aufnahme', async () => {
     const wrapper = mount(ColorStep);
+    await useReferenceStore().load();
     await flushPromises();
-    expect(wrapper.get('[data-testid="reference-hint"]').text()).toContain(
-      'Noch keine Referenzwerte',
+    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
+      `${BUNDLED_NAME} (48 Felder)`,
     );
-    expect(button(wrapper, 'Farbkorrektur berechnen')?.attributes('disabled')).toBeDefined();
+    expect(computeButton(wrapper)?.attributes('disabled')).toBeDefined();
     expect(wrapper.text()).toContain('Beide Farbkarten ruhig vor die Kamera');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('importiert eine JSON-Datei und zeigt den aktiven Satz', async () => {
+  it('zeigt vor dem Laden der Referenzen keine Angabe dazu', () => {
     const wrapper = mount(ColorStep);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
-      'Mein Satz (48 Felder)',
-    );
-    expect(wrapper.find('[data-testid="reference-hint"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="reference-select"]').element).toBeDefined();
-  });
-
-  it('zeigt, dass der Satz lokal gespeichert wurde', async () => {
-    const wrapper = mount(ColorStep);
-    expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
-    await vi.waitFor(() => {
-      expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(true);
-    });
-    expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
-  });
-
-  it('importiert eine CSV-Datei', async () => {
-    const wrapper = mount(ColorStep);
-    await chooseFile(wrapper, 'werte.csv', dummyReferenceCsv());
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('werte');
-  });
-
-  it('meldet fehlerhafte Dateien', async () => {
-    const wrapper = mount(ColorStep);
-    await chooseFile(wrapper, 'kaputt.json', '{"format":"x"}');
-    expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');
-  });
-
-  it('macht ohne gewählte Datei nichts', async () => {
-    const wrapper = mount(ColorStep);
-    const input = wrapper.get('[data-testid="reference-file"]');
-    Object.defineProperty(input.element, 'files', { value: [], configurable: true });
-    await input.trigger('change');
     expect(wrapper.find('[data-testid="reference-active"]').exists()).toBe(false);
   });
 
-  it('wechselt zwischen gespeicherten Sätzen und löscht sie', async () => {
+  it('folgt dem gewählten Satz', async () => {
     const wrapper = mount(ColorStep);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Satz A'));
-    await chooseFile(wrapper, 'b.json', dummyReferenceJson('Satz B'));
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Satz B');
-    await wrapper.get('[data-testid="reference-select"]').setValue('Satz A');
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Satz A');
-    await button(wrapper, 'Satz löschen')?.trigger('click');
+    await useReferenceStore().importFile('a.json', dummyReferenceJson('Mein Satz'));
     await flushPromises();
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Satz B');
-    await vi.waitFor(() => {
-      expect(wrapper.find('[data-testid="reference-removed"]').exists()).toBe(true);
-    });
-    expect(wrapper.get('[data-testid="reference-removed"]').text()).toContain('Satz A');
-    await button(wrapper, 'Satz löschen')?.trigger('click');
-    await flushPromises();
-    expect(wrapper.find('[data-testid="reference-hint"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
+      'Mein Satz (48 Felder)',
+    );
   });
 
-  it('lädt gespeicherte Sätze beim Öffnen', async () => {
-    await useReferenceStore().importFile('a.json', dummyReferenceJson('Gespeichert'));
-    setActivePinia(createPinia());
+  it('rechnet ohne ausgewählten Referenzsatz nichts', () => {
     const wrapper = mount(ColorStep);
-    await vi.waitFor(() => {
-      expect(wrapper.find('[data-testid="reference-active"]').exists()).toBe(true);
-    });
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Gespeichert');
-  });
-
-  it('zeigt eine Warnung, wenn der Speicher nicht funktioniert', async () => {
-    setReferenceStorage(null);
-    const wrapper = mount(ColorStep);
-    await flushPromises();
-    expect(wrapper.get('[role="status"]').text()).toContain('geladen');
-  });
-
-  it('rechnet ohne ausgewählten Referenzsatz nichts', async () => {
-    const wrapper = mount(ColorStep);
-    await flushPromises();
     (wrapper.vm as unknown as { compute: () => void }).compute();
     expect(useSolveStore().result).toBeNull();
     expect(useSolveStore().error).toBeNull();
@@ -169,10 +89,10 @@ describe('ColorStep', () => {
 
   it('berechnet die Farbkorrektur aus Messwerten und Referenz und zeigt den Bericht', async () => {
     const wrapper = mount(ColorStep);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson());
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
     prepareMeasurements();
     await flushPromises();
-    const compute = button(wrapper, 'Farbkorrektur berechnen');
+    const compute = computeButton(wrapper);
     expect(compute?.attributes('disabled')).toBeUndefined();
     await compute?.trigger('click');
     await flushPromises();
@@ -185,17 +105,17 @@ describe('ColorStep', () => {
 
   it('meldet Fehler der Berechnung', async () => {
     const wrapper = mount(ColorStep);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson());
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = prepareMeasurements();
     chart.measurements = { '1A': [0.5, 0.5, 0.5] };
     await flushPromises();
-    await button(wrapper, 'Farbkorrektur berechnen')?.trigger('click');
+    await computeButton(wrapper)?.trigger('click');
     await flushPromises();
     expect(wrapper.text()).toContain('Zu wenige Messwerte');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('zeigt keine eigenen Kameraoptionen (die liegen im Kamera-Tab)', () => {
+  it('zeigt keine eigenen Kameraoptionen (die liegen im Zahnrad-Menü)', () => {
     const wrapper = mount(ColorStep);
     expect(wrapper.text()).not.toContain('Aktive Auflösung');
     expect(wrapper.text()).toContain('Die Kamera ist aus');

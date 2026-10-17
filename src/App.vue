@@ -1,27 +1,33 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { useCameraStore } from './camera/camera-store';
-import CameraTab from './ui/CameraTab.vue';
+import { useReferenceStore } from './reference/reference-store';
+import CameraToggle from './ui/CameraToggle.vue';
 import ColorStep from './ui/ColorStep.vue';
 import ExportTab from './ui/ExportTab.vue';
 import GrayStep from './ui/GrayStep.vue';
 import PreviewTab from './ui/PreviewTab.vue';
-import ProjectBar from './ui/ProjectBar.vue';
+import ProjectStatus from './ui/ProjectStatus.vue';
+import SettingsMenu from './ui/SettingsMenu.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
-type TabKey = 'camera' | 'gray' | 'color' | 'preview' | 'export';
+type TabKey = 'gray' | 'color' | 'preview' | 'export';
 
 const TABS: readonly { key: TabKey; label: string }[] = [
-  { key: 'camera', label: 'Kamera' },
   { key: 'gray', label: 'Graukarten' },
   { key: 'color', label: 'Farbkarten' },
   { key: 'preview', label: 'Vorschau' },
   { key: 'export', label: 'Export' },
 ];
 
-const tab = ref<TabKey>('camera');
+const tab = ref<TabKey>('gray');
 const camera = useCameraStore();
+
+// Der mitgelieferte Referenzsatz und die lokal gespeicherten Sätze stehen von Anfang an bereit.
+onMounted(() => {
+  void useReferenceStore().load();
+});
 
 // Das Standbild darf zwischen den Tabs mitwandern. Beim direkten Wechsel zwischen Grau- und
 // Farbkarten wird es verworfen (andere Karten, andere Eckpunkte).
@@ -46,6 +52,8 @@ onBeforeUnmount(() => {
         <p class="text-sm text-slate-600">Webcam-LUT-Generator für die Spyder Checkr Photo.</p>
       </div>
 
+      <CameraToggle />
+
       <div role="tablist" aria-label="Bereiche" class="flex flex-wrap gap-2">
         <button
           v-for="entry in TABS"
@@ -64,13 +72,14 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="ml-auto">
-        <ProjectBar />
+        <SettingsMenu />
       </div>
     </header>
 
+    <ProjectStatus />
+
     <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
-      <CameraTab v-if="tab === 'camera'" />
-      <GrayStep v-else-if="tab === 'gray'" @continue="tab = 'color'" />
+      <GrayStep v-if="tab === 'gray'" @continue="tab = 'color'" />
       <ColorStep v-else-if="tab === 'color'" />
       <PreviewTab v-else-if="tab === 'preview'" />
       <ExportTab v-else />

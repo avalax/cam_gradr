@@ -1,13 +1,17 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 
+import { BUNDLED_NAME } from './bundled';
 import { setReferenceStorage, useReferenceStore } from './reference-store';
 import type { ReferenceSet } from './reference';
 import { createIndexedDbStorage } from './storage';
 import type { ReferenceStorage } from './storage';
+
+const download = vi.hoisted(() => vi.fn());
+vi.mock('../lut/download', () => ({ downloadFile: download }));
 
 function failingStorage(): ReferenceStorage {
   const fail = () => Promise.reject(new Error('kaputt'));
@@ -23,11 +27,14 @@ describe('useReferenceStore', () => {
     setReferenceStorage(storage);
   });
 
-  it('ist zu Beginn leer', async () => {
+  it('enthält nach dem Laden den mitgelieferten Satz und wählt ihn vor', async () => {
     const store = useReferenceStore();
     await store.load();
-    expect(store.sets).toEqual([]);
-    expect(store.selected).toBeNull();
+    expect(store.sets.map((set) => set.name)).toEqual([BUNDLED_NAME]);
+    expect(store.selected?.name).toBe(BUNDLED_NAME);
+    expect(Object.keys(store.selected?.patches ?? {})).toHaveLength(48);
+    await store.load();
+    expect(store.sets).toHaveLength(1);
   });
 
   it('importiert, wählt und speichert einen Satz lokal', async () => {
@@ -68,15 +75,16 @@ describe('useReferenceStore', () => {
     expect(store.lastRemoved).toBeNull();
   });
 
-  it('lädt gespeicherte Sätze beim Start und wählt den ersten', async () => {
+  it('lädt gespeicherte Sätze zusätzlich zum mitgelieferten und wählt diesen vor', async () => {
     const first = useReferenceStore();
     await first.importFile('a.json', dummyReferenceJson('Satz A'));
     setActivePinia(createPinia());
     const again = useReferenceStore();
     await again.load();
-    expect(again.selectedName).toBe('Satz A');
+    expect(again.selectedName).toBe(BUNDLED_NAME);
+    expect(again.sets.map((set) => set.name)).toEqual([BUNDLED_NAME, 'Satz A']);
     await again.load();
-    expect(again.sets).toHaveLength(1);
+    expect(again.sets).toHaveLength(2);
   });
 
   it('behält eine bereits getroffene Auswahl beim Laden', async () => {
@@ -128,10 +136,7 @@ describe('useReferenceStore', () => {
       { name: 'Neu', patches: {} },
     ]);
     await loading;
-    expect(store.sets.map((set) => set.name).toSorted((a, b) => a.localeCompare(b))).toEqual([
-      'Alt',
-      'Neu',
-    ]);
+    expect(store.sets.map((set) => set.name)).toEqual([BUNDLED_NAME, 'Alt', 'Neu']);
     expect(Object.keys(store.sets.find((set) => set.name === 'Neu')?.patches ?? {})).toHaveLength(
       48,
     );
@@ -178,5 +183,45 @@ describe('useReferenceStore', () => {
     // Die Testumgebung hat kein IndexedDB: das Laden schlägt ab und wird gemeldet.
     await store.load();
     expect(store.warning).not.toBeNull();
+  });
+
+  describe('mitgelieferter Satz', () => {
+    it('ist auch ohne funktionierenden Speicher da', async () => {
+      setReferenceStorage(failingStorage());
+      const store = useReferenceStore();
+      await store.load();
+      expect(store.warning).not.toBeNull();
+      expect(store.selected?.name).toBe(BUNDLED_NAME);
+    });
+
+    it('wird von einem eigenen Satz gleichen Namens ersetzt', async () => {
+      await storage.save({ name: BUNDLED_NAME, patches: { '1A': [50, 0, 0] } });
+      const store = useReferenceStore();
+      await store.load();
+      expect(store.sets).toHaveLength(1);
+      expect(Object.keys(store.selected?.patches ?? {})).toEqual(['1A']);
+    });
+  });
+
+  describe('Download', () => {
+    it('speichert den gewählten Satz als importierbare JSON-Datei', async () => {
+      download.mockReset();
+      const store = useReferenceStore();
+      await store.importFile('a.json', dummyReferenceJson('Satz A'));
+      store.downloadSelected();
+      const [name, content, mime] = download.mock.calls[0] as [string, string, string];
+      expect(name).toBe('Satz A.json');
+      expect(mime).toBe('application/json');
+      setActivePinia(createPinia());
+      const again = useReferenceStore();
+      await again.importFile(name, content);
+      expect(again.selected?.patches).toEqual(store.selected?.patches);
+    });
+
+    it('tut ohne gewählten Satz nichts', () => {
+      download.mockReset();
+      useReferenceStore().downloadSelected();
+      expect(download).not.toHaveBeenCalled();
+    });
   });
 });

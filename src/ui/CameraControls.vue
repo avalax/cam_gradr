@@ -6,7 +6,7 @@ import { useCameraStore } from '../camera/camera-store';
 import { RESOLUTIONS } from '../camera/types';
 
 const store = useCameraStore();
-const { devices, selectedDeviceId, resolution, status, errorMessage, actual } = storeToRefs(store);
+const { devices, selectedDeviceId, resolution, status, actual } = storeToRefs(store);
 
 const isStarting = computed(() => status.value === 'starting');
 
@@ -69,9 +69,6 @@ function onResolution(event: Event): void {
       </label>
     </div>
 
-    <p v-if="errorMessage !== null" class="text-sm text-red-700" role="alert">
-      {{ errorMessage }}
-    </p>
     <p v-if="actual !== null" class="text-xs text-slate-600">
       Aktive Auflösung: {{ actual.width }} × {{ actual.height }}
     </p>

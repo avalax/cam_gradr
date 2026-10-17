@@ -9,6 +9,14 @@ function fakeVideo() {
 }
 
 describe('attachStream', () => {
+  it('ignoriert eine abgebrochene Wiedergabe, etwa wenn das Element entfernt wird', async () => {
+    const { video, play } = fakeVideo();
+    play.mockReturnValueOnce(Promise.reject(new DOMException('abgebrochen', 'AbortError')));
+    attachStream(video, {} as MediaStream);
+    await Promise.resolve();
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
   it('setzt den Stream und startet die Wiedergabe', () => {
     const { video, play } = fakeVideo();
     const stream = {} as MediaStream;

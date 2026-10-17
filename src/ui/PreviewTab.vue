@@ -154,7 +154,7 @@ function onSplit(event: Event): void {
         Es gibt noch keine Farbkorrektur. Berechne sie zuerst im Tab „Farbkarten“.
       </p>
       <p v-else-if="!hasSource" class="text-sm text-amber-800" data-testid="preview-no-source">
-        Schalte die Kamera im Tab „Kamera“ an oder nimm dort ein Standbild auf.
+        Schalte oben die Kamera an oder nimm in einem Kartentab ein Standbild auf.
       </p>
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
       <p

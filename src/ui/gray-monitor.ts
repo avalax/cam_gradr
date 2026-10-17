@@ -11,13 +11,14 @@ export function frameGrid(frame: Frame): PixelGrid {
   return { width: frame.width, height: frame.height, data: frame.data, channels: 3, maxValue: 1 };
 }
 
-// Ein Messschritt der Live-Anzeige: nur wenn das Video läuft und alle Eckpunkte gesetzt sind.
+// Ein Messschritt der Live-Anzeige: nur wenn das Video läuft, schon ein Bild liefert und alle
+// Eckpunkte gesetzt sind (direkt nach dem Einschalten hat das Video noch keine Größe).
 export function measureTick(
   isActive: boolean,
   element: HTMLVideoElement | null,
   measure: (grid: PixelGrid) => void,
 ): void {
-  if (isActive && element !== null) {
+  if (isActive && element !== null && element.videoWidth > 0) {
     const frame = createVideoGrabber(element, () => document.createElement('canvas')).grab();
     measure({
       width: frame.width,

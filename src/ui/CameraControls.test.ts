@@ -17,7 +17,6 @@ describe('CameraControls', () => {
     const wrapper = mount(CameraControls);
     expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
     expect(wrapper.findAll('select')).toHaveLength(2);
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     expect(wrapper.findAll('button')).toHaveLength(0);
   });
 
@@ -28,14 +27,6 @@ describe('CameraControls', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('Aktive Auflösung: 1280 × 720');
     expect(wrapper.text()).toContain('Webcam 2');
-  });
-
-  it('zeigt Fehlermeldungen an', async () => {
-    installFakeCamera({ open: () => Promise.reject(new Error('x')) });
-    const wrapper = mount(CameraControls);
-    await useCameraStore().start();
-    await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toContain('nicht gestartet');
   });
 
   it('wechselt Kamera und Auflösung', async () => {

@@ -55,24 +55,31 @@ export class AppPage {
     return this.page.getByRole('button', { name });
   }
 
-  // Wechselt in den Tab "Kamera", schaltet die Kamera an und wartet auf das Livebild.
-  async startCamera(): Promise<void> {
-    await this.openTab('Kamera');
-    await this.button('Kamera an').click();
-    await expect(this.page.getByText('Aktive Auflösung')).toBeVisible();
-    await expect(this.button('Standbild aufnehmen')).toBeEnabled();
+  get cameraSwitch(): Locator {
+    return this.page.getByRole('switch', { name: 'Kamera', exact: true });
   }
 
-  // Kamera anschalten und in den Tab "Graukarten" wechseln (Standardweg für Schritt 1).
+  // Schaltet die Kamera mit dem Schalter neben den Tabs an und wartet auf das Livebild.
+  async startCamera(): Promise<void> {
+    await this.cameraSwitch.click();
+    await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'true');
+    await expect(this.cameraSwitch).toHaveAttribute('data-status', 'live');
+  }
+
+  // Schaltet die Kamera mit dem Schalter wieder aus.
+  async stopCamera(): Promise<void> {
+    await this.cameraSwitch.click();
+    await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+  }
+
+  // Kamera anschalten und im Tab "Graukarten" auf die Aufnahme warten (Standardweg für Schritt 1).
   async startGrayStage(): Promise<void> {
     await this.startCamera();
     await this.openTab('Graukarten');
     await expect(this.button('Standbild aufnehmen')).toBeEnabled();
   }
 
-  async openTab(
-    name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export',
-  ): Promise<void> {
+  async openTab(name: 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export'): Promise<void> {
     await this.page.getByRole('tab', { name, exact: true }).click();
     await expect(this.page.getByRole('tab', { name, exact: true })).toHaveAttribute(
       'aria-selected',
@@ -106,6 +113,7 @@ export class AppPage {
     await this.completeStepOne();
     await this.importReference('referenz.json', dummyReferenceJson());
     await expect(this.page.getByTestId('reference-saved')).toBeVisible();
+    await this.closeSettings();
     await this.captureColorCards();
     await this.button('Farbkorrektur berechnen').click();
     await expect(this.page.getByTestId('report')).toBeVisible();
@@ -120,8 +128,9 @@ export class AppPage {
     };
   }
 
-  // Lädt eine Projektdatei über das Dateifeld der Kopfzeile.
+  // Lädt eine Projektdatei über das Zahnrad-Menü (es schließt sich danach von selbst).
   async loadProject(text: string): Promise<void> {
+    await this.openSettings();
     await this.page.getByTestId('project-file').setInputFiles({
       name: 'projekt.json',
       mimeType: 'application/json',
@@ -190,8 +199,30 @@ export class AppPage {
     }
   }
 
-  // Importiert eine Referenzdatei über das Dateifeld in Schritt 2.
+  // Öffnet das Zahnrad-Menü (Referenzwerte, Projekt), falls es noch zu ist.
+  async openSettings(): Promise<void> {
+    const panel = this.page.getByTestId('settings-panel');
+    if (!(await panel.isVisible())) {
+      await this.page.getByTestId('settings-button').click();
+    }
+    await expect(panel).toBeVisible();
+  }
+
+  // Schließt das Zahnrad-Menü, damit es nichts verdeckt.
+  async closeSettings(): Promise<void> {
+    await this.page.keyboard.press('Escape');
+    await expect(this.page.getByTestId('settings-panel')).toBeHidden();
+  }
+
+  // Speichert das Projekt über das Zahnrad-Menü und liefert Dateiname und Inhalt.
+  async saveProject(): Promise<{ fileName: string; text: string }> {
+    await this.openSettings();
+    return this.download(this.page.getByTestId('project-save'));
+  }
+
+  // Importiert eine Referenzdatei über das Dateifeld im Zahnrad-Menü (das Menü bleibt offen).
   async importReference(fileName: string, content: string): Promise<void> {
+    await this.openSettings();
     await this.page.getByTestId('reference-file').setInputFiles({
       name: fileName,
       mimeType: fileName.endsWith('.json') ? 'application/json' : 'text/csv',
