@@ -43,4 +43,36 @@ describe('ResultReport', () => {
       expect(swatch.attributes('style')).toMatch(/background: rgb\(\d+, \d+, \d+\)/);
     }
   });
+
+  it('zeigt den mittleren Fehler getrennt nach Neutral- und Farbfeldern', () => {
+    const wrapper = mount(ResultReport, { props: { result } });
+    expect(wrapper.get('[data-testid="neutral-after"]').text()).toBe(
+      result.report.neutral?.meanAfter.toFixed(1),
+    );
+    expect(wrapper.get('[data-testid="color-before"]').text()).toBe(
+      result.report.color?.meanBefore.toFixed(1),
+    );
+  });
+
+  it('zeigt ohne Kontrollwerte keinen Abschnitt zu den Graukarten', () => {
+    const wrapper = mount(ResultReport, { props: { result } });
+    expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
+  });
+
+  it('zeigt die Kontrolle mit den Graukarten und warnt erst bei großer Abweichung', async () => {
+    const wrapper = mount(ResultReport, {
+      props: {
+        result,
+        grayCheck: [
+          { id: 'G50', before: 4, after: 0.8 },
+          { id: 'X', before: 1, after: 1 },
+        ],
+      },
+    });
+    expect(wrapper.get('[data-testid="gray-G50"]').text()).toBe('Graukarte 50 %: 4.0 → 0.8');
+    expect(wrapper.get('[data-testid="gray-X"]').text()).toContain('X: 1.0 → 1.0');
+    expect(wrapper.find('[data-testid="gray-warning"]').exists()).toBe(false);
+    await wrapper.setProps({ grayCheck: [{ id: 'G18', before: 5, after: 3.5 }] });
+    expect(wrapper.get('[data-testid="gray-warning"]').text()).toContain('Licht');
+  });
 });

@@ -4,10 +4,25 @@ import { computed } from 'vue';
 import { labToSrgb } from '../color/lab';
 import { applyColorModel } from '../solve/fit';
 import type { FitResult } from '../solve/fit';
+import type { GrayCheck } from '../solve/gray-check';
 
 import { cssColor } from './color-css';
 
-const props = defineProps<{ result: FitResult }>();
+const props = withDefaults(defineProps<{ result: FitResult; grayCheck?: readonly GrayCheck[] }>(), {
+  grayCheck: () => [],
+});
+
+// Ab diesem Fehler (ΔE2000) auf den Graukarten weist der Bericht auf mögliche Ursachen hin.
+const GRAY_WARN = 3;
+const GRAY_NAMES: Readonly<Record<string, string>> = {
+  G50: 'Graukarte 50 %',
+  G18: 'Graukarte 18 %',
+};
+
+const grayRows = computed(() =>
+  props.grayCheck.map((check) => ({ ...check, name: GRAY_NAMES[check.id] ?? check.id })),
+);
+const grayOff = computed(() => props.grayCheck.some((check) => check.after > GRAY_WARN));
 
 function format(value: number): string {
   return value.toFixed(1);
@@ -37,7 +52,35 @@ const tiles = computed(() =>
       <dd>Größter Fehler (ΔE2000)</dd>
       <dd data-testid="max-before">{{ format(result.report.maxBefore) }}</dd>
       <dd data-testid="max-after">{{ format(result.report.maxAfter) }}</dd>
+      <template v-if="result.report.neutral !== null">
+        <dd>Neutralfelder ({{ result.report.neutral.count }}), Mittel</dd>
+        <dd data-testid="neutral-before">{{ format(result.report.neutral.meanBefore) }}</dd>
+        <dd data-testid="neutral-after">{{ format(result.report.neutral.meanAfter) }}</dd>
+      </template>
+      <template v-if="result.report.color !== null">
+        <dd>Farbfelder ({{ result.report.color.count }}), Mittel</dd>
+        <dd data-testid="color-before">{{ format(result.report.color.meanBefore) }}</dd>
+        <dd data-testid="color-after">{{ format(result.report.color.meanAfter) }}</dd>
+      </template>
     </dl>
+
+    <section v-if="grayRows.length > 0" class="max-w-xl space-y-1 text-sm" data-testid="gray-check">
+      <h4 class="font-medium">Kontrolle mit den Graukarten</h4>
+      <p class="text-xs text-slate-600">
+        Die großen Felder der Graukarten gehen nicht in die Berechnung ein. Ihre Abweichung vom
+        Nennwert (ΔE2000, vorher → nachher) zeigt unabhängig, ob die Korrektur auch dort stimmt.
+      </p>
+      <ul>
+        <li v-for="row in grayRows" :key="row.id" :data-testid="`gray-${row.id}`">
+          {{ row.name }}: {{ format(row.before) }} → {{ format(row.after) }}
+        </li>
+      </ul>
+      <p v-if="grayOff" class="text-xs text-amber-800" role="note" data-testid="gray-warning">
+        Die Abweichung ist groß. Möglicherweise haben sich Licht oder die Automatik der Kamera
+        zwischen den Aufnahmen der Graukarten und der Farbkarten geändert, oder die Nennwerte der
+        Graukarten stimmen nicht genau.
+      </p>
+    </section>
 
     <p class="max-w-4xl text-xs text-slate-600">
       Je Feld: links Soll-Farbe, Mitte Kamera, rechts korrigiert. Unter dem Feld steht der Fehler

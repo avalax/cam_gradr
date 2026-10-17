@@ -20,6 +20,8 @@ export interface PatchLayout {
   id: string;
   rect: Rect;
   role?: 'large' | 'strip' | 'neutral';
+  // Nennwert (Lab, D50), falls bekannt; nur für Kontrollfelder, nicht aus einer Messung.
+  nominalLab?: readonly [number, number, number];
 }
 
 export interface CardLayout {

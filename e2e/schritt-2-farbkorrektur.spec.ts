@@ -138,7 +138,7 @@ test.describe('Farbkarten: Farbkorrektur', () => {
     expect(before).toBeGreaterThan(4);
     expect(after).toBeLessThan(1.5);
     expect(after).toBeLessThan(before / 3);
-    await expect(report.locator('li')).toHaveCount(48);
+    await expect(report.locator('[data-testid^="tile-"]')).toHaveCount(48);
   });
 
   test('Eckpunkte der Farbkarten lassen sich in beliebiger Reihenfolge setzen', async ({ app }) => {

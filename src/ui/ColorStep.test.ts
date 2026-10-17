@@ -3,7 +3,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useColorChartStore } from '../chart/chart-store';
+import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
@@ -95,6 +95,23 @@ describe('ColorStep', () => {
     const after = Number(wrapper.get('[data-testid="mean-after"]').text());
     expect(after).toBeLessThan(before);
     expect(useSolveStore().result).not.toBeNull();
+  });
+
+  it('kontrolliert die Korrektur mit den gemessenen Graukarten aus Schritt 1', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    useChartStore().measurements = { G50: cameraCode([76.07, 0, 0]) };
+    prepareMeasurements();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="gray-G50"]').text()).toContain('Graukarte 50 %');
+  });
+
+  it('zeigt ohne gemessene Graukarten keine Kontrolle', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    prepareMeasurements();
+    await flushPromises();
+    expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
   });
 
   it('rechnet neu, wenn sich die Messwerte ändern', async () => {
