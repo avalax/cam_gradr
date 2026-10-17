@@ -5,23 +5,27 @@ import { useCameraStore } from './camera/camera-store';
 import CameraTab from './ui/CameraTab.vue';
 import ColorStep from './ui/ColorStep.vue';
 import GrayStep from './ui/GrayStep.vue';
+import PreviewTab from './ui/PreviewTab.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
-type TabKey = 'camera' | 'gray' | 'color';
+type TabKey = 'camera' | 'gray' | 'color' | 'preview';
 
 const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'camera', label: 'Kamera' },
   { key: 'gray', label: 'Graukarten' },
   { key: 'color', label: 'Farbkarten' },
+  { key: 'preview', label: 'Vorschau' },
 ];
 
 const tab = ref<TabKey>('camera');
 const camera = useCameraStore();
 
-// Das Standbild darf zwischen Kamera-Tab und Kartentabs mitwandern. Beim direkten Wechsel zwischen
-// Grau- und Farbkarten wird es verworfen (andere Karten, andere Eckpunkte).
+// Das Standbild darf zwischen den Tabs mitwandern. Beim direkten Wechsel zwischen Grau- und
+// Farbkarten wird es verworfen (andere Karten, andere Eckpunkte).
 watch(tab, (next, previous) => {
-  if (next !== 'camera' && previous !== 'camera') {
+  const between =
+    (next === 'gray' && previous === 'color') || (next === 'color' && previous === 'gray');
+  if (between) {
     camera.clearStill();
   }
 });
@@ -60,7 +64,8 @@ onBeforeUnmount(() => {
     <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
       <CameraTab v-if="tab === 'camera'" />
       <GrayStep v-else-if="tab === 'gray'" @continue="tab = 'color'" />
-      <ColorStep v-else />
+      <ColorStep v-else-if="tab === 'color'" />
+      <PreviewTab v-else />
     </div>
 
     <footer class="text-xs text-slate-500">{{ APP_ID }}</footer>

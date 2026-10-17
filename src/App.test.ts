@@ -36,12 +36,22 @@ describe('App', () => {
     expect(APP_ID).toBe('avalax.cam_gradr');
   });
 
-  it('bietet drei Tabs, die alle frei anwählbar sind', () => {
+  it('bietet vier Tabs, die alle frei anwählbar sind', () => {
     installFakeCamera();
     const wrapper = mountApp();
     const all = tabs(wrapper);
-    expect(all.map((tab) => tab.text())).toEqual(['Kamera', 'Graukarten', 'Farbkarten']);
-    expect(all.map((tab) => tab.attributes('aria-selected'))).toEqual(['true', 'false', 'false']);
+    expect(all.map((tab) => tab.text())).toEqual([
+      'Kamera',
+      'Graukarten',
+      'Farbkarten',
+      'Vorschau',
+    ]);
+    expect(all.map((tab) => tab.attributes('aria-selected'))).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
+    ]);
     for (const tab of all) {
       expect(tab.attributes('disabled')).toBeUndefined();
     }
@@ -102,8 +112,19 @@ describe('App', () => {
     expect(camera.still).not.toBeNull();
     await tabs(wrapper)[2]?.trigger('click');
     expect(camera.still).not.toBeNull();
+    await tabs(wrapper)[3]?.trigger('click');
+    expect(camera.still).not.toBeNull();
     await tabs(wrapper)[1]?.trigger('click');
+    expect(camera.still).not.toBeNull();
+    await tabs(wrapper)[2]?.trigger('click');
     expect(camera.still).toBeNull();
+  });
+
+  it('zeigt im Tab Vorschau den Hinweis auf die fehlende Farbkorrektur', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    await tabs(wrapper)[3]?.trigger('click');
+    expect(wrapper.text()).toContain('Es gibt noch keine Farbkorrektur');
   });
 
   it('stoppt die Kamera beim Entfernen der App', async () => {
