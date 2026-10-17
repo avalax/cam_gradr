@@ -22,7 +22,7 @@ describe('CameraToggle', () => {
     expect(toggle(wrapper).text()).toBe('Kamera starten');
     expect(toggle(wrapper).attributes('role')).toBe('switch');
     expect(toggle(wrapper).attributes('aria-checked')).toBe('false');
-    expect(toggle(wrapper).classes()).toContain('bg-red-700');
+    expect(toggle(wrapper).classes()).toContain('bg-emerald-700');
     expect(toggle(wrapper).attributes('aria-label')).toBe('Kamera');
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
   });
@@ -33,8 +33,8 @@ describe('CameraToggle', () => {
     await toggle(wrapper).trigger('click');
     await flushPromises();
     expect(api.open).toHaveBeenCalledTimes(1);
-    expect(toggle(wrapper).text()).toBe('Kamera an');
-    expect(toggle(wrapper).classes()).toContain('bg-emerald-700');
+    expect(toggle(wrapper).text()).toBe('Kamera stoppen');
+    expect(toggle(wrapper).classes()).toContain('bg-red-700');
     expect(toggle(wrapper).attributes('aria-checked')).toBe('true');
     expect(toggle(wrapper).attributes('data-status')).toBe('live');
     await toggle(wrapper).trigger('click');
@@ -49,6 +49,7 @@ describe('CameraToggle', () => {
     const starting = useCameraStore().start();
     await wrapper.vm.$nextTick();
     expect(toggle(wrapper).text()).toBe('Kamera startet …');
+    expect(toggle(wrapper).classes()).toContain('bg-amber-400');
     expect(toggle(wrapper).attributes('aria-checked')).toBe('true');
     await starting;
   });

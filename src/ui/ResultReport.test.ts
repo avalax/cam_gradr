@@ -54,6 +54,15 @@ describe('ResultReport', () => {
     );
   });
 
+  it('warnt vor komprimierten Lichtern nur, wenn Neutralfelder nicht unterscheidbar sind', async () => {
+    const wrapper = mount(ResultReport, { props: { result } });
+    expect(wrapper.find('[data-testid="indistinct-warning"]').exists()).toBe(false);
+    await wrapper.setProps({
+      result: { ...result, report: { ...result.report, indistinct: ['2E', '2D'] } },
+    });
+    expect(wrapper.get('[data-testid="indistinct-warning"]').text()).toContain('2E, 2D');
+  });
+
   it('zeigt ohne Kontrollwerte keinen Abschnitt zu den Graukarten', () => {
     const wrapper = mount(ResultReport, { props: { result } });
     expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);

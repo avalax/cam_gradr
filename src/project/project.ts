@@ -14,6 +14,8 @@ const COLOR_CARDS = [1, 2];
 interface ChartState {
   corners: Record<number, Point[]>;
   measurements: Record<string, Rgb>;
+  // Karten um 180° gedreht gehalten (fehlt in älteren Projektdateien).
+  rotated: boolean;
 }
 
 export interface Project {
@@ -97,6 +99,7 @@ function parseChart(
   return {
     corners: parseCorners(value.corners, where, cards),
     measurements: parseMeasurements(value.measurements, where, ids),
+    rotated: value.rotated === true,
   };
 }
 

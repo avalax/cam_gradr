@@ -31,8 +31,9 @@ function sample(): Project {
         ],
       },
       measurements: { G18: [0.46, 0.46, 0.46], 'S4-0': [0.1, 0.1, 0.1] },
+      rotated: false,
     },
-    color: { corners: {}, measurements, reference: 'Mein Satz' },
+    color: { corners: {}, measurements, rotated: false, reference: 'Mein Satz' },
     model,
     preview: { strength: 80, split: 25 },
   };

@@ -12,7 +12,7 @@ import type { Corners, Point } from './types';
 // Welche Helligkeit "dunkel" ist, hängt vom Licht ab; deshalb werden mehrere Schwellen probiert,
 // bis genau die erwartete Zahl an Karten gefunden ist.
 const MAX_WIDTH = 320;
-const THRESHOLDS = [0.25, 0.2, 0.3, 0.15, 0.35] as const;
+const THRESHOLDS = [0.25, 0.2, 0.3, 0.15, 0.35, 0.45, 0.4] as const;
 // Mindestgröße der dunklen Fläche (Anteil am Bild); die hellen Felder innen zählen nicht mit.
 const MIN_DARK_SHARE = 0.01;
 const MIN_ASPECT = 0.45;

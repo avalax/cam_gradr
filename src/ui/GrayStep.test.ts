@@ -309,6 +309,14 @@ describe('GrayStep', () => {
     expect(measure).not.toHaveBeenCalled();
   });
 
+  it('zeigt neben dem Bild eine Skala für das Licht und eine für den Kontrast', async () => {
+    const wrapper = await mountLive();
+    expect(wrapper.find('[data-testid="brightness-scale"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="contrast-scale"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Licht');
+    expect(wrapper.text()).toContain('Kontrast');
+  });
+
   it('zeigt im Livebild zwei beschriftete Rahmen, wo die Karten hingehalten werden sollen', async () => {
     const wrapper = await mountLive();
     const guides = wrapper.findAll('[data-testid="guide"]');
@@ -498,6 +506,7 @@ describe('GrayStep', () => {
       level18: 0.46,
       level50: 0.74,
       delta: 0,
+      contrast: 0,
     };
     await flushPromises();
     expect(next()?.attributes('disabled')).toBeUndefined();
@@ -515,6 +524,7 @@ describe('GrayStep', () => {
       level18: 0.5,
       level50: 0.8,
       delta: 0.03,
+      contrast: 0,
     };
     await flushPromises();
     expect(wrapper.text()).toContain('geclippt');

@@ -117,7 +117,7 @@ export class AppPage {
     await this.startGrayStage();
     await this.captureStill();
     await this.placeAllCorners();
-    await this.expectVerdict('Die Raumhelligkeit passt');
+    await this.expectVerdict('im Normalbereich');
     await this.button('Weiter zu den Farbkarten').click();
     await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
   }

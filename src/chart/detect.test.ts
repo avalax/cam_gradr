@@ -94,6 +94,13 @@ describe('detectCards', () => {
     expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
+  it('findet auch einen grauen Rahmen, wie ihn eine Webcam bei hellem Licht liefert', () => {
+    const frame = scene((f) => {
+      drawCard(f, 100, 60, 160, 250, { dark: 0.42 });
+    });
+    expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
+  });
+
   it('findet die Ecken auch mit Laschen in Ober- und Unterkante', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { tabs: true });

@@ -13,7 +13,17 @@ const label = computed(() => {
   if (status.value === 'starting') {
     return 'Kamera startet …';
   }
-  return isOn.value ? 'Kamera an' : 'Kamera starten';
+  return isOn.value ? 'Kamera stoppen' : 'Kamera starten';
+});
+
+// Grün zum Starten, Gelb während des Startens, Rot zum Stoppen.
+const buttonClass = computed(() => {
+  if (status.value === 'starting') {
+    return 'border-amber-500 bg-amber-400 text-slate-900';
+  }
+  return isOn.value
+    ? 'border-red-700 bg-red-700 text-white'
+    : 'border-emerald-700 bg-emerald-700 text-white';
 });
 
 function toggle(): void {
@@ -32,11 +42,7 @@ function toggle(): void {
       role="switch"
       aria-label="Kamera"
       class="rounded border px-3 py-1 text-sm"
-      :class="
-        isOn
-          ? 'border-emerald-700 bg-emerald-700 text-white'
-          : 'border-red-700 bg-red-700 text-white'
-      "
+      :class="buttonClass"
       :aria-checked="isOn"
       :data-status="status"
       data-testid="camera-toggle"

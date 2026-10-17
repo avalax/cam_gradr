@@ -12,6 +12,7 @@ const exposure: ExposureResult = {
   level18: 0.6,
   level50: 0.86,
   delta: 0.13,
+  contrast: 0.02,
 };
 
 describe('BrightnessScale', () => {
@@ -31,11 +32,11 @@ describe('BrightnessScale', () => {
     expect(marker.attributes('style')).toContain('top: 28.3');
     const details = wrapper.get('[data-testid="scale-details"]');
     expect(details.attributes('role')).toBe('tooltip');
-    expect(details.text()).toContain('zu hell');
+    expect(details.text()).toContain('zu hoch');
     expect(details.text()).toContain('60 %');
     expect(details.text()).toContain('geclippt');
     expect(wrapper.get('[data-testid="brightness-scale"]').attributes('aria-label')).toContain(
-      'zu hell',
+      'zu hoch',
     );
   });
 

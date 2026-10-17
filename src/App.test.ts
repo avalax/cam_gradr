@@ -105,6 +105,7 @@ describe('App', () => {
       level18: 0.46,
       level50: 0.74,
       delta: 0,
+      contrast: 0,
     };
     await flushPromises();
     await wrapper

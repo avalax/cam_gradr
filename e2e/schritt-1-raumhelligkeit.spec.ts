@@ -21,7 +21,7 @@ test.describe('Graukarten: Raum passt', () => {
     await expect(page.getByText('oben links der linke Graukarte (50 %)')).toBeVisible();
 
     await app.placeAllCorners();
-    await app.expectVerdict('Die Raumhelligkeit passt');
+    await app.expectVerdict('im Normalbereich');
     await expect(app.details).toContainText('Lichter');
 
     await app.button('Weiter zu den Farbkarten').click();
@@ -64,7 +64,7 @@ test.describe('Graukarten: Raum passt', () => {
     await app.captureStill();
     // oben links, unten links, unten rechts, oben rechts (gegen den Uhrzeigersinn)
     await app.placeAllCorners([0, 3, 2, 1]);
-    await app.expectVerdict('Die Raumhelligkeit passt');
+    await app.expectVerdict('im Normalbereich');
   });
 
   test('Details der Helligkeitsskala erscheinen nur beim Überfahren oder Fokussieren', async ({
@@ -125,12 +125,12 @@ test.describe('Graukarten: Raum passt', () => {
     await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
-    await app.expectVerdict('passt');
+    await app.expectVerdict('im Normalbereich');
 
     await app.button('Zurück zum Livebild').click();
     await expect(app.page.locator('video')).toBeVisible();
     await expect(app.button('Zurück zum Livebild')).toBeHidden();
-    await app.expectVerdict('passt');
+    await app.expectVerdict('im Normalbereich');
   });
 
   test('Eckpunkte lassen sich zurücksetzen', async ({ app }) => {
@@ -168,7 +168,7 @@ test.describe('Graukarten: Raum zu dunkel', () => {
     await app.captureStill();
     await app.placeAllCorners();
 
-    await app.expectVerdict('zu dunkel');
+    await app.expectVerdict('zu niedrig');
     await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
@@ -182,7 +182,7 @@ test.describe('Graukarten: Raum zu hell', () => {
     await app.captureStill();
     await app.placeAllCorners();
 
-    await app.expectVerdict('zu hell');
+    await app.expectVerdict('zu hoch');
     await expect(app.details).toContainText('geclippt');
     await expect(app.page.getByTestId('scale-clipped-top')).toBeVisible();
     await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
@@ -204,7 +204,7 @@ test.describe('Graukarten: automatische Aufnahme', () => {
     await expect(app.page.locator('svg circle')).toHaveCount(8);
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
     await expect(app.button('Zurück zum Livebild')).toBeVisible();
-    await app.expectVerdict('Die Raumhelligkeit passt');
+    await app.expectVerdict('im Normalbereich');
   });
 });
 
@@ -236,6 +236,24 @@ test.describe('Graukarten: automatische Erkennung', () => {
 
     await expect(app.page.locator('svg circle')).toHaveCount(8);
     await expect(app.page.getByTestId('detect-message')).toContainText('erkannt');
-    await app.expectVerdict('Die Raumhelligkeit passt');
+    await app.expectVerdict('im Normalbereich');
+  });
+});
+
+test.describe('Graukarten: Kontrastskala', () => {
+  test.use({ lighting: 'ok' });
+
+  test('Neben der Skala für das Licht zeigt eine zweite den Kontrast', async ({ app }) => {
+    await app.open();
+    await app.startGrayStage();
+    await app.captureStill();
+    await expect(app.page.getByTestId('contrast-scale')).toBeVisible();
+    await expect(app.page.getByTestId('contrast-marker')).toHaveCount(0);
+
+    await app.placeAllCorners();
+
+    await expect(app.page.getByTestId('contrast-marker')).toBeVisible();
+    await app.page.getByTestId('contrast-scale').hover();
+    await expect(app.page.getByTestId('contrast-details')).toContainText('im Normalbereich');
   });
 });

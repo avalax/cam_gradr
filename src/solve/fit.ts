@@ -40,6 +40,8 @@ interface FitReport {
   // Getrennt nach Neutralfeldern (Grauleiter) und bunten Feldern; null, wenn es keine gibt.
   neutral: GroupStats | null;
   color: GroupStats | null;
+  // Neutralfelder, die die Kamera nicht mehr auseinanderhält (komprimierte oder gekappte Lichter).
+  indistinct: string[];
 }
 
 export interface FitResult {
@@ -59,6 +61,9 @@ const MIN_PATCHES = 8;
 // Stärke der Regularisierung der Matrix zur Einheitsmatrix (relativ zur Feldanzahl).
 const RIDGE = 1e-3;
 const SAME_X = 1e-6;
+// Flacher als dieser Anstieg der Kamerakennlinie (Kamerawert je Sollwert, im Idealfall etwa 1) kann
+// die Kamera benachbarte Neutralfelder kaum noch unterscheiden: Sie gelten dann als ein Block.
+const MIN_RESPONSE_SLOPE = 0.1;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
   [1, 0, 0],
   [0, 1, 0],
@@ -93,6 +98,58 @@ function samples(input: FitInput): Sample[] {
     }
   }
   return result;
+}
+
+interface Block {
+  ids: string[];
+  count: number;
+  linear: [number, number, number];
+  target: number;
+}
+
+function blockLevel(block: Block): number {
+  return (block.linear[0] + block.linear[1] + block.linear[2]) / (3 * block.count);
+}
+
+// Verschmilzt den obersten Block mit dem darunter, solange die Kamera beide nicht auseinanderhält.
+function mergeFlatTop(blocks: Block[]): void {
+  const top = blocks.at(-1);
+  const below = blocks.at(-2);
+  if (top === undefined || below === undefined) {
+    return;
+  }
+  const rise = blockLevel(top) - blockLevel(below);
+  const wanted = top.target / top.count - below.target / below.count;
+  if (rise < MIN_RESPONSE_SLOPE * wanted) {
+    below.ids.push(...top.ids);
+    below.count += top.count;
+    below.target += top.target;
+    below.linear = [
+      below.linear[0] + top.linear[0],
+      below.linear[1] + top.linear[1],
+      below.linear[2] + top.linear[2],
+    ];
+    blocks.pop();
+    mergeFlatTop(blocks);
+  }
+}
+
+// Fasst Neutralfelder zusammen, die die Kamera nicht mehr auseinanderhält (Lichter sind gekappt oder
+// komprimiert, oder die Messwerte fallen sogar wieder). Sonst sortieren die drei Kanäle diese Felder
+// verschieden, und die Kurven erzeugen einen Farbstich. Alle Kanäle teilen sich dieselben Blöcke.
+function poolNeutrals(neutrals: readonly Sample[]): Block[] {
+  const sorted = neutrals.toSorted((a, b) => a.target[0] - b.target[0]);
+  const blocks: Block[] = [];
+  for (const sample of sorted) {
+    blocks.push({
+      ids: [sample.id],
+      count: 1,
+      linear: [...sample.linear],
+      target: sample.target[0],
+    });
+    mergeFlatTop(blocks);
+  }
+  return blocks;
 }
 
 // Stützpunkte einer Kanalkurve: Neutralfelder sortiert, gleiche x gemittelt, y nie fallend,
@@ -208,7 +265,7 @@ function groupStats(errors: readonly PatchError[]): GroupStats | null {
       };
 }
 
-function summarize(errors: readonly PatchError[]): FitReport {
+function summarize(errors: readonly PatchError[], indistinct: string[]): FitReport {
   const before = errors.map((error) => error.before);
   const after = errors.map((error) => error.after);
   return {
@@ -219,6 +276,7 @@ function summarize(errors: readonly PatchError[]): FitReport {
     maxAfter: Math.max(...after),
     neutral: groupStats(errors.filter((error) => error.neutral)),
     color: groupStats(errors.filter((error) => !error.neutral)),
+    indistinct,
   };
 }
 
@@ -230,8 +288,14 @@ export function fitColorModel(input: FitInput): FitResult {
       `Zu wenige Messwerte: mindestens ${String(MIN_PATCHES)} Felder, davon ${String(MIN_NEUTRAL)} neutrale`,
     );
   }
+  const blocks = poolNeutrals(neutrals);
   const curves = [0, 1, 2].map((channel) =>
-    buildCurve(neutrals.map((sample) => [Number(sample.linear[channel]), sample.target[0]])),
+    buildCurve(
+      blocks.map((block) => [
+        Number(block.linear[channel]) / block.count,
+        block.target / block.count,
+      ]),
+    ),
   ) as unknown as ColorModel['curves'];
 
   const draft: ColorModel = { curves, matrix: IDENTITY };
@@ -260,5 +324,6 @@ export function fitColorModel(input: FitInput): FitResult {
       after: deltaE2000(srgbToLab(applyColorModel(model, sample.measured)), sample.reference),
     };
   });
-  return { model, report: summarize(errors) };
+  const indistinct = blocks.filter((block) => block.count > 1).flatMap((block) => block.ids);
+  return { model, report: summarize(errors, indistinct) };
 }

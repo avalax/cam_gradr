@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 
 import { sortCorners } from './corner-order';
-import { assessExposure } from './exposure';
+import { assessExposure, codeLuma } from './exposure';
 import type { ExposureResult } from './exposure';
 import { grayLayout, colorLayout } from './layouts';
 import { measureChart, exposureInput } from './measure';
@@ -24,8 +24,29 @@ interface ChartStoreOptions {
   id: string;
   layout: ChartLayout;
   cardOrder: readonly number[];
+  // Paare (dunkelstes, hellstes Feld) einer Karte: an ihnen erkennt die App, ob die Karten um 180°
+  // gedreht gehalten werden (dann liegt das dunkle Feld unten statt oben).
+  orientation: readonly (readonly [string, string])[];
   // Nur die Graukarten bewerten zusätzlich die Raumhelligkeit.
   assessLighting: boolean;
+}
+
+// Dreht die Ecken einer Karte um 180°: aus oben links wird unten rechts usw.
+function halfTurn([a, b, c, d]: Corners): Corners {
+  return [c, d, a, b];
+}
+
+type CornerMap = Record<number, Corners | undefined>;
+
+// Karten um 180° gedreht: Die linke Karte im Bild ist dann die rechte Karte des Layouts und umgekehrt,
+// jeweils auf dem Kopf.
+function turned(upright: CornerMap, order: readonly number[]): CornerMap {
+  const [first = -1, second = -1] = order;
+  const left = upright[first];
+  const right = upright[second];
+  return left === undefined || right === undefined
+    ? upright
+    : { ...upright, [first]: halfTurn(right), [second]: halfTurn(left) };
 }
 
 // Zustand für eine Kartengruppe (Karten, Eckpunkte, Messwerte); eine Instanz je Schritt.
@@ -34,6 +55,8 @@ function defineChartStore(options: ChartStoreOptions) {
     const points = ref<Record<number, Point[]>>({});
     const measurements = shallowRef<Measurements>({});
     const exposure = shallowRef<ExposureResult | null>(null);
+    // Karten sind um 180° gedreht (aus den Messwerten erkannt).
+    const rotated = ref(false);
 
     function placed(card: number): Point[] {
       return points.value[card] ?? [];
@@ -51,8 +74,8 @@ function defineChartStore(options: ChartStoreOptions) {
 
     const ready = computed(() => nextSlot.value === null);
 
-    const corners = computed<Record<number, Corners | undefined>>(() => {
-      const result: Record<number, Corners | undefined> = {};
+    const uprightCorners = computed<CornerMap>(() => {
+      const result: CornerMap = {};
       for (const card of options.cardOrder) {
         const [a, b, c, d] = placed(card);
         if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
@@ -62,6 +85,10 @@ function defineChartStore(options: ChartStoreOptions) {
       }
       return result;
     });
+
+    const corners = computed<CornerMap>(() =>
+      rotated.value ? turned(uprightCorners.value, options.cardOrder) : uprightCorners.value,
+    );
 
     function addCorner(point: Point): void {
       const slot = nextSlot.value;
@@ -91,12 +118,18 @@ function defineChartStore(options: ChartStoreOptions) {
       points.value = {};
       measurements.value = {};
       exposure.value = null;
+      rotated.value = false;
     }
 
     // Stellt gespeicherte Eckpunkte und Messwerte wieder her (Projekt laden).
-    function restore(state: { points: Record<number, Point[]>; measurements: Measurements }): void {
+    function restore(state: {
+      points: Record<number, Point[]>;
+      measurements: Measurements;
+      rotated: boolean;
+    }): void {
       points.value = state.points;
       measurements.value = state.measurements;
+      rotated.value = state.rotated;
       if (options.assessLighting) {
         const input = exposureInput(state.measurements);
         exposure.value = input === null ? null : assessExposure(input);
@@ -104,8 +137,30 @@ function defineChartStore(options: ChartStoreOptions) {
     }
 
     // Misst die Felder im aktuellen Bild (bei den Graukarten zusätzlich die Raumhelligkeit).
+    function orientationScore(found: Measurements): number {
+      let score = 0;
+      for (const [dark, light] of options.orientation) {
+        const darkest = found[dark];
+        const lightest = found[light];
+        if (darkest !== undefined && lightest !== undefined) {
+          score += codeLuma(lightest) - codeLuma(darkest);
+        }
+      }
+      return score;
+    }
+
+    // Misst in beiden Lagen (aufrecht und um 180° gedreht) und nimmt die, in der die Streifenfelder von
+    // dunkel nach hell laufen; bei Gleichstand bleibt die bisherige Lage.
     function measure(grid: PixelGrid): void {
-      measurements.value = measureChart(options.layout, corners.value, grid);
+      const straight = measureChart(options.layout, uprightCorners.value, grid);
+      const flipped = measureChart(
+        options.layout,
+        turned(uprightCorners.value, options.cardOrder),
+        grid,
+      );
+      const better = orientationScore(flipped) - orientationScore(straight);
+      rotated.value = better === 0 ? rotated.value : better > 0;
+      measurements.value = rotated.value ? flipped : straight;
       if (options.assessLighting) {
         const input = exposureInput(measurements.value);
         exposure.value = input === null ? null : assessExposure(input);
@@ -116,6 +171,7 @@ function defineChartStore(options: ChartStoreOptions) {
       points,
       measurements,
       exposure,
+      rotated,
       nextSlot,
       ready,
       corners,
@@ -133,6 +189,10 @@ export const useChartStore = defineChartStore({
   id: 'chart',
   layout: grayLayout,
   cardOrder: GRAY_CARD_ORDER,
+  orientation: [
+    ['S3-0', 'S3-5'],
+    ['S4-0', 'S4-5'],
+  ],
   assessLighting: true,
 });
 
@@ -140,6 +200,11 @@ export const useColorChartStore = defineChartStore({
   id: 'chart-color',
   layout: colorLayout,
   cardOrder: COLOR_CARD_ORDER,
+  // Grauleiter der Farbkarten: oben (Zeile 1) hell, unten (Zeile 6) dunkel.
+  orientation: [
+    ['6D', '1D'],
+    ['6E', '1E'],
+  ],
   assessLighting: false,
 });
 

@@ -11,6 +11,7 @@ const exposure: ExposureResult = {
   level18: 0.46,
   level50: 0.74,
   delta: -0.03,
+  contrast: 0,
 };
 
 describe('scalePosition', () => {
@@ -70,6 +71,6 @@ describe('detailRows', () => {
 describe('summary', () => {
   it('nennt fehlende Messung oder das Urteil', () => {
     expect(summary(null)).toBe('Noch keine Messung.');
-    expect(summary(exposure)).toContain('Raumhelligkeit passt');
+    expect(summary(exposure)).toContain('Normalbereich');
   });
 });
