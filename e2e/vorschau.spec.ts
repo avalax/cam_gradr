@@ -1,5 +1,5 @@
 import { labToSrgb } from '../src/color/lab';
-import { dummyLab, dummyReferenceJson } from '../src/test-support/dummy-reference';
+import { dummyLab } from '../src/test-support/dummy-reference';
 import { cameraCode } from '../src/test-support/synthetic-camera';
 
 import type { AppPage } from './support/app-page';
@@ -33,15 +33,6 @@ async function expectPatch(app: AppPage, id: string, expected: readonly number[]
     .toBe(true);
 }
 
-// Kamera an, Graukarten, Referenzwerte, Farbkarten aufnehmen und berechnen, dann in die Vorschau.
-async function prepareModel(app: AppPage): Promise<void> {
-  await app.completeStepOne();
-  await app.importReference('referenz.json', dummyReferenceJson());
-  await app.captureColorCards();
-  await app.button('Farbkorrektur berechnen').click();
-  await expect(app.page.getByTestId('report')).toBeVisible();
-}
-
 test.describe('Vorschau', () => {
   test('Ohne Farbkorrektur zeigt der Tab einen Hinweis', async ({ app }) => {
     await app.open();
@@ -54,7 +45,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Links steht das Original, rechts das korrigierte Bild', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Vorschau');
     await expect(app.page.getByTestId('preview-canvas')).toBeVisible();
 
@@ -72,7 +63,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Stärke 0 zeigt überall das Original', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Vorschau');
     await app.page.getByTestId('strength').fill('0');
 
@@ -80,7 +71,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Die Trennlinie lässt sich verschieben', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Vorschau');
     await app.page.getByTestId('split').fill('0');
     await expect(app.page.getByTestId('split-line')).toHaveAttribute('style', /left: 0%/);
@@ -94,7 +85,7 @@ test.describe('Vorschau', () => {
   test('Die Vorschau funktioniert auch mit einem Standbild bei ausgeschalteter Kamera', async ({
     app,
   }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Kamera');
     await app.button('Kamera aus').click();
     await app.openTab('Vorschau');
@@ -104,7 +95,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Die Vorschau weist auf eine fehlende Bildquelle hin', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Kamera');
     await app.button('Kamera aus').click();
     await app.button('Standbild verwerfen').click();

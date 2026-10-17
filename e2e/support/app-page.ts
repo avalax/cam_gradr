@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+
 import { expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
+
+import { dummyReferenceJson } from '../../src/test-support/dummy-reference';
 
 import { showScene } from './camera-stub';
 import { CARD_PIXELS, HEIGHT, WIDTH } from './synthetic-cards';
@@ -66,7 +70,9 @@ export class AppPage {
     await expect(this.button('Standbild aufnehmen')).toBeEnabled();
   }
 
-  async openTab(name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau'): Promise<void> {
+  async openTab(
+    name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export',
+  ): Promise<void> {
     await this.page.getByRole('tab', { name, exact: true }).click();
     await expect(this.page.getByRole('tab', { name, exact: true })).toHaveAttribute(
       'aria-selected',
@@ -93,6 +99,34 @@ export class AppPage {
     await this.expectVerdict('Die Raumhelligkeit passt');
     await this.button('Weiter zu den Farbkarten').click();
     await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
+  }
+
+  // Komplett bis zur berechneten Farbkorrektur: Graukarten, Referenzwerte, Farbkarten, Berechnung.
+  async computeColorModel(): Promise<void> {
+    await this.completeStepOne();
+    await this.importReference('referenz.json', dummyReferenceJson());
+    await expect(this.page.getByTestId('reference-saved')).toBeVisible();
+    await this.captureColorCards();
+    await this.button('Farbkorrektur berechnen').click();
+    await expect(this.page.getByTestId('report')).toBeVisible();
+  }
+
+  // Klickt einen Knopf, der eine Datei herunterlädt, und liefert Dateiname und Inhalt.
+  async download(trigger: Locator): Promise<{ fileName: string; text: string }> {
+    const [download] = await Promise.all([this.page.waitForEvent('download'), trigger.click()]);
+    return {
+      fileName: download.suggestedFilename(),
+      text: readFileSync(await download.path(), 'utf8'),
+    };
+  }
+
+  // Lädt eine Projektdatei über das Dateifeld der Kopfzeile.
+  async loadProject(text: string): Promise<void> {
+    await this.page.getByTestId('project-file').setInputFiles({
+      name: 'projekt.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(text),
+    });
   }
 
   // Liest einen Pixel (RGB 0..255) der Vorschau; der WebGL-Inhalt wird dazu in ein 2D-Canvas kopiert.

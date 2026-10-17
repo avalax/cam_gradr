@@ -6,13 +6,15 @@ test.describe('Tabs', () => {
   test('Alle Tabs sind sofort frei anwählbar', async ({ app }) => {
     await app.open();
 
-    await expect(app.page.getByRole('tab')).toHaveCount(4);
+    await expect(app.page.getByRole('tab')).toHaveCount(5);
     await app.openTab('Farbkarten');
     await expect(app.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
     await app.openTab('Graukarten');
     await expect(app.page.getByText('Dieser Tab stellt die Raumhelligkeit ein')).toBeVisible();
     await app.openTab('Vorschau');
     await expect(app.page.getByTestId('preview-no-model')).toBeVisible();
+    await app.openTab('Export');
+    await expect(app.page.getByTestId('export-no-model')).toBeVisible();
     await app.openTab('Kamera');
     await expect(app.button('Kamera an')).toBeVisible();
   });

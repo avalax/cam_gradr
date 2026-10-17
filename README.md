@@ -14,15 +14,15 @@ Alles läuft im Browser. Es gibt kein Backend, Bilder und Messwerte verlassen de
 
 Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
 
-| Meilenstein | Inhalt                                                       | Stand  |
-| ----------- | ------------------------------------------------------------ | ------ |
-| M0          | Repo, Lint, Tests mit 99-%-Coverage-Gate, CI, Releases       | fertig |
-| M1          | Kamerawahl, Livebild, Standbild                              | fertig |
-| M2          | Schritt 1: Graukarten, Eckpunkte, Helligkeits-Ampel          | fertig |
-| M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung  | fertig |
-| M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher           | fertig |
-| M5          | Export als `.cube` (optional `.3dl`, Hald-PNG), Projektdatei | offen  |
-| M6          | Optionale automatische Kartenerkennung, Feinschliff          | offen  |
+| Meilenstein | Inhalt                                                      | Stand  |
+| ----------- | ----------------------------------------------------------- | ------ |
+| M0          | Repo, Lint, Tests mit 99-%-Coverage-Gate, CI, Releases      | fertig |
+| M1          | Kamerawahl, Livebild, Standbild                             | fertig |
+| M2          | Schritt 1: Graukarten, Eckpunkte, Helligkeits-Ampel         | fertig |
+| M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung | fertig |
+| M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher          | fertig |
+| M5          | Export als `.cube`, Projekt speichern und laden (JSON)      | fertig |
+| M6          | Optionale automatische Kartenerkennung, Feinschliff         | offen  |
 
 Noch nicht an der echten Karte geprüft sind die Feldpositionen im Layout und die Schwellen der Ampel.
 Beides ist aus Fotos geschätzt und lässt sich in `src/data/layouts/` bzw. `src/chart/exposure.ts`
@@ -30,8 +30,8 @@ anpassen.
 
 ## So funktioniert es
 
-Die App hat vier Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten**, **Farbkarten** und
-**Vorschau**.
+Die App hat fünf Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten**, **Farbkarten**,
+**Vorschau** und **Export**.
 Im Tab Kamera schaltest du die Kamera an oder aus: bei „an“ siehst du alle Kameraoptionen und das
 Livebild, bei „aus“ das aufgenommene Standbild.
 
@@ -44,7 +44,13 @@ Livebild, bei „aus“ das aufgenommene Standbild.
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen: ein Regler stellt die Stärke
    ein, eine verschiebbare Trennlinie zeigt links das Original und rechts das korrigierte Bild.
-4. **Export.** Die Korrektur als LUT-Datei speichern (in Arbeit).
+4. **Tab Export.** Die Korrektur als 3D-LUT im Format `.cube` herunterladen (Größe 17³, 33³ oder 65³). Die
+   in der Vorschau gewählte Stärke wird fest eingerechnet. Welche Größe dein Gerät annimmt, steht in
+   dessen Handbuch.
+
+In der Kopfzeile sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
+(Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte der Hersteller stehen nicht
+in der Datei, nur der Name des gewählten Satzes.
 
 Wichtig für brauchbare Ergebnisse: Auto-Belichtung und Auto-Weißabgleich der Kamera vorher in der
 Kamera-Software festsetzen. Die App kann das nicht selbst tun und zeigt dazu einen Hinweis.
