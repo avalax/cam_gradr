@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+
 import { expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
+
+import { dummyReferenceJson } from '../../src/test-support/dummy-reference';
 
 import { showScene } from './camera-stub';
 import { CARD_PIXELS, HEIGHT, WIDTH } from './synthetic-cards';
@@ -66,7 +70,9 @@ export class AppPage {
     await expect(this.button('Standbild aufnehmen')).toBeEnabled();
   }
 
-  async openTab(name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau'): Promise<void> {
+  async openTab(
+    name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export',
+  ): Promise<void> {
     await this.page.getByRole('tab', { name, exact: true }).click();
     await expect(this.page.getByRole('tab', { name, exact: true })).toHaveAttribute(
       'aria-selected',
@@ -95,6 +101,34 @@ export class AppPage {
     await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
   }
 
+  // Komplett bis zur berechneten Farbkorrektur: Graukarten, Referenzwerte, Farbkarten, Berechnung.
+  async computeColorModel(): Promise<void> {
+    await this.completeStepOne();
+    await this.importReference('referenz.json', dummyReferenceJson());
+    await expect(this.page.getByTestId('reference-saved')).toBeVisible();
+    await this.captureColorCards();
+    await this.button('Farbkorrektur berechnen').click();
+    await expect(this.page.getByTestId('report')).toBeVisible();
+  }
+
+  // Klickt einen Knopf, der eine Datei herunterlädt, und liefert Dateiname und Inhalt.
+  async download(trigger: Locator): Promise<{ fileName: string; text: string }> {
+    const [download] = await Promise.all([this.page.waitForEvent('download'), trigger.click()]);
+    return {
+      fileName: download.suggestedFilename(),
+      text: readFileSync(await download.path(), 'utf8'),
+    };
+  }
+
+  // Lädt eine Projektdatei über das Dateifeld der Kopfzeile.
+  async loadProject(text: string): Promise<void> {
+    await this.page.getByTestId('project-file').setInputFiles({
+      name: 'projekt.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(text),
+    });
+  }
+
   // Liest einen Pixel (RGB 0..255) der Vorschau; der WebGL-Inhalt wird dazu in ein 2D-Canvas kopiert.
   async previewPixel(x: number, y: number): Promise<[number, number, number]> {
     return this.page.evaluate(
@@ -103,6 +137,9 @@ export class AppPage {
         if (source === null) {
           throw new Error('Die Vorschau fehlt.');
         }
+        // Die Koordinaten beziehen sich auf das Kamerabild (1280 Pixel breit); die Software-
+        // Darstellung zeichnet kleiner und wird entsprechend umgerechnet.
+        const scale = source.width / 1280;
         const copy = document.createElement('canvas');
         copy.width = source.width;
         copy.height = source.height;
@@ -111,11 +148,46 @@ export class AppPage {
           throw new Error('Kein 2D-Kontext.');
         }
         context.drawImage(source, 0, 0);
-        const data = context.getImageData(Math.round(px), Math.round(py), 1, 1).data;
+        const data = context.getImageData(
+          Math.round(px * scale),
+          Math.round(py * scale),
+          1,
+          1,
+        ).data;
         return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0] as [number, number, number];
       },
       [x, y],
     );
+  }
+
+  // Womit die Vorschau zeichnet: 'webgl2' (Grafikkarte) oder 'cpu' (Software-Darstellung).
+  async previewRenderer(): Promise<string | null> {
+    return this.page.getByTestId('preview-renderer').getAttribute('data-renderer');
+  }
+
+  // Wartet, bis die Vorschau an der Stelle die erwartete Farbe zeigt; die Meldung nennt bei einem
+  // Fehlschlag die tatsächliche Abweichung und die Darstellungsart.
+  async expectPreviewColor(
+    x: number,
+    y: number,
+    expected: readonly number[],
+    tolerance: number,
+  ): Promise<void> {
+    let last = 'noch kein Pixel gelesen';
+    try {
+      await expect
+        .poll(async () => {
+          const pixel = await this.previewPixel(x, y);
+          const deviation = Math.max(
+            ...expected.map((value, index) => Math.abs((pixel[index] ?? 0) - value)),
+          );
+          last = `Pixel ${pixel.join(',')}, erwartet ${expected.join(',')}, Darstellung ${String(await this.previewRenderer())}`;
+          return deviation;
+        })
+        .toBeLessThanOrEqual(tolerance);
+    } catch (error) {
+      throw new Error(`${(error as Error).message}\n${last}`, { cause: error });
+    }
   }
 
   // Importiert eine Referenzdatei über das Dateifeld in Schritt 2.

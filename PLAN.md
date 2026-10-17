@@ -41,8 +41,8 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 - Live-Preview in Echtzeit (≥ 30 fps) per GPU, mit 3D-LUT als Textur.
 - LUT-Export:
   - `.cube` (Standard, 17/33/65 Stützstellen wählbar) – primär,
-  - optional `.3dl` und Hald-CLUT-PNG.
-- Projekt speichern/laden (Messdaten + Eckpunkte als JSON), damit ohne Neuaufnahme neu gerechnet werden kann.
+  - weitere Formate (`.3dl`, Hald-PNG) sind nicht vorgesehen.
+- Projekt speichern/laden als JSON-Datei (`cam_gradr-project/1`): Eckpunkte, Messwerte, berechnetes Modell und Vorschau-Einstellungen, damit ohne Neuaufnahme weitergearbeitet werden kann. Die Referenzwerte der Hersteller werden nicht gespeichert, nur der Name des gewählten Satzes; beim Laden wird mit einem vorhandenen Satz der Fehlerbericht neu berechnet, sonst bleibt das gespeicherte Modell für Vorschau und Export nutzbar.
 - Sprache der UI: Deutsch (i18n-fähig vorbereitet).
 
 ## 4. Nicht-funktionale Anforderungen
@@ -83,7 +83,7 @@ src/
   chart/         Patch-Layout (JSON), Homographie, Patch-Sampling
   color/         Konvertierungen, ΔE2000, Linearisierung
   solve/         Weißabgleich, Tonkurve, Matrix/Polynom-Fit, Fehlerbericht
-  lut/           3D-LUT-Erzeugung, .cube/.3dl/Hald-Export
+  lut/           3D-LUT-Erzeugung, .cube-Export
   gl/            WebGL2-Renderer (Video → LUT → Canvas)
   ui/            Wizard-Schritte, Overlays, Helligkeits-Ampel, Export-Dialog
   data/layouts/  *.layout.json (Karten-Geometrie ohne Farbwerte); Referenzwerte kommen zur Laufzeit per Import
@@ -98,7 +98,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 2. **M2 – Graustufen-Schritt:** Mehrkarten-Layout (JSON), Eckpunkt-Ausrichtung je Karte, Patch-Messung, Helligkeits-Ampel mit Clipping-Warnung, Warnhinweis zur Kamera-Automatik.
 3. **M3 – Farb-Schritt & Solver:** Referenz-Import (Validierung, lokale Speicherung), Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
 4. **M4 – LUT & Live-Preview:** WebGL2-Pipeline, Split-View, Stärke-Regler.
-5. **M5 – Export:** `.cube` (+ `.3dl`, Hald), Projekt speichern/laden.
+5. **M5 – Export & Projekt:** `.cube`-Export (17³/33³/65³, Stärke fest eingerechnet), Projekt speichern/laden als JSON.
 6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Feinschliff.
 
 **Stand M0 (umgesetzt):** Projektgerüst, Lint-/Format-Konfiguration, Husky-Hooks (pre-commit, commit-msg, pre-push), Vitest mit 99-%-Gate, CI-, Release-, CodeQL-Workflows und Dependabot sind im Repo; `npm run verify` läuft lokal grün. TypeScript ist auf `~6.0` festgelegt, weil `typescript-eslint` TypeScript 7 noch nicht unterstützt. Noch zu tun durch den Nutzer: GitHub-Repo anlegen, `RELEASE_PLEASE_TOKEN` als Secret setzen, Pages auf „GitHub Actions“ stellen, Branch-Protection aktivieren.
@@ -114,6 +114,10 @@ Umgesetztes Korrekturmodell (Abweichung vom ursprünglichen Plan): Weißabgleich
 **Stand M4 (umgesetzt):** Neuer Tab „Vorschau“. Aus dem Korrekturmodell wird eine 3D-LUT berechnet (33 Stützstellen, Würfelformat mit R am schnellsten; `src/lut`) und von einem dünnen WebGL2-Adapter (`src/gl`) per 16-Bit-Gleitkomma-3D-Textur mit trilinearer Interpolation auf das Livebild (oder das Standbild) angewandt. Die Vorschau hat einen Stärke-Regler (0–100 %, mischt zwischen Original und Korrektur) und eine verschiebbare Trennlinie (links Original, rechts korrigiert). Ohne berechnete Farbkorrektur oder ohne Bildquelle zeigt der Tab einen Hinweis; fehlt WebGL2, eine Fehlermeldung.
 
 Die Shader-Mathematik wird zusätzlich durch eine TypeScript-Referenzimplementierung (`sampleLut`) abgesichert; der WebGL-Adapter ist mit einer Attrappe getestet. Die Akzeptanztests prüfen echte Pixel der Vorschau in Chrome und Firefox (Software-Rendering, damit sie auch auf CI-Rechnern ohne Grafikkarte laufen).
+
+**Stand M5 (umgesetzt):** Neuer Tab „Export“ mit der Größe 17³, 33³ (Standard) oder 65³. Die LUT wird aus dem Modell berechnet, die in der Vorschau gewählte Stärke wird fest eingerechnet und die Datei als `cam_gradr-<Größe>.cube` heruntergeladen (Format mit Dezimalpunkt und Zeilenumbruch `\n`, Werte 0..1, Rot am schnellsten; der Export wird in Tests wieder eingelesen und gegen das Modell geprüft). In der Kopfzeile stehen „Projekt speichern“ und „Projekt laden“: Die Projektdatei ist JSON, wird beim Laden streng geprüft (Format, Karten, Felder, Wertebereiche, Modell) und ändert bei einer fehlerhaften Datei nichts am bisherigen Stand.
+
+**Software-Fallback der Vorschau:** Ist WebGL2 nicht verfügbar, rechnet die Vorschau die LUT auf der CPU (auf höchstens 480 Pixel Breite verkleinert) und zeigt die Darstellungsart an. Die LUT-Textur der Grafikkarte nutzt 8 Bit je Kanal (RGBA8), weil das auch mit Software-GL überall läuft.
 
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
@@ -158,7 +162,8 @@ Die komplette User Story wird mit **Playwright** durchgängig im echten Browser 
 - **Stand M2:** `schritt-1-raumhelligkeit.spec.ts` mit 10 Szenarien in beiden Browsern, also 20 Läufen (Raum passt, Livebild-Messung, Zurücksetzen, Eckpunkte nur auf dem Standbild, zu dunkel, zu hell, Reihenfolge der Eckpunkte egal, Layout liegt richtig auf beiden Karten).
 - **Stand M3:** `schritt-2-farbkorrektur.spec.ts` mit 8 Szenarien (kein Berechnen ohne Referenzwerte, Import als JSON und als CSV, fehlerhafte Datei, Referenzwerte bleiben nach dem Neuladen, Löschen, Berechnung verbessert die Farben deutlich, beliebige Eckpunkt-Reihenfolge). Die Kamera-Attrappe zeigt dafür Farbkarten mit erfundenen Referenzwerten und einer bekannten Verfälschung (Farbmischung, Gain, Gamma), die die Berechnung rückgängig machen muss.
 - **Stand M4:** `vorschau.spec.ts` mit 6 Szenarien (Hinweis ohne Farbkorrektur, links Original und rechts korrigiert anhand echter Pixel, Stärke 0, verschiebbare Trennlinie, Vorschau mit Standbild bei ausgeschalteter Kamera, Hinweis ohne Bildquelle).
-- **Geplante Erweiterung:** M5 Export (heruntergeladene `.cube`-Datei wird geprüft), zum Schluss ein durchgehendes Szenario „vom Kamerastart bis zur LUT-Datei“.
+- **Stand M5:** `export-und-projekt.spec.ts` mit 9 Szenarien (Hinweis ohne Farbkorrektur, heruntergeladene `.cube`-Datei korrigiert die Farben, Größenwahl, Stärke wird eingerechnet, Projekt speichern und nach dem Neuladen laden, Projekt ohne Referenzsatz, fehlerhafte Datei, Projekt ohne Farbkorrektur, Vorschau nach dem Laden).
+- **Geplant:** zum Schluss ein durchgehendes Szenario „vom Kamerastart bis zur LUT-Datei“.
 - **Qualitätsanforderungen wie bei der App:** gleiche Lint-Regeln (ESLint strikt plus `eslint-plugin-playwright`), Prettier, strikte TypeScript-Prüfung (`e2e/` ist Teil von `vue-tsc`), knip, Commit-Konventionen und Hooks. In der CI läuft ein eigener Job `acceptance` (Pflichtprüfung für `main`) mit Installation von Chrome und Firefox und Report-Artefakt bei Fehlern.
 - **Coverage-Anforderung:** Die 99 % Codeabdeckung gelten für die Unit-Tests. Für die Akzeptanztests ist die sinnvolle Entsprechung die **Abdeckung der User Story**: Jeder Schritt und jeder Fehlerfall der Story hat mindestens ein Szenario, und ein Szenario darf nur mit Begründung übersprungen werden (`test.fixme`/`skip` sind verboten, `forbidOnly` ist in der CI aktiv). Eine messbare Browser-Code-Coverage der E2E-Läufe ist nicht vorgesehen.
 - **Lokal:** `npm run e2e:install` (einmalig, installiert Firefox; Google Chrome muss lokal installiert sein, die CI installiert beides), `npm run e2e`; `npm run verify:all` führt Unit- und Akzeptanztests zusammen aus. Der pre-push-Hook startet nur `verify`, damit Pushes schnell bleiben; die Akzeptanztests laufen verbindlich in der CI.

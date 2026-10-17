@@ -30,6 +30,8 @@ export const useReferenceStore = defineStore('reference', () => {
   const warning = ref<string | null>(null);
   // Name des Satzes, der zuletzt erfolgreich lokal gespeichert wurde.
   const lastSaved = ref<string | null>(null);
+  // Name des Satzes, der zuletzt erfolgreich aus dem lokalen Speicher gelöscht wurde.
+  const lastRemoved = ref<string | null>(null);
 
   const selected = computed(
     () => sets.value.find((set) => set.name === selectedName.value) ?? null,
@@ -85,6 +87,7 @@ export const useReferenceStore = defineStore('reference', () => {
     }
     try {
       await storage().remove(name);
+      lastRemoved.value = name;
     } catch {
       warning.value = 'Der Satz konnte lokal nicht gelöscht werden.';
     }
@@ -97,6 +100,7 @@ export const useReferenceStore = defineStore('reference', () => {
     error,
     warning,
     lastSaved,
+    lastRemoved,
     load,
     importFile,
     select,

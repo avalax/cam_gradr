@@ -133,6 +133,10 @@ describe('ColorStep', () => {
     await button(wrapper, 'Satz löschen')?.trigger('click');
     await flushPromises();
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Satz B');
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="reference-removed"]').exists()).toBe(true);
+    });
+    expect(wrapper.get('[data-testid="reference-removed"]').text()).toContain('Satz A');
     await button(wrapper, 'Satz löschen')?.trigger('click');
     await flushPromises();
     expect(wrapper.find('[data-testid="reference-hint"]').exists()).toBe(true);

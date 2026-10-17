@@ -39,9 +39,16 @@ interface RenderOptions {
   split: number;
 }
 
+// Bildquellen, die sich sowohl in eine WebGL-Textur als auch auf eine 2D-Fläche zeichnen lassen.
+export type RenderSource = HTMLVideoElement | HTMLCanvasElement;
+
 export interface LutRenderer {
+  // Womit gezeichnet wird: Grafikkarte (WebGL2) oder Software auf der CPU.
+  kind: 'webgl2' | 'cpu';
+  // Größe der Zeichenfläche für eine Bildquelle dieser Größe.
+  outputSize: (source: { width: number; height: number }) => { width: number; height: number };
   setLut: (lut: Lut) => void;
-  render: (source: TexImageSource, options: RenderOptions) => void;
+  render: (source: RenderSource, options: RenderOptions) => void;
   dispose: () => void;
 }
 
@@ -89,6 +96,20 @@ function configureTexture(gl: WebGL2RenderingContext, target: number): void {
   gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
 
+// RGB-Gleitkommadaten der LUT als RGBA-Bytes (Alpha 255).
+function toRgba8(lut: Lut): Uint8Array {
+  const count = lut.size ** 3;
+  const bytes = new Uint8Array(count * 4);
+  for (let index = 0; index < count; index++) {
+    for (let channel = 0; channel < 3; channel++) {
+      const value = Math.min(Math.max(Number(lut.data[index * 3 + channel]), 0), 1);
+      bytes[index * 4 + channel] = Math.round(value * 255);
+    }
+    bytes[index * 4 + 3] = 255;
+  }
+  return bytes;
+}
+
 // Dünner Adapter um WebGL2: zeichnet ein Bild (Video, Canvas) mit angewandter 3D-LUT.
 export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
   const program = link(gl);
@@ -111,25 +132,30 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
   gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
 
   return {
+    kind: 'webgl2',
+
+    outputSize: (source) => ({ width: source.width, height: source.height }),
+
     setLut(lut: Lut): void {
       lutSize = lut.size;
       gl.bindTexture(gl.TEXTURE_3D, lutTexture);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      // 8 Bit je Kanal genügen für die Ausgabe und laufen überall, auch mit Software-GL.
       gl.texImage3D(
         gl.TEXTURE_3D,
         0,
-        gl.RGB16F,
+        gl.RGBA8,
         lut.size,
         lut.size,
         lut.size,
         0,
-        gl.RGB,
-        gl.FLOAT,
-        lut.data,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        toRgba8(lut),
       );
     },
 
-    render(source: TexImageSource, options: RenderOptions): void {
+    render(source: RenderSource, options: RenderOptions): void {
       // Der Ausschnitt folgt der Zeichenfläche, deren Größe sich mit dem Bild ändert.
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
       gl.useProgram(program);

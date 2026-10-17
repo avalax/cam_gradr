@@ -95,7 +95,10 @@ export default tseslint.config(
     files: ['**/*.test.ts'],
     rules: {
       ...vitest.configs.recommended.rules,
-      'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'expectPoint'] }],
+      'vitest/expect-expect': [
+        'error',
+        { assertFunctionNames: ['expect', 'expectPoint', 'rejects'] },
+      ],
       // In Tests sind verschachtelte Aufrufe und lokale Hilfsfunktionen üblich.
       'unicorn/max-nested-calls': 'off',
       'unicorn/consistent-function-scoping': 'off',
@@ -113,7 +116,7 @@ export default tseslint.config(
       'security/detect-non-literal-fs-filename': 'off',
       'playwright/expect-expect': [
         'error',
-        { assertFunctionNames: ['expect', 'expectVerdict', 'expectPatch'] },
+        { assertFunctionNames: ['expect', 'expectVerdict', 'expectPatch', 'expectPreviewColor'] },
       ],
     },
   },

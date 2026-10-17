@@ -14,7 +14,7 @@ const chart = useColorChartStore();
 const references = useReferenceStore();
 const solve = useSolveStore();
 const { ready, measurements } = storeToRefs(chart);
-const { sets, selected, error, warning, lastSaved } = storeToRefs(references);
+const { sets, selected, error, warning, lastSaved, lastRemoved } = storeToRefs(references);
 const { result, error: solveError } = storeToRefs(solve);
 
 const CARD_NAMES = {
@@ -115,6 +115,13 @@ function compute(): void {
             data-testid="reference-saved"
           >
             Lokal im Browser gespeichert.
+          </p>
+          <p
+            v-if="lastRemoved !== null"
+            class="text-xs text-slate-600"
+            data-testid="reference-removed"
+          >
+            Satz „{{ lastRemoved }}“ lokal gelöscht.
           </p>
           <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
           <p v-if="warning !== null" class="text-sm text-amber-800" role="status">{{ warning }}</p>

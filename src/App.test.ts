@@ -36,7 +36,7 @@ describe('App', () => {
     expect(APP_ID).toBe('avalax.cam_gradr');
   });
 
-  it('bietet vier Tabs, die alle frei anwählbar sind', () => {
+  it('bietet fünf Tabs, die alle frei anwählbar sind', () => {
     installFakeCamera();
     const wrapper = mountApp();
     const all = tabs(wrapper);
@@ -45,9 +45,11 @@ describe('App', () => {
       'Graukarten',
       'Farbkarten',
       'Vorschau',
+      'Export',
     ]);
     expect(all.map((tab) => tab.attributes('aria-selected'))).toEqual([
       'true',
+      'false',
       'false',
       'false',
       'false',
@@ -118,6 +120,20 @@ describe('App', () => {
     expect(camera.still).not.toBeNull();
     await tabs(wrapper)[2]?.trigger('click');
     expect(camera.still).toBeNull();
+  });
+
+  it('zeigt im Tab Export den Hinweis auf die fehlende Farbkorrektur', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    await tabs(wrapper)[4]?.trigger('click');
+    expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(true);
+  });
+
+  it('bietet in der Kopfzeile Projekt speichern und laden an', () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
   });
 
   it('zeigt im Tab Vorschau den Hinweis auf die fehlende Farbkorrektur', async () => {

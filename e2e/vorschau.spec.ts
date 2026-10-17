@@ -1,5 +1,5 @@
 import { labToSrgb } from '../src/color/lab';
-import { dummyLab, dummyReferenceJson } from '../src/test-support/dummy-reference';
+import { dummyLab } from '../src/test-support/dummy-reference';
 import { cameraCode } from '../src/test-support/synthetic-camera';
 
 import type { AppPage } from './support/app-page';
@@ -18,28 +18,10 @@ function codes(code: readonly number[]): number[] {
   return code.map((value) => Math.round(value * 255));
 }
 
-async function pixelOf(app: AppPage, id: string): Promise<[number, number, number]> {
-  const { x, y } = colorPatchCenter(id);
-  return app.previewPixel(x, y);
-}
-
 // Wartet, bis die Vorschau an einem Feld die erwarteten Farben zeigt.
 async function expectPatch(app: AppPage, id: string, expected: readonly number[]): Promise<void> {
-  await expect
-    .poll(async () => {
-      const actual = await pixelOf(app, id);
-      return expected.every((value, index) => Math.abs((actual[index] ?? 0) - value) <= TOLERANCE);
-    })
-    .toBe(true);
-}
-
-// Kamera an, Graukarten, Referenzwerte, Farbkarten aufnehmen und berechnen, dann in die Vorschau.
-async function prepareModel(app: AppPage): Promise<void> {
-  await app.completeStepOne();
-  await app.importReference('referenz.json', dummyReferenceJson());
-  await app.captureColorCards();
-  await app.button('Farbkorrektur berechnen').click();
-  await expect(app.page.getByTestId('report')).toBeVisible();
+  const { x, y } = colorPatchCenter(id);
+  await app.expectPreviewColor(x, y, expected, TOLERANCE);
 }
 
 test.describe('Vorschau', () => {
@@ -54,7 +36,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Links steht das Original, rechts das korrigierte Bild', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Vorschau');
     await expect(app.page.getByTestId('preview-canvas')).toBeVisible();
 
@@ -72,7 +54,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Stärke 0 zeigt überall das Original', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Vorschau');
     await app.page.getByTestId('strength').fill('0');
 
@@ -80,7 +62,7 @@ test.describe('Vorschau', () => {
   });
 
   test('Die Trennlinie lässt sich verschieben', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Vorschau');
     await app.page.getByTestId('split').fill('0');
     await expect(app.page.getByTestId('split-line')).toHaveAttribute('style', /left: 0%/);
@@ -94,7 +76,7 @@ test.describe('Vorschau', () => {
   test('Die Vorschau funktioniert auch mit einem Standbild bei ausgeschalteter Kamera', async ({
     app,
   }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Kamera');
     await app.button('Kamera aus').click();
     await app.openTab('Vorschau');
@@ -103,8 +85,24 @@ test.describe('Vorschau', () => {
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
   });
 
+  test('Die Vorschau nennt die Darstellungsart, in Chrome ist es die Grafikkarte', async ({
+    app,
+  }, testInfo) => {
+    await app.computeColorModel();
+    await app.openTab('Vorschau');
+
+    await expect(app.page.getByTestId('preview-renderer')).toBeVisible();
+    // Firefox läuft auf manchen Rechnern ohne WebGL2 und nutzt dann die Software-Darstellung.
+    const allowedByBrowser: Record<string, string[]> = {
+      chrome: ['webgl2'],
+      firefox: ['webgl2', 'cpu'],
+    };
+    const allowed = allowedByBrowser[testInfo.project.name] ?? [];
+    expect(allowed).toContain(await app.previewRenderer());
+  });
+
   test('Die Vorschau weist auf eine fehlende Bildquelle hin', async ({ app }) => {
-    await prepareModel(app);
+    await app.computeColorModel();
     await app.openTab('Kamera');
     await app.button('Kamera aus').click();
     await app.button('Standbild verwerfen').click();

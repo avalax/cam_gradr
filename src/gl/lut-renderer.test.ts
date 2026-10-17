@@ -5,7 +5,7 @@ import { createFakeGl } from '../test-support/fake-gl';
 
 import { FRAGMENT_SHADER, VERTEX_SHADER, createLutRenderer } from './lut-renderer';
 
-const source = { width: 4, height: 2 } as unknown as TexImageSource;
+const source = { width: 4, height: 2 } as unknown as HTMLCanvasElement;
 
 describe('Shader', () => {
   it('sind GLSL ES 3.00 und enthalten die benötigten Uniforms', () => {
@@ -34,23 +34,36 @@ describe('createLutRenderer', () => {
     );
   });
 
-  it('lädt die LUT als 16-Bit-Gleitkommatextur in der Würfelgröße', () => {
+  it('lädt die LUT als RGBA-Bytetextur in der Würfelgröße', () => {
     const { gl, call, constant } = createFakeGl();
     const renderer = createLutRenderer(gl);
-    const lut = identityLut(5);
+    const lut = identityLut(2);
+    lut.data[0] = -0.5;
+    lut.data[1] = 2;
     renderer.setLut(lut);
+    const bytes = call('texImage3D').mock.calls[0]?.[9] as Uint8Array;
     expect(call('texImage3D')).toHaveBeenCalledWith(
       constant('TEXTURE_3D'),
       0,
-      constant('RGB16F'),
-      5,
-      5,
-      5,
+      constant('RGBA8'),
+      2,
+      2,
+      2,
       0,
-      constant('RGB'),
-      constant('FLOAT'),
-      lut.data,
+      constant('RGBA'),
+      constant('UNSIGNED_BYTE'),
+      expect.any(Uint8Array),
     );
+    expect(bytes).toHaveLength(2 ** 3 * 4);
+    // Werte außerhalb 0..1 werden begrenzt; der zweite Gitterpunkt (R=1) ist unverändert.
+    expect([...bytes.slice(0, 4)]).toEqual([0, 255, 0, 255]);
+    expect([...bytes.slice(4, 8)]).toEqual([255, 0, 0, 255]);
+  });
+
+  it('beschreibt sich als WebGL2-Renderer mit unveränderter Ausgabegröße', () => {
+    const renderer = createLutRenderer(createFakeGl().gl);
+    expect(renderer.kind).toBe('webgl2');
+    expect(renderer.outputSize({ width: 1280, height: 720 })).toEqual({ width: 1280, height: 720 });
   });
 
   it('zeichnet das Bild mit Stärke, Trennlinie und LUT-Größe als Uniforms', () => {

@@ -4,17 +4,20 @@ import { onBeforeUnmount, ref, watch } from 'vue';
 import { useCameraStore } from './camera/camera-store';
 import CameraTab from './ui/CameraTab.vue';
 import ColorStep from './ui/ColorStep.vue';
+import ExportTab from './ui/ExportTab.vue';
 import GrayStep from './ui/GrayStep.vue';
 import PreviewTab from './ui/PreviewTab.vue';
+import ProjectBar from './ui/ProjectBar.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
-type TabKey = 'camera' | 'gray' | 'color' | 'preview';
+type TabKey = 'camera' | 'gray' | 'color' | 'preview' | 'export';
 
 const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'camera', label: 'Kamera' },
   { key: 'gray', label: 'Graukarten' },
   { key: 'color', label: 'Farbkarten' },
   { key: 'preview', label: 'Vorschau' },
+  { key: 'export', label: 'Export' },
 ];
 
 const tab = ref<TabKey>('camera');
@@ -59,13 +62,18 @@ onBeforeUnmount(() => {
           {{ entry.label }}
         </button>
       </div>
+
+      <div class="ml-auto">
+        <ProjectBar />
+      </div>
     </header>
 
     <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
       <CameraTab v-if="tab === 'camera'" />
       <GrayStep v-else-if="tab === 'gray'" @continue="tab = 'color'" />
       <ColorStep v-else-if="tab === 'color'" />
-      <PreviewTab v-else />
+      <PreviewTab v-else-if="tab === 'preview'" />
+      <ExportTab v-else />
     </div>
 
     <footer class="text-xs text-slate-500">{{ APP_ID }}</footer>
