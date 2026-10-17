@@ -125,6 +125,21 @@ function colorScene(): Scene {
   return { width: WIDTH, height: HEIGHT, rects };
 }
 
+// Mittelpunkt (Pixel im Kamerabild) eines Farbfeldes der synthetischen Farbkarten.
+export function colorPatchCenter(id: string): { x: number; y: number } {
+  for (const card of colorLayout.cards) {
+    const patch = card.patches.find((entry) => entry.id === id);
+    if (patch !== undefined) {
+      const pixels = CARD_PIXELS[card.card as CardNumber];
+      return {
+        x: pixels.x + (patch.rect.x + patch.rect.w / 2) * pixels.w,
+        y: pixels.y + (patch.rect.y + patch.rect.h / 2) * pixels.h,
+      };
+    }
+  }
+  throw new Error(`Unbekanntes Farbfeld: ${id}`);
+}
+
 export function sceneFor(name: SceneName): Scene {
   return name === 'colors' ? colorScene() : grayScene(name);
 }

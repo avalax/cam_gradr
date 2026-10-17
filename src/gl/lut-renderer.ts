@@ -130,6 +130,8 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
     },
 
     render(source: TexImageSource, options: RenderOptions): void {
+      // Der Ausschnitt folgt der Zeichenfläche, deren Größe sich mit dem Bild ändert.
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
       gl.useProgram(program);
       gl.bindVertexArray(vao);
       gl.activeTexture(gl.TEXTURE0);

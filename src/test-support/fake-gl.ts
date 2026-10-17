@@ -21,7 +21,11 @@ export function createFakeGl(overrides: Record<string, Implementation> = {}) {
   const gl = new Proxy<Record<string, unknown>>(
     {},
     {
-      get(_target, property: string) {
+      get(target, property: string) {
+        // Werte, die ein Test selbst gesetzt hat (z. B. drawingBufferWidth), haben Vorrang.
+        if (Object.hasOwn(target, property)) {
+          return target[property];
+        }
         if (/^[A-Z0-9_]+$/.test(property)) {
           if (!constants.has(property)) {
             constants.set(property, constants.size + 1);

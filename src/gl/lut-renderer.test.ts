@@ -76,6 +76,13 @@ describe('createLutRenderer', () => {
     expect(call('drawArrays')).toHaveBeenCalledWith(constant('TRIANGLES'), 0, 3);
   });
 
+  it('passt den Ausschnitt an die aktuelle Größe der Zeichenfläche an', () => {
+    const fake = createFakeGl();
+    Object.assign(fake.gl, { drawingBufferWidth: 1280, drawingBufferHeight: 720 });
+    createLutRenderer(fake.gl).render(source, { strength: 1, split: 0 });
+    expect(fake.call('viewport')).toHaveBeenCalledWith(0, 0, 1280, 720);
+  });
+
   it('kehrt das Bild beim Hochladen um (Video hat y nach unten)', () => {
     const { gl, call, constant } = createFakeGl();
     createLutRenderer(gl).render(source, { strength: 1, split: 0 });

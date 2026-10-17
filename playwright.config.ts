@@ -23,8 +23,25 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'chrome', use: { ...devices['Desktop Chrome'], ...tallViewport, channel: 'chrome' } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'], ...tallViewport } },
+    {
+      name: 'chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...tallViewport,
+        channel: 'chrome',
+        // Software-Rendering (SwiftShader), damit WebGL2 auch ohne Grafikkarte läuft.
+        launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+      },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        ...tallViewport,
+        // WebGL auch ohne unterstützte Grafikkarte zulassen (Software-Rendering).
+        launchOptions: { firefoxUserPrefs: { 'webgl.force-enabled': true } },
+      },
+    },
   ],
   webServer: {
     command: `npm run build && npm run preview -- --port ${String(PORT)} --strictPort`,

@@ -28,6 +28,8 @@ export const useReferenceStore = defineStore('reference', () => {
   const selectedName = ref<string | null>(null);
   const error = ref<string | null>(null);
   const warning = ref<string | null>(null);
+  // Name des Satzes, der zuletzt erfolgreich lokal gespeichert wurde.
+  const lastSaved = ref<string | null>(null);
 
   const selected = computed(
     () => sets.value.find((set) => set.name === selectedName.value) ?? null,
@@ -59,6 +61,7 @@ export const useReferenceStore = defineStore('reference', () => {
       selectedName.value = set.name;
       try {
         await storage().save(set);
+        lastSaved.value = set.name;
       } catch {
         warning.value =
           'Der Satz konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.';
@@ -87,5 +90,16 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  return { sets, selectedName, selected, error, warning, load, importFile, select, remove };
+  return {
+    sets,
+    selectedName,
+    selected,
+    error,
+    warning,
+    lastSaved,
+    load,
+    importFile,
+    select,
+    remove,
+  };
 });

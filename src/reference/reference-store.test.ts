@@ -39,6 +39,20 @@ describe('useReferenceStore', () => {
     expect(saved.map((set) => set.name)).toEqual(['Satz A']);
   });
 
+  it('meldet, sobald ein Satz lokal gespeichert ist', async () => {
+    const store = useReferenceStore();
+    expect(store.lastSaved).toBeNull();
+    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    expect(store.lastSaved).toBe('Satz A');
+  });
+
+  it('meldet kein Speichern, wenn der Speicher ausfällt', async () => {
+    setReferenceStorage(failingStorage());
+    const store = useReferenceStore();
+    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    expect(store.lastSaved).toBeNull();
+  });
+
   it('lädt gespeicherte Sätze beim Start und wählt den ersten', async () => {
     const first = useReferenceStore();
     await first.importFile('a.json', dummyReferenceJson('Satz A'));
