@@ -10,6 +10,7 @@ import { detectCards } from '../chart/detect';
 import type { ChartLayout } from '../chart/types';
 
 import { frameGrid, measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
+import { guideCorners } from './guide';
 import { buildShapes, clientToImage, instructionFor } from './overlay-geometry';
 import { attachStream, captureFromVideo } from './video-bindings';
 
@@ -42,6 +43,20 @@ const isLive = computed(() => status.value === 'live');
 const showStill = computed(() => still.value !== null);
 const size = computed(() => still.value ?? actual.value ?? { width: 1280, height: 720 });
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
+// Hilfsrahmen, solange noch keine Eckpunkte gesetzt sind.
+const guides = computed(() =>
+  Object.keys(points.value).length === 0
+    ? guideCorners(size.value, props.layout.cards.length).map((corners, index) => {
+        const card = Number(props.layout.cards[index]?.card);
+        return {
+          key: String(card),
+          points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
+          label: props.cardNames[card] ?? '',
+          at: corners[0],
+        };
+      })
+    : [],
+);
 const shapes = computed(() => buildShapes(props.layout, corners.value));
 const handles = computed(() =>
   showStill.value
@@ -97,6 +112,12 @@ function detect(): void {
     detectMessage.value =
       'Die Karten wurden erkannt. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.';
   }
+}
+
+function alignToGuides(): void {
+  props.store.setCards(guideCorners(size.value, props.layout.cards.length));
+  detectMessage.value =
+    'Die Eckpunkte sitzen auf den Rahmen. Ziehe sie bei Bedarf auf die Kartenecken.';
 }
 
 function capture(): void {
@@ -193,6 +214,26 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
+          <g v-for="guide in guides" :key="guide.key" data-testid="guide" pointer-events="none">
+            <polygon
+              :points="guide.points"
+              fill="none"
+              stroke="#ffffff"
+              stroke-width="3"
+              stroke-dasharray="14 10"
+            />
+            <text
+              :x="guide.at.x + 10"
+              :y="guide.at.y + 30"
+              fill="#ffffff"
+              stroke="#0f172a"
+              stroke-width="4"
+              paint-order="stroke"
+              font-size="24"
+            >
+              {{ guide.label }}
+            </text>
+          </g>
           <polygon
             v-for="shape in shapes"
             :key="shape.key"
@@ -262,6 +303,14 @@ watch(actual, (next, previous) => {
         @click="camera.clearStill()"
       >
         Zurück zum Livebild
+      </button>
+      <button
+        v-if="showStill"
+        type="button"
+        class="rounded border px-3 py-1 text-sm"
+        @click="alignToGuides"
+      >
+        Eckpunkte auf Rahmen setzen
       </button>
       <button
         v-if="showStill"

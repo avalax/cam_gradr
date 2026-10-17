@@ -189,6 +189,22 @@ test.describe('Graukarten: Raum zu hell', () => {
   });
 });
 
+test.describe('Graukarten: Hilfsrahmen', () => {
+  test('Das Livebild zeigt, wo die Karten hingehalten werden sollen, ein Knopf übernimmt die Rahmen', async ({
+    app,
+  }) => {
+    await app.open();
+    await app.startGrayStage();
+    await expect(app.page.getByTestId('guide')).toHaveCount(2);
+
+    await app.captureStill();
+    await app.button('Eckpunkte auf Rahmen setzen').click();
+
+    await expect(app.page.locator('svg circle')).toHaveCount(8);
+    await expect(app.page.getByTestId('guide')).toHaveCount(0);
+  });
+});
+
 test.describe('Graukarten: automatische Erkennung', () => {
   test.use({ lighting: 'ok' });
 

@@ -298,6 +298,24 @@ describe('GrayStep', () => {
     expect(measure).not.toHaveBeenCalled();
   });
 
+  it('zeigt im Livebild zwei beschriftete Rahmen, wo die Karten hingehalten werden sollen', async () => {
+    const wrapper = await mountLive();
+    const guides = wrapper.findAll('[data-testid="guide"]');
+    expect(guides).toHaveLength(2);
+    expect(guides[0]?.text()).toContain('linke Graukarte (50 %)');
+    expect(guides[1]?.text()).toContain('rechte Graukarte (18 %)');
+  });
+
+  it('setzt per Knopf die Eckpunkte auf die Rahmen und blendet sie danach aus', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await button(wrapper, 'Eckpunkte auf Rahmen setzen')?.trigger('click');
+    expect(useChartStore().ready).toBe(true);
+    expect(wrapper.findAll('[data-testid="guide"]')).toHaveLength(0);
+    expect(wrapper.get('[data-testid="detect-message"]').text()).toContain('Rahmen');
+  });
+
   it('erkennt beide Karten im Standbild und setzt die Eckpunkte', async () => {
     const wrapper = await mountLive();
     const camera = useCameraStore();
@@ -332,7 +350,7 @@ describe('GrayStep', () => {
     await placeAll(wrapper);
     await button(wrapper, 'Eckpunkte zurücksetzen')?.trigger('click');
     expect(useChartStore().points).toEqual({});
-    expect(wrapper.findAll('polygon')).toHaveLength(0);
+    expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
   });
 
   it('beginnt bei geänderter Auflösung neu, nicht bei gleicher oder fehlender', async () => {
