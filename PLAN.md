@@ -117,6 +117,8 @@ Die Shader-Mathematik wird zusätzlich durch eine TypeScript-Referenzimplementie
 
 **Stand M5 (umgesetzt):** Neuer Tab „Export“ mit der Größe 17³, 33³ (Standard) oder 65³. Die LUT wird aus dem Modell berechnet, die in der Vorschau gewählte Stärke wird fest eingerechnet und die Datei als `cam_gradr-<Größe>.cube` heruntergeladen (Format mit Dezimalpunkt und Zeilenumbruch `\n`, Werte 0..1, Rot am schnellsten; der Export wird in Tests wieder eingelesen und gegen das Modell geprüft). In der Kopfzeile stehen „Projekt speichern“ und „Projekt laden“: Die Projektdatei ist JSON, wird beim Laden streng geprüft (Format, Karten, Felder, Wertebereiche, Modell) und ändert bei einer fehlerhaften Datei nichts am bisherigen Stand.
 
+**Software-Fallback der Vorschau:** Ist WebGL2 nicht verfügbar, rechnet die Vorschau die LUT auf der CPU (auf höchstens 480 Pixel Breite verkleinert) und zeigt die Darstellungsart an. Die LUT-Textur der Grafikkarte nutzt 8 Bit je Kanal (RGBA8), weil das auch mit Software-GL überall läuft.
+
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
 - **Vitest** mit `@vitest/coverage-v8`; Schwellwerte in `vitest.config.ts`: `statements`, `branches`, `functions`, `lines` jeweils **99 %**. Unterschreitung lässt den Testlauf fehlschlagen.

@@ -56,6 +56,8 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.button('Satz löschen').click();
 
     await expect(app.page.getByTestId('reference-hint')).toBeVisible();
+    // Erst nach der Rückmeldung ist der Satz auch aus dem lokalen Speicher entfernt.
+    await expect(app.page.getByTestId('reference-removed')).toBeVisible();
     await app.page.reload();
     await app.completeStepOne();
     await expect(app.page.getByTestId('reference-hint')).toBeVisible();

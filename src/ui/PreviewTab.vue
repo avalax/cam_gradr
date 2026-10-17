@@ -4,8 +4,9 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, 
 
 import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
+import { createCpuRenderer } from '../gl/cpu-renderer';
 import { createLutRenderer } from '../gl/lut-renderer';
-import type { LutRenderer } from '../gl/lut-renderer';
+import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
 import { buildLut } from '../lut/lut';
 import { usePreviewStore } from '../lut/preview-store';
@@ -55,7 +56,7 @@ function drawStill(): void {
 }
 
 // Wählt die Bildquelle: das Livebild, sonst das Standbild.
-function currentSource(): { image: TexImageSource; width: number; height: number } | null {
+function currentSource(): { image: RenderSource; width: number; height: number } | null {
   const element = video.value;
   if (
     element !== null &&
@@ -79,9 +80,10 @@ function drawFrameToCanvas(): void {
   const target = canvas.value;
   const source = currentSource();
   if (target !== null && source !== null && renderer.value !== null) {
-    if (sizeKey(target) !== sizeKey(source)) {
-      target.width = source.width;
-      target.height = source.height;
+    const size = renderer.value.outputSize(source);
+    if (sizeKey(target) !== sizeKey(size)) {
+      target.width = size.width;
+      target.height = size.height;
       aspect.value = source.width / source.height;
     }
     renderer.value.render(source.image, {
@@ -92,14 +94,15 @@ function drawFrameToCanvas(): void {
 }
 
 function setup(): void {
-  const gl = canvas.value?.getContext('webgl2', { preserveDrawingBuffer: true });
-  if (!gl) {
-    error.value =
-      'WebGL2 wird von diesem Browser nicht unterstützt, die Vorschau ist nicht möglich.';
+  const target = canvas.value;
+  /* v8 ignore next 3 -- die Zeichenfläche existiert, sobald die Komponente eingehängt ist */
+  if (target === null) {
     return;
   }
+  const gl = target.getContext('webgl2', { preserveDrawingBuffer: true });
   try {
-    renderer.value = createLutRenderer(gl);
+    // Ohne WebGL2 übernimmt die Software-Darstellung, damit die Vorschau trotzdem funktioniert.
+    renderer.value = gl ? createLutRenderer(gl) : createCpuRenderer(target);
   } catch (error_) {
     error.value = (error_ as Error).message;
     return;
@@ -154,6 +157,18 @@ function onSplit(event: Event): void {
         Schalte die Kamera im Tab „Kamera“ an oder nimm dort ein Standbild auf.
       </p>
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
+      <p
+        v-if="renderer !== null"
+        class="text-xs text-slate-600"
+        data-testid="preview-renderer"
+        :data-renderer="renderer.kind"
+      >
+        {{
+          renderer.kind === 'webgl2'
+            ? 'Darstellung: Grafikkarte (WebGL2)'
+            : 'Darstellung: Software, verkleinert (kein WebGL2 verfügbar)'
+        }}
+      </p>
 
       <label class="flex flex-col gap-1 text-sm">
         <span>Stärke der Korrektur: {{ strength }} %</span>

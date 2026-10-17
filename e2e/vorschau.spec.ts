@@ -18,19 +18,10 @@ function codes(code: readonly number[]): number[] {
   return code.map((value) => Math.round(value * 255));
 }
 
-async function pixelOf(app: AppPage, id: string): Promise<[number, number, number]> {
-  const { x, y } = colorPatchCenter(id);
-  return app.previewPixel(x, y);
-}
-
 // Wartet, bis die Vorschau an einem Feld die erwarteten Farben zeigt.
 async function expectPatch(app: AppPage, id: string, expected: readonly number[]): Promise<void> {
-  await expect
-    .poll(async () => {
-      const actual = await pixelOf(app, id);
-      return expected.every((value, index) => Math.abs((actual[index] ?? 0) - value) <= TOLERANCE);
-    })
-    .toBe(true);
+  const { x, y } = colorPatchCenter(id);
+  await app.expectPreviewColor(x, y, expected, TOLERANCE);
 }
 
 test.describe('Vorschau', () => {
@@ -92,6 +83,22 @@ test.describe('Vorschau', () => {
 
     await expectPatch(app, LEFT_PATCH, codes(cameraCode(dummyLab(LEFT_PATCH))));
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
+  });
+
+  test('Die Vorschau nennt die Darstellungsart, in Chrome ist es die Grafikkarte', async ({
+    app,
+  }, testInfo) => {
+    await app.computeColorModel();
+    await app.openTab('Vorschau');
+
+    await expect(app.page.getByTestId('preview-renderer')).toBeVisible();
+    // Firefox läuft auf manchen Rechnern ohne WebGL2 und nutzt dann die Software-Darstellung.
+    const allowedByBrowser: Record<string, string[]> = {
+      chrome: ['webgl2'],
+      firefox: ['webgl2', 'cpu'],
+    };
+    const allowed = allowedByBrowser[testInfo.project.name] ?? [];
+    expect(allowed).toContain(await app.previewRenderer());
   });
 
   test('Die Vorschau weist auf eine fehlende Bildquelle hin', async ({ app }) => {

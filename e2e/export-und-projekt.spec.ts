@@ -167,12 +167,6 @@ test.describe('Projekt', () => {
     const patch = '1F';
     const { x, y } = colorPatchCenter(patch);
     const expected = labToSrgb(dummyLab(patch)).map((value) => Math.round(value * 255));
-    await expect
-      .poll(async () => {
-        const pixel = await app.previewPixel(x + 0, y + 0);
-        // Das Feld liegt rechts der Trennlinie (50 %): dort steht das korrigierte Bild.
-        return expected.every((value, index) => Math.abs((pixel[index] ?? 0) - value) <= 7);
-      })
-      .toBe(true);
+    await app.expectPreviewColor(x, y, expected, 7);
   });
 });

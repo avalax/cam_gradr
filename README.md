@@ -48,6 +48,8 @@ Livebild, bei „aus“ das aufgenommene Standbild.
    in der Vorschau gewählte Stärke wird fest eingerechnet. Welche Größe dein Gerät annimmt, steht in
    dessen Handbuch.
 
+Ohne WebGL2 zeichnet die Vorschau in einer verkleinerten Software-Darstellung; im Tab steht, welche Darstellung aktiv ist.
+
 In der Kopfzeile sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
 (Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte der Hersteller stehen nicht
 in der Datei, nur der Name des gewählten Satzes.

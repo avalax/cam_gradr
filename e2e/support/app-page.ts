@@ -137,6 +137,9 @@ export class AppPage {
         if (source === null) {
           throw new Error('Die Vorschau fehlt.');
         }
+        // Die Koordinaten beziehen sich auf das Kamerabild (1280 Pixel breit); die Software-
+        // Darstellung zeichnet kleiner und wird entsprechend umgerechnet.
+        const scale = source.width / 1280;
         const copy = document.createElement('canvas');
         copy.width = source.width;
         copy.height = source.height;
@@ -145,11 +148,46 @@ export class AppPage {
           throw new Error('Kein 2D-Kontext.');
         }
         context.drawImage(source, 0, 0);
-        const data = context.getImageData(Math.round(px), Math.round(py), 1, 1).data;
+        const data = context.getImageData(
+          Math.round(px * scale),
+          Math.round(py * scale),
+          1,
+          1,
+        ).data;
         return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0] as [number, number, number];
       },
       [x, y],
     );
+  }
+
+  // Womit die Vorschau zeichnet: 'webgl2' (Grafikkarte) oder 'cpu' (Software-Darstellung).
+  async previewRenderer(): Promise<string | null> {
+    return this.page.getByTestId('preview-renderer').getAttribute('data-renderer');
+  }
+
+  // Wartet, bis die Vorschau an der Stelle die erwartete Farbe zeigt; die Meldung nennt bei einem
+  // Fehlschlag die tatsächliche Abweichung und die Darstellungsart.
+  async expectPreviewColor(
+    x: number,
+    y: number,
+    expected: readonly number[],
+    tolerance: number,
+  ): Promise<void> {
+    let last = 'noch kein Pixel gelesen';
+    try {
+      await expect
+        .poll(async () => {
+          const pixel = await this.previewPixel(x, y);
+          const deviation = Math.max(
+            ...expected.map((value, index) => Math.abs((pixel[index] ?? 0) - value)),
+          );
+          last = `Pixel ${pixel.join(',')}, erwartet ${expected.join(',')}, Darstellung ${String(await this.previewRenderer())}`;
+          return deviation;
+        })
+        .toBeLessThanOrEqual(tolerance);
+    } catch (error) {
+      throw new Error(`${(error as Error).message}\n${last}`, { cause: error });
+    }
   }
 
   // Importiert eine Referenzdatei über das Dateifeld in Schritt 2.

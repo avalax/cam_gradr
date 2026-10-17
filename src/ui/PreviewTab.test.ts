@@ -187,6 +187,41 @@ describe('PreviewTab', () => {
     expect(wrapper.get('video').element.srcObject).not.toBeNull();
   });
 
+  it('zeigt an, dass die Grafikkarte zeichnet', async () => {
+    mockAnimation();
+    mockContexts();
+    const wrapper = mount(PreviewTab);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe(
+      'webgl2',
+    );
+  });
+
+  it('weicht ohne WebGL2 auf die Software-Darstellung aus und zeichnet verkleinert', async () => {
+    const animation = mockAnimation();
+    const image = { data: new Uint8ClampedArray(480 * 270 * 4) };
+    const context2d = {
+      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => image),
+      putImageData: vi.fn(),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(((id: string) =>
+      id === 'webgl2' ? null : context2d) as never);
+    computeModel();
+    useCameraStore().still = { width: 960, height: 540, data: new Float32Array(960 * 540 * 3) };
+    const wrapper = mount(PreviewTab);
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe('cpu');
+    // Das Standbild wurde schon beim Einhängen auf die Arbeitsfläche gezeichnet.
+    const before = context2d.putImageData.mock.calls.length;
+    animation.runFrame();
+    expect(context2d.putImageData).toHaveBeenCalledTimes(before + 1);
+    expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 480);
+    expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('height', 270);
+  });
+
   it('meldet fehlende WebGL2-Unterstützung', async () => {
     mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);

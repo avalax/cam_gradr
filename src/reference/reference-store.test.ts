@@ -53,6 +53,21 @@ describe('useReferenceStore', () => {
     expect(store.lastSaved).toBeNull();
   });
 
+  it('meldet, sobald ein Satz lokal gelöscht ist', async () => {
+    const store = useReferenceStore();
+    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    expect(store.lastRemoved).toBeNull();
+    await store.remove('Satz A');
+    expect(store.lastRemoved).toBe('Satz A');
+  });
+
+  it('meldet kein Löschen, wenn der Speicher ausfällt', async () => {
+    setReferenceStorage(failingStorage());
+    const store = useReferenceStore();
+    await store.remove('Satz A');
+    expect(store.lastRemoved).toBeNull();
+  });
+
   it('lädt gespeicherte Sätze beim Start und wählt den ersten', async () => {
     const first = useReferenceStore();
     await first.importFile('a.json', dummyReferenceJson('Satz A'));
