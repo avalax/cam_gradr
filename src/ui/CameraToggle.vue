@@ -13,7 +13,7 @@ const label = computed(() => {
   if (status.value === 'starting') {
     return 'Kamera startet …';
   }
-  return isOn.value ? 'Kamera an' : 'Kamera starten';
+  return isOn.value ? 'Kamera stoppen' : 'Kamera starten';
 });
 
 function toggle(): void {
@@ -34,8 +34,8 @@ function toggle(): void {
       class="rounded border px-3 py-1 text-sm"
       :class="
         isOn
-          ? 'border-emerald-700 bg-emerald-700 text-white'
-          : 'border-red-700 bg-red-700 text-white'
+          ? 'border-red-700 bg-red-700 text-white'
+          : 'border-emerald-700 bg-emerald-700 text-white'
       "
       :aria-checked="isOn"
       :data-status="status"

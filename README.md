@@ -30,7 +30,7 @@ anpassen.
 
 ## So funktioniert es
 
-Links oben schaltet der Schalter **Kamera** die Kamera an oder aus, ohne den Tab zu wechseln. Die Kameraauswahl,
+Links oben schaltet der Schalter die Kamera an oder aus (grün „Kamera starten“, rot „Kamera stoppen“), ohne den Tab zu wechseln. Die Kameraauswahl,
 die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ oben rechts. Die App hat vier Tabs,
 die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 

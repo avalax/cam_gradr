@@ -38,7 +38,7 @@ test.describe('Kameraschalter', () => {
 
     await app.openTab('Vorschau');
     await app.startCamera();
-    await expect(app.cameraSwitch).toHaveText('Kamera an');
+    await expect(app.cameraSwitch).toHaveText('Kamera stoppen');
     await expect(app.page.getByRole('tab', { name: 'Vorschau' })).toHaveAttribute(
       'aria-selected',
       'true',
