@@ -3,14 +3,16 @@ import type { Frame } from '../camera/frame';
 import { sortCorners } from './corner-order';
 import type { Corners, Point } from './types';
 
-// Einfache Kartensuche ohne Bibliothek: Kanten im verkleinerten Graubild, grob in Zellen
-// zusammengefasst, zusammenhängende Flächen mit den meisten Kanten gelten als Karten. Die vier
-// Ecken einer Fläche sind ihre äußersten Kantenpunkte entlang der Diagonalen.
+// Einfache Kartensuche ohne Bibliothek: Die Karten haben einen dunklen Rahmen um die Felder. Im
+// verkleinerten Graubild werden dunkle Flächen gesucht, die nicht am Bildrand liegen und ungefähr
+// das Seitenverhältnis einer hochkanten Karte haben. Ihre Ecken sind die äußersten Punkte der
+// Fläche entlang der Diagonalen. Welche Helligkeit "dunkel" ist, hängt vom Licht ab; deshalb werden
+// mehrere Schwellen probiert, bis genau die erwartete Zahl an Karten gefunden ist.
 const MAX_WIDTH = 320;
-const CELL = 8;
-const MIN_CELL_EDGES = 3;
-const MIN_EDGE_STEP = 0.04;
-const MIN_AREA_SHARE = 0.02;
+const THRESHOLDS = [0.25, 0.2, 0.3, 0.15, 0.35] as const;
+const MIN_AREA_SHARE = 0.04;
+const MIN_ASPECT = 0.45;
+const MAX_ASPECT = 0.85;
 const LUMA = [0.2126, 0.7152, 0.0722] as const;
 
 interface Gray {
@@ -21,11 +23,17 @@ interface Gray {
 }
 
 interface Extremes {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
   topLeft: Point;
   topRight: Point;
   bottomRight: Point;
   bottomLeft: Point;
 }
+
+type Quad = readonly [Point, Point, Point, Point];
 
 function toGray(frame: Frame): Gray {
   const scale = Math.max(1, Math.ceil(frame.width / MAX_WIDTH));
@@ -50,113 +58,70 @@ function toGray(frame: Frame): Gray {
   return { width, height, scale, data };
 }
 
-// Markiert Pixel, an denen sich die Helligkeit deutlich ändert (Feld- und Kartenränder).
-function edgeMap(gray: Gray): Uint8Array {
+function include(known: Extremes, x: number, y: number): void {
+  const point = { x, y };
+  known.minX = Math.min(known.minX, x);
+  known.maxX = Math.max(known.maxX, x);
+  known.minY = Math.min(known.minY, y);
+  known.maxY = Math.max(known.maxY, y);
+  known.topLeft = x + y < known.topLeft.x + known.topLeft.y ? point : known.topLeft;
+  known.bottomRight = x + y > known.bottomRight.x + known.bottomRight.y ? point : known.bottomRight;
+  known.topRight = x - y > known.topRight.x - known.topRight.y ? point : known.topRight;
+  known.bottomLeft = x - y < known.bottomLeft.x - known.bottomLeft.y ? point : known.bottomLeft;
+}
+
+// Nachbarn eines Pixels (4er-Nachbarschaft) innerhalb des Bildes.
+function neighboursOf(cell: number, width: number, height: number): number[] {
+  const x = cell % width;
+  const y = Math.floor(cell / width);
+  return [
+    x > 0 ? cell - 1 : -1,
+    x < width - 1 ? cell + 1 : -1,
+    y > 0 ? cell - width : -1,
+    y < height - 1 ? cell + width : -1,
+  ].filter((next) => next >= 0);
+}
+
+// Sammelt die zusammenhängende dunkle Fläche ab einem Startpixel und merkt sich Ausdehnung und die
+// äußersten Punkte entlang der Diagonalen.
+function floodArea(gray: Gray, threshold: number, start: number, seen: Uint8Array): Extremes {
   const { width, height, data } = gray;
-  const steps = new Float32Array(width * height);
-  for (let y = 0; y < height - 1; y++) {
-    for (let x = 0; x < width - 1; x++) {
-      const here = Number(data[y * width + x]);
-      steps[y * width + x] =
-        Math.abs(Number(data[y * width + x + 1]) - here) +
-        Math.abs(Number(data[(y + 1) * width + x]) - here);
-    }
-  }
-  const mean = steps.reduce((sum, step) => sum + step, 0) / steps.length;
-  const spread = Math.sqrt(steps.reduce((sum, step) => sum + (step - mean) ** 2, 0) / steps.length);
-  const threshold = Math.max(MIN_EDGE_STEP, mean + spread);
-  return Uint8Array.from(steps, (step) => (step > threshold ? 1 : 0));
-}
-
-// Zellen mit genug Kanten, eine Zelle breit nach außen erweitert, damit Lücken zwischen den Feldern
-// die Fläche nicht zerreißen.
-function activeCells(edges: Uint8Array, gray: Gray, columns: number, rows: number): Uint8Array {
-  const counts = new Int32Array(columns * rows);
-  for (const [index, edge] of edges.entries()) {
-    if (edge === 1) {
-      const cell =
-        Math.floor(index / gray.width / CELL) * columns + Math.floor((index % gray.width) / CELL);
-      counts[cell] = Number(counts[cell]) + 1;
-    }
-  }
-  const active = (cx: number, cy: number) =>
-    cx >= 0 &&
-    cx < columns &&
-    cy >= 0 &&
-    cy < rows &&
-    Number(counts[cy * columns + cx]) >= MIN_CELL_EDGES;
-  return Uint8Array.from(counts, (_, cell) => {
-    const cx = cell % columns;
-    const cy = Math.floor(cell / columns);
-    return [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => active(cx + dx, cy + dy))) ? 1 : 0;
-  });
-}
-
-// Verbindet benachbarte Zellen zu Flächen (Nummer je Zelle, 0 = keine Fläche).
-function labelCells(grown: Uint8Array, columns: number): Int32Array {
-  const labels = new Int32Array(grown.length);
-  let next = 0;
-  for (const [start, cell] of grown.entries()) {
-    if (cell === 1 && labels[start] === 0) {
-      next++;
-      labels[start] = next;
-      const pending = [start];
-      for (let current = pending.pop(); current !== undefined; current = pending.pop()) {
-        const column = current % columns;
-        const neighbours = [
-          column > 0 ? current - 1 : -1,
-          column < columns - 1 ? current + 1 : -1,
-          current - columns,
-          current + columns,
-        ];
-        for (const neighbour of neighbours) {
-          if (grown[neighbour] === 1 && labels[neighbour] === 0) {
-            labels[neighbour] = next;
-            pending.push(neighbour);
-          }
-        }
+  const first = { x: start % width, y: Math.floor(start / width) };
+  const known: Extremes = {
+    minX: first.x,
+    maxX: first.x,
+    minY: first.y,
+    maxY: first.y,
+    topLeft: first,
+    topRight: first,
+    bottomRight: first,
+    bottomLeft: first,
+  };
+  seen[start] = 1;
+  const pending = [start];
+  for (let cell = pending.pop(); cell !== undefined; cell = pending.pop()) {
+    include(known, cell % width, Math.floor(cell / width));
+    for (const next of neighboursOf(cell, width, height)) {
+      if (seen[next] === 0 && Number(data[next]) < threshold) {
+        seen[next] = 1;
+        pending.push(next);
       }
     }
   }
-  return labels;
+  return known;
 }
 
-// Äußerste Kantenpunkte je Fläche: kleinste/größte Summe x+y und Differenz x−y.
-function findExtremes(
-  edges: Uint8Array,
-  labels: Int32Array,
-  width: number,
-  columns: number,
-): Extremes[] {
-  const result: Record<number, Extremes | undefined> = {};
-  for (const [index, edge] of edges.entries()) {
-    const x = index % width;
-    const y = Math.floor(index / width);
-    const label = Number(labels[Math.floor(y / CELL) * columns + Math.floor(x / CELL)]);
-    if (edge === 1 && label > 0) {
-      const point = { x, y };
-      const known = result[label];
-      if (known === undefined) {
-        result[label] = {
-          topLeft: point,
-          topRight: point,
-          bottomRight: point,
-          bottomLeft: point,
-        };
-      } else {
-        known.topLeft = x + y < known.topLeft.x + known.topLeft.y ? point : known.topLeft;
-        known.bottomRight =
-          x + y > known.bottomRight.x + known.bottomRight.y ? point : known.bottomRight;
-        known.topRight = x - y > known.topRight.x - known.topRight.y ? point : known.topRight;
-        known.bottomLeft =
-          x - y < known.bottomLeft.x - known.bottomLeft.y ? point : known.bottomLeft;
-      }
+// Alle zusammenhängenden dunklen Flächen des Bildes.
+function darkAreas(gray: Gray, threshold: number): Extremes[] {
+  const seen = new Uint8Array(gray.data.length);
+  const areas: Extremes[] = [];
+  for (const [start, value] of gray.data.entries()) {
+    if (value < threshold && seen[start] === 0) {
+      areas.push(floodArea(gray, threshold, start, seen));
     }
   }
-  return Object.values(result).filter((known) => known !== undefined);
+  return areas;
 }
-
-type Quad = readonly [Point, Point, Point, Point];
 
 function quadOf(extremes: Extremes): Quad {
   return [extremes.topLeft, extremes.topRight, extremes.bottomRight, extremes.bottomLeft];
@@ -173,34 +138,49 @@ function area([a, b, c, d]: Quad): number {
   return Math.abs(twice) / 2;
 }
 
-function centreX(quad: readonly Point[]): number {
-  return quad.reduce((sum, p) => sum + p.x, 0) / quad.length;
+function distance(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function centreX(quad: Quad): number {
+  return (quad[0].x + quad[1].x + quad[2].x + quad[3].x) / 4;
+}
+
+// Eine Karte liegt ganz im Bild, ist groß genug und hochkant (Breite zu Höhe etwa 2 : 3).
+function looksLikeCard(extremes: Extremes, gray: Gray): boolean {
+  const quad = quadOf(extremes);
+  const [a, b, c, d] = quad;
+  const width = (distance(a, b) + distance(d, c)) / 2;
+  const height = (distance(a, d) + distance(b, c)) / 2;
+  return (
+    extremes.minX > 0 &&
+    extremes.minY > 0 &&
+    extremes.maxX < gray.width - 1 &&
+    extremes.maxY < gray.height - 1 &&
+    area(quad) >= MIN_AREA_SHARE * gray.width * gray.height &&
+    width / height >= MIN_ASPECT &&
+    width / height <= MAX_ASPECT
+  );
 }
 
 // Sucht `count` Karten im Bild und gibt ihre Ecken von links nach rechts zurück. Findet sich nicht
 // genau diese Zahl plausibler Karten, kommt null zurück und die Ecken müssen von Hand gesetzt werden.
 export function detectCards(frame: Frame, count: number): Corners[] | null {
   const gray = toGray(frame);
-  const columns = Math.ceil(gray.width / CELL);
-  const rows = Math.ceil(gray.height / CELL);
-  const edges = edgeMap(gray);
-  const labels = labelCells(activeCells(edges, gray, columns, rows), columns);
-
-  const found = findExtremes(edges, labels, gray.width, columns)
-    .map((extremes) => quadOf(extremes))
-    .filter((quad) => area(quad) >= MIN_AREA_SHARE * gray.width * gray.height)
-    .toSorted((a, b) => area(b) - area(a))
-    .slice(0, count);
-  if (found.length !== count) {
-    return null;
+  for (const threshold of THRESHOLDS) {
+    const cards = darkAreas(gray, threshold).filter((extremes) => looksLikeCard(extremes, gray));
+    if (cards.length === count) {
+      return cards
+        .map((extremes) => quadOf(extremes))
+        .toSorted((a, b) => centreX(a) - centreX(b))
+        .map((quad) => {
+          const [a, b, c, d] = quad.map((point) => ({
+            x: (point.x + 0.5) * gray.scale,
+            y: (point.y + 0.5) * gray.scale,
+          }));
+          return sortCorners([a as Point, b as Point, c as Point, d as Point]);
+        });
+    }
   }
-  return found
-    .toSorted((a, b) => centreX(a) - centreX(b))
-    .map((quad) => {
-      const [a, b, c, d] = quad.map((p) => ({
-        x: (p.x + 0.5) * gray.scale,
-        y: (p.y + 0.5) * gray.scale,
-      }));
-      return sortCorners([a as Point, b as Point, c as Point, d as Point]);
-    });
+  return null;
 }

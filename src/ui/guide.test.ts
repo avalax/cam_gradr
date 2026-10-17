@@ -8,11 +8,11 @@ describe('guideCorners', () => {
   it('legt zwei hochkante Rahmen links und rechts mittig ins Bild', () => {
     const [left, right] = guideCorners({ width: 1280, height: 720 }, 2) as [Corners, Corners];
     const width = left[1].x - left[0].x;
-    expect(left[0].y).toBeCloseTo(61.2);
-    expect(left[2].y).toBeCloseTo(658.8);
-    expect(width).toBeCloseTo(398.4);
-    expect(left[0].x + width / 2).toBeCloseTo(320);
-    expect(right[0].x + width / 2).toBeCloseTo(960);
+    expect(left[0].y).toBeCloseTo(68.4);
+    expect(left[2].y).toBeCloseTo(651.6);
+    expect(width).toBeCloseTo(367.4, 0);
+    expect(left[0].x + width / 2).toBeCloseTo(435.2);
+    expect(right[0].x + width / 2).toBeCloseTo(896);
   });
 
   it('liefert Ecken im Uhrzeigersinn ab oben links', () => {

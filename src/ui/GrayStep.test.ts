@@ -28,17 +28,14 @@ function stillFrame(value: number): Frame {
   };
 }
 
-// Zwei Karten aus je 4×3 Feldern in verschiedenen Graustufen auf ruhigem Hintergrund.
+// Zwei hochkante Karten mit dunklem Rahmen und hellen Feldern auf ruhigem Hintergrund.
 function twoCardFrame(): Frame {
-  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.5) };
-  for (const [x0, y0] of [
-    [100, 80],
-    [700, 100],
-  ] as const) {
-    for (let y = y0; y < y0 + 400; y++) {
-      for (let x = x0; x < x0 + 400; x++) {
-        const cell = (Math.floor((x - x0) / 100) + 4 * Math.floor((y - y0) / 134)) % 8;
-        frame.data.fill(0.2 + 0.07 * cell, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
+  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.6) };
+  for (const x0 of [200, 760]) {
+    for (let y = 100; y < 600; y++) {
+      for (let x = x0; x < x0 + 320; x++) {
+        const inside = x >= x0 + 40 && x < x0 + 280 && y >= 140 && y < 560;
+        frame.data.fill(inside ? 0.8 : 0.08, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
       }
     }
   }
