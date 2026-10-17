@@ -12,6 +12,7 @@ const exposure: ExposureResult = {
   level18: 0.6,
   level50: 0.86,
   delta: 0.13,
+  contrast: 0.02,
 };
 
 describe('BrightnessScale', () => {

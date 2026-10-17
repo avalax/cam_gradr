@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_EXPOSURE_CONFIG, assessExposure, codeLuma, describeExposure } from './exposure';
+import {
+  DEFAULT_EXPOSURE_CONFIG,
+  assessExposure,
+  codeLuma,
+  describeContrast,
+  describeExposure,
+} from './exposure';
 import type { ExposureInput, Verdict } from './exposure';
 import type { Rgb } from './types';
 
@@ -79,6 +85,36 @@ describe('assessExposure', () => {
   });
 });
 
+describe('Kontrast', () => {
+  it('ist bei idealem Abstand der großen Felder null', () => {
+    expect(assessExposure(input()).contrast).toBeCloseTo(0, 3);
+  });
+
+  it('ist positiv bei zu großem und negativ bei zu kleinem Abstand', () => {
+    expect(
+      assessExposure(input({ large18: grey(0.4), large50: grey(0.8) })).contrast,
+    ).toBeGreaterThan(0.05);
+    expect(assessExposure(input({ large18: grey(0.5), large50: grey(0.7) })).contrast).toBeLessThan(
+      -0.05,
+    );
+  });
+
+  it('bleibt bei gleicher Verschiebung beider Felder unverändert (nur die Helligkeit ändert sich)', () => {
+    const base = assessExposure(input());
+    const brighter = assessExposure(input({ large18: grey(0.56), large50: grey(0.84) }));
+    expect(brighter.contrast).toBeCloseTo(base.contrast, 3);
+    expect(brighter.delta).toBeGreaterThan(base.delta);
+  });
+
+  it('nennt je nach Abweichung einen anderen Hinweis', () => {
+    const at = (contrast: number) => ({ ...assessExposure(input()), contrast });
+    expect(describeContrast(at(0))).toContain('passt');
+    expect(describeContrast(at(0.1))).toContain('zu hoch');
+    expect(describeContrast(at(-0.1))).toContain('zu niedrig');
+    expect(describeContrast(at(0.08), 0.1)).toContain('passt');
+  });
+});
+
 describe('describeExposure', () => {
   it('liefert für jedes Urteil einen eigenen Text', () => {
     const verdicts: Verdict[] = ['ok', 'too-dark', 'too-bright', 'high-contrast'];
@@ -90,6 +126,7 @@ describe('describeExposure', () => {
         level18: 0,
         level50: 0,
         delta: 0,
+        contrast: 0,
       }),
     );
     expect(new Set(texts).size).toBe(4);

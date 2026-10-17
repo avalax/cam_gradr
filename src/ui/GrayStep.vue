@@ -6,6 +6,7 @@ import { grayLayout } from '../chart/layouts';
 
 import BrightnessScale from './BrightnessScale.vue';
 import CardStage from './CardStage.vue';
+import ContrastScale from './ContrastScale.vue';
 
 const emit = defineEmits<{ continue: [] }>();
 
@@ -39,7 +40,16 @@ const IDLE_TEXT =
         live-measure
       >
         <template #side>
-          <BrightnessScale :exposure="exposure" />
+          <div class="flex gap-3 self-stretch">
+            <div class="flex flex-col items-center gap-1 self-stretch">
+              <BrightnessScale class="flex-1" :exposure="exposure" />
+              <span class="text-xs text-slate-600">Licht</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 self-stretch">
+              <ContrastScale class="flex-1" :exposure="exposure" />
+              <span class="text-xs text-slate-600">Kontrast</span>
+            </div>
+          </div>
         </template>
         <template #actions>
           <button

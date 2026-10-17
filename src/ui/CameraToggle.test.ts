@@ -49,6 +49,7 @@ describe('CameraToggle', () => {
     const starting = useCameraStore().start();
     await wrapper.vm.$nextTick();
     expect(toggle(wrapper).text()).toBe('Kamera startet …');
+    expect(toggle(wrapper).classes()).toContain('bg-amber-400');
     expect(toggle(wrapper).attributes('aria-checked')).toBe('true');
     await starting;
   });

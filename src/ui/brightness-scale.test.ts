@@ -11,6 +11,7 @@ const exposure: ExposureResult = {
   level18: 0.46,
   level50: 0.74,
   delta: -0.03,
+  contrast: 0,
 };
 
 describe('scalePosition', () => {

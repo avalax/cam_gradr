@@ -12,6 +12,8 @@ export interface ExposureConfig {
   target50: number;
   // Erlaubte mittlere Abweichung der großen Felder vom Sollwert.
   tolerance: number;
+  // Erlaubte Abweichung des Abstands zwischen den beiden großen Feldern vom Sollabstand.
+  contrastTolerance: number;
 }
 
 export const DEFAULT_EXPOSURE_CONFIG: ExposureConfig = {
@@ -20,6 +22,7 @@ export const DEFAULT_EXPOSURE_CONFIG: ExposureConfig = {
   target18: 0.46,
   target50: 0.74,
   tolerance: 0.06,
+  contrastTolerance: 0.05,
 };
 
 export interface ExposureInput {
@@ -39,6 +42,9 @@ export interface ExposureResult {
   level50: number;
   // Mittlere Abweichung der großen Felder vom Sollwert (positiv = zu hell).
   delta: number;
+  // Abweichung des Abstands zwischen dem 50 %- und dem 18 %-Feld vom Sollabstand (positiv = zu viel
+  // Kontrast, negativ = zu flach).
+  contrast: number;
 }
 
 // Helligkeit eines sRGB-codierten Farbwerts (Rec.709-Luminanz, wieder sRGB-codiert).
@@ -77,6 +83,7 @@ export function assessExposure(
   const level18 = codeLuma(input.large18);
   const level50 = codeLuma(input.large50);
   const delta = (level18 - config.target18 + (level50 - config.target50)) / 2;
+  const contrast = level50 - level18 - (config.target50 - config.target18);
   const highlightsClipped = Math.max(...input.stripLight) >= config.highlightClip;
   const shadowsCrushed = codeLuma(input.stripDark) <= config.shadowFloor;
   return {
@@ -86,6 +93,7 @@ export function assessExposure(
     level18,
     level50,
     delta,
+    contrast,
   };
 }
 
@@ -99,4 +107,22 @@ const HINTS: Readonly<Record<Verdict, string>> = {
 
 export function describeExposure(result: ExposureResult): string {
   return HINTS[result.verdict];
+}
+
+const CONTRAST_HINTS = {
+  ok: 'Der Kontrast passt.',
+  harsh:
+    'Der Kontrast ist zu hoch. Bitte den Kontrast der Kamera senken oder das Licht weicher stellen.',
+  flat: 'Der Kontrast ist zu niedrig. Bitte den Kontrast der Kamera erhöhen.',
+} as const;
+
+// Hinweis zum Kontrast: Abstand der beiden großen Felder im Vergleich zum Soll.
+export function describeContrast(
+  result: ExposureResult,
+  tolerance = DEFAULT_EXPOSURE_CONFIG.contrastTolerance,
+): string {
+  if (result.contrast > tolerance) {
+    return CONTRAST_HINTS.harsh;
+  }
+  return result.contrast < -tolerance ? CONTRAST_HINTS.flat : CONTRAST_HINTS.ok;
 }

@@ -35,7 +35,7 @@ die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ 
 die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 
 1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
-   aufnehmen. Im Livebild zeigen gestrichelte Rahmen, wo die Karten hingehalten werden sollen. Werden sie ruhig gehalten und erkannt, nimmt die App das Standbild selbst auf und schaltet die Kamera aus (abschaltbar). Nach dem Standbild setzt „Eckpunkte auf Rahmen setzen“ die Eckpunkte auf diese Rahmen, „Karten automatisch erkennen“ sucht die dunklen Kartenrahmen im Bild; alternativ die Eckpunkte von Hand klicken. Alle Punkte lassen sich ziehen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
+   aufnehmen. Im Livebild zeigen gestrichelte Rahmen, wo die Karten hingehalten werden sollen. Werden sie ruhig gehalten und erkannt, nimmt die App das Standbild selbst auf und schaltet die Kamera aus (abschaltbar). Nach dem Standbild setzt „Eckpunkte auf Rahmen setzen“ die Eckpunkte auf diese Rahmen, „Karten automatisch erkennen“ sucht die dunklen Kartenrahmen im Bild; alternativ die Eckpunkte von Hand klicken. Alle Punkte lassen sich ziehen. Zwei senkrechte Skalen neben dem Bild zeigen das Licht (Graustufen) und den Kontrast: Die erste zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
 2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten laden (mitgelieferter Satz oder eigene JSON-/CSV-Datei, bleiben lokal im

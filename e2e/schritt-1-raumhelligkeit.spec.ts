@@ -239,3 +239,21 @@ test.describe('Graukarten: automatische Erkennung', () => {
     await app.expectVerdict('Die Raumhelligkeit passt');
   });
 });
+
+test.describe('Graukarten: Kontrastskala', () => {
+  test.use({ lighting: 'ok' });
+
+  test('Neben der Skala für das Licht zeigt eine zweite den Kontrast', async ({ app }) => {
+    await app.open();
+    await app.startGrayStage();
+    await app.captureStill();
+    await expect(app.page.getByTestId('contrast-scale')).toBeVisible();
+    await expect(app.page.getByTestId('contrast-marker')).toHaveCount(0);
+
+    await app.placeAllCorners();
+
+    await expect(app.page.getByTestId('contrast-marker')).toBeVisible();
+    await app.page.getByTestId('contrast-scale').hover();
+    await expect(app.page.getByTestId('contrast-details')).toContainText('Der Kontrast passt');
+  });
+});
