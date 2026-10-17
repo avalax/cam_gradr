@@ -8,7 +8,7 @@ import {
   useColorChartStore,
 } from './chart-store';
 import { grayLayout } from './layouts';
-import type { PixelGrid } from './types';
+import type { Corners, PixelGrid } from './types';
 
 const point = (x: number, y: number) => ({ x, y });
 
@@ -149,6 +149,23 @@ describe('useChartStore', () => {
     store.restore({ points: { 1: [point(2, 2)] }, measurements: { '3A': [0.1, 0.2, 0.3] } });
     expect(store.measurements).toEqual({ '3A': [0.1, 0.2, 0.3] });
     expect(store.exposure).toBeNull();
+  });
+
+  it('übernimmt die erkannten Karten von links nach rechts', () => {
+    const store = useChartStore();
+    const card = (x: number): Corners => [
+      point(x, 0),
+      point(x + 100, 0),
+      point(x + 100, 100),
+      point(x, 100),
+    ];
+    store.setCards([card(0), card(100)]);
+    expect(store.points[3]).toEqual(card(0));
+    expect(store.points[4]).toEqual(card(100));
+    expect(store.ready).toBe(true);
+    store.setCards([card(50)]);
+    expect(store.points[4]).toEqual([]);
+    expect(store.ready).toBe(false);
   });
 
   it('setzt alles zurück', () => {

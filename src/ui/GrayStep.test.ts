@@ -28,6 +28,23 @@ function stillFrame(value: number): Frame {
   };
 }
 
+// Zwei Karten aus je 4×3 Feldern in verschiedenen Graustufen auf ruhigem Hintergrund.
+function twoCardFrame(): Frame {
+  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.5) };
+  for (const [x0, y0] of [
+    [100, 80],
+    [700, 100],
+  ] as const) {
+    for (let y = y0; y < y0 + 400; y++) {
+      for (let x = x0; x < x0 + 400; x++) {
+        const cell = (Math.floor((x - x0) / 100) + 4 * Math.floor((y - y0) / 134)) % 8;
+        frame.data.fill(0.2 + 0.07 * cell, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
+      }
+    }
+  }
+  return frame;
+}
+
 // Nach dem Einhängen aufrufen: ersetzt nur die Canvas-Erzeugung für den Frame-Grabber.
 function mockGrabberCanvas(value: number) {
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- Überladung für beliebige Tag-Namen
@@ -279,6 +296,33 @@ describe('GrayStep', () => {
     const measure = vi.spyOn(chart, 'measure');
     await vi.advanceTimersByTimeAsync(1000);
     expect(measure).not.toHaveBeenCalled();
+  });
+
+  it('erkennt beide Karten im Standbild und setzt die Eckpunkte', async () => {
+    const wrapper = await mountLive();
+    const camera = useCameraStore();
+    camera.still = twoCardFrame();
+    await flushPromises();
+    await button(wrapper, 'Karten automatisch erkennen')?.trigger('click');
+    expect(useChartStore().ready).toBe(true);
+    expect(wrapper.get('[data-testid="detect-message"]').text()).toContain('erkannt');
+    camera.still = stillFrame(0.5);
+    await flushPromises();
+    expect(wrapper.find('[data-testid="detect-message"]').exists()).toBe(false);
+  });
+
+  it('meldet, wenn keine Karten erkannt werden, und lässt die Eckpunkte unberührt', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await button(wrapper, 'Karten automatisch erkennen')?.trigger('click');
+    expect(wrapper.get('[data-testid="detect-message"]').text()).toContain('nicht sicher erkannt');
+    expect(useChartStore().points).toEqual({});
+  });
+
+  it('bietet die Erkennung nur mit Standbild an', async () => {
+    const wrapper = await mountLive();
+    expect(button(wrapper, 'Karten automatisch erkennen')).toBeUndefined();
   });
 
   it('setzt per Knopf zurück', async () => {

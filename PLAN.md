@@ -100,7 +100,7 @@ Datenfluss: Kamera → Frame → (Schritt 1) Graumessung → nur Helligkeits-Fee
 3. **M3 – Farb-Schritt & Solver:** Referenz-Import (Validierung, lokale Speicherung), Farbpaar (2 Karten, 48 Felder), Fit, ΔE-Report, Vorher/Nachher.
 4. **M4 – LUT & Live-Preview:** WebGL2-Pipeline, Split-View, Stärke-Regler.
 5. **M5 – Export & Projekt:** `.cube`-Export (17³/33³/65³, Stärke fest eingerechnet), Projekt speichern/laden als JSON.
-6. **M6 – Politur:** Auto-Erkennung der Karte (OpenCV.js, optional), README mit Anleitung, Feinschliff.
+6. **M6 – Politur:** Auto-Erkennung der Karte (eigene Erkennung ohne Bibliothek), README mit Anleitung, Feinschliff.
 
 **Stand M0 (umgesetzt):** Projektgerüst, Lint-/Format-Konfiguration, Husky-Hooks (pre-commit, commit-msg, pre-push), Vitest mit 99-%-Gate, CI-, Release-, CodeQL-Workflows und Dependabot sind im Repo; `npm run verify` läuft lokal grün. TypeScript ist auf `~6.0` festgelegt, weil `typescript-eslint` TypeScript 7 noch nicht unterstützt. Noch zu tun durch den Nutzer: GitHub-Repo anlegen, `RELEASE_PLEASE_TOKEN` als Secret setzen, Pages auf „GitHub Actions“ stellen, Branch-Protection aktivieren.
 
@@ -117,6 +117,8 @@ Umgesetztes Korrekturmodell (Abweichung vom ursprünglichen Plan): Weißabgleich
 Die Shader-Mathematik wird zusätzlich durch eine TypeScript-Referenzimplementierung (`sampleLut`) abgesichert; der WebGL-Adapter ist mit einer Attrappe getestet. Die Akzeptanztests prüfen echte Pixel der Vorschau in Chrome und Firefox (Software-Rendering, damit sie auch auf CI-Rechnern ohne Grafikkarte laufen).
 
 **Stand M5 (umgesetzt):** Neuer Tab „Export“ mit der Größe 17³, 33³ (Standard) oder 65³. Die LUT wird aus dem Modell berechnet, die in der Vorschau gewählte Stärke wird fest eingerechnet und die Datei als `cam_gradr-<Größe>.cube` heruntergeladen (Format mit Dezimalpunkt und Zeilenumbruch `\n`, Werte 0..1, Rot am schnellsten; der Export wird in Tests wieder eingelesen und gegen das Modell geprüft). Im Zahnrad-Menü rechts oben stehen „Projekt speichern“ und „Projekt laden“ (Meldungen dazu erscheinen in der Kopfzeile): Die Projektdatei ist JSON, wird beim Laden streng geprüft (Format, Karten, Felder, Wertebereiche, Modell) und ändert bei einer fehlerhaften Datei nichts am bisherigen Stand.
+
+**Stand M6 (in Arbeit):** Der Knopf „Karten automatisch erkennen“ (auf dem Standbild, Graukarten und Farbkarten) setzt die Eckpunkte selbst (`src/chart/detect.ts`, reines TypeScript, keine Bibliothek): Kanten im verkleinerten Graubild, zu Zellen zusammengefasst, die größten zusammenhängenden Flächen gelten als Karten, ihre Ecken sind die äußersten Kantenpunkte entlang der Diagonalen. Gefunden werden müssen genau so viele Karten wie erwartet, sonst erscheint ein Hinweis und die Punkte werden von Hand gesetzt. Getestet ist die Erkennung bisher an synthetischen Bildern; mit echten Karten und Hintergründen ist sie noch nicht geprüft und die Punkte sind nachzuziehen.
 
 **Software-Fallback der Vorschau:** Ist WebGL2 nicht verfügbar, rechnet die Vorschau die LUT auf der CPU (auf höchstens 480 Pixel Breite verkleinert) und zeigt die Darstellungsart an. Die LUT-Textur der Grafikkarte nutzt 8 Bit je Kanal (RGBA8), weil das auch mit Software-GL überall läuft.
 

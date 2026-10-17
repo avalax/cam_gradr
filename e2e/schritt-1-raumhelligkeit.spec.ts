@@ -188,3 +188,19 @@ test.describe('Graukarten: Raum zu hell', () => {
     await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
+
+test.describe('Graukarten: automatische Erkennung', () => {
+  test.use({ lighting: 'ok' });
+
+  test('Ein Knopf setzt die Eckpunkte beider Karten selbst', async ({ app }) => {
+    await app.open();
+    await app.startGrayStage();
+    await app.captureStill();
+
+    await app.button('Karten automatisch erkennen').click();
+
+    await expect(app.page.locator('svg circle')).toHaveCount(8);
+    await expect(app.page.getByTestId('detect-message')).toContainText('erkannt');
+    await app.expectVerdict('Die Raumhelligkeit passt');
+  });
+});

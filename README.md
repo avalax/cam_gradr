@@ -22,7 +22,7 @@ Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
 | M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung | fertig |
 | M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher          | fertig |
 | M5          | Export als `.cube`, Projekt speichern und laden (JSON)      | fertig |
-| M6          | Optionale automatische Kartenerkennung, Feinschliff         | offen  |
+| M6          | Automatische Kartenerkennung, Feinschliff                   | läuft  |
 
 Noch nicht an der echten Karte geprüft sind die Feldpositionen im Layout und die Schwellen der Ampel.
 Beides ist aus Fotos geschätzt und lässt sich in `src/data/layouts/` bzw. `src/chart/exposure.ts`
@@ -35,7 +35,7 @@ die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ 
 die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 
 1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
-   aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
+   aufnehmen. Auf dem Standbild den Knopf „Karten automatisch erkennen“ drücken (oder die Eckpunkte von Hand klicken; die erkannten Punkte lassen sich ziehen). Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
 2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten laden (mitgelieferter Satz oder eigene JSON-/CSV-Datei, bleiben lokal im

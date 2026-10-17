@@ -6,6 +6,7 @@ import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
 import type { Frame } from '../camera/frame';
 import type { ChartStore } from '../chart/chart-store';
+import { detectCards } from '../chart/detect';
 import type { ChartLayout } from '../chart/types';
 
 import { frameGrid, measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
@@ -32,6 +33,7 @@ const { points, nextSlot, ready, corners } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
+const detectMessage = ref<string | null>(null);
 const dragging = ref<{ card: number; index: number } | null>(null);
 // Erst wenn das Video ein Bild liefert, ist eine Aufnahme sinnvoll.
 const videoReady = ref(false);
@@ -80,6 +82,23 @@ function endDrag(): void {
   dragging.value = null;
 }
 
+function detect(): void {
+  const frame = still.value;
+  /* v8 ignore next 4 -- der Knopf erscheint nur mit Standbild */
+  if (frame === null) {
+    return;
+  }
+  const found = detectCards(frame, props.layout.cards.length);
+  if (found === null) {
+    detectMessage.value =
+      'Die Karten wurden nicht sicher erkannt. Bitte setze die Eckpunkte von Hand.';
+  } else {
+    props.store.setCards(found);
+    detectMessage.value =
+      'Die Karten wurden erkannt. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.';
+  }
+}
+
 function capture(): void {
   captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
 }
@@ -116,7 +135,10 @@ watch(stream, (next) => {
   attachStream(video.value, next);
 });
 
-watch(still, drawStill);
+watch(still, (next) => {
+  detectMessage.value = null;
+  drawStill(next);
+});
 
 // Auf dem Standbild wird bei jeder Änderung (neues Bild, verschobene Eckpunkte) neu gemessen.
 watch([still, points], () => {
@@ -220,6 +242,10 @@ watch(actual, (next, previous) => {
       {{ camera.errorMessage }}
     </p>
 
+    <p v-if="detectMessage !== null" class="text-sm text-slate-700" data-testid="detect-message">
+      {{ detectMessage }}
+    </p>
+
     <div class="flex flex-wrap items-center gap-3">
       <button
         type="button"
@@ -236,6 +262,14 @@ watch(actual, (next, previous) => {
         @click="camera.clearStill()"
       >
         Zurück zum Livebild
+      </button>
+      <button
+        v-if="showStill"
+        type="button"
+        class="rounded border px-3 py-1 text-sm"
+        @click="detect"
+      >
+        Karten automatisch erkennen
       </button>
       <button type="button" class="rounded border px-3 py-1 text-sm" @click="store.reset()">
         Eckpunkte zurücksetzen
