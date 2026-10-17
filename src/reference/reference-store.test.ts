@@ -27,11 +27,14 @@ describe('useReferenceStore', () => {
     setReferenceStorage(storage);
   });
 
-  it('ist zu Beginn leer', async () => {
+  it('enthält nach dem Laden den mitgelieferten Satz und wählt ihn vor', async () => {
     const store = useReferenceStore();
     await store.load();
-    expect(store.sets).toEqual([]);
-    expect(store.selected).toBeNull();
+    expect(store.sets.map((set) => set.name)).toEqual([BUNDLED_NAME]);
+    expect(store.selected?.name).toBe(BUNDLED_NAME);
+    expect(Object.keys(store.selected?.patches ?? {})).toHaveLength(48);
+    await store.load();
+    expect(store.sets).toHaveLength(1);
   });
 
   it('importiert, wählt und speichert einen Satz lokal', async () => {
@@ -72,15 +75,16 @@ describe('useReferenceStore', () => {
     expect(store.lastRemoved).toBeNull();
   });
 
-  it('lädt gespeicherte Sätze beim Start und wählt den ersten', async () => {
+  it('lädt gespeicherte Sätze zusätzlich zum mitgelieferten und wählt diesen vor', async () => {
     const first = useReferenceStore();
     await first.importFile('a.json', dummyReferenceJson('Satz A'));
     setActivePinia(createPinia());
     const again = useReferenceStore();
     await again.load();
-    expect(again.selectedName).toBe('Satz A');
+    expect(again.selectedName).toBe(BUNDLED_NAME);
+    expect(again.sets.map((set) => set.name)).toEqual([BUNDLED_NAME, 'Satz A']);
     await again.load();
-    expect(again.sets).toHaveLength(1);
+    expect(again.sets).toHaveLength(2);
   });
 
   it('behält eine bereits getroffene Auswahl beim Laden', async () => {
@@ -132,10 +136,7 @@ describe('useReferenceStore', () => {
       { name: 'Neu', patches: {} },
     ]);
     await loading;
-    expect(store.sets.map((set) => set.name).toSorted((a, b) => a.localeCompare(b))).toEqual([
-      'Alt',
-      'Neu',
-    ]);
+    expect(store.sets.map((set) => set.name)).toEqual([BUNDLED_NAME, 'Alt', 'Neu']);
     expect(Object.keys(store.sets.find((set) => set.name === 'Neu')?.patches ?? {})).toHaveLength(
       48,
     );
@@ -185,14 +186,20 @@ describe('useReferenceStore', () => {
   });
 
   describe('mitgelieferter Satz', () => {
-    it('wird geprüft, gewählt und lokal gespeichert', async () => {
+    it('ist auch ohne funktionierenden Speicher da', async () => {
+      setReferenceStorage(failingStorage());
       const store = useReferenceStore();
-      await store.importBundled();
-      expect(store.error).toBeNull();
+      await store.load();
+      expect(store.warning).not.toBeNull();
       expect(store.selected?.name).toBe(BUNDLED_NAME);
-      expect(Object.keys(store.selected?.patches ?? {})).toHaveLength(48);
-      const saved = await storage.list();
-      expect(saved.map((set) => set.name)).toEqual([BUNDLED_NAME]);
+    });
+
+    it('wird von einem eigenen Satz gleichen Namens ersetzt', async () => {
+      await storage.save({ name: BUNDLED_NAME, patches: { '1A': [50, 0, 0] } });
+      const store = useReferenceStore();
+      await store.load();
+      expect(store.sets).toHaveLength(1);
+      expect(Object.keys(store.selected?.patches ?? {})).toEqual(['1A']);
     });
   });
 

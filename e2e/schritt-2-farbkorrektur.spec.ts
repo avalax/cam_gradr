@@ -3,16 +3,43 @@ import { dummyReferenceCsv, dummyReferenceJson } from '../src/test-support/dummy
 import { expect, test } from './support/fixtures';
 
 // Akzeptanztests der User Story, Stand M3:
-// "Als Anwender importiere ich Referenzwerte, nehme die Farbkarten auf und sehe, wie viel besser
-// die Farben der Kamera mit der berechneten Korrektur werden."
+// "Als Anwender nutze ich Referenzwerte (mitgeliefert oder eigene), nehme die Farbkarten auf und sehe,
+// wie viel besser die Farben der Kamera mit der berechneten Korrektur werden."
 
 test.describe('Farbkarten: Referenzwerte', () => {
-  test('Ohne Referenzwerte ist keine Berechnung möglich', async ({ app }) => {
+  test('Der mitgelieferte Satz ist von Anfang an aktiv', async ({ app }) => {
     await app.completeStepOne();
-    await expect(app.page.getByTestId('reference-hint')).toContainText('Noch keine Referenzwerte');
+    await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
 
-    await app.captureColorCards();
+    // Ohne Aufnahme der Farbkarten gibt es trotzdem nichts zu berechnen.
     await expect(app.button('Farbkorrektur berechnen')).toBeDisabled();
+    await app.captureColorCards();
+    await expect(app.button('Farbkorrektur berechnen')).toBeEnabled();
+  });
+
+  test('Das Zahnrad-Menü nennt die Quelle und bietet keinen Löschknopf für den mitgelieferten Satz', async ({
+    app,
+  }) => {
+    await app.completeStepOne();
+    await expect(app.page.getByTestId('settings-panel')).toBeHidden();
+    await app.openSettings();
+
+    await expect(app.page.getByTestId('reference-source').getByRole('link')).toHaveAttribute(
+      'href',
+      /bartneck\.de/,
+    );
+    await expect(app.page.getByTestId('reference-source')).toContainText(
+      'keine Datei von Datacolor',
+    );
+    await expect(app.button('Satz löschen')).toHaveCount(0);
+    await expect(app.page.getByTestId('reference-download')).toBeVisible();
+  });
+
+  test('Das Menü schließt mit Escape', async ({ app }) => {
+    await app.open();
+    await app.openSettings();
+    await app.closeSettings();
+    await expect(app.page.getByTestId('settings-button')).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('Referenzwerte lassen sich als JSON importieren', async ({ app }) => {
@@ -20,7 +47,6 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.importReference('referenz.json', dummyReferenceJson('Testdaten'));
 
     await expect(app.page.getByTestId('reference-active')).toContainText('Testdaten (48 Felder)');
-    await expect(app.page.getByTestId('reference-hint')).toBeHidden();
   });
 
   test('Referenzwerte lassen sich als CSV importieren', async ({ app }) => {
@@ -35,10 +61,11 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.importReference('kaputt.json', '{"format":"anderes-format"}');
 
     await expect(app.page.getByRole('alert')).toContainText('Unbekanntes Format');
-    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
+    await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
+    await expect(app.page.getByTestId('reference-active')).not.toContainText('kaputt');
   });
 
-  test('Importierte Referenzwerte bleiben nach dem Neuladen erhalten', async ({ app }) => {
+  test('Importierte Referenzwerte bleiben nach dem Neuladen auswählbar', async ({ app }) => {
     await app.completeStepOne();
     await app.importReference('referenz.json', dummyReferenceJson('Merkliste'));
     await expect(app.page.getByTestId('reference-active')).toContainText('Merkliste');
@@ -46,7 +73,14 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await expect(app.page.getByTestId('reference-saved')).toBeVisible();
 
     await app.page.reload();
-    await app.completeStepOne();
+    await app.openSettings();
+    const option = app.page
+      .getByTestId('reference-select')
+      .locator('option', { hasText: 'Merkliste' });
+    await expect(option).toHaveCount(1);
+    await app.page.getByTestId('reference-select').selectOption('Merkliste');
+    await app.closeSettings();
+    await app.openTab('Farbkarten');
     await expect(app.page.getByTestId('reference-active')).toContainText('Merkliste');
   });
 
@@ -55,28 +89,15 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.importReference('referenz.json', dummyReferenceJson('Weg damit'));
     await app.button('Satz löschen').click();
 
-    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
     // Erst nach der Rückmeldung ist der Satz auch aus dem lokalen Speicher entfernt.
     await expect(app.page.getByTestId('reference-removed')).toBeVisible();
+    await expect(app.page.getByTestId('reference-active')).not.toContainText('Weg damit');
     await app.page.reload();
-    await app.completeStepOne();
-    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
-  });
-
-  test('Der mitgelieferte Satz lässt sich laden und nennt seine Quelle', async ({ app }) => {
-    await app.completeStepOne();
-    await expect(app.page.getByTestId('reference-source').getByRole('link')).toHaveAttribute(
-      'href',
-      /bartneck\.de/,
-    );
-    await app.page.getByTestId('reference-bundled').click();
-
-    await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
-    await expect(app.page.getByTestId('reference-saved')).toBeVisible();
-    // Der Satz bleibt danach lokal verfügbar.
-    await app.page.reload();
-    await app.completeStepOne();
-    await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
+    await app.openSettings();
+    const option = app.page
+      .getByTestId('reference-select')
+      .locator('option', { hasText: 'Weg damit' });
+    await expect(option).toHaveCount(0);
   });
 
   test('Der aktive Satz lässt sich als Datei herunterladen und wieder importieren', async ({
@@ -88,7 +109,7 @@ test.describe('Farbkarten: Referenzwerte', () => {
 
     expect(fileName).toBe('Zum Mitnehmen.json');
     await app.button('Satz löschen').click();
-    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
+    await expect(app.page.getByTestId('reference-removed')).toBeVisible();
     await app.importReference(fileName, text);
     await expect(app.page.getByTestId('reference-active')).toContainText(
       'Zum Mitnehmen (48 Felder)',
@@ -100,6 +121,7 @@ test.describe('Farbkarten: Farbkorrektur', () => {
   test('Die Berechnung verbessert die Farben deutlich', async ({ app }) => {
     await app.completeStepOne();
     await app.importReference('referenz.json', dummyReferenceJson());
+    await app.closeSettings();
     await app.captureColorCards();
 
     await app.button('Farbkorrektur berechnen').click();
@@ -117,6 +139,7 @@ test.describe('Farbkarten: Farbkorrektur', () => {
   test('Eckpunkte der Farbkarten lassen sich in beliebiger Reihenfolge setzen', async ({ app }) => {
     await app.completeStepOne();
     await app.importReference('referenz.json', dummyReferenceJson());
+    await app.closeSettings();
     await app.showCards('colors');
     await app.captureStill();
     await app.placeAllCorners([0, 3, 2, 1]);

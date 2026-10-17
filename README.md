@@ -50,7 +50,7 @@ Livebild, bei „aus“ das aufgenommene Standbild.
 
 Ohne WebGL2 zeichnet die Vorschau in einer verkleinerten Software-Darstellung; im Tab steht, welche Darstellung aktiv ist.
 
-In der Kopfzeile sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
+Im Zahnrad-Menü ⚙ oben rechts sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
 (Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte stehen nicht
 in der Datei, nur der Name des gewählten Satzes.
 
@@ -66,7 +66,7 @@ nicht in maschinenlesbarer Form. Der Satz ist eine inoffizielle Transkription au
 (bartneck.de). Der Beitrag nennt selbst Tippfehler bei einigen Feldern, sie sind in der Datei
 korrigiert. Ob die Werte genau zur eigenen Karte passen (Charge, Alterung), ist nicht belegt.
 
-In Schritt 2 lädst du den mitgelieferten Satz mit einem Klick oder importierst eine eigene Datei. Die App
+Der mitgelieferte Satz wird beim Start immer geladen und ist vorgewählt. Im Zahnrad-Menü ⚙ oben rechts wechselst du den Satz oder importierst eine eigene Datei. Die App
 speichert den Satz ausschließlich lokal im Browser (IndexedDB) und sendet nie etwas irgendwohin. Mit
 **Satz herunterladen** sicherst du den aktiven Satz als JSON-Datei, die sich später wieder importieren
 lässt. Der Ordner `local-data/` ist in der `.gitignore` ausgeschlossen, falls du eigene Dateien

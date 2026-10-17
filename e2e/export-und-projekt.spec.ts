@@ -86,7 +86,7 @@ test.describe('Projekt', () => {
     await app.page.getByTestId('strength').fill('60');
     await app.page.getByTestId('split').fill('30');
 
-    const { fileName, text } = await app.download(app.page.getByTestId('project-save'));
+    const { fileName, text } = await app.saveProject();
     expect(fileName).toBe('cam_gradr-projekt.json');
     // Herstellerdaten (Referenzwerte) stehen nicht in der Datei, nur der Name des Satzes.
     expect(text).not.toContain('"lab"');
@@ -112,7 +112,7 @@ test.describe('Projekt', () => {
 
   test('Ohne den Referenzsatz bleibt das gespeicherte Modell nutzbar', async ({ app }) => {
     await app.computeColorModel();
-    const { text } = await app.download(app.page.getByTestId('project-save'));
+    const { text } = await app.saveProject();
 
     await app.page.evaluate(
       () =>
@@ -146,7 +146,7 @@ test.describe('Projekt', () => {
 
   test('Das Projekt lässt sich auch ohne Farbkorrektur speichern und laden', async ({ app }) => {
     await app.open();
-    const { text } = await app.download(app.page.getByTestId('project-save'));
+    const { text } = await app.saveProject();
     await app.page.reload();
     await app.loadProject(text);
 
@@ -157,7 +157,7 @@ test.describe('Projekt', () => {
 
   test('Die Vorschau funktioniert nach dem Laden des Projekts', async ({ app }) => {
     await app.computeColorModel();
-    const { text } = await app.download(app.page.getByTestId('project-save'));
+    const { text } = await app.saveProject();
     await app.page.reload();
     await app.loadProject(text);
     await app.startCamera();

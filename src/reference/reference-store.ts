@@ -5,7 +5,7 @@ import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
 import { APP_ID } from '../ui/app-info';
 import { downloadFile } from '../lut/download';
 
-import { BUNDLED_FILE_NAME, bundledReferenceText } from './bundled';
+import { BUNDLED_FILE_NAME, BUNDLED_NAME, bundledReferenceText } from './bundled';
 import { parseReferenceFile, serializeReferenceJson } from './reference';
 import type { ReferenceSet } from './reference';
 import { createIndexedDbStorage } from './storage';
@@ -39,7 +39,8 @@ export const useReferenceStore = defineStore('reference', () => {
     () => sets.value.find((set) => set.name === selectedName.value) ?? null,
   );
 
-  // Lädt die lokal gespeicherten Referenzsätze und wählt den ersten, falls noch keiner gewählt ist.
+  // Lädt die lokal gespeicherten Referenzsätze. Der mitgelieferte Satz ist immer dabei und
+  // vorgewählt, solange nichts anderes gewählt ist; ein gleichnamiger eigener Satz hat Vorrang.
   async function load(): Promise<void> {
     try {
       const stored = await storage().list();
@@ -49,10 +50,16 @@ export const useReferenceStore = defineStore('reference', () => {
         ...stored.filter((set) => local.every((existing) => existing.name !== set.name)),
         ...local,
       ];
-      selectedName.value ??= sets.value[0]?.name ?? null;
     } catch {
       warning.value = 'Gespeicherte Referenzen konnten nicht geladen werden.';
     }
+    if (sets.value.every((set) => set.name !== BUNDLED_NAME)) {
+      sets.value = [
+        parseReferenceFile(BUNDLED_FILE_NAME, bundledReferenceText(), rules),
+        ...sets.value,
+      ];
+    }
+    selectedName.value ??= BUNDLED_NAME;
   }
 
   // Liest eine Datei, prüft sie und speichert sie lokal (ein Satz gleichen Namens wird ersetzt).
@@ -74,11 +81,6 @@ export const useReferenceStore = defineStore('reference', () => {
       // Die Prüfung wirft ausschließlich Error-Objekte mit verständlicher Meldung.
       error.value = (error_ as Error).message;
     }
-  }
-
-  // Übernimmt den mitgelieferten Satz wie einen Datei-Import (Prüfung, lokale Speicherung).
-  async function importBundled(): Promise<void> {
-    await importFile(BUNDLED_FILE_NAME, bundledReferenceText());
   }
 
   // Speichert den gewählten Satz als JSON-Datei, damit er sich später oder anderswo importieren lässt.
@@ -118,7 +120,6 @@ export const useReferenceStore = defineStore('reference', () => {
     lastRemoved,
     load,
     importFile,
-    importBundled,
     downloadSelected,
     select,
     remove,

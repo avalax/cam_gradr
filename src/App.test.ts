@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
+import { BUNDLED_NAME } from './reference/bundled';
+import { useReferenceStore } from './reference/reference-store';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
@@ -129,11 +131,21 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(true);
   });
 
-  it('bietet in der Kopfzeile Projekt speichern und laden an', () => {
+  it('bietet Referenzwerte und Projekt im Zahnrad-Menü rechts oben an', async () => {
     installFakeCamera();
     const wrapper = mountApp();
+    expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="reference-select"]').exists()).toBe(true);
+  });
+
+  it('lädt beim Start den mitgelieferten Referenzsatz', async () => {
+    installFakeCamera();
+    mountApp();
+    await flushPromises();
+    expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
   });
 
   it('zeigt im Tab Vorschau den Hinweis auf die fehlende Farbkorrektur', async () => {

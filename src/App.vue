@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { useCameraStore } from './camera/camera-store';
+import { useReferenceStore } from './reference/reference-store';
 import CameraTab from './ui/CameraTab.vue';
 import ColorStep from './ui/ColorStep.vue';
 import ExportTab from './ui/ExportTab.vue';
 import GrayStep from './ui/GrayStep.vue';
 import PreviewTab from './ui/PreviewTab.vue';
-import ProjectBar from './ui/ProjectBar.vue';
+import ProjectStatus from './ui/ProjectStatus.vue';
+import SettingsMenu from './ui/SettingsMenu.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 
 type TabKey = 'camera' | 'gray' | 'color' | 'preview' | 'export';
@@ -22,6 +24,11 @@ const TABS: readonly { key: TabKey; label: string }[] = [
 
 const tab = ref<TabKey>('camera');
 const camera = useCameraStore();
+
+// Der mitgelieferte Referenzsatz und die lokal gespeicherten Sätze stehen von Anfang an bereit.
+onMounted(() => {
+  void useReferenceStore().load();
+});
 
 // Das Standbild darf zwischen den Tabs mitwandern. Beim direkten Wechsel zwischen Grau- und
 // Farbkarten wird es verworfen (andere Karten, andere Eckpunkte).
@@ -64,9 +71,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="ml-auto">
-        <ProjectBar />
+        <SettingsMenu />
       </div>
     </header>
+
+    <ProjectStatus />
 
     <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
       <CameraTab v-if="tab === 'camera'" />
