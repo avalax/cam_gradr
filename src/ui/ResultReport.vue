@@ -64,6 +64,19 @@ const tiles = computed(() =>
       </template>
     </dl>
 
+    <p
+      v-if="result.report.indistinct.length > 0"
+      class="max-w-xl text-sm text-amber-800"
+      role="note"
+      data-testid="indistinct-warning"
+    >
+      Die Kamera unterscheidet die hellsten Neutralfelder ({{
+        result.report.indistinct.join(', ')
+      }}) kaum: Ihre Lichter sind komprimiert oder gekappt. Das lässt sich in der Korrektur nicht
+      ausgleichen. Schalte besser Automatiken der Kamera aus (HDR, Lichtkorrektur, automatische
+      Belichtung) und stelle die Belichtung fest ein.
+    </p>
+
     <section v-if="grayRows.length > 0" class="max-w-xl space-y-1 text-sm" data-testid="gray-check">
       <h4 class="font-medium">Kontrolle mit den Graukarten</h4>
       <p class="text-xs text-slate-600">

@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { labToLinearSrgb, srgbToLab } from '../color/lab';
+import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
 import { cameraCode } from '../test-support/synthetic-camera';
+import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 
 import { applyColorModel, fitColorModel } from './fit';
@@ -13,6 +15,16 @@ function referenceSet(ids = dummyIds()): ReferenceSet {
   return {
     name: 'Test',
     patches: Object.fromEntries(ids.map((id) => [id, dummyLab(id)])),
+  };
+}
+
+// Der mitgelieferte Referenzsatz als ReferenceSet.
+function bundledReference(): ReferenceSet {
+  return {
+    name: bundledJson.name,
+    patches: Object.fromEntries(
+      bundledJson.patches.map((patch) => [patch.id, patch.lab as unknown as Vec3]),
+    ),
   };
 }
 
@@ -45,6 +57,43 @@ describe('fitColorModel', () => {
     expect(color?.count).toBe(dummyIds().length - NEUTRAL_IDS.size);
     expect(neutral?.meanAfter).toBeLessThan(neutral?.meanBefore ?? 0);
     expect(color?.meanAfter).toBeLessThan(color?.meanBefore ?? 0);
+  });
+
+  it('gleicht komprimierte Lichter aus, ohne die hellen Neutralfelder zu verfärben', () => {
+    // Neutralleiter einer echten Webcam bei schwachem Licht: ab 2E sind die Lichter komprimiert
+    // (2E, 2D und 1D liefern fast denselben Wert, obwohl ihre Helligkeit weit auseinanderliegt).
+    const ladder: Record<string, Rgb> = {
+      '6E': [0.025, 0.022, 0.035],
+      '6D': [0.108, 0.113, 0.138],
+      '5E': [0.183, 0.183, 0.209],
+      '5D': [0.233, 0.245, 0.274],
+      '4E': [0.334, 0.332, 0.355],
+      '4D': [0.388, 0.402, 0.423],
+      '3E': [0.481, 0.479, 0.499],
+      '3D': [0.518, 0.512, 0.54],
+      '2E': [0.577, 0.573, 0.582],
+      '2D': [0.585, 0.581, 0.607],
+      '1D': [0.579, 0.572, 0.581],
+      '1E': [0.641, 0.634, 0.625],
+    };
+    const real = bundledReference();
+    const compressed = fitColorModel({
+      measurements: { ...measure(real), ...ladder },
+      reference: real,
+      neutralIds: NEUTRAL_IDS,
+    });
+    const brightest = compressed.report.patches.find((patch) => patch.id === '2E');
+    expect(brightest?.after).toBeLessThan(8);
+    expect(compressed.report.indistinct.toSorted((a, b) => a.localeCompare(b))).toEqual([
+      '1D',
+      '2D',
+      '2E',
+    ]);
+    expect(compressed.report.neutral?.meanAfter).toBeLessThan(3.5);
+  });
+
+  it('meldet keine unterscheidbaren Neutralfelder, wenn die Kamera sauber misst', () => {
+    expect(result.report.indistinct).toEqual([]);
   });
 
   it('lässt eine Gruppe leer, wenn es keine solchen Felder gibt', () => {
