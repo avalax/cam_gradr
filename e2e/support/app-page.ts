@@ -129,7 +129,6 @@ export class AppPage {
     await expect(this.page.getByTestId('reference-saved')).toBeVisible();
     await this.closeSettings();
     await this.captureColorCards();
-    await this.button('Farbkorrektur berechnen').click();
     await expect(this.page.getByTestId('report')).toBeVisible();
   }
 

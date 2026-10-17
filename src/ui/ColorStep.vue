@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed } from 'vue';
+import { watch } from 'vue';
 
 import { useColorChartStore } from '../chart/chart-store';
-import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
+import { COLOR_IDS, NEUTRAL_IDS, colorLayout } from '../chart/layouts';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
 import CardStage from './CardStage.vue';
+import ColorStrips from './ColorStrips.vue';
 import ResultReport from './ResultReport.vue';
 
 const chart = useColorChartStore();
@@ -15,7 +16,10 @@ const references = useReferenceStore();
 const solve = useSolveStore();
 const { ready, measurements } = storeToRefs(chart);
 const { selected } = storeToRefs(references);
-const { result, error: solveError } = storeToRefs(solve);
+const { result, error: solveError, model } = storeToRefs(solve);
+
+// Reihenfolge der Felder in den Farbleisten: wie in der Datei des Layouts.
+const PATCH_IDS = [...COLOR_IDS];
 
 const CARD_NAMES = {
   1: 'linke Farbkarte (Spalten A–D)',
@@ -23,10 +27,6 @@ const CARD_NAMES = {
 };
 const IDLE_TEXT =
   'Beide Farbkarten ruhig vor die Kamera halten und ein Standbild aufnehmen. Die Eckpunkte werden danach auf dem Standbild gesetzt.';
-
-const canCompute = computed(
-  () => ready.value && selected.value !== null && Object.keys(measurements.value).length > 0,
-);
 
 function compute(): void {
   if (selected.value !== null) {
@@ -37,6 +37,14 @@ function compute(): void {
     });
   }
 }
+
+// Die Korrektur wird bei jeder Änderung neu berechnet: neue Eckpunkte (und damit neue Messwerte)
+// oder ein anderer Referenzsatz.
+watch([measurements, selected], () => {
+  if (ready.value && Object.keys(measurements.value).length > 0) {
+    compute();
+  }
+});
 </script>
 
 <template>
@@ -45,7 +53,8 @@ function compute(): void {
       <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
         <p class="text-sm text-slate-700">
           Dieser Tab berechnet die Farbkorrektur. Nimm ein Standbild der beiden Farbkarten auf,
-          markiere die Eckpunkte und starte die Berechnung.
+          markiere die Eckpunkte. Die Farbkorrektur wird dann automatisch berechnet und bei jeder
+          Änderung der Eckpunkte neu.
         </p>
         <p v-if="selected !== null" class="text-sm text-slate-700" data-testid="reference-active">
           Referenzwerte: {{ selected.name }} ({{ Object.keys(selected.patches).length }} Felder).
@@ -61,15 +70,13 @@ function compute(): void {
           :idle-text="IDLE_TEXT"
           :live-measure="false"
         >
-          <template #actions>
-            <button
-              type="button"
-              class="rounded bg-slate-800 px-3 py-1 text-sm text-white disabled:opacity-50"
-              :disabled="!canCompute"
-              @click="compute"
-            >
-              Farbkorrektur berechnen
-            </button>
+          <template #side>
+            <ColorStrips
+              :ids="PATCH_IDS"
+              :measurements="measurements"
+              :model="model"
+              :reference="selected"
+            />
           </template>
         </CardStage>
       </div>

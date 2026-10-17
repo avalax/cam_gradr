@@ -2,18 +2,12 @@
 import { computed } from 'vue';
 
 import { labToSrgb } from '../color/lab';
-import type { Vec3 } from '../color/lab';
 import { applyColorModel } from '../solve/fit';
 import type { FitResult } from '../solve/fit';
 
+import { cssColor } from './color-css';
+
 const props = defineProps<{ result: FitResult }>();
-
-const MAX_CODE = 255;
-
-function css(code: Vec3): string {
-  const [r, g, b] = code.map((value) => Math.round(value * MAX_CODE));
-  return `rgb(${String(r)}, ${String(g)}, ${String(b)})`;
-}
 
 function format(value: number): string {
   return value.toFixed(1);
@@ -23,9 +17,9 @@ function format(value: number): string {
 const tiles = computed(() =>
   props.result.report.patches.map((patch) => ({
     ...patch,
-    referenceCss: css(labToSrgb(patch.reference)),
-    cameraCss: css(patch.measured),
-    correctedCss: css(applyColorModel(props.result.model, patch.measured)),
+    referenceCss: cssColor(labToSrgb(patch.reference)),
+    cameraCss: cssColor(patch.measured),
+    correctedCss: cssColor(applyColorModel(props.result.model, patch.measured)),
   })),
 );
 </script>

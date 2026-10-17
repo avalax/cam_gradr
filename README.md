@@ -39,7 +39,7 @@ die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau**
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
 2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten laden (mitgelieferter Satz oder eigene JSON-/CSV-Datei, bleiben lokal im
-   Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
+   Browser), beide Farbkarten aufnehmen und die Eckpunkte setzen. Die Korrektur wird automatisch berechnet und bei jeder Änderung der Eckpunkte neu. Zwei senkrechte Farbleisten neben dem Bild zeigen links die Farben der Kamera und rechts die korrigierten Farben (ohne Messung stehen die Sollfarben des Referenzsatzes dort, ohne Referenz ein neutrales Grau). Der Bericht zeigt
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen: ein Regler stellt die Stärke
    ein, eine verschiebbare Trennlinie zeigt links das Original und rechts das korrigierte Bild.
