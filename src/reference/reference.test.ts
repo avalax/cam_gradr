@@ -8,7 +8,12 @@ import {
   dummyReferenceJson,
 } from '../test-support/dummy-reference';
 
-import { parseReferenceCsv, parseReferenceFile, parseReferenceJson } from './reference';
+import {
+  parseReferenceCsv,
+  parseReferenceFile,
+  parseReferenceJson,
+  serializeReferenceJson,
+} from './reference';
 
 const rules = { knownIds: COLOR_IDS, neutralIds: NEUTRAL_IDS };
 
@@ -140,5 +145,15 @@ describe('parseReferenceFile', () => {
     expect(parseReferenceFile('a.json', dummyReferenceJson('J'), rules).name).toBe('J');
     expect(parseReferenceFile('ohne-endung', dummyReferenceJson('K'), rules).name).toBe('K');
     expect(parseReferenceFile('a.csv', dummyReferenceCsv(), rules).name).toBe('a');
+  });
+});
+
+describe('serializeReferenceJson', () => {
+  it('schreibt ein Format, das sich unverändert wieder einlesen lässt', () => {
+    const set = parseReferenceJson(dummyReferenceJson('Satz'), rules);
+    const text = serializeReferenceJson(set);
+    expect(text).toContain('"format": "cam_gradr-reference/1"');
+    expect(text.endsWith('\n')).toBe(true);
+    expect(parseReferenceJson(text, rules)).toEqual(set);
   });
 });

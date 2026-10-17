@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
-import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
+import {
+  setReferenceFetch,
+  setReferenceStorage,
+  useReferenceStore,
+} from '../reference/reference-store';
 import { createIndexedDbStorage } from '../reference/storage';
 import { useSolveStore } from '../solve/solve-store';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
@@ -60,6 +64,9 @@ function button(wrapper: ReturnType<typeof mount>, text: string) {
   return wrapper.findAll('button').find((b) => b.text().includes(text));
 }
 
+const download = vi.hoisted(() => vi.fn());
+vi.mock('../lut/download', () => ({ downloadFile: download }));
+
 describe('ColorStep', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -101,6 +108,35 @@ describe('ColorStep', () => {
       expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(true);
     });
     expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
+  });
+
+  it('lädt Referenzwerte von einer Adresse', async () => {
+    setReferenceFetch(vi.fn(() => Promise.resolve(new Response(dummyReferenceJson('Extern')))));
+    const wrapper = mount(ColorStep);
+    const load = wrapper.get('[data-testid="reference-url-load"]');
+    expect(load.attributes('disabled')).toBeDefined();
+    await wrapper.get('[data-testid="reference-url"]').setValue('https://example.test/a.json');
+    expect(load.attributes('disabled')).toBeUndefined();
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('Extern');
+  });
+
+  it('zeigt Fehler beim Laden von einer Adresse', async () => {
+    const wrapper = mount(ColorStep);
+    await wrapper.get('[data-testid="reference-url"]').setValue('kein link');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('gültige Adresse');
+  });
+
+  it('lädt den aktiven Satz als Datei herunter', async () => {
+    download.mockReset();
+    const wrapper = mount(ColorStep);
+    expect(wrapper.find('[data-testid="reference-download"]').exists()).toBe(false);
+    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await wrapper.get('[data-testid="reference-download"]').trigger('click');
+    expect(download).toHaveBeenCalledWith('Mein Satz.json', expect.any(String), 'application/json');
   });
 
   it('importiert eine CSV-Datei', async () => {

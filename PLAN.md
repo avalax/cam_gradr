@@ -119,6 +119,8 @@ Die Shader-Mathematik wird zusätzlich durch eine TypeScript-Referenzimplementie
 
 **Software-Fallback der Vorschau:** Ist WebGL2 nicht verfügbar, rechnet die Vorschau die LUT auf der CPU (auf höchstens 480 Pixel Breite verkleinert) und zeigt die Darstellungsart an. Die LUT-Textur der Grafikkarte nutzt 8 Bit je Kanal (RGBA8), weil das auch mit Software-GL überall läuft.
 
+**Referenzwerte laden und sichern:** Neben dem Datei-Import gibt es das Laden von einer frei eingegebenen Adresse (ohne Voreinstellung, ohne Cookies und Referrer) und `Satz herunterladen` (JSON `cam_gradr-reference/1`). Die Werte bleiben auch dabei außerhalb des Repos und nur lokal im Browser.
+
 ## 8. Qualitätssicherung (Code-Coverage ≥ 99 %)
 
 - **Vitest** mit `@vitest/coverage-v8`; Schwellwerte in `vitest.config.ts`: `statements`, `branches`, `functions`, `lines` jeweils **99 %**. Unterschreitung lässt den Testlauf fehlschlagen.

@@ -62,6 +62,59 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.completeStepOne();
     await expect(app.page.getByTestId('reference-hint')).toBeVisible();
   });
+
+  test('Referenzwerte lassen sich von einer Adresse laden', async ({ app }) => {
+    await app.page.route('https://referenzen.test/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: dummyReferenceJson('Von extern'),
+      }),
+    );
+    await app.completeStepOne();
+    await app.page.getByTestId('reference-url').fill('https://referenzen.test/satz.json');
+    await app.page.getByTestId('reference-url-load').click();
+
+    await expect(app.page.getByTestId('reference-active')).toContainText('Von extern');
+    await expect(app.page.getByTestId('reference-saved')).toBeVisible();
+    // Der Satz bleibt danach lokal verfügbar, die Adresse wird nicht mehr gebraucht.
+    await app.page.reload();
+    await app.completeStepOne();
+    await expect(app.page.getByTestId('reference-active')).toContainText('Von extern');
+  });
+
+  test('Ein Fehler beim Laden von einer Adresse wird gemeldet', async ({ app }) => {
+    await app.page.route('https://referenzen.test/**', (route) =>
+      route.fulfill({
+        status: 404,
+        headers: { 'access-control-allow-origin': '*' },
+        body: 'nicht da',
+      }),
+    );
+    await app.completeStepOne();
+    await app.page.getByTestId('reference-url').fill('https://referenzen.test/fehlt.json');
+    await app.page.getByTestId('reference-url-load').click();
+
+    await expect(app.page.getByRole('alert').filter({ hasText: 'HTTP 404' })).toBeVisible();
+    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
+  });
+
+  test('Der aktive Satz lässt sich als Datei herunterladen und wieder importieren', async ({
+    app,
+  }) => {
+    await app.completeStepOne();
+    await app.importReference('referenz.json', dummyReferenceJson('Zum Mitnehmen'));
+    const { fileName, text } = await app.download(app.page.getByTestId('reference-download'));
+
+    expect(fileName).toBe('Zum Mitnehmen.json');
+    await app.button('Satz löschen').click();
+    await expect(app.page.getByTestId('reference-hint')).toBeVisible();
+    await app.importReference(fileName, text);
+    await expect(app.page.getByTestId('reference-active')).toContainText(
+      'Zum Mitnehmen (48 Felder)',
+    );
+  });
 });
 
 test.describe('Farbkarten: Farbkorrektur', () => {

@@ -129,6 +129,13 @@ export function parseReferenceCsv(
   return build(fileName.replace(/\.[^.]*$/, '') || 'Import', entries, rules);
 }
 
+// Schreibt einen Satz im JSON-Format, das sich wieder importieren lässt.
+export function serializeReferenceJson(set: ReferenceSet): string {
+  const patches = Object.entries(set.patches).map(([id, lab]) => ({ id, lab }));
+  return `${JSON.stringify({ format: FORMAT, name: set.name, illuminant: 'D50', patches }, null, 2)}
+`;
+}
+
 // Wählt das Format nach Dateiendung bzw. Inhalt.
 export function parseReferenceFile(
   fileName: string,

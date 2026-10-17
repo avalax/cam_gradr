@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
@@ -14,7 +14,8 @@ const chart = useColorChartStore();
 const references = useReferenceStore();
 const solve = useSolveStore();
 const { ready, measurements } = storeToRefs(chart);
-const { sets, selected, error, warning, lastSaved, lastRemoved } = storeToRefs(references);
+const { sets, selected, error, warning, lastSaved, lastRemoved, loading } = storeToRefs(references);
+const address = ref('');
 const { result, error: solveError } = storeToRefs(solve);
 
 const CARD_NAMES = {
@@ -40,6 +41,10 @@ async function onFile(event: Event): Promise<void> {
   }
   // Dieselbe Datei soll sich erneut wählen lassen.
   input.value = '';
+}
+
+async function onUrl(): Promise<void> {
+  await references.importUrl(address.value);
 }
 
 function onSelect(event: Event): void {
@@ -101,7 +106,37 @@ function compute(): void {
             >
               Satz löschen
             </button>
+            <button
+              v-if="selected !== null"
+              type="button"
+              class="rounded border px-3 py-1 text-sm"
+              data-testid="reference-download"
+              @click="references.downloadSelected()"
+            >
+              Satz herunterladen
+            </button>
           </div>
+          <form class="flex flex-wrap items-end gap-2" @submit.prevent="onUrl">
+            <label class="flex min-w-0 grow flex-col text-sm">
+              Oder von einer Adresse laden (JSON oder CSV)
+              <input
+                v-model="address"
+                type="url"
+                inputmode="url"
+                placeholder="https://…/referenz.json"
+                class="rounded border p-1"
+                data-testid="reference-url"
+              />
+            </label>
+            <button
+              type="submit"
+              class="rounded border px-3 py-1 text-sm disabled:opacity-50"
+              :disabled="loading || address.trim() === ''"
+              data-testid="reference-url-load"
+            >
+              {{ loading ? 'Lädt …' : 'Laden' }}
+            </button>
+          </form>
           <p v-if="selected === null" class="text-sm text-amber-800" data-testid="reference-hint">
             Noch keine Referenzwerte importiert. Format: JSON mit
             <code>cam_gradr-reference/1</code> oder CSV mit den Spalten id, L, a, b (Lab, D50).

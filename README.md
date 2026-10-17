@@ -39,7 +39,7 @@ Livebild, bei „aus“ das aufgenommene Standbild.
    aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
-2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, bleiben lokal im
+2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, als Datei oder von einer Adresse, bleiben lokal im
    Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen: ein Regler stellt die Stärke
@@ -64,6 +64,12 @@ nur das Layout (Position der Felder). Die Referenzwerte importierst du in Schrit
 eigenen Datei. Die App speichert sie ausschließlich lokal im Browser (IndexedDB) und sendet sie nie
 irgendwohin. Ordner wie `local-data/` sind in der `.gitignore` ausgeschlossen, damit solche Dateien
 nicht versehentlich eingecheckt werden.
+
+Alternativ lädst du eine Datei von einer Internetadresse, die du selbst angibst (zum Beispiel eine private
+Datei bei einem Dienst deiner Wahl). Der Server muss Abrufe von anderen Seiten erlauben (CORS). Es gibt keine
+voreingestellte Adresse, und gesendet wird nur die Anfrage nach der Datei, ohne Cookies und ohne Referrer.
+Mit **Satz herunterladen** sicherst du den aktiven Satz als JSON-Datei, die sich später wieder importieren oder
+hochladen lässt.
 
 Unterstützte Formate (Lab-Werte mit Weißpunkt D50, je Feld-ID wie `1A` bis `6H`; Ziffer = Reihe,
 Buchstabe = Spalte, Karte 1 = Spalten A–D, Karte 2 = Spalten E–H):
