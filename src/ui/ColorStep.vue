@@ -14,7 +14,7 @@ const chart = useColorChartStore();
 const references = useReferenceStore();
 const solve = useSolveStore();
 const { ready, measurements } = storeToRefs(chart);
-const { sets, selected, error, warning } = storeToRefs(references);
+const { sets, selected, error, warning, lastSaved } = storeToRefs(references);
 const { result, error: solveError } = storeToRefs(solve);
 
 const CARD_NAMES = {
@@ -108,6 +108,13 @@ function compute(): void {
           </p>
           <p v-else class="text-sm text-slate-700" data-testid="reference-active">
             Aktiv: {{ selected.name }} ({{ Object.keys(selected.patches).length }} Felder)
+          </p>
+          <p
+            v-if="selected !== null && lastSaved === selected.name"
+            class="text-xs text-slate-600"
+            data-testid="reference-saved"
+          >
+            Lokal im Browser gespeichert.
           </p>
           <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
           <p v-if="warning !== null" class="text-sm text-amber-800" role="status">{{ warning }}</p>

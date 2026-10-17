@@ -20,7 +20,7 @@ Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
 | M1          | Kamerawahl, Livebild, Standbild                              | fertig |
 | M2          | Schritt 1: Graukarten, Eckpunkte, Helligkeits-Ampel          | fertig |
 | M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung  | fertig |
-| M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher           | offen  |
+| M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher           | fertig |
 | M5          | Export als `.cube` (optional `.3dl`, Hald-PNG), Projektdatei | offen  |
 | M6          | Optionale automatische Kartenerkennung, Feinschliff          | offen  |
 
@@ -30,7 +30,8 @@ anpassen.
 
 ## So funktioniert es
 
-Die App hat drei Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten** und **Farbkarten**.
+Die App hat vier Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten**, **Farbkarten** und
+**Vorschau**.
 Im Tab Kamera schaltest du die Kamera an oder aus: bei „an“ siehst du alle Kameraoptionen und das
 Livebild, bei „aus“ das aufgenommene Standbild.
 
@@ -41,7 +42,9 @@ Livebild, bei „aus“ das aufgenommene Standbild.
 2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten importieren (JSON oder CSV, bleiben lokal im
    Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
-3. **Live-Vorschau und Export.** Die Korrektur im Kamerabild prüfen und als LUT speichern (in Arbeit).
+3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen: ein Regler stellt die Stärke
+   ein, eine verschiebbare Trennlinie zeigt links das Original und rechts das korrigierte Bild.
+4. **Export.** Die Korrektur als LUT-Datei speichern (in Arbeit).
 
 Wichtig für brauchbare Ergebnisse: Auto-Belichtung und Auto-Weißabgleich der Kamera vorher in der
 Kamera-Software festsetzen. Die App kann das nicht selbst tun und zeigt dazu einen Hinweis.

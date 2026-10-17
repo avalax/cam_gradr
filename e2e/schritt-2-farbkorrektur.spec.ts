@@ -42,6 +42,8 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.completeStepOne();
     await app.importReference('referenz.json', dummyReferenceJson('Merkliste'));
     await expect(app.page.getByTestId('reference-active')).toContainText('Merkliste');
+    // Erst nach der Rückmeldung ist der Satz sicher gespeichert und überlebt das Neuladen.
+    await expect(app.page.getByTestId('reference-saved')).toBeVisible();
 
     await app.page.reload();
     await app.completeStepOne();

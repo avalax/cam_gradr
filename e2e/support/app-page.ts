@@ -66,7 +66,7 @@ export class AppPage {
     await expect(this.button('Standbild aufnehmen')).toBeEnabled();
   }
 
-  async openTab(name: 'Kamera' | 'Graukarten' | 'Farbkarten'): Promise<void> {
+  async openTab(name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau'): Promise<void> {
     await this.page.getByRole('tab', { name, exact: true }).click();
     await expect(this.page.getByRole('tab', { name, exact: true })).toHaveAttribute(
       'aria-selected',
@@ -93,6 +93,29 @@ export class AppPage {
     await this.expectVerdict('Die Raumhelligkeit passt');
     await this.button('Weiter zu den Farbkarten').click();
     await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
+  }
+
+  // Liest einen Pixel (RGB 0..255) der Vorschau; der WebGL-Inhalt wird dazu in ein 2D-Canvas kopiert.
+  async previewPixel(x: number, y: number): Promise<[number, number, number]> {
+    return this.page.evaluate(
+      ([px = 0, py = 0]) => {
+        const source = document.querySelector<HTMLCanvasElement>('[data-testid="preview-canvas"]');
+        if (source === null) {
+          throw new Error('Die Vorschau fehlt.');
+        }
+        const copy = document.createElement('canvas');
+        copy.width = source.width;
+        copy.height = source.height;
+        const context = copy.getContext('2d', { willReadFrequently: true });
+        if (context === null) {
+          throw new Error('Kein 2D-Kontext.');
+        }
+        context.drawImage(source, 0, 0);
+        const data = context.getImageData(Math.round(px), Math.round(py), 1, 1).data;
+        return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0] as [number, number, number];
+      },
+      [x, y],
+    );
   }
 
   // Importiert eine Referenzdatei über das Dateifeld in Schritt 2.

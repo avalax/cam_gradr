@@ -93,6 +93,16 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="reference-select"]').element).toBeDefined();
   });
 
+  it('zeigt, dass der Satz lokal gespeichert wurde', async () => {
+    const wrapper = mount(ColorStep);
+    expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
+    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(true);
+    });
+    expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
+  });
+
   it('importiert eine CSV-Datei', async () => {
     const wrapper = mount(ColorStep);
     await chooseFile(wrapper, 'werte.csv', dummyReferenceCsv());
