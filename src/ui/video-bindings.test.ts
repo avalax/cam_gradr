@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { attachStream, captureFromVideo } from './video-bindings';
+import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
 
 function fakeVideo() {
   const play = vi.fn(() => Promise.resolve());
@@ -40,18 +40,40 @@ describe('attachStream', () => {
 });
 
 describe('captureFromVideo', () => {
-  it('übergibt einen Frame-Grabber an die Aufnahmefunktion', () => {
+  it('übergibt einen Frame-Grabber an die Aufnahmefunktion', async () => {
     const capture = vi.fn(() => Promise.resolve());
-    captureFromVideo(fakeVideo().video, capture);
+    await captureFromVideo(fakeVideo().video, capture);
     expect(capture).toHaveBeenCalledTimes(1);
     const calls = capture.mock.calls as unknown as [[{ grab: unknown; nextFrame: unknown }]];
     expect(typeof calls[0][0].grab).toBe('function');
     expect(typeof calls[0][0].nextFrame).toBe('function');
   });
 
-  it('macht ohne Video-Element nichts', () => {
+  it('macht ohne Video-Element nichts', async () => {
     const capture = vi.fn(() => Promise.resolve());
-    captureFromVideo(null, capture);
+    await captureFromVideo(null, capture);
     expect(capture).not.toHaveBeenCalled();
+  });
+});
+
+describe('grabVideoFrame', () => {
+  it('liefert nichts ohne Video-Element oder solange das Video noch kein Bild hat', () => {
+    expect(grabVideoFrame(null)).toBeNull();
+    expect(grabVideoFrame({ videoWidth: 0 } as HTMLVideoElement)).toBeNull();
+  });
+
+  it('liest das aktuelle Bild als Frame mit Werten von 0 bis 1', () => {
+    const context = {
+      drawImage: vi.fn(),
+      getImageData: () => ({ width: 1, height: 1, data: new Uint8ClampedArray([255, 0, 51, 255]) }),
+    };
+    vi.spyOn(document, 'createElement').mockReturnValue({
+      width: 0,
+      height: 0,
+      getContext: () => context,
+    } as unknown as HTMLCanvasElement);
+    const frame = grabVideoFrame({ videoWidth: 1, videoHeight: 1 } as HTMLVideoElement);
+    vi.restoreAllMocks();
+    expect([...(frame?.data ?? [])]).toEqual([1, 0, expect.closeTo(0.2, 5)]);
   });
 });

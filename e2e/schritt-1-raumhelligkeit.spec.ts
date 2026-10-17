@@ -189,6 +189,25 @@ test.describe('Graukarten: Raum zu hell', () => {
   });
 });
 
+test.describe('Graukarten: automatische Aufnahme', () => {
+  test.use({ lighting: 'ok' });
+
+  test('Die App nimmt das Standbild selbst auf, sobald die Karten im Bild sind', async ({
+    app,
+  }) => {
+    await app.open({ autoDetect: true });
+    await app.startCamera();
+    await app.openTab('Graukarten');
+    await expect(app.page.getByTestId('auto-hint')).toBeVisible();
+
+    await expect(app.page.getByTestId('detect-message')).toContainText('Standbild aufgenommen');
+    await expect(app.page.locator('svg circle')).toHaveCount(8);
+    await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+    await expect(app.button('Zurück zum Livebild')).toBeVisible();
+    await app.expectVerdict('Die Raumhelligkeit passt');
+  });
+});
+
 test.describe('Graukarten: Hilfsrahmen', () => {
   test('Das Livebild zeigt, wo die Karten hingehalten werden sollen, ein Knopf übernimmt die Rahmen', async ({
     app,
