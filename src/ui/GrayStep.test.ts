@@ -91,7 +91,7 @@ describe('GrayStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('weist bei ausgeschalteter Kamera auf den Kamera-Tab hin', () => {
+  it('weist bei ausgeschalteter Kamera auf den Kameraschalter hin', () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     expect(wrapper.text()).toContain('Die Kamera ist aus');
@@ -260,6 +260,7 @@ describe('GrayStep', () => {
     expect(camera.still).toBeNull();
     expect(wrapper.text()).not.toContain('Zurück zum Livebild');
     expect(wrapper.findAll('circle')).toHaveLength(0);
+    Object.defineProperty(wrapper.get('video').element, 'videoWidth', { value: 1280 });
     mockGrabberCanvas(60);
     const measure = vi.spyOn(chart, 'measure');
     await vi.advanceTimersByTimeAsync(300);

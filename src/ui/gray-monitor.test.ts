@@ -40,6 +40,16 @@ describe('measureTick', () => {
     });
   });
 
+  it('wartet, bis das Video ein Bild liefert, statt zu scheitern', () => {
+    const video = videoWithCanvas();
+    Object.defineProperty(video, 'videoWidth', { value: 0 });
+    const measure = vi.fn();
+    expect(() => {
+      measureTick(true, video, measure);
+    }).not.toThrow();
+    expect(measure).not.toHaveBeenCalled();
+  });
+
   it('tut nichts, wenn nicht aktiv oder ohne Video', () => {
     const measure = vi.fn();
     measureTick(false, videoWithCanvas(), measure);

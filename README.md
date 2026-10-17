@@ -30,10 +30,9 @@ anpassen.
 
 ## So funktioniert es
 
-Die App hat fünf Tabs, die jederzeit frei anwählbar sind: **Kamera**, **Graukarten**, **Farbkarten**,
-**Vorschau** und **Export**.
-Im Tab Kamera schaltest du die Kamera an oder aus: bei „an“ siehst du alle Kameraoptionen und das
-Livebild, bei „aus“ das aufgenommene Standbild.
+Links oben schaltet der Schalter **Kamera** die Kamera an oder aus, ohne den Tab zu wechseln. Die Kameraauswahl,
+die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ oben rechts. Die App hat vier Tabs,
+die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 
 1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
    aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,

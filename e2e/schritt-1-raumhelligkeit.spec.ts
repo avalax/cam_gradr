@@ -13,7 +13,9 @@ test.describe('Graukarten: Raum passt', () => {
     await expect(page.getByRole('tab', { name: 'Farbkarten' })).toBeEnabled();
 
     await app.startCamera();
+    await app.openSettings();
     await expect(page.getByRole('note')).toContainText('Auto-Belichtung');
+    await app.closeSettings();
     await app.openTab('Graukarten');
     await app.captureStill();
     await expect(page.getByText('oben links der linke Graukarte (50 %)')).toBeVisible();
@@ -98,14 +100,14 @@ test.describe('Graukarten: Raum passt', () => {
     [1600, 700],
     [1920, 900],
   ] as const) {
-    for (const tab of ['Kamera', 'Graukarten'] as const) {
-      test(`Bild und Knöpfe passen im Tab ${tab} auf einen Bildschirm (${String(width)}×${String(height)})`, async ({
+    {
+      test(`Bild und Knöpfe passen im Tab Graukarten auf einen Bildschirm (${String(width)}×${String(height)})`, async ({
         app,
       }) => {
         await app.page.setViewportSize({ width, height });
         await app.open();
         await app.startCamera();
-        await app.openTab(tab);
+        await app.openTab('Graukarten');
 
         const capture = await app.button('Standbild aufnehmen').boundingBox();
         expect(capture?.y).toBeGreaterThan(0);

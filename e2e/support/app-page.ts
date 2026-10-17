@@ -55,24 +55,31 @@ export class AppPage {
     return this.page.getByRole('button', { name });
   }
 
-  // Wechselt in den Tab "Kamera", schaltet die Kamera an und wartet auf das Livebild.
-  async startCamera(): Promise<void> {
-    await this.openTab('Kamera');
-    await this.button('Kamera an').click();
-    await expect(this.page.getByText('Aktive Auflösung')).toBeVisible();
-    await expect(this.button('Standbild aufnehmen')).toBeEnabled();
+  get cameraSwitch(): Locator {
+    return this.page.getByRole('switch', { name: 'Kamera', exact: true });
   }
 
-  // Kamera anschalten und in den Tab "Graukarten" wechseln (Standardweg für Schritt 1).
+  // Schaltet die Kamera mit dem Schalter neben den Tabs an und wartet auf das Livebild.
+  async startCamera(): Promise<void> {
+    await this.cameraSwitch.click();
+    await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'true');
+    await expect(this.cameraSwitch).toHaveAttribute('data-status', 'live');
+  }
+
+  // Schaltet die Kamera mit dem Schalter wieder aus.
+  async stopCamera(): Promise<void> {
+    await this.cameraSwitch.click();
+    await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+  }
+
+  // Kamera anschalten und im Tab "Graukarten" auf die Aufnahme warten (Standardweg für Schritt 1).
   async startGrayStage(): Promise<void> {
     await this.startCamera();
     await this.openTab('Graukarten');
     await expect(this.button('Standbild aufnehmen')).toBeEnabled();
   }
 
-  async openTab(
-    name: 'Kamera' | 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export',
-  ): Promise<void> {
+  async openTab(name: 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export'): Promise<void> {
     await this.page.getByRole('tab', { name, exact: true }).click();
     await expect(this.page.getByRole('tab', { name, exact: true })).toHaveAttribute(
       'aria-selected',

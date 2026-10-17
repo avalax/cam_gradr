@@ -39,6 +39,8 @@ describe('SettingsMenu', () => {
     expect(panel(wrapper).exists()).toBe(true);
     expect(wrapper.get('[data-testid="settings-button"]').attributes('aria-expanded')).toBe('true');
     expect(wrapper.text()).toContain('Referenzwerte');
+    expect(wrapper.text()).toContain('Auto-Belichtung');
+    expect(wrapper.findAll('select').length).toBeGreaterThanOrEqual(2);
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
     await wrapper.get('[data-testid="settings-button"]').trigger('click');

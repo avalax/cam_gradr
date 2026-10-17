@@ -77,8 +77,7 @@ test.describe('Vorschau', () => {
     app,
   }) => {
     await app.computeColorModel();
-    await app.openTab('Kamera');
-    await app.button('Kamera aus').click();
+    await app.stopCamera();
     await app.openTab('Vorschau');
 
     await expectPatch(app, LEFT_PATCH, codes(cameraCode(dummyLab(LEFT_PATCH))));
@@ -103,9 +102,8 @@ test.describe('Vorschau', () => {
 
   test('Die Vorschau weist auf eine fehlende Bildquelle hin', async ({ app }) => {
     await app.computeColorModel();
-    await app.openTab('Kamera');
-    await app.button('Kamera aus').click();
-    await app.button('Standbild verwerfen').click();
+    await app.stopCamera();
+    await app.button('Zurück zum Livebild').click();
     await app.openTab('Vorschau');
 
     await expect(app.page.getByTestId('preview-no-source')).toBeVisible();

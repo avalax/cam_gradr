@@ -1,12 +1,22 @@
 import type { FrameGrabber } from '../camera/capture';
 import { createVideoGrabber } from '../camera/video-grabber';
 
+// Startet die Wiedergabe. Wird das Element vorher entfernt (Tabwechsel), bricht play() ab; das ist
+// hier ohne Folgen.
+async function play(element: HTMLVideoElement): Promise<void> {
+  try {
+    await element.play();
+  } catch {
+    // Abgebrochene Wiedergabe ignorieren.
+  }
+}
+
 // Verbindet einen Kamera-Stream mit dem Video-Element (falls vorhanden) und startet die Wiedergabe.
 export function attachStream(element: HTMLVideoElement | null, stream: MediaStream | null): void {
   if (element !== null) {
     element.srcObject = stream;
     if (stream !== null) {
-      void element.play();
+      void play(element);
     }
   }
 }

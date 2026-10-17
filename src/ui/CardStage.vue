@@ -141,7 +141,7 @@ watch(actual, (next, previous) => {
 <template>
   <div class="space-y-4">
     <p v-if="!isLive && !showStill" class="text-sm text-amber-800">
-      Die Kamera ist aus. Schalte sie im Tab „Kamera“ ein oder nimm dort ein Standbild auf.
+      Die Kamera ist aus. Schalte sie oben mit „Kamera“ ein, um ein Standbild aufzunehmen.
     </p>
     <p v-else-if="!videoReady" class="text-sm text-slate-600">
       Die Kamera startet, einen Moment bitte …

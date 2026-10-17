@@ -115,7 +115,7 @@ describe('ColorStep', () => {
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('zeigt keine eigenen Kameraoptionen (die liegen im Kamera-Tab)', () => {
+  it('zeigt keine eigenen Kameraoptionen (die liegen im Zahnrad-Menü)', () => {
     const wrapper = mount(ColorStep);
     expect(wrapper.text()).not.toContain('Aktive Auflösung');
     expect(wrapper.text()).toContain('Die Kamera ist aus');

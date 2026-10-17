@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
+import CameraControls from './CameraControls.vue';
 import ProjectBar from './ProjectBar.vue';
 import ReferencePanel from './ReferencePanel.vue';
 
@@ -51,6 +52,10 @@ onBeforeUnmount(() => {
       class="absolute right-0 top-full z-20 mt-2 max-h-[80vh] w-[min(26rem,calc(100vw-1.5rem))] space-y-4 overflow-auto rounded border border-slate-300 bg-white p-4 shadow-lg"
       data-testid="settings-panel"
     >
+      <section class="space-y-2" aria-labelledby="camera-heading">
+        <h2 id="camera-heading" class="text-sm font-semibold">Kamera</h2>
+        <CameraControls />
+      </section>
       <ReferencePanel />
       <ProjectBar @done="open = false" />
     </div>
