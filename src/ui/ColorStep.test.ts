@@ -3,7 +3,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useColorChartStore } from '../chart/chart-store';
+import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
@@ -38,10 +38,6 @@ function prepareMeasurements() {
   return chart;
 }
 
-function computeButton(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('button').find((b) => b.text().includes('Farbkorrektur berechnen'));
-}
-
 describe('ColorStep', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -54,14 +50,14 @@ describe('ColorStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('zeigt den vorgewählten Referenzsatz und sperrt die Berechnung bis zur Aufnahme', async () => {
+  it('zeigt den vorgewählten Referenzsatz und rechnet erst nach der Aufnahme', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().load();
     await flushPromises();
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       `${BUNDLED_NAME} (48 Felder)`,
     );
-    expect(computeButton(wrapper)?.attributes('disabled')).toBeDefined();
+    expect(wrapper.findAll('button').map((b) => b.text())).not.toContain('Farbkorrektur berechnen');
     expect(wrapper.text()).toContain('Beide Farbkarten ruhig vor die Kamera');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
@@ -80,21 +76,19 @@ describe('ColorStep', () => {
     );
   });
 
-  it('rechnet ohne ausgewählten Referenzsatz nichts', () => {
-    const wrapper = mount(ColorStep);
-    (wrapper.vm as unknown as { compute: () => void }).compute();
+  it('rechnet ohne ausgewählten Referenzsatz nichts', async () => {
+    mount(ColorStep);
+    prepareMeasurements();
+    await flushPromises();
     expect(useSolveStore().result).toBeNull();
     expect(useSolveStore().error).toBeNull();
   });
 
-  it('berechnet die Farbkorrektur aus Messwerten und Referenz und zeigt den Bericht', async () => {
+  it('berechnet die Farbkorrektur selbst, sobald Messwerte da sind, und zeigt den Bericht', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
     prepareMeasurements();
-    await flushPromises();
-    const compute = computeButton(wrapper);
-    expect(compute?.attributes('disabled')).toBeUndefined();
-    await compute?.trigger('click');
     await flushPromises();
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(true);
     const before = Number(wrapper.get('[data-testid="mean-before"]').text());
@@ -103,13 +97,85 @@ describe('ColorStep', () => {
     expect(useSolveStore().result).not.toBeNull();
   });
 
+  it('kontrolliert die Korrektur mit den gemessenen Graukarten aus Schritt 1', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    useChartStore().measurements = { G50: cameraCode([76.07, 0, 0]) };
+    prepareMeasurements();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="gray-G50"]').text()).toContain('Graukarte 50 %');
+  });
+
+  it('zeigt ohne gemessene Graukarten keine Kontrolle', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    prepareMeasurements();
+    await flushPromises();
+    expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
+  });
+
+  it('rechnet neu, wenn sich die Messwerte ändern', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    const chart = prepareMeasurements();
+    await flushPromises();
+    const first = useSolveStore().result;
+    chart.measurements = Object.fromEntries(
+      dummyIds().map((id): [string, Rgb] => [
+        id,
+        cameraCode(dummyLab(id)).map((v) => v * 0.9) as unknown as Rgb,
+      ]),
+    );
+    await flushPromises();
+    expect(useSolveStore().result).not.toBe(first);
+    expect(wrapper.find('[data-testid="report"]').exists()).toBe(true);
+  });
+
+  it('rechnet neu, wenn ein anderer Referenzsatz gewählt wird', async () => {
+    mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson('Satz A'));
+    prepareMeasurements();
+    await flushPromises();
+    const first = useSolveStore().result;
+    await useReferenceStore().importFile('b.json', dummyReferenceJson('Satz B'));
+    await flushPromises();
+    expect(useSolveStore().result).not.toBe(first);
+  });
+
+  it('rechnet nicht, solange nicht alle Eckpunkte gesetzt sind', async () => {
+    mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    const chart = useColorChartStore();
+    chart.addCorner({ x: 100, y: 50 });
+    chart.measurements = { '1A': [0.5, 0.5, 0.5] };
+    await flushPromises();
+    expect(useSolveStore().result).toBeNull();
+    expect(useSolveStore().error).toBeNull();
+  });
+
+  it('zeigt zwei Farbleisten: Standardfarben ohne Messung, danach Kamera und korrigiert', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    await flushPromises();
+    const camera = wrapper.get('[data-testid="color-strip-camera"]');
+    expect(camera.attributes('data-measured')).toBe('false');
+    expect(camera.findAll('[data-patch]')).toHaveLength(48);
+    prepareMeasurements();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="color-strip-camera"]').attributes('data-measured')).toBe(
+      'true',
+    );
+    expect(wrapper.get('[data-testid="color-strip-corrected"]').attributes('data-measured')).toBe(
+      'true',
+    );
+  });
+
   it('meldet Fehler der Berechnung', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = prepareMeasurements();
     chart.measurements = { '1A': [0.5, 0.5, 0.5] };
     await flushPromises();
-    await computeButton(wrapper)?.trigger('click');
     await flushPromises();
     expect(wrapper.text()).toContain('Zu wenige Messwerte');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);

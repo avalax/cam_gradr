@@ -47,8 +47,22 @@ export class AppPage {
     await expect(this.details).toContainText(text);
   }
 
-  async open(): Promise<void> {
+  get autoDetect(): Locator {
+    return this.page.getByLabel('Karten im Livebild automatisch erkennen');
+  }
+
+  // Öffnet die App. Die Automatik im Livebild ist aus, damit die Tests selbst entscheiden, wann ein
+  // Standbild aufgenommen wird; `autoDetect: true` lässt sie an.
+  async open(options: { autoDetect?: boolean } = {}): Promise<void> {
     await this.page.goto('/');
+    if (options.autoDetect !== true) {
+      await this.autoDetect.uncheck();
+    }
+  }
+
+  // Schaltet die Automatik nach einem Neuladen wieder aus.
+  async disableAutoDetect(): Promise<void> {
+    await this.autoDetect.uncheck();
   }
 
   button(name: string | RegExp): Locator {
@@ -115,7 +129,6 @@ export class AppPage {
     await expect(this.page.getByTestId('reference-saved')).toBeVisible();
     await this.closeSettings();
     await this.captureColorCards();
-    await this.button('Farbkorrektur berechnen').click();
     await expect(this.page.getByTestId('report')).toBeVisible();
   }
 

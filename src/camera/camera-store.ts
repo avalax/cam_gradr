@@ -31,6 +31,8 @@ export const useCameraStore = defineStore('camera', () => {
   const stream = shallowRef<MediaStream | null>(null);
   const actual = ref<Resolution | null>(null);
   const still = shallowRef<Frame | null>(null);
+  // Nimmt im Livebild selbst ein Standbild auf, sobald die Karten erkannt sind.
+  const autoDetect = ref(true);
   let session: CameraSession | null = null;
 
   function release(): void {
@@ -103,6 +105,7 @@ export const useCameraStore = defineStore('camera', () => {
     stream,
     actual,
     still,
+    autoDetect,
     start,
     stop,
     selectDevice,

@@ -39,6 +39,27 @@ describe('parseLayout mit den mitgelieferten Dateien', () => {
   });
 });
 
+describe('Nennwerte der Felder', () => {
+  it('liest nominalLab der großen Graufelder', () => {
+    const layout = parseLayout(grayJson);
+    const nominal = Object.fromEntries(
+      layout.cards.flatMap((card) => card.patches.map((patch) => [patch.id, patch.nominalLab])),
+    );
+    expect(nominal.G50).toEqual([76.07, 0, 0]);
+    expect(nominal.G18).toEqual([49.5, 0, 0]);
+    expect(nominal['S3-0']).toBeUndefined();
+  });
+
+  it('lehnt ein nominalLab ohne drei Zahlen ab', () => {
+    expect(() => parseLayout(layoutWith({ id: 'a', rect, nominalLab: [1, 2] }))).toThrow(
+      'nominalLab',
+    );
+    expect(() => parseLayout(layoutWith({ id: 'a', rect, nominalLab: [1, 2, 'x'] }))).toThrow(
+      'nominalLab',
+    );
+  });
+});
+
 describe('parseLayout Fehlerfälle', () => {
   it('lehnt falsches Format ab', () => {
     expect(() => parseLayout(null)).toThrow('Ungültiges Layout-Format');

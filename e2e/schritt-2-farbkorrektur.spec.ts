@@ -1,4 +1,11 @@
-import { dummyReferenceCsv, dummyReferenceJson } from '../src/test-support/dummy-reference';
+import type { Page } from '@playwright/test';
+
+import { labToSrgb } from '../src/color/lab';
+import {
+  dummyLab,
+  dummyReferenceCsv,
+  dummyReferenceJson,
+} from '../src/test-support/dummy-reference';
 
 import { expect, test } from './support/fixtures';
 
@@ -11,10 +18,10 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await app.completeStepOne();
     await expect(app.page.getByTestId('reference-active')).toContainText('(48 Felder)');
 
-    // Ohne Aufnahme der Farbkarten gibt es trotzdem nichts zu berechnen.
-    await expect(app.button('Farbkorrektur berechnen')).toBeDisabled();
+    // Ohne Aufnahme der Farbkarten gibt es noch kein Ergebnis, mit Eckpunkten rechnet die App selbst.
+    await expect(app.page.getByTestId('report')).toBeHidden();
     await app.captureColorCards();
-    await expect(app.button('Farbkorrektur berechnen')).toBeEnabled();
+    await expect(app.page.getByTestId('report')).toBeVisible();
   });
 
   test('Das Zahnrad-Menü nennt die Quelle und bietet keinen Löschknopf für den mitgelieferten Satz', async ({
@@ -124,8 +131,6 @@ test.describe('Farbkarten: Farbkorrektur', () => {
     await app.closeSettings();
     await app.captureColorCards();
 
-    await app.button('Farbkorrektur berechnen').click();
-
     const report = app.page.getByTestId('report');
     await expect(report).toBeVisible();
     const before = Number(await app.page.getByTestId('mean-before').innerText());
@@ -133,7 +138,7 @@ test.describe('Farbkarten: Farbkorrektur', () => {
     expect(before).toBeGreaterThan(4);
     expect(after).toBeLessThan(1.5);
     expect(after).toBeLessThan(before / 3);
-    await expect(report.locator('li')).toHaveCount(48);
+    await expect(report.locator('[data-testid^="tile-"]')).toHaveCount(48);
   });
 
   test('Eckpunkte der Farbkarten lassen sich in beliebiger Reihenfolge setzen', async ({ app }) => {
@@ -144,8 +149,48 @@ test.describe('Farbkarten: Farbkorrektur', () => {
     await app.captureStill();
     await app.placeAllCorners([0, 3, 2, 1]);
 
-    await app.button('Farbkorrektur berechnen').click();
+    await expect(app.page.getByTestId('report')).toBeVisible();
     const after = Number(await app.page.getByTestId('mean-after').innerText());
     expect(after).toBeLessThan(1.5);
+  });
+});
+
+// Gemalte Farbe von Feld 1F in einer der beiden Farbleisten (0..255).
+async function swatch(page: Page, strip: 'camera' | 'corrected'): Promise<number[]> {
+  const color = await page
+    .locator(`[data-testid="color-strip-${strip}"] [data-patch="1F"]`)
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
+  return (color.match(/\d+/g) ?? []).map(Number);
+}
+
+test.describe('Farbkarten: Farbleisten', () => {
+  test('Links stehen die Farben der Kamera, rechts die korrigierten, vorher Standardfarben', async ({
+    app,
+  }) => {
+    await app.completeStepOne();
+    await app.importReference('referenz.json', dummyReferenceJson());
+    await app.closeSettings();
+    await expect(app.page.getByTestId('color-strip-camera')).toHaveAttribute(
+      'data-measured',
+      'false',
+    );
+
+    await app.captureColorCards();
+
+    await expect(app.page.getByTestId('color-strip-camera')).toHaveAttribute(
+      'data-measured',
+      'true',
+    );
+    await expect(app.page.getByTestId('color-strip-corrected')).toHaveAttribute(
+      'data-measured',
+      'true',
+    );
+    const expected = labToSrgb(dummyLab('1F')).map((value) => Math.round(value * 255));
+    const corrected = await swatch(app.page, 'corrected');
+    const camera = await swatch(app.page, 'camera');
+    for (const [index, value] of expected.entries()) {
+      expect(Math.abs(Number(corrected[index]) - value)).toBeLessThanOrEqual(8);
+    }
+    expect(camera).not.toEqual(corrected);
   });
 });

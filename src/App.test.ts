@@ -33,7 +33,7 @@ describe('App', () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
-    expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera aus');
+    expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera starten');
     expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
     expect(wrapper.get('footer').text()).toBe(APP_ID);
     expect(APP_ID).toBe('avalax.cam_gradr');

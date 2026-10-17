@@ -80,6 +80,13 @@ function defineChartStore(options: ChartStoreOptions) {
       }
     }
 
+    // Setzt die Ecken aller Karten auf einmal (automatische Erkennung), von links nach rechts.
+    function setCards(found: readonly Corners[]): void {
+      points.value = Object.fromEntries(
+        options.cardOrder.map((card, index) => [card, [...(found[index] ?? [])]]),
+      );
+    }
+
     function reset(): void {
       points.value = {};
       measurements.value = {};
@@ -114,6 +121,7 @@ function defineChartStore(options: ChartStoreOptions) {
       corners,
       addCorner,
       moveCorner,
+      setCards,
       reset,
       restore,
       measure,

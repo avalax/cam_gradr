@@ -32,15 +32,29 @@ function parseRect(value: unknown, where: string): Rect {
   return rect;
 }
 
+function parseNominalLab(value: unknown, id: string): PatchLayout['nominalLab'] {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.length !== 3 || value.some((n) => !Number.isFinite(n))) {
+    throw new TypeError(`Feld ${id}: nominalLab muss drei Zahlen enthalten`);
+  }
+  return value as unknown as [number, number, number];
+}
+
 function parsePatch(value: unknown, card: number): PatchLayout {
   if (!isRecord(value) || typeof value.id !== 'string' || value.id === '') {
     throw new TypeError(`Karte ${String(card)}: Feld ohne gültige ID`);
   }
   const { id, role } = value;
   const rect = parseRect(value.rect, `Feld ${id}`);
-  return ROLES.has(role)
-    ? { id, rect, role: role as NonNullable<PatchLayout['role']> }
-    : { id, rect };
+  const nominalLab = parseNominalLab(value.nominalLab, id);
+  return {
+    id,
+    rect,
+    ...(ROLES.has(role) && { role: role as NonNullable<PatchLayout['role']> }),
+    ...(nominalLab !== undefined && { nominalLab }),
+  };
 }
 
 // Prüft eine Layout-Datei (Format cam_gradr-layout/2) und liefert typisierte Daten.

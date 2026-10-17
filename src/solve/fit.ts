@@ -21,6 +21,14 @@ interface PatchError {
   measured: Rgb;
   before: number;
   after: number;
+  neutral: boolean;
+}
+
+// Mittlerer Fehler einer Feldgruppe (Neutral- oder Farbfelder).
+interface GroupStats {
+  count: number;
+  meanBefore: number;
+  meanAfter: number;
 }
 
 interface FitReport {
@@ -29,6 +37,9 @@ interface FitReport {
   meanAfter: number;
   maxBefore: number;
   maxAfter: number;
+  // Getrennt nach Neutralfeldern (Grauleiter) und bunten Feldern; null, wenn es keine gibt.
+  neutral: GroupStats | null;
+  color: GroupStats | null;
 }
 
 export interface FitResult {
@@ -187,6 +198,16 @@ function mean(values: readonly number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function groupStats(errors: readonly PatchError[]): GroupStats | null {
+  return errors.length === 0
+    ? null
+    : {
+        count: errors.length,
+        meanBefore: mean(errors.map((error) => error.before)),
+        meanAfter: mean(errors.map((error) => error.after)),
+      };
+}
+
 function summarize(errors: readonly PatchError[]): FitReport {
   const before = errors.map((error) => error.before);
   const after = errors.map((error) => error.after);
@@ -196,6 +217,8 @@ function summarize(errors: readonly PatchError[]): FitReport {
     meanAfter: mean(after),
     maxBefore: Math.max(...before),
     maxAfter: Math.max(...after),
+    neutral: groupStats(errors.filter((error) => error.neutral)),
+    color: groupStats(errors.filter((error) => !error.neutral)),
   };
 }
 
@@ -232,6 +255,7 @@ export function fitColorModel(input: FitInput): FitResult {
       id: sample.id,
       reference: sample.reference,
       measured: sample.measured,
+      neutral: sample.isNeutral,
       before: deltaE2000(srgbToLab(sample.measured), sample.reference),
       after: deltaE2000(srgbToLab(applyColorModel(model, sample.measured)), sample.reference),
     };

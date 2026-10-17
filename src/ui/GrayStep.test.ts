@@ -28,14 +28,42 @@ function stillFrame(value: number): Frame {
   };
 }
 
+// Zwei hochkante Karten mit dunklem Rahmen und hellen Feldern auf ruhigem Hintergrund.
+function twoCardFrame(shift = 0): Frame {
+  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.6) };
+  for (const x0 of [200 + shift, 760 + shift]) {
+    for (let y = 100; y < 600; y++) {
+      for (let x = x0; x < x0 + 320; x++) {
+        const inside = x >= x0 + 40 && x < x0 + 280 && y >= 140 && y < 560;
+        frame.data.fill(inside ? 0.8 : 0.08, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
+      }
+    }
+  }
+  return frame;
+}
+
+function toRgba(frame: Frame): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(frame.width * frame.height * 4).fill(255);
+  for (let index = 0; index < frame.width * frame.height; index++) {
+    for (let channel = 0; channel < 3; channel++) {
+      rgba[index * 4 + channel] = Math.round(Number(frame.data[index * 3 + channel]) * 255);
+    }
+  }
+  return rgba;
+}
+
 // Nach dem Einhängen aufrufen: ersetzt nur die Canvas-Erzeugung für den Frame-Grabber.
 function mockGrabberCanvas(value: number) {
+  mockGrabberData(() => new Uint8ClampedArray(1280 * 720 * 4).fill(value));
+}
+
+// Wie mockGrabberCanvas, die Bilddaten werden bei jedem Auslesen neu erfragt.
+function mockGrabberData(next: () => Uint8ClampedArray) {
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- Überladung für beliebige Tag-Namen
   const original = document.createElement.bind(document);
-  const data = new Uint8ClampedArray(1280 * 720 * 4).fill(value);
   const context = {
     drawImage: vi.fn(),
-    getImageData: () => ({ width: 1280, height: 720, data }),
+    getImageData: () => ({ width: 1280, height: 720, data: next() }),
   };
   vi.spyOn(document, 'createElement').mockImplementation(
     (tag: string, options?: ElementCreationOptions) =>
@@ -281,6 +309,153 @@ describe('GrayStep', () => {
     expect(measure).not.toHaveBeenCalled();
   });
 
+  it('zeigt im Livebild zwei beschriftete Rahmen, wo die Karten hingehalten werden sollen', async () => {
+    const wrapper = await mountLive();
+    const guides = wrapper.findAll('[data-testid="guide"]');
+    expect(guides).toHaveLength(2);
+    expect(guides[0]?.text()).toContain('linke Graukarte (50 %)');
+    expect(guides[1]?.text()).toContain('rechte Graukarte (18 %)');
+  });
+
+  it('setzt per Knopf die Eckpunkte auf die Rahmen und blendet sie danach aus', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await button(wrapper, 'Eckpunkte auf Rahmen setzen')?.trigger('click');
+    expect(useChartStore().ready).toBe(true);
+    expect(wrapper.findAll('[data-testid="guide"]')).toHaveLength(0);
+    expect(wrapper.get('[data-testid="detect-message"]').text()).toContain('Rahmen');
+  });
+
+  it('erkennt beide Karten im Standbild und setzt die Eckpunkte', async () => {
+    const wrapper = await mountLive();
+    const camera = useCameraStore();
+    camera.still = twoCardFrame();
+    await flushPromises();
+    await button(wrapper, 'Karten automatisch erkennen')?.trigger('click');
+    expect(useChartStore().ready).toBe(true);
+    expect(wrapper.get('[data-testid="detect-message"]').text()).toContain('erkannt');
+    camera.still = stillFrame(0.5);
+    await flushPromises();
+    expect(wrapper.find('[data-testid="detect-message"]').exists()).toBe(false);
+  });
+
+  it('meldet, wenn keine Karten erkannt werden, und lässt die Eckpunkte unberührt', async () => {
+    const wrapper = await mountLive();
+    useCameraStore().still = stillFrame(0.5);
+    await flushPromises();
+    await button(wrapper, 'Karten automatisch erkennen')?.trigger('click');
+    expect(wrapper.get('[data-testid="detect-message"]').text()).toContain('nicht sicher erkannt');
+    expect(useChartStore().points).toEqual({});
+  });
+
+  it('bietet die Erkennung nur mit Standbild an', async () => {
+    const wrapper = await mountLive();
+    expect(button(wrapper, 'Karten automatisch erkennen')).toBeUndefined();
+  });
+
+  describe('automatische Aufnahme im Livebild', { timeout: 30_000 }, () => {
+    // Einmal berechnet, weil die Automatik das Bild mehrfach ausliest.
+    const cardsData = toRgba(twoCardFrame());
+    const movedData = toRgba(twoCardFrame(120));
+    const emptyData = new Uint8ClampedArray(1280 * 720 * 4).fill(153);
+    const cards = () => cardsData;
+    const empty = () => emptyData;
+
+    async function mountAuto(next: () => Uint8ClampedArray) {
+      vi.useFakeTimers();
+      const wrapper = await mountLive();
+      Object.defineProperties(wrapper.get('video').element, {
+        videoWidth: { value: 1280 },
+        videoHeight: { value: 720 },
+        requestVideoFrameCallback: {
+          value: (callback: () => void) => {
+            callback();
+            return 1;
+          },
+        },
+      });
+      mockGrabberData(next);
+      return wrapper;
+    }
+
+    it('nimmt das Standbild selbst auf, setzt die Ecken und schaltet die Kamera aus', async () => {
+      const wrapper = await mountAuto(cards);
+      expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(true);
+      await vi.advanceTimersByTimeAsync(2500);
+      await flushPromises();
+      expect(useCameraStore().still).not.toBeNull();
+      expect(useCameraStore().status).toBe('idle');
+      expect(useChartStore().ready).toBe(true);
+      expect(wrapper.get('[data-testid="detect-message"]').text()).toContain(
+        'Standbild aufgenommen',
+      );
+      expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
+    });
+
+    it('verwirft ein Standbild, das nicht zu den Ecken aus dem Livebild passt', async () => {
+      let reads = 0;
+      await mountAuto(() => (reads++ < 2 ? cards() : movedData));
+      await vi.advanceTimersByTimeAsync(2500);
+      await flushPromises();
+      expect(useCameraStore().still).toBeNull();
+      expect(useCameraStore().status).toBe('live');
+      expect(useChartStore().points).toEqual({});
+    });
+
+    it('wartet, bis die Karten ruhig gehalten werden', async () => {
+      let reads = 0;
+      await mountAuto(() => (reads++ < 1 ? cards() : movedData));
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(useCameraStore().still).toBeNull();
+      await vi.advanceTimersByTimeAsync(2000);
+      await flushPromises();
+      expect(useCameraStore().still).not.toBeNull();
+      expect(useChartStore().ready).toBe(true);
+    });
+
+    it('wartet weiter, solange keine Karten zu sehen sind', async () => {
+      await mountAuto(empty);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(useCameraStore().still).toBeNull();
+      expect(useCameraStore().status).toBe('live');
+    });
+
+    it('verlangt zwei Treffer hintereinander', async () => {
+      let visible = true;
+      await mountAuto(() => (visible ? cards() : empty()));
+      await vi.advanceTimersByTimeAsync(1000);
+      visible = false;
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(useCameraStore().still).toBeNull();
+    });
+
+    it('ist abschaltbar', async () => {
+      const wrapper = await mountAuto(cards);
+      await wrapper.get('input[type="checkbox"]').setValue(false);
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(useCameraStore().still).toBeNull();
+      expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
+    });
+
+    it('läuft nicht, wenn die Eckpunkte schon gesetzt sind', async () => {
+      await mountAuto(cards);
+      for (const [x, y] of CORNERS) {
+        useChartStore().addCorner({ x, y });
+      }
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(useCameraStore().still).toBeNull();
+    });
+
+    it('wartet mit dem Suchen, bis das Video ein Bild liefert', async () => {
+      vi.useFakeTimers();
+      await mountLive();
+      mockGrabberData(cards);
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(useCameraStore().still).toBeNull();
+    });
+  });
+
   it('setzt per Knopf zurück', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
@@ -288,7 +463,7 @@ describe('GrayStep', () => {
     await placeAll(wrapper);
     await button(wrapper, 'Eckpunkte zurücksetzen')?.trigger('click');
     expect(useChartStore().points).toEqual({});
-    expect(wrapper.findAll('polygon')).toHaveLength(0);
+    expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
   });
 
   it('beginnt bei geänderter Auflösung neu, nicht bei gleicher oder fehlender', async () => {

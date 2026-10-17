@@ -39,6 +39,25 @@ describe('fitColorModel', () => {
   const measurements = measure(reference);
   const result = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
 
+  it('weist den Fehler getrennt für Neutralfelder und Farbfelder aus', () => {
+    const { neutral, color } = result.report;
+    expect(neutral?.count).toBe(NEUTRAL_IDS.size);
+    expect(color?.count).toBe(dummyIds().length - NEUTRAL_IDS.size);
+    expect(neutral?.meanAfter).toBeLessThan(neutral?.meanBefore ?? 0);
+    expect(color?.meanAfter).toBeLessThan(color?.meanBefore ?? 0);
+  });
+
+  it('lässt eine Gruppe leer, wenn es keine solchen Felder gibt', () => {
+    const onlyNeutral = referenceSet([...NEUTRAL_IDS]);
+    const gray = fitColorModel({
+      measurements: measure(onlyNeutral),
+      reference: onlyNeutral,
+      neutralIds: NEUTRAL_IDS,
+    });
+    expect(gray.report.color).toBeNull();
+    expect(gray.report.neutral?.count).toBe(NEUTRAL_IDS.size);
+  });
+
   it('macht die bekannte Verfälschung der künstlichen Webcam weitgehend rückgängig', () => {
     expect(result.report.meanBefore).toBeGreaterThan(4);
     expect(result.report.meanAfter).toBeLessThan(1);

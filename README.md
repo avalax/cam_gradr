@@ -22,7 +22,7 @@ Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
 | M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung | fertig |
 | M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher          | fertig |
 | M5          | Export als `.cube`, Projekt speichern und laden (JSON)      | fertig |
-| M6          | Optionale automatische Kartenerkennung, Feinschliff         | offen  |
+| M6          | Automatische Kartenerkennung, Feinschliff                   | läuft  |
 
 Noch nicht an der echten Karte geprüft sind die Feldpositionen im Layout und die Schwellen der Ampel.
 Beides ist aus Fotos geschätzt und lässt sich in `src/data/layouts/` bzw. `src/chart/exposure.ts`
@@ -35,11 +35,11 @@ die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ 
 die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 
 1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten und ein Standbild
-   aufnehmen. Auf dem Standbild die Eckpunkte der Karten setzen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
+   aufnehmen. Im Livebild zeigen gestrichelte Rahmen, wo die Karten hingehalten werden sollen. Werden sie ruhig gehalten und erkannt, nimmt die App das Standbild selbst auf und schaltet die Kamera aus (abschaltbar). Nach dem Standbild setzt „Eckpunkte auf Rahmen setzen“ die Eckpunkte auf diese Rahmen, „Karten automatisch erkennen“ sucht die dunklen Kartenrahmen im Bild; alternativ die Eckpunkte von Hand klicken. Alle Punkte lassen sich ziehen. Eine senkrechte Graustufen-Skala neben dem Bild zeigt, ob der Raum zu dunkel,
    zu hell oder passend ist. Das Licht so einstellen, dass die Marke im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Im Livebild misst die App
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
 2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten laden (mitgelieferter Satz oder eigene JSON-/CSV-Datei, bleiben lokal im
-   Browser), beide Farbkarten aufnehmen, Eckpunkte setzen und die Korrektur berechnen. Der Bericht zeigt
+   Browser), beide Farbkarten aufnehmen und die Eckpunkte setzen. Die Korrektur wird automatisch berechnet und bei jeder Änderung der Eckpunkte neu. Zwei senkrechte Farbleisten neben dem Bild zeigen links die Farben der Kamera und rechts die korrigierten Farben (ohne Messung stehen die Sollfarben des Referenzsatzes dort, ohne Referenz ein neutrales Grau). Der Bericht zeigt
    den Farbfehler (ΔE2000) je Feld vorher und nachher.
 3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen: ein Regler stellt die Stärke
    ein, eine verschiebbare Trennlinie zeigt links das Original und rechts das korrigierte Bild.

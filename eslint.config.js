@@ -97,7 +97,7 @@ export default tseslint.config(
       ...vitest.configs.recommended.rules,
       'vitest/expect-expect': [
         'error',
-        { assertFunctionNames: ['expect', 'expectPoint', 'rejects'] },
+        { assertFunctionNames: ['expect', 'expectPoint', 'expectCard', 'rejects'] },
       ],
       // In Tests sind verschachtelte Aufrufe und lokale Hilfsfunktionen üblich.
       'unicorn/max-nested-calls': 'off',

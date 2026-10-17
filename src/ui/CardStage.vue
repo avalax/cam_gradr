@@ -1,16 +1,27 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch,
+} from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
 import type { Frame } from '../camera/frame';
 import type { ChartStore } from '../chart/chart-store';
-import type { ChartLayout } from '../chart/types';
+import { detectCards, sameCards } from '../chart/detect';
+import type { ChartLayout, Corners } from '../chart/types';
 
 import { frameGrid, measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
+import { guideCorners } from './guide';
 import { buildShapes, clientToImage, instructionFor } from './overlay-geometry';
-import { attachStream, captureFromVideo } from './video-bindings';
+import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
 
 const props = defineProps<{
   store: ChartStore;
@@ -26,12 +37,21 @@ const props = defineProps<{
 // Höhe (in rem) von allem außer dem Bild: Seitenkopf, Hinweiszeile, Knopfleiste und Abstände.
 const CHROME_REM = 12;
 
+// Automatik im Livebild: so oft wird nach den Karten gesucht, und so oft hintereinander müssen sie
+// gefunden werden, bevor das Standbild aufgenommen wird (ein verwackeltes Bild zählt nicht).
+const AUTO_INTERVAL_MS = 1000;
+const AUTO_CONFIRMATIONS = 2;
+// So weit (Anteil der Bildbreite) dürfen die Ecken zwischen zwei Suchläufen wandern: sonst bewegt sich
+// jemand noch, und das gemittelte Standbild wäre verwackelt.
+const STEADY_SHARE = 0.02;
+
 const camera = useCameraStore();
-const { stream, actual, status, still } = storeToRefs(camera);
+const { stream, actual, status, still, autoDetect } = storeToRefs(camera);
 const { points, nextSlot, ready, corners } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
+const detectMessage = ref<string | null>(null);
 const dragging = ref<{ card: number; index: number } | null>(null);
 // Erst wenn das Video ein Bild liefert, ist eine Aufnahme sinnvoll.
 const videoReady = ref(false);
@@ -40,6 +60,25 @@ const isLive = computed(() => status.value === 'live');
 const showStill = computed(() => still.value !== null);
 const size = computed(() => still.value ?? actual.value ?? { width: 1280, height: 720 });
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
+// Hilfsrahmen, solange noch keine Eckpunkte gesetzt sind.
+const noPoints = computed(() => Object.keys(points.value).length === 0);
+const guides = computed(() =>
+  noPoints.value
+    ? guideCorners(size.value, props.layout.cards.length).map((corners, index) => {
+        const card = Number(props.layout.cards[index]?.card);
+        return {
+          key: String(card),
+          points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
+          label: props.cardNames[card] ?? '',
+          at: corners[0],
+        };
+      })
+    : [],
+);
+// Die Automatik sucht nur im laufenden Livebild, solange noch keine Eckpunkte gesetzt sind.
+const autoActive = computed(
+  () => autoDetect.value && isLive.value && videoReady.value && !showStill.value && noPoints.value,
+);
 const shapes = computed(() => buildShapes(props.layout, corners.value));
 const handles = computed(() =>
   showStill.value
@@ -80,8 +119,31 @@ function endDrag(): void {
   dragging.value = null;
 }
 
+function detect(): void {
+  const frame = still.value;
+  /* v8 ignore next 4 -- der Knopf erscheint nur mit Standbild */
+  if (frame === null) {
+    return;
+  }
+  const found = detectCards(frame, props.layout.cards.length);
+  if (found === null) {
+    detectMessage.value =
+      'Die Karten wurden nicht sicher erkannt. Bitte setze die Eckpunkte von Hand.';
+  } else {
+    props.store.setCards(found);
+    detectMessage.value =
+      'Die Karten wurden erkannt. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.';
+  }
+}
+
+function alignToGuides(): void {
+  props.store.setCards(guideCorners(size.value, props.layout.cards.length));
+  detectMessage.value =
+    'Die Eckpunkte sitzen auf den Rahmen. Ziehe sie bei Bedarf auf die Kartenecken.';
+}
+
 function capture(): void {
-  captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
+  void captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
 }
 
 function drawStill(frame: Frame | null): void {
@@ -94,7 +156,54 @@ function drawStill(frame: Frame | null): void {
   }
 }
 
+const hits = ref(0);
+const previous = ref<Corners[] | null>(null);
+const capturing = ref(false);
+
+// Nimmt das Standbild auf und setzt die Ecken (auf dem gemittelten Standbild noch einmal genauer
+// gesucht) und beendet die Kamera. Passt das Standbild nicht zu den Ecken aus dem Livebild (die
+// Karten wurden beim Mitteln bewegt), wird es verworfen und die Suche läuft weiter.
+async function autoCapture(fromLive: Corners[]): Promise<void> {
+  capturing.value = true;
+  await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
+  const frame = still.value;
+  /* v8 ignore next 4 -- ein Aufnahmefehler wird vom Kamera-Store gemeldet */
+  if (frame === null) {
+    capturing.value = false;
+    return;
+  }
+  const found = detectCards(frame, props.layout.cards.length);
+  if (found !== null && sameCards(found, fromLive, STEADY_SHARE * frame.width)) {
+    props.store.setCards(found);
+    camera.stop();
+    await nextTick();
+    detectMessage.value =
+      'Die Karten wurden erkannt und das Standbild aufgenommen. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.';
+  } else {
+    camera.clearStill();
+  }
+  capturing.value = false;
+}
+
+// Trifft die Suche dieselben Karten an derselben Stelle wie beim letzten Mal?
+function isSteady(found: Corners[], width: number): boolean {
+  return previous.value !== null && sameCards(found, previous.value, STEADY_SHARE * width);
+}
+
+async function autoTick(): Promise<void> {
+  const frame = capturing.value || !autoActive.value ? null : grabVideoFrame(video.value);
+  const found = frame === null ? null : detectCards(frame, props.layout.cards.length);
+  hits.value = found === null ? 0 : isSteady(found, Number(frame?.width)) ? hits.value + 1 : 1;
+  previous.value = found;
+  if (found !== null && hits.value >= AUTO_CONFIRMATIONS) {
+    hits.value = 0;
+    previous.value = null;
+    await autoCapture(found);
+  }
+}
+
 const timer = shallowRef<ReturnType<typeof setInterval>>();
+const autoTimer = shallowRef<ReturnType<typeof setInterval>>();
 
 onMounted(() => {
   attachStream(video.value, stream.value);
@@ -105,10 +214,14 @@ onMounted(() => {
       props.store.measure(grid);
     });
   }, MEASURE_INTERVAL_MS);
+  autoTimer.value = setInterval(() => {
+    void autoTick();
+  }, AUTO_INTERVAL_MS);
 });
 
 onBeforeUnmount(() => {
   clearInterval(timer.value);
+  clearInterval(autoTimer.value);
 });
 
 watch(stream, (next) => {
@@ -116,7 +229,10 @@ watch(stream, (next) => {
   attachStream(video.value, next);
 });
 
-watch(still, drawStill);
+watch(still, (next) => {
+  detectMessage.value = null;
+  drawStill(next);
+});
 
 // Auf dem Standbild wird bei jeder Änderung (neues Bild, verschobene Eckpunkte) neu gemessen.
 watch([still, points], () => {
@@ -171,6 +287,26 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
+          <g v-for="guide in guides" :key="guide.key" data-testid="guide" pointer-events="none">
+            <polygon
+              :points="guide.points"
+              fill="none"
+              stroke="#ffffff"
+              stroke-width="3"
+              stroke-dasharray="14 10"
+            />
+            <text
+              :x="guide.at.x + 10"
+              :y="guide.at.y + 30"
+              fill="#ffffff"
+              stroke="#0f172a"
+              stroke-width="4"
+              paint-order="stroke"
+              font-size="24"
+            >
+              {{ guide.label }}
+            </text>
+          </g>
           <polygon
             v-for="shape in shapes"
             :key="shape.key"
@@ -220,6 +356,14 @@ watch(actual, (next, previous) => {
       {{ camera.errorMessage }}
     </p>
 
+    <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
+      Halte die Karten in die Rahmen. Sobald sie erkannt sind, nimmt die App das Standbild selbst
+      auf und schaltet die Kamera aus.
+    </p>
+    <p v-if="detectMessage !== null" class="text-sm text-slate-700" data-testid="detect-message">
+      {{ detectMessage }}
+    </p>
+
     <div class="flex flex-wrap items-center gap-3">
       <button
         type="button"
@@ -237,9 +381,29 @@ watch(actual, (next, previous) => {
       >
         Zurück zum Livebild
       </button>
+      <button
+        v-if="showStill"
+        type="button"
+        class="rounded border px-3 py-1 text-sm"
+        @click="alignToGuides"
+      >
+        Eckpunkte auf Rahmen setzen
+      </button>
+      <button
+        v-if="showStill"
+        type="button"
+        class="rounded border px-3 py-1 text-sm"
+        @click="detect"
+      >
+        Karten automatisch erkennen
+      </button>
       <button type="button" class="rounded border px-3 py-1 text-sm" @click="store.reset()">
         Eckpunkte zurücksetzen
       </button>
+      <label class="flex items-center gap-2 text-sm">
+        <input v-model="autoDetect" type="checkbox" />
+        Karten im Livebild automatisch erkennen
+      </label>
       <slot name="actions" />
     </div>
   </div>
