@@ -33,8 +33,13 @@ const grayMeasurements: Record<string, Rgb> = {
 async function workedState(): Promise<string> {
   const references = useReferenceStore();
   await references.importFile('referenz.json', dummyReferenceJson('Mein Satz'));
-  useChartStore().restore({ points: { 3: [{ x: 1, y: 2 }] }, measurements: grayMeasurements });
+  useChartStore().restore({
+    points: { 3: [{ x: 1, y: 2 }] },
+    measurements: grayMeasurements,
+    rotated: false,
+  });
   useColorChartStore().restore({
+    rotated: false,
     points: { 1: [{ x: 3, y: 4 }] },
     measurements: colorMeasurements,
   });
@@ -144,7 +149,7 @@ describe('useProjectStore', () => {
 
   it('meldet fehlerhafte Dateien und lässt den bisherigen Stand unverändert', async () => {
     const project = useProjectStore();
-    useChartStore().restore({ points: { 3: [{ x: 5, y: 6 }] }, measurements: {} });
+    useChartStore().restore({ points: { 3: [{ x: 5, y: 6 }] }, measurements: {}, rotated: false });
     await project.load('{"format":"anderes"}');
 
     expect(project.error).toContain('Unbekanntes Format');

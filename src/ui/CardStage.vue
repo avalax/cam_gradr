@@ -47,7 +47,7 @@ const STEADY_SHARE = 0.02;
 
 const camera = useCameraStore();
 const { stream, actual, status, still, autoDetect } = storeToRefs(camera);
-const { points, nextSlot, ready, corners } = storeToRefs(props.store);
+const { points, nextSlot, ready, corners, rotated } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -359,6 +359,9 @@ watch(actual, (next, previous) => {
     <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
       Halte die Karten in die Rahmen. Sobald sie erkannt sind, nimmt die App das Standbild selbst
       auf und schaltet die Kamera aus.
+    </p>
+    <p v-if="rotated" class="text-sm text-slate-700" data-testid="rotated-note">
+      Die Karten sind um 180° gedreht. Die Zuordnung der Felder wurde entsprechend angepasst.
     </p>
     <p v-if="detectMessage !== null" class="text-sm text-slate-700" data-testid="detect-message">
       {{ detectMessage }}

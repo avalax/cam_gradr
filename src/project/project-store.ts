@@ -20,10 +20,15 @@ function snapshot(): Project {
   return {
     format: PROJECT_FORMAT,
     savedAt: new Date().toISOString(),
-    gray: { corners: gray.points, measurements: { ...gray.measurements } },
+    gray: {
+      corners: gray.points,
+      measurements: { ...gray.measurements },
+      rotated: gray.rotated,
+    },
     color: {
       corners: color.points,
       measurements: { ...color.measurements },
+      rotated: color.rotated,
       reference: useReferenceStore().selectedName,
     },
     model: useSolveStore().model,
@@ -59,10 +64,12 @@ export const useProjectStore = defineStore('project', () => {
     useChartStore().restore({
       points: project.gray.corners,
       measurements: project.gray.measurements,
+      rotated: project.gray.rotated,
     });
     useColorChartStore().restore({
       points: project.color.corners,
       measurements: project.color.measurements,
+      rotated: project.color.rotated,
     });
     const preview = usePreviewStore();
     preview.setStrength(project.preview.strength);
