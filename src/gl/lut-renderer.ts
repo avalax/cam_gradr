@@ -10,15 +10,13 @@ void main() {
 }
 `;
 
-// Wendet die 3D-LUT auf jedes Pixel an. uSplit trennt Vorher (links) und Nachher (rechts),
-// uStrength mischt zwischen Original und Korrektur.
+// Wendet die 3D-LUT auf jedes Pixel an. uSplit trennt Vorher (links) und Nachher (rechts).
 export const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 precision highp sampler3D;
 uniform sampler2D uImage;
 uniform sampler3D uLut;
 uniform float uLutSize;
-uniform float uStrength;
 uniform float uSplit;
 in vec2 vUv;
 out vec4 outColor;
@@ -27,14 +25,11 @@ void main() {
   // Auf Texelmitten abbilden, damit 0 und 1 genau die ersten und letzten Gitterpunkte treffen.
   vec3 coord = original * ((uLutSize - 1.0) / uLutSize) + 0.5 / uLutSize;
   vec3 corrected = texture(uLut, coord).rgb;
-  vec3 result = mix(original, corrected, uStrength);
-  outColor = vec4(vUv.x < uSplit ? original : result, 1.0);
+  outColor = vec4(vUv.x < uSplit ? original : corrected, 1.0);
 }
 `;
 
 interface RenderOptions {
-  // Anteil der Korrektur: 0 = Original, 1 = volle Korrektur.
-  strength: number;
   // Trennlinie als Anteil der Breite: links Original, rechts korrigiert (0 = alles korrigiert).
   split: number;
 }
@@ -120,7 +115,6 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
     image: gl.getUniformLocation(program, 'uImage'),
     lut: gl.getUniformLocation(program, 'uLut'),
     lutSize: gl.getUniformLocation(program, 'uLutSize'),
-    strength: gl.getUniformLocation(program, 'uStrength'),
     split: gl.getUniformLocation(program, 'uSplit'),
   };
   let lutSize = 2;
@@ -169,7 +163,6 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
       gl.uniform1i(uniforms.image, 0);
       gl.uniform1i(uniforms.lut, 1);
       gl.uniform1f(uniforms.lutSize, lutSize);
-      gl.uniform1f(uniforms.strength, options.strength);
       gl.uniform1f(uniforms.split, options.split);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },

@@ -8,22 +8,17 @@ describe('usePreviewStore', () => {
     setActivePinia(createPinia());
   });
 
-  it('startet mit voller Korrektur und Trennlinie in der Mitte', () => {
-    const store = usePreviewStore();
-    expect(store.strength).toBe(100);
-    expect(store.split).toBe(50);
+  it('startet mit der Trennlinie in der Mitte', () => {
+    expect(usePreviewStore().split).toBe(50);
   });
 
-  it('begrenzt Stärke und Trennlinie auf 0 bis 100 Prozent', () => {
+  it('begrenzt die Trennlinie auf 0 bis 100 Prozent', () => {
     const store = usePreviewStore();
-    store.setStrength(30);
     store.setSplit(80);
-    expect([store.strength, store.split]).toEqual([30, 80]);
-    store.setStrength(-5);
+    expect(store.split).toBe(80);
     store.setSplit(250);
-    expect([store.strength, store.split]).toEqual([0, 100]);
-    store.setStrength(140);
+    expect(store.split).toBe(100);
     store.setSplit(-1);
-    expect([store.strength, store.split]).toEqual([100, 0]);
+    expect(store.split).toBe(0);
   });
 });

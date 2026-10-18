@@ -3,6 +3,8 @@ import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
+import { useColorChartStore } from '../chart/chart-store';
+import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
 import { drawFrame } from '../camera/draw-frame';
 import { createCpuRenderer } from '../gl/cpu-renderer';
 import { createLutRenderer } from '../gl/lut-renderer';
@@ -10,9 +12,23 @@ import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
 import { buildLut } from '../lut/lut';
 import { usePreviewStore } from '../lut/preview-store';
+import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
+import {
+  brightnessText,
+  colorCards,
+  deviationSummary,
+  oneDecimal,
+  signedPoints,
+  wedgeRows,
+  worstPatches,
+  zoneChanges,
+} from './gray-wedge';
+import ColorTiles from './ColorTiles.vue';
+import GrayWedge from './GrayWedge.vue';
 import { attachStream } from './video-bindings';
+import WipeDivider from './WipeDivider.vue';
 
 // Stützstellen der LUT in der Vorschau; fein genug für glatte Verläufe, schnell genug zu berechnen.
 const PREVIEW_LUT_SIZE = 33;
@@ -25,8 +41,43 @@ const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
 const { stream, status, still } = storeToRefs(camera);
-const { model } = storeToRefs(solve);
-const { strength, split } = storeToRefs(preview);
+const { model, result } = storeToRefs(solve);
+const { split } = storeToRefs(preview);
+const { measurements } = storeToRefs(useColorChartStore());
+const { selected } = storeToRefs(useReferenceStore());
+
+// Ansicht der Seitenspalte: zuerst die Farben, dazu umschaltbar die Graustufen.
+const VIEWS = [
+  { key: 'colors', label: 'Farben' },
+  { key: 'grays', label: 'Graustufen' },
+] as const;
+const view = ref<(typeof VIEWS)[number]['key']>('colors');
+const WORST_COUNT = 3;
+
+// Farbraster aus den gemessenen bunten Feldern und die Felder mit der größten Rest-Abweichung.
+const tiles = computed(() =>
+  colorCards(colorLayout, NEUTRAL_IDS, measurements.value, model.value, selected.value),
+);
+const worst = computed(() =>
+  result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
+);
+
+// Graukeil aus den gemessenen Neutralfeldern und was die Korrektur je Tonbereich ändert.
+const rows = computed(() =>
+  wedgeRows(NEUTRAL_IDS, measurements.value, model.value, selected.value),
+);
+const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
+const emptyText = computed(() =>
+  model.value === null
+    ? 'Noch keine Korrektur. Berechne sie zuerst im Tab „Farbkarten“.'
+    : 'Für diese Ansicht fehlen gemessene Farbkarten.',
+);
+// Farben der Punkte vor den Kanälen.
+const CAST_COLORS: Readonly<Record<string, string>> = {
+  Rot: '#b45353',
+  Grün: '#4f8f5b',
+  Blau: '#4f6fb4',
+};
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -86,10 +137,7 @@ function drawFrameToCanvas(): void {
       target.height = size.height;
       aspect.value = source.width / source.height;
     }
-    renderer.value.render(source.image, {
-      strength: strength.value / 100,
-      split: split.value / 100,
-    });
+    renderer.value.render(source.image, { split: split.value / 100 });
   }
 }
 
@@ -134,13 +182,18 @@ watch(lut, (next) => {
   }
 });
 
-function onStrength(event: Event): void {
-  preview.setStrength(Number((event.target as HTMLInputElement).value));
-}
+// Der Wischer über dem Bild schreibt die Lage der Trennlinie in den Speicher.
+// Mittlere Abweichung vor und nach der Korrektur, solange der Bericht vorliegt.
+const summary = computed(() =>
+  result.value === null ? null : deviationSummary(result.value.report),
+);
 
-function onSplit(event: Event): void {
-  preview.setSplit(Number((event.target as HTMLInputElement).value));
-}
+const splitModel = computed({
+  get: () => split.value,
+  set: (value: number) => {
+    preview.setSplit(value);
+  },
+});
 </script>
 
 <template>
@@ -148,7 +201,8 @@ function onSplit(event: Event): void {
     <aside class="space-y-4 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
       <p class="text-sm text-slate-700">
         Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie
-        siehst du das Original, rechts das korrigierte Bild.
+        siehst du das Original, rechts das korrigierte Bild. Den Strich kannst du im Bild ziehen
+        oder mit den Pfeiltasten verschieben.
       </p>
       <p v-if="model === null" class="text-sm text-amber-800" data-testid="preview-no-model">
         Es gibt noch keine Farbkorrektur. Berechne sie zuerst im Tab „Farbkarten“.
@@ -169,49 +223,121 @@ function onSplit(event: Event): void {
             : 'Darstellung: Software, verkleinert (kein WebGL2 verfügbar)'
         }}
       </p>
-
-      <label class="flex flex-col gap-1 text-sm">
-        <span>Stärke der Korrektur: {{ strength }} %</span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          :value="strength"
-          data-testid="strength"
-          @input="onStrength"
-        />
-      </label>
-      <label class="flex flex-col gap-1 text-sm">
-        <span>Trennlinie: {{ split }} % (links Original)</span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          :value="split"
-          data-testid="split"
-          @input="onSplit"
-        />
-      </label>
     </aside>
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-      <div class="relative w-full" :style="{ maxWidth: maxWidth }">
-        <!-- Das Video dient nur als Bildquelle und bleibt unsichtbar. -->
-        <video ref="video" class="hidden" muted playsinline></video>
-        <canvas
-          v-show="model !== null && hasSource"
-          ref="canvas"
-          class="w-full rounded bg-black"
-          data-testid="preview-canvas"
-        ></canvas>
+      <!-- Wie in den Kartentabs: links das Bild, rechts eine schmale Spalte; so ist das Bild überall gleich groß. -->
+      <div class="flex items-stretch gap-3">
+        <div class="relative min-w-0 flex-1" :style="{ maxWidth: maxWidth }">
+          <!-- Das Video dient nur als Bildquelle und bleibt unsichtbar. -->
+          <video ref="video" class="hidden" muted playsinline></video>
+          <canvas
+            v-show="model !== null && hasSource"
+            ref="canvas"
+            class="w-full rounded bg-black"
+            data-testid="preview-canvas"
+          ></canvas>
+          <WipeDivider
+            v-if="model !== null && hasSource"
+            v-model="splitModel"
+            label="Trennlinie: links Original, rechts korrigiert"
+          />
+        </div>
+
         <div
-          v-if="model !== null && hasSource"
-          class="pointer-events-none absolute inset-y-0 w-0.5 bg-white shadow"
-          :style="{ left: `${String(split)}%` }"
-          data-testid="split-line"
-        ></div>
+          class="flex w-44 shrink-0 flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
+          data-testid="preview-side"
+        >
+          <div
+            class="flex gap-1 border-b-[3px] border-zinc-700 bg-zinc-200 p-1.5"
+            role="group"
+            aria-label="Ansicht der Seitenspalte"
+          >
+            <button
+              v-for="option in VIEWS"
+              :key="option.key"
+              type="button"
+              class="flex-1 rounded border px-1 py-1 text-[11px] font-semibold"
+              :class="
+                view === option.key
+                  ? 'border-zinc-800 bg-zinc-800 text-zinc-50'
+                  : 'border-zinc-500 bg-zinc-50 text-zinc-800'
+              "
+              :aria-pressed="view === option.key"
+              :data-testid="`view-${option.key}`"
+              @click="view = option.key"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+          <div v-if="view === 'colors'" class="flex min-h-0 flex-1 flex-col gap-2 p-2">
+            <div v-if="tiles.length > 0" class="min-h-24 flex-1">
+              <ColorTiles :cards="tiles" />
+            </div>
+            <p
+              v-else
+              class="text-[11px] leading-snug text-zinc-600"
+              data-testid="preview-side-empty"
+            >
+              {{ emptyText }}
+            </p>
+            <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
+              Jedes Feld: Soll, Kamera, korrigiert (von links nach rechts).
+            </p>
+            <div
+              v-if="worst.length > 0"
+              class="text-[11px] leading-snug"
+              data-testid="worst-patches"
+            >
+              <p class="font-semibold">Größte Abweichung</p>
+              <p>
+                <template v-for="(patch, index) in worst" :key="patch.id">
+                  <template v-if="index > 0"> · </template>{{ patch.id }}
+                  {{ oneDecimal(patch.deviation) }}
+                </template>
+              </p>
+            </div>
+          </div>
+          <div v-else class="flex min-h-0 flex-1 flex-col gap-2 p-2">
+            <div v-if="rows.length > 0" class="min-h-24 flex-1">
+              <GrayWedge :rows="rows" />
+            </div>
+            <p
+              v-else
+              class="text-[11px] leading-snug text-zinc-600"
+              data-testid="preview-side-empty"
+            >
+              {{ emptyText }}
+            </p>
+            <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
+              <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
+                <dt class="font-semibold">{{ zone.name }}</dt>
+                <dd>
+                  {{ brightnessText(zone.brighter) }}
+                  <template v-if="zone.casts.length === 0">, neutral</template>
+                  <template v-for="cast in zone.casts" :key="cast.channel">
+                    ·
+                    <i
+                      class="inline-block size-2 rounded-full"
+                      :style="{ background: CAST_COLORS[cast.channel] }"
+                    ></i>
+                    {{ cast.channel }} {{ signedPoints(cast.points) }}
+                  </template>
+                </dd>
+              </div>
+            </dl>
+            <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
+              Punkte auf der Skala 0–100: + Farbe wird stärker, − schwächer.
+            </p>
+          </div>
+          <p
+            v-if="summary !== null"
+            class="border-t-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight"
+            data-testid="preview-summary"
+          >
+            {{ summary }}
+          </p>
+        </div>
       </div>
     </div>
   </section>

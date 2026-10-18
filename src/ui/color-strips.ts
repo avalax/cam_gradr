@@ -28,8 +28,9 @@ function fallback(reference: ReferenceSet | null, id: string): string {
   return lab === undefined ? NEUTRAL_SWATCH : cssColor(labToSrgb(lab));
 }
 
-// Farben der beiden Leisten in der Reihenfolge der Feld-IDs: links, was die Kamera von der Karte
-// sieht, rechts nach der Korrektur. Wo es keine Messung (oder kein Modell) gibt, steht der Sollwert.
+// Farben der beiden Ebenen in der Reihenfolge der Feld-IDs: links, was die Kamera von der Karte
+// sieht, rechts nach der Korrektur. Wo es keine Messung gibt, steht der Sollwert. Ohne Korrektur
+// (kein Modell) bleibt die rechte Seite gleich der linken, damit der Wischer allein nichts verändert.
 export function buildStrips(
   ids: readonly string[],
   measurements: Measurements,
@@ -41,15 +42,12 @@ export function buildStrips(
   for (const id of ids) {
     const measured: Vec3 | undefined = measurements[id];
     const standard = fallback(reference, id);
-    camera.push({
-      id,
-      css: measured === undefined ? standard : cssColor(measured),
-      measured: measured !== undefined,
-    });
+    const seen = measured === undefined ? standard : cssColor(measured);
+    camera.push({ id, css: seen, measured: measured !== undefined });
     const fixed = measured !== undefined && model !== null;
     corrected.push({
       id,
-      css: fixed ? cssColor(applyColorModel(model, measured)) : standard,
+      css: fixed ? cssColor(applyColorModel(model, measured)) : seen,
       measured: fixed,
     });
   }

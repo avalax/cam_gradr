@@ -4,16 +4,13 @@ import { computed, ref } from 'vue';
 
 import { CUBE_SIZES, formatCube } from '../lut/cube';
 import { downloadFile } from '../lut/download';
-import { blendLut, buildLut } from '../lut/lut';
-import { usePreviewStore } from '../lut/preview-store';
+import { buildLut } from '../lut/lut';
 import { useSolveStore } from '../solve/solve-store';
 
 const DEFAULT_SIZE = 33;
 
 const solve = useSolveStore();
-const preview = usePreviewStore();
 const { model } = storeToRefs(solve);
-const { strength } = storeToRefs(preview);
 
 const size = ref<number>(DEFAULT_SIZE);
 const savedAs = ref<string | null>(null);
@@ -25,13 +22,14 @@ function onSize(event: Event): void {
   savedAs.value = null;
 }
 
-// Die in der Vorschau gewählte Stärke wird fest in die LUT eingerechnet.
 function download(): void {
   const current = model.value;
   if (current !== null) {
-    const lut = blendLut(buildLut(current, size.value), strength.value / 100);
-    const title = `cam_gradr (Stärke ${String(strength.value)} %)`;
-    downloadFile(fileName.value, formatCube(lut, title), 'text/plain');
+    downloadFile(
+      fileName.value,
+      formatCube(buildLut(current, size.value), 'cam_gradr'),
+      'text/plain',
+    );
     savedAs.value = fileName.value;
   }
 }
@@ -66,11 +64,6 @@ function download(): void {
       <p class="text-xs text-slate-600">
         Welche Größe dein Gerät annimmt, steht in dessen Handbuch. Größere LUTs sind genauer, aber
         manche Geräte unterstützen nur 17³ oder 33³.
-      </p>
-
-      <p class="text-sm text-slate-700" data-testid="export-strength">
-        Stärke der Korrektur: {{ strength }} % (aus dem Tab „Vorschau“, wird fest in die LUT
-        eingerechnet)
       </p>
 
       <div class="flex flex-wrap items-center gap-3">

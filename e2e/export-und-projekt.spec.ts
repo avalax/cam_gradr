@@ -56,25 +56,6 @@ test.describe('Export', () => {
     expect(fileName).toBe('cam_gradr-17.cube');
     expect(parseCube(text).lut.size).toBe(17);
   });
-
-  test('Die Stärke aus der Vorschau wird fest eingerechnet', async ({ app }) => {
-    await app.computeColorModel();
-    await app.openTab('Vorschau');
-    await app.page.getByTestId('strength').fill('0');
-    await app.openTab('Export');
-    await expect(app.page.getByTestId('export-strength')).toContainText('0 %');
-
-    const { text } = await app.download(app.page.getByTestId('export-download'));
-
-    // Stärke 0 ergibt die Identität: jeder Eingabewert kommt unverändert wieder heraus.
-    const cube = parseCube(text);
-    const lab = dummyLab('1F');
-    const input = cameraCode(lab);
-    const output = sampleLut(cube.lut, input);
-    for (const [index, value] of input.entries()) {
-      expect(Math.abs((output[index] ?? 0) - value)).toBeLessThanOrEqual(0.002);
-    }
-  });
 });
 
 test.describe('Projekt', () => {
@@ -83,8 +64,13 @@ test.describe('Projekt', () => {
   }) => {
     await app.computeColorModel();
     await app.openTab('Vorschau');
-    await app.page.getByTestId('strength').fill('60');
-    await app.page.getByTestId('split').fill('30');
+    // Trennlinie per Tastatur auf 30 % setzen (Pos1, dann dreimal Umschalt + Pfeil rechts).
+    await app.page.getByTestId('wipe').focus();
+    await app.page.keyboard.press('Home');
+    for (let step = 0; step < 3; step++) {
+      await app.page.keyboard.press('Shift+ArrowRight');
+    }
+    await expect(app.page.getByTestId('wipe')).toHaveAttribute('aria-valuenow', '30');
 
     const { fileName, text } = await app.saveProject();
     expect(fileName).toBe('cam_gradr-projekt.json');
@@ -102,12 +88,13 @@ test.describe('Projekt', () => {
     await expect(app.page.getByTestId('report')).toBeVisible();
     // Vorschau und Einstellungen sind zurück, ohne dass etwas neu aufgenommen werden muss.
     await app.openTab('Vorschau');
-    await expect(app.page.getByTestId('strength')).toHaveValue('60');
-    await expect(app.page.getByTestId('split')).toHaveValue('30');
     await expect(app.page.getByTestId('preview-no-model')).toHaveCount(0);
+    // Der Wischer erscheint erst mit Bildquelle; die Lage der Trennlinie steckt wieder im Projekt.
+    const resaved = await app.saveProject();
+    expect(resaved.text).toMatch(/"split": 30/);
+    expect(resaved.text).not.toContain('strength');
     await app.openTab('Export');
     await expect(app.page.getByTestId('export-download')).toBeVisible();
-    await expect(app.page.getByTestId('export-strength')).toContainText('60 %');
   });
 
   test('Ohne den Referenzsatz bleibt das gespeicherte Modell nutzbar', async ({ app }) => {

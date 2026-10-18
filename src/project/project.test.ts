@@ -35,7 +35,7 @@ function sample(): Project {
     },
     color: { corners: {}, measurements, rotated: false, reference: 'Mein Satz' },
     model,
-    preview: { strength: 80, split: 25 },
+    preview: { split: 25 },
   };
 }
 
@@ -62,6 +62,14 @@ describe('parseProject', () => {
     expect(project.model).toBeNull();
     expect(project.color.reference).toBeNull();
     expect(project.savedAt).toBe('');
+  });
+
+  it('liest ältere Dateien mit Stärke und ignoriert sie', () => {
+    const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
+    raw.preview = { strength: 60, split: 25 };
+    const project = parseProject(JSON.stringify(raw));
+    expect(project.preview).toEqual({ split: 25 });
+    expect(serializeProject(project)).not.toContain('strength');
   });
 
   it('speichert keine Referenzwerte, nur deren Namen', () => {
@@ -121,7 +129,6 @@ describe('parseProject', () => {
 
   it('lehnt fehlerhafte Vorschau-Einstellungen ab', () => {
     rejects((raw) => delete raw.preview, 'Einstellungen fehlen');
-    rejects((raw) => (raw.preview.strength = 120), 'Stärke muss zwischen 0 und 100');
     rejects((raw) => (raw.preview.split = -1), 'Trennlinie muss zwischen 0 und 100');
     rejects((raw) => (raw.preview.split = 'x'), 'Trennlinie muss zwischen 0 und 100');
   });

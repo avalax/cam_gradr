@@ -63,7 +63,7 @@ describe('createCpuRenderer', () => {
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());
     const source = {} as HTMLVideoElement;
-    renderer.render(source, { strength: 1, split: 0 });
+    renderer.render(source, { split: 0 });
     expect(scratchCanvas.width).toBe(2);
     expect(scratchCanvas.height).toBe(1);
     expect(scratch.drawImage).toHaveBeenCalledWith(source, 0, 0, 2, 1);
@@ -71,26 +71,17 @@ describe('createCpuRenderer', () => {
     expect(output.putImageData).toHaveBeenCalledWith(image, 0, 0);
   });
 
-  it('mischt mit der gewählten Stärke', () => {
-    const { canvas, image } = setup();
-    const renderer = createCpuRenderer(canvas);
-    renderer.setLut(invertedLut());
-    renderer.render({} as HTMLVideoElement, { strength: 0.5, split: 0 });
-    // Halbe Stärke zwischen 51 und 204 liegt bei 127,5 und damit (gerundet) bei 128.
-    expect([...image.data]).toEqual([128, 128, 128, 255, 128, 128, 128, 255]);
-  });
-
   it('lässt links der Trennlinie das Original stehen', () => {
     const { canvas, image } = setup();
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());
-    renderer.render({} as HTMLVideoElement, { strength: 1, split: 0.5 });
+    renderer.render({} as HTMLVideoElement, { split: 0.5 });
     expect([...image.data]).toEqual([51, 51, 51, 255, 51, 51, 51, 255]);
   });
 
   it('zeichnet das Bild unverändert, solange keine LUT gesetzt ist', () => {
     const { canvas, image, output } = setup();
-    createCpuRenderer(canvas).render({} as HTMLVideoElement, { strength: 1, split: 0 });
+    createCpuRenderer(canvas).render({} as HTMLVideoElement, { split: 0 });
     expect([...image.data]).toEqual(INPUT);
     expect(output.putImageData).toHaveBeenCalledTimes(1);
   });
@@ -100,7 +91,7 @@ describe('createCpuRenderer', () => {
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());
     renderer.dispose();
-    renderer.render({} as HTMLVideoElement, { strength: 1, split: 0 });
+    renderer.render({} as HTMLVideoElement, { split: 0 });
     expect([...image.data]).toEqual(INPUT);
   });
 

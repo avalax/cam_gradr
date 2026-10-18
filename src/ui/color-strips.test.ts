@@ -42,12 +42,13 @@ describe('buildStrips', () => {
     expect(camera.map((swatch) => swatch.css)).toEqual([NEUTRAL_SWATCH, NEUTRAL_SWATCH]);
   });
 
-  it('zeigt links die gemessenen Farben, rechts ohne Modell weiter den Standardwert', () => {
+  it('zeigt links die gemessenen Farben und rechts ohne Modell genau dieselben', () => {
     const { camera, corrected } = buildStrips(IDS, { '1A': [1, 0, 0] }, null, REFERENCE);
     expect(camera[0]).toEqual({ id: '1A', css: 'rgb(255, 0, 0)', measured: true });
     expect(camera[1]?.measured).toBe(false);
     expect(corrected[0]?.measured).toBe(false);
-    expect(corrected[0]?.css).toBe(cssColor(labToSrgb([50, 20, -10])));
+    expect(corrected[0]?.css).toBe('rgb(255, 0, 0)');
+    expect(corrected[1]?.css).toBe(camera[1]?.css);
   });
 
   it('wendet das Korrekturmodell auf die gemessenen Farben an', () => {

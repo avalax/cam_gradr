@@ -25,7 +25,7 @@ export interface Project {
   color: ChartState & { reference: string | null };
   // Das berechnete Korrekturmodell; Referenzwerte (Herstellerdaten) werden bewusst nicht gespeichert.
   model: ColorModel | null;
-  preview: { strength: number; split: number };
+  preview: { split: number };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -173,7 +173,6 @@ export function parseProject(text: string): Project {
     color: { ...color, reference },
     model: parseModel(raw.model),
     preview: {
-      strength: parsePercent(raw.preview.strength, 'Stärke'),
       split: parsePercent(raw.preview.split, 'Trennlinie'),
     },
   };

@@ -48,7 +48,6 @@ async function workedState(): Promise<string> {
     reference: references.selected ?? { name: '', patches: {} },
     neutralIds: NEUTRAL_IDS,
   });
-  usePreviewStore().setStrength(70);
   usePreviewStore().setSplit(30);
   useProjectStore().save();
   return (download.mock.calls.at(-1) as [string, string, string])[1];
@@ -71,7 +70,7 @@ describe('useProjectStore', () => {
     expect(project.gray.measurements).toEqual(grayMeasurements);
     expect(project.color.corners).toEqual({ 1: [{ x: 3, y: 4 }] });
     expect(project.model).not.toBeNull();
-    expect(project.preview).toEqual({ strength: 70, split: 30 });
+    expect(project.preview).toEqual({ split: 30 });
     expect(Number.isNaN(Date.parse(project.savedAt))).toBe(false);
     expect(useProjectStore().notice).toContain('gespeichert');
     expect(text).not.toContain('"lab"');
@@ -92,7 +91,6 @@ describe('useProjectStore', () => {
     expect(useChartStore().measurements).toEqual(grayMeasurements);
     expect(useChartStore().exposure?.verdict).toBe('ok');
     expect(useColorChartStore().measurements).toEqual(colorMeasurements);
-    expect(usePreviewStore().strength).toBe(70);
     expect(usePreviewStore().split).toBe(30);
     expect(useReferenceStore().selectedName).toBe('Mein Satz');
     expect(useSolveStore().model).not.toBeNull();

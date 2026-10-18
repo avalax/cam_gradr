@@ -8,7 +8,7 @@ import { applyColorModel, fitColorModel } from '../solve/fit';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
 
-import { blendLut, buildLut, identityLut, sampleLut } from './lut';
+import { buildLut, identityLut, sampleLut } from './lut';
 
 const reference = {
   name: 'Test',
@@ -127,29 +127,5 @@ describe('sampleLut', () => {
     // Nur der Punkt (1,0,0) hat Rot 1: die Mitte der Kante liegt bei 0,5.
     lut.data[3] = 1;
     expect(sampleLut(lut, [0.5, 0, 0])[0]).toBeCloseTo(0.5, 6);
-  });
-});
-
-describe('blendLut', () => {
-  const lut = buildLut(model, 9);
-
-  it('liefert bei Stärke 0 die Identität und bei 1 die Korrektur', () => {
-    const none = blendLut(lut, 0);
-    const identity = identityLut(9);
-    expect([...none.data]).toEqual([...identity.data]);
-    expect([...blendLut(lut, 1).data]).toEqual([...lut.data]);
-  });
-
-  it('mischt dazwischen und begrenzt die Stärke auf 0..1', () => {
-    const half = blendLut(lut, 0.5);
-    const identity = identityLut(9);
-    for (const index of [30, 100, 500]) {
-      expect(half.data[index]).toBeCloseTo(
-        (Number(identity.data[index]) + Number(lut.data[index])) / 2,
-        6,
-      );
-    }
-    expect([...blendLut(lut, -2).data]).toEqual([...identity.data]);
-    expect([...blendLut(lut, 5).data]).toEqual([...lut.data]);
   });
 });

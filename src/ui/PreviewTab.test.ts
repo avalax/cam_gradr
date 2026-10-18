@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { usePreviewStore } from '../lut/preview-store';
@@ -73,7 +74,7 @@ describe('PreviewTab', () => {
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="preview-no-source"]').exists()).toBe(false);
-    expect(wrapper.find('[data-testid="split-line"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="wipe-line"]').exists()).toBe(false);
   });
 
   it('weist ohne Bildquelle auf Kamera oder Standbild hin', () => {
@@ -85,12 +86,11 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('Kamera');
   });
 
-  it('lädt die LUT und zeichnet das Standbild mit Stärke und Trennlinie', () => {
+  it('lädt die LUT und zeichnet das Standbild mit der Trennlinie', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
     useCameraStore().still = stillFrame();
-    usePreviewStore().setStrength(60);
     usePreviewStore().setSplit(25);
     const wrapper = mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
@@ -104,8 +104,8 @@ describe('PreviewTab', () => {
           value as number,
         ]),
     );
-    expect(floats).toMatchObject({ uLutSize: 33, uStrength: 0.6, uSplit: 0.25 });
-    expect(wrapper.get('[data-testid="split-line"]').attributes('style')).toContain('left: 25%');
+    expect(floats).toMatchObject({ uLutSize: 33, uSplit: 0.25 });
+    expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 25%');
     expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 8);
   });
 
@@ -163,17 +163,115 @@ describe('PreviewTab', () => {
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
   });
 
-  it('setzt Stärke und Trennlinie über die Regler', async () => {
+  it('setzt die Trennlinie über den Wischer und hat keinen Regler mehr', async () => {
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    useCameraStore().still = stillFrame();
+    const wrapper = mount(PreviewTab);
+    await wrapper.get('[data-testid="wipe"]').trigger('keydown', { key: 'End' });
+    expect(usePreviewStore().split).toBe(100);
+    expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 100%');
+    expect(wrapper.find('input[type="range"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Stärke');
+  });
+
+  it('zeigt zuerst die Farben: ein Raster der bunten Felder und die größten Abweichungen', () => {
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    useColorChartStore().measurements = measurements;
+    const wrapper = mount(PreviewTab);
+    const tiles = wrapper.get('[data-testid="color-tiles"]').findAll('[data-patch]');
+    expect(tiles).toHaveLength(48 - NEUTRAL_IDS.size);
+    expect(tiles.some((tile) => NEUTRAL_IDS.has(String(tile.attributes('data-patch'))))).toBe(
+      false,
+    );
+    expect(wrapper.get('[data-testid="view-colors"]').attributes('aria-pressed')).toBe('true');
+    expect(wrapper.get('[data-testid="view-grays"]').attributes('aria-pressed')).toBe('false');
+    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="worst-patches"]').text()).toMatch(
+      /^Größte Abweichung\s*\w\w \d+,\d · \w\w \d+,\d · \w\w \d+,\d$/,
+    );
+  });
+
+  it('schaltet auf die Graustufen um und wieder zurück auf die Farben', async () => {
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    useColorChartStore().measurements = measurements;
+    const wrapper = mount(PreviewTab);
+    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="view-grays"]').attributes('aria-pressed')).toBe('true');
+    await wrapper.get('[data-testid="view-colors"]').trigger('click');
+    expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
+  });
+
+  it('zeigt bei den Graustufen den Graukeil, die Änderungen je Tonbereich und das Ergebnis', async () => {
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    useColorChartStore().measurements = measurements;
+    const wrapper = mount(PreviewTab);
+    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    expect(wrapper.findAll('[data-column="camera"] [data-patch]')).toHaveLength(NEUTRAL_IDS.size);
+    expect(
+      wrapper
+        .get('[data-testid="zone-changes"]')
+        .findAll('dt')
+        .map((term) => term.text()),
+    ).toEqual(['Schatten', 'Mitten', 'Lichter']);
+    expect(wrapper.get('[data-testid="preview-summary"]').text()).toMatch(
+      /^Ø Abweichung [\d,]+ → [\d,]+$/,
+    );
+    expect(wrapper.find('[data-testid="preview-side-empty"]').exists()).toBe(false);
+  });
+
+  it('nennt Tonbereiche neutral, in denen die Korrektur keine Farbe verschiebt', async () => {
+    mockAnimation();
+    mockContexts();
+    const identity = {
+      curves: [
+        { xs: [0, 1], ys: [0, 1] },
+        { xs: [0, 1], ys: [0, 1] },
+        { xs: [0, 1], ys: [0, 1] },
+      ],
+      matrix: [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+      ],
+    } as const;
+    useSolveStore().loadModel(identity as never);
+    const wrapper = mount(PreviewTab);
+    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');
+    expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
+  });
+
+  it('sagt ohne Messung, dass für die Ansichten Farbkarten fehlen', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
     const wrapper = mount(PreviewTab);
-    await wrapper.get('[data-testid="strength"]').setValue('40');
-    await wrapper.get('[data-testid="split"]').setValue('70');
-    expect(usePreviewStore().strength).toBe(40);
-    expect(usePreviewStore().split).toBe(70);
-    expect(wrapper.text()).toContain('Stärke der Korrektur: 40 %');
-    expect(wrapper.text()).toContain('Trennlinie: 70 %');
+    expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain('Farbkarten');
+  });
+
+  it('zeigt ohne Korrektur nur den Hinweis und kein Ergebnis', () => {
+    mockAnimation();
+    mockContexts();
+    const wrapper = mount(PreviewTab);
+    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain(
+      'Noch keine Korrektur',
+    );
+    expect(wrapper.find('[data-testid="zone-changes"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
   });
 
   it('bindet einen laufenden Stream an und folgt einem neuen', async () => {

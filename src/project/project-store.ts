@@ -32,7 +32,7 @@ function snapshot(): Project {
       reference: useReferenceStore().selectedName,
     },
     model: useSolveStore().model,
-    preview: { strength: preview.strength, split: preview.split },
+    preview: { split: preview.split },
   };
 }
 
@@ -72,7 +72,6 @@ export const useProjectStore = defineStore('project', () => {
       rotated: project.color.rotated,
     });
     const preview = usePreviewStore();
-    preview.setStrength(project.preview.strength);
     preview.setSplit(project.preview.split);
 
     const references = useReferenceStore();
