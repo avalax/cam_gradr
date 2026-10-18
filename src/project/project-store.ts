@@ -60,7 +60,7 @@ export const useProjectStore = defineStore('project', () => {
       return;
     }
     error.value = null;
-    useCameraStore().clearStill();
+    useCameraStore().discardStills();
     useChartStore().restore({
       points: project.gray.corners,
       measurements: project.gray.measurements,

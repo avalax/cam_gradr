@@ -26,14 +26,13 @@ import {
   zoneChanges,
 } from './gray-wedge';
 import ColorTiles from './ColorTiles.vue';
+import { imageMaxWidth as maxWidthFor } from './image-size';
 import GrayWedge from './GrayWedge.vue';
-import { attachStream } from './video-bindings';
+import { attachStream, captureFromVideo } from './video-bindings';
 import WipeDivider from './WipeDivider.vue';
 
 // Stützstellen der LUT in der Vorschau; fein genug für glatte Verläufe, schnell genug zu berechnen.
 const PREVIEW_LUT_SIZE = 33;
-// Höhe (in rem) von allem außer dem Bild: Seitenkopf und Abstände.
-const CHROME_REM = 8;
 // Mindestens ein aktuelles Videobild liegt vor (HTMLMediaElement.HAVE_CURRENT_DATA).
 const HAVE_CURRENT_DATA = 2;
 
@@ -82,14 +81,14 @@ const CAST_COLORS: Readonly<Record<string, string>> = {
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const error = ref<string | null>(null);
+// Erst wenn das Video ein Bild liefert, ist eine Aufnahme sinnvoll.
+const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
 const lut = computed(() => (model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE)));
 const hasSource = computed(() => isLive.value || still.value !== null);
 const aspect = ref(16 / 9);
-const maxWidth = computed(
-  () => `calc((100vh - ${String(CHROME_REM)}rem) * ${String(aspect.value)})`,
-);
+const maxWidth = computed(() => maxWidthFor(aspect.value));
 
 const renderer = shallowRef<LutRenderer | null>(null);
 const stopLoop = shallowRef<(() => void) | null>(null);
@@ -106,8 +105,11 @@ function drawStill(): void {
   }
 }
 
-// Wählt die Bildquelle: das Livebild, sonst das Standbild.
+// Wählt die Bildquelle: das Standbild dieses Tabs, sonst das Livebild.
 function currentSource(): { image: RenderSource; width: number; height: number } | null {
+  if (still.value !== null && stillCanvas.width > 0) {
+    return { image: stillCanvas, width: stillCanvas.width, height: stillCanvas.height };
+  }
   const element = video.value;
   if (
     element !== null &&
@@ -117,10 +119,11 @@ function currentSource(): { image: RenderSource; width: number; height: number }
   ) {
     return { image: element, width: element.videoWidth, height: element.videoHeight };
   }
-  if (!isLive.value && still.value !== null && stillCanvas.width > 0) {
-    return { image: stillCanvas, width: stillCanvas.width, height: stillCanvas.height };
-  }
   return null;
+}
+
+function capture(): void {
+  void captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
 }
 
 function sizeKey(size: { width: number; height: number }): string {
@@ -173,6 +176,7 @@ onBeforeUnmount(() => {
 });
 
 watch(stream, (next) => {
+  videoReady.value = false;
   attachStream(video.value, next);
 });
 watch(still, drawStill);
@@ -204,12 +208,24 @@ const splitModel = computed({
         siehst du das Original, rechts das korrigierte Bild. Den Strich kannst du im Bild ziehen
         oder mit den Pfeiltasten verschieben.
       </p>
-      <p v-if="model === null" class="text-sm text-amber-800" data-testid="preview-no-model">
-        Es gibt noch keine Farbkorrektur. Berechne sie zuerst im Tab „Farbkarten“.
-      </p>
-      <p v-else-if="!hasSource" class="text-sm text-amber-800" data-testid="preview-no-source">
-        Schalte oben die Kamera an oder nimm in einem Kartentab ein Standbild auf.
-      </p>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="rounded bg-emerald-700 px-3 py-1 text-sm text-white disabled:opacity-50"
+          :disabled="!isLive || !videoReady"
+          @click="capture"
+        >
+          {{ still === null ? 'Standbild aufnehmen' : 'Neues Standbild aufnehmen' }}
+        </button>
+        <button
+          v-if="still !== null"
+          type="button"
+          class="rounded border px-3 py-1 text-sm"
+          @click="camera.clearStill()"
+        >
+          Zurück zum Livebild
+        </button>
+      </div>
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
       <p
         v-if="renderer !== null"
@@ -230,7 +246,52 @@ const splitModel = computed({
       <div class="flex items-stretch gap-3">
         <div class="relative min-w-0 flex-1" :style="{ maxWidth: maxWidth }">
           <!-- Das Video dient nur als Bildquelle und bleibt unsichtbar. -->
-          <video ref="video" class="hidden" muted playsinline></video>
+          <video
+            ref="video"
+            class="hidden"
+            muted
+            playsinline
+            @loadeddata="videoReady = true"
+          ></video>
+          <!-- Platzhalter in der Größe des Bildes, solange es nichts zu zeigen gibt. -->
+          <div
+            v-if="model === null || !hasSource"
+            class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+            :style="{ aspectRatio: aspect }"
+            data-testid="preview-placeholder"
+          >
+            <svg
+              class="w-28 text-zinc-400"
+              viewBox="0 0 96 60"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <rect x="2" y="2" width="92" height="56" rx="5" />
+              <path
+                d="M3 56 L3 3 H47 V56 Z"
+                fill="currentColor"
+                fill-opacity="0.25"
+                stroke="none"
+              />
+              <path d="M48 2 V58" stroke-width="3" />
+              <circle cx="48" cy="30" r="5" fill="currentColor" stroke="none" />
+            </svg>
+            <p
+              v-if="model === null"
+              class="max-w-xs text-sm leading-snug"
+              data-testid="preview-no-model"
+            >
+              <span class="block font-semibold text-zinc-800">Noch keine Farbkorrektur</span>
+              Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und
+              nachher.
+            </p>
+            <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
+              <span class="block font-semibold text-zinc-800">Noch kein Bild</span>
+              Schalte oben die Kamera an, um das Livebild zu sehen oder ein Standbild aufzunehmen.
+            </p>
+          </div>
           <canvas
             v-show="model !== null && hasSource"
             ref="canvas"

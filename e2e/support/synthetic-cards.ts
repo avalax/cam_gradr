@@ -5,11 +5,11 @@ import { parseLayout } from '../../src/chart/layout';
 import { dummyLab } from '../../src/test-support/dummy-reference';
 import { cameraCode } from '../../src/test-support/synthetic-camera';
 
-export const WIDTH = 1280;
-export const HEIGHT = 720;
+const WIDTH = 1280;
+const HEIGHT = 720;
 
 // Pixelrechtecke der Kartenpaare im synthetischen Kamerabild (Graukarten 3 und 4, Farbkarten 1 und 2).
-export const CARD_PIXELS = {
+const CARD_PIXELS = {
   1: { x: 100, y: 50, w: 400, h: 600 },
   2: { x: 700, y: 50, w: 400, h: 600 },
   3: { x: 100, y: 50, w: 400, h: 600 },

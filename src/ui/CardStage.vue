@@ -18,9 +18,10 @@ import type { ChartStore } from '../chart/chart-store';
 import { detectCards, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
+import { imageMaxWidth as maxWidthFor } from './image-size';
 import { frameGrid, measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
 import { guideCorners } from './guide';
-import { buildShapes, clientToImage, instructionFor } from './overlay-geometry';
+import { buildShapes, clientToImage } from './overlay-geometry';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
 
 const props = defineProps<{
@@ -34,9 +35,6 @@ const props = defineProps<{
   liveMeasure: boolean;
 }>();
 
-// Höhe (in rem) von allem außer dem Bild: Seitenkopf, Hinweiszeile, Knopfleiste und Abstände.
-const CHROME_REM = 12;
-
 // Automatik im Livebild: so oft wird nach den Karten gesucht, und so oft hintereinander müssen sie
 // gefunden werden, bevor das Standbild aufgenommen wird (ein verwackeltes Bild zählt nicht).
 const AUTO_INTERVAL_MS = 1000;
@@ -46,8 +44,8 @@ const AUTO_CONFIRMATIONS = 2;
 const STEADY_SHARE = 0.02;
 
 const camera = useCameraStore();
-const { stream, actual, status, still, autoDetect } = storeToRefs(camera);
-const { points, nextSlot, ready, corners, rotated } = storeToRefs(props.store);
+const { stream, actual, status, still } = storeToRefs(camera);
+const { points, ready, corners, rotated } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -62,8 +60,9 @@ const size = computed(() => still.value ?? actual.value ?? { width: 1280, height
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
 // Hilfsrahmen, solange noch keine Eckpunkte gesetzt sind.
 const noPoints = computed(() => Object.keys(points.value).length === 0);
+// Hilfsrahmen nur im Livebild: Bei ausgeschalteter Kamera zeigt der Platzhalter das Wichtige.
 const guides = computed(() =>
-  noPoints.value
+  noPoints.value && isLive.value
     ? guideCorners(size.value, props.layout.cards.length).map((corners, index) => {
         const card = Number(props.layout.cards[index]?.card);
         return {
@@ -75,9 +74,9 @@ const guides = computed(() =>
       })
     : [],
 );
-// Die Automatik sucht nur im laufenden Livebild, solange noch keine Eckpunkte gesetzt sind.
+// Die Automatik sucht im laufenden Livebild, solange noch keine Eckpunkte gesetzt sind.
 const autoActive = computed(
-  () => autoDetect.value && isLive.value && videoReady.value && !showStill.value && noPoints.value,
+  () => isLive.value && videoReady.value && !showStill.value && noPoints.value,
 );
 const shapes = computed(() => buildShapes(props.layout, corners.value));
 const handles = computed(() =>
@@ -89,23 +88,11 @@ const handles = computed(() =>
 );
 // Bild und Knöpfe sollen zusammen auf einen Bildschirm passen: die Bildhöhe ist auf die Fensterhöhe
 // abzüglich Kopfzeile, Hinweiszeile und Knopfleiste begrenzt (Breite = Höhe × Seitenverhältnis).
-const imageMaxWidth = computed(
-  () =>
-    `calc((100vh - ${String(CHROME_REM)}rem) * ${String(size.value.width / size.value.height)})`,
-);
-const instruction = computed(() =>
-  showStill.value ? instructionFor(nextSlot.value, props.cardNames) : props.idleText,
-);
+const imageMaxWidth = computed(() => maxWidthFor(size.value.width / size.value.height));
 
 function imagePoint(event: PointerEvent | MouseEvent) {
   const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
   return clientToImage({ x: event.clientX, y: event.clientY }, rect, size.value);
-}
-
-function onClick(event: MouseEvent): void {
-  if (showStill.value) {
-    props.store.addCorner(imagePoint(event));
-  }
 }
 
 function onMove(event: PointerEvent): void {
@@ -119,33 +106,6 @@ function endDrag(): void {
   dragging.value = null;
 }
 
-function detect(): void {
-  const frame = still.value;
-  /* v8 ignore next 4 -- der Knopf erscheint nur mit Standbild */
-  if (frame === null) {
-    return;
-  }
-  const found = detectCards(frame, props.layout.cards.length);
-  if (found === null) {
-    detectMessage.value =
-      'Die Karten wurden nicht sicher erkannt. Bitte setze die Eckpunkte von Hand.';
-  } else {
-    props.store.setCards(found);
-    detectMessage.value =
-      'Die Karten wurden erkannt. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.';
-  }
-}
-
-function alignToGuides(): void {
-  props.store.setCards(guideCorners(size.value, props.layout.cards.length));
-  detectMessage.value =
-    'Die Eckpunkte sitzen auf den Rahmen. Ziehe sie bei Bedarf auf die Kartenecken.';
-}
-
-function capture(): void {
-  void captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
-}
-
 function drawStill(frame: Frame | null): void {
   const element = canvas.value;
   const context = element?.getContext('2d');
@@ -153,6 +113,16 @@ function drawStill(frame: Frame | null): void {
     element.width = frame.width;
     element.height = frame.height;
     drawFrame(context, frame);
+  }
+}
+
+// Verwirft Eckpunkte und Standbild und schaltet die Kamera ein, falls sie aus ist (die Automatik
+// schaltet sie nach der Aufnahme aus): Im Livebild beginnt die Suche von vorn.
+function redetect(): void {
+  props.store.reset();
+  camera.clearStill();
+  if (!isLive.value) {
+    void camera.start();
   }
 }
 
@@ -256,21 +226,43 @@ watch(actual, (next, previous) => {
 
 <template>
   <div class="space-y-4">
-    <p v-if="!isLive && !showStill" class="text-sm text-amber-800">
-      Die Kamera ist aus. Schalte sie oben mit „Kamera“ ein, um ein Standbild aufzunehmen.
-    </p>
-    <p v-else-if="!videoReady" class="text-sm text-slate-600">
-      Die Kamera startet, einen Moment bitte …
-    </p>
-
-    <p class="text-sm font-medium" aria-live="polite">{{ instruction }}</p>
-
     <div class="flex items-stretch gap-3">
       <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
+        <!-- Platzhalter in der Größe des Bildes, solange die Kamera aus ist und es kein Standbild gibt. -->
+        <div
+          v-if="!isLive && !showStill"
+          class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+          :style="{ aspectRatio: size.width / size.height }"
+          data-testid="card-placeholder"
+        >
+          <svg
+            class="w-28 text-zinc-400"
+            viewBox="0 0 96 60"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-dasharray="5 4"
+            aria-hidden="true"
+          >
+            <rect x="14" y="3" width="30" height="54" rx="4" />
+            <rect x="52" y="3" width="30" height="54" rx="4" />
+          </svg>
+          <p class="max-w-xs text-sm leading-snug">
+            <template v-if="status === 'starting'">
+              <span class="block font-semibold text-zinc-800">Die Kamera startet …</span>
+              Einen Moment bitte.
+            </template>
+            <template v-else>
+              <span class="block font-semibold text-zinc-800">Die Kamera ist aus</span>
+              Schalte sie oben mit „Kamera“ ein. {{ idleText }}
+            </template>
+          </p>
+        </div>
         <video
-          v-show="!showStill"
+          v-show="isLive && !showStill"
           ref="video"
           class="w-full rounded bg-black"
+          :style="{ aspectRatio: size.width / size.height }"
           muted
           playsinline
           @loadeddata="videoReady = true"
@@ -280,9 +272,7 @@ watch(actual, (next, previous) => {
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <svg
           class="absolute inset-0 h-full w-full touch-none"
-          :class="showStill ? 'cursor-crosshair' : ''"
           :viewBox="viewBox"
-          @click="onClick"
           @pointermove="onMove"
           @pointerup="endDrag"
           @pointerleave="endDrag"
@@ -329,7 +319,6 @@ watch(actual, (next, previous) => {
             stroke-width="2"
             class="cursor-move"
             @pointerdown.stop="dragging = { card: handle.card, index: handle.index }"
-            @click.stop
           />
           <text
             v-for="handle in handles"
@@ -348,6 +337,59 @@ watch(actual, (next, previous) => {
             {{ handle.index + 1 }}
           </text>
         </svg>
+        <!-- Symbolleiste in der Bildecke: zurück zum Livebild (nur mit Standbild) und Eckpunkte löschen. -->
+        <div
+          v-if="showStill || !noPoints"
+          class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
+          role="toolbar"
+          aria-label="Bildaktionen"
+        >
+          <button
+            v-if="showStill"
+            type="button"
+            class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
+            aria-label="Zurück zum Livebild"
+            title="Zurück zum Livebild"
+            @click="camera.clearStill()"
+          >
+            <svg
+              class="size-[18px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 8a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 10l5-3v10l-5-3"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="grid h-9 w-10 place-items-center border-l border-zinc-300 first:border-l-0 hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
+            aria-label="Eckpunkte löschen"
+            title="Eckpunkte löschen und die Karten neu erkennen"
+            @click="redetect"
+          >
+            <svg
+              class="size-[18px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       <slot name="side" />
     </div>
@@ -366,48 +408,5 @@ watch(actual, (next, previous) => {
     <p v-if="detectMessage !== null" class="text-sm text-slate-700" data-testid="detect-message">
       {{ detectMessage }}
     </p>
-
-    <div class="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        class="rounded bg-emerald-700 px-3 py-1 text-sm text-white disabled:opacity-50"
-        :disabled="!isLive || !videoReady"
-        @click="capture"
-      >
-        {{ showStill ? 'Neues Standbild aufnehmen' : 'Standbild aufnehmen' }}
-      </button>
-      <button
-        v-if="showStill"
-        type="button"
-        class="rounded border px-3 py-1 text-sm"
-        @click="camera.clearStill()"
-      >
-        Zurück zum Livebild
-      </button>
-      <button
-        v-if="showStill"
-        type="button"
-        class="rounded border px-3 py-1 text-sm"
-        @click="alignToGuides"
-      >
-        Eckpunkte auf Rahmen setzen
-      </button>
-      <button
-        v-if="showStill"
-        type="button"
-        class="rounded border px-3 py-1 text-sm"
-        @click="detect"
-      >
-        Karten automatisch erkennen
-      </button>
-      <button type="button" class="rounded border px-3 py-1 text-sm" @click="store.reset()">
-        Eckpunkte zurücksetzen
-      </button>
-      <label class="flex items-center gap-2 text-sm">
-        <input v-model="autoDetect" type="checkbox" />
-        Karten im Livebild automatisch erkennen
-      </label>
-      <slot name="actions" />
-    </div>
   </div>
 </template>

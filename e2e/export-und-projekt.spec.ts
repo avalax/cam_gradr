@@ -63,7 +63,7 @@ test.describe('Projekt', () => {
     app,
   }) => {
     await app.computeColorModel();
-    await app.openTab('Vorschau');
+    await app.openPreviewWithImage();
     // Trennlinie per Tastatur auf 30 % setzen (Pos1, dann dreimal Umschalt + Pfeil rechts).
     await app.page.getByTestId('wipe').focus();
     await app.page.keyboard.press('Home');
@@ -87,7 +87,7 @@ test.describe('Projekt', () => {
     await app.openTab('Farbkarten');
     await expect(app.page.getByTestId('report')).toBeVisible();
     // Vorschau und Einstellungen sind zurück, ohne dass etwas neu aufgenommen werden muss.
-    await app.openTab('Vorschau');
+    await app.openPreviewWithImage();
     await expect(app.page.getByTestId('preview-no-model')).toHaveCount(0);
     // Der Wischer erscheint erst mit Bildquelle; die Lage der Trennlinie steckt wieder im Projekt.
     const resaved = await app.saveProject();
@@ -149,7 +149,7 @@ test.describe('Projekt', () => {
     await app.loadProject(text);
     await app.startCamera();
     await app.showCards('colors');
-    await app.openTab('Vorschau');
+    await app.openPreviewWithImage();
 
     const patch = '1F';
     const { x, y } = colorPatchCenter(patch);

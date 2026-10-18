@@ -86,6 +86,35 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('Kamera');
   });
 
+  it('nimmt im Livebild ein Standbild auf und kehrt zum Livebild zurück', async () => {
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    const camera = useCameraStore();
+    const capture = vi.spyOn(camera, 'captureStill').mockResolvedValue();
+    const wrapper = mount(PreviewTab);
+    const take = wrapper.findAll('button').find((b) => b.text() === 'Standbild aufnehmen');
+    expect(take?.attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).not.toContain('Zurück zum Livebild');
+
+    await camera.start();
+    await flushPromises();
+    expect(take?.attributes('disabled')).toBeDefined();
+    await wrapper.get('video').trigger('loadeddata');
+    expect(take?.attributes('disabled')).toBeUndefined();
+    await take?.trigger('click');
+    expect(capture).toHaveBeenCalledTimes(1);
+
+    camera.still = stillFrame();
+    await flushPromises();
+    expect(wrapper.text()).toContain('Neues Standbild aufnehmen');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Zurück zum Livebild')
+      ?.trigger('click');
+    expect(camera.still).toBeNull();
+  });
+
   it('lädt die LUT und zeichnet das Standbild mit der Trennlinie', () => {
     const animation = mockAnimation();
     const fake = mockContexts();

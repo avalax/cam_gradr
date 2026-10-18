@@ -31,8 +31,8 @@ export const useCameraStore = defineStore('camera', () => {
   const stream = shallowRef<MediaStream | null>(null);
   const actual = ref<Resolution | null>(null);
   const still = shallowRef<Frame | null>(null);
-  // Nimmt im Livebild selbst ein Standbild auf, sobald die Karten erkannt sind.
-  const autoDetect = ref(true);
+  // Standbilder der Tabs, die gerade nicht angezeigt werden (je Tab eines).
+  const parked = shallowRef<Readonly<Record<string, Frame>>>({});
   let session: CameraSession | null = null;
 
   function release(): void {
@@ -46,6 +46,7 @@ export const useCameraStore = defineStore('camera', () => {
 
   async function start(): Promise<void> {
     release();
+    // Ein Kamerastart betrifft nur das Standbild des aktiven Tabs.
     still.value = null;
     status.value = 'starting';
     errorMessage.value = null;
@@ -83,8 +84,23 @@ export const useCameraStore = defineStore('camera', () => {
     }
   }
 
+  // Verwirft das Standbild des aktiven Tabs.
   function clearStill(): void {
     still.value = null;
+  }
+
+  // Verwirft die Standbilder aller Tabs (Projekt laden).
+  function discardStills(): void {
+    still.value = null;
+    parked.value = {};
+  }
+
+  // Wechsel zwischen zwei Tabs: Das Standbild von `from` wird abgelegt und das von `to` (falls
+  // vorhanden) angezeigt, damit keiner sein Bild verliert.
+  function swapStill(from: string, to: string): void {
+    const { [to]: next, ...rest } = parked.value;
+    parked.value = still.value === null ? rest : { ...rest, [from]: still.value };
+    still.value = next ?? null;
   }
 
   async function captureStill(grabber: FrameGrabber, count = STILL_FRAME_COUNT): Promise<void> {
@@ -105,12 +121,13 @@ export const useCameraStore = defineStore('camera', () => {
     stream,
     actual,
     still,
-    autoDetect,
     start,
     stop,
     selectDevice,
     selectResolution,
     captureStill,
     clearStill,
+    discardStills,
+    swapStill,
   };
 });

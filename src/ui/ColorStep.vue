@@ -29,8 +29,7 @@ const CARD_NAMES = {
   1: 'linke Farbkarte (Spalten A–D)',
   2: 'rechte Farbkarte (Spalten E–H)',
 };
-const IDLE_TEXT =
-  'Beide Farbkarten ruhig vor die Kamera halten und ein Standbild aufnehmen. Die Eckpunkte werden danach auf dem Standbild gesetzt.';
+const IDLE_TEXT = 'Beide Farbkarten ruhig in die Rahmen vor die Kamera halten.';
 
 function compute(): void {
   if (selected.value !== null) {
@@ -56,9 +55,10 @@ watch([measurements, selected], () => {
     <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
       <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
         <p class="text-sm text-slate-700">
-          Dieser Tab berechnet die Farbkorrektur. Nimm ein Standbild der beiden Farbkarten auf,
-          markiere die Eckpunkte. Die Farbkorrektur wird dann automatisch berechnet und bei jeder
-          Änderung der Eckpunkte neu.
+          Dieser Tab berechnet die Farbkorrektur. Halte die beiden Farbkarten in die Rahmen: Die App
+          erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei
+          Bedarf zurecht. Die Farbkorrektur wird dann automatisch berechnet und bei jeder Änderung
+          der Eckpunkte neu.
         </p>
         <p v-if="selected !== null" class="text-sm text-slate-700" data-testid="reference-active">
           Referenzwerte: {{ selected.name }} ({{ Object.keys(selected.patches).length }} Felder).

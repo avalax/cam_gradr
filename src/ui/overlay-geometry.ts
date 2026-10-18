@@ -20,8 +20,6 @@ export interface Shape {
   kind: 'card' | 'large' | 'strip';
 }
 
-const CORNER_LABELS = ['oben links', 'oben rechts', 'unten rechts', 'unten links'] as const;
-
 function clamp(value: number, max: number): number {
   return Math.min(Math.max(value, 0), max);
 }
@@ -74,17 +72,4 @@ export function buildShapes(
     }
   }
   return shapes;
-}
-
-// Anweisung für den nächsten Eckpunkt; ohne freien Platz eine Erfolgsmeldung.
-export function instructionFor(
-  slot: { card: number; index: number } | null,
-  cardNames: Readonly<Record<number, string>>,
-): string {
-  if (slot === null) {
-    return 'Alle Eckpunkte sind gesetzt. Sie lassen sich per Ziehen verschieben.';
-  }
-  const label = CORNER_LABELS[slot.index] ?? '';
-  const name = cardNames[slot.card] ?? `Karte ${String(slot.card)}`;
-  return `Bitte ${label} der ${name} anklicken (äußerer Rand der dunklen Kartenfläche).`;
 }

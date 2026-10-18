@@ -84,13 +84,18 @@ export async function installSyntheticCamera(page: Page, lighting: LightingName)
   });
 }
 
-// Hält andere Karten vor die Kamera und wartet, bis das neue Bild im Videoelement ankommt.
-export async function showScene(page: Page, name: SceneName): Promise<void> {
+// Stellt die Szene ein, ohne auf das Videobild zu warten (die Kamera kann noch aus sein).
+export async function setScene(page: Page, name: SceneName): Promise<void> {
   await page.evaluate((scene) => {
     (globalThis as unknown as { setSyntheticScene: (name: string) => void }).setSyntheticScene(
       scene,
     );
   }, name);
+}
+
+// Hält andere Karten vor die Kamera und wartet, bis das neue Bild im Videoelement ankommt.
+export async function showScene(page: Page, name: SceneName): Promise<void> {
+  await setScene(page, name);
   // Prüfpunkt: Mitte des zuletzt gezeichneten Feldes der Szene.
   const probe = sceneFor(name).rects.at(-1);
   if (probe === undefined) {

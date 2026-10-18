@@ -6,9 +6,7 @@ import { expect, test } from './support/fixtures';
 test.describe('Graukarten: Raum passt', () => {
   test.use({ lighting: 'ok' });
 
-  test('Punkt steht im Normalbereich, danach geht es mit den Farbkarten weiter', async ({
-    app,
-  }) => {
+  test('Der Punkt steht im Normalbereich', async ({ app }) => {
     const { page } = app;
     await app.open();
 
@@ -20,60 +18,37 @@ test.describe('Graukarten: Raum passt', () => {
     await app.closeSettings();
     await app.openTab('Graukarten');
     await app.captureStill();
-    await expect(page.getByText('oben links der linke Graukarte (50 %)')).toBeVisible();
 
-    await app.placeAllCorners();
+    await app.expectCorners();
     await app.expectVerdict('im Normalbereich');
     await expect(app.details).toContainText('Lichter');
-
-    await app.button('Weiter zu den Farbkarten').click();
-    await expect(page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Farbkarten' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
   });
 
-  for (const [name, order] of [
-    ['im Uhrzeigersinn', [0, 1, 2, 3]],
-    ['gegen den Uhrzeigersinn', [0, 3, 2, 1]],
-    ['beginnend unten rechts', [2, 3, 0, 1]],
-  ] as const) {
-    test(`Das Layout liegt richtig auf beiden Karten (Ecken ${name})`, async ({ app }) => {
-      await app.open();
-      await app.startGrayStage();
-      await app.captureStill();
-      await app.placeAllCorners(order);
-
-      // Große Felder sind hochkant; links der Karte steht der Streifen bei der rechten Karte (18 %),
-      // rechts neben dem großen Feld bei der linken Karte (50 %).
-      const [g50, g18, s3, s4] = [
-        await app.shapeBox('G50'),
-        await app.shapeBox('G18'),
-        await app.shapeBox('S3-0'),
-        await app.shapeBox('S4-0'),
-      ];
-      expect(g50.height).toBeGreaterThan(g50.width);
-      expect(g18.height).toBeGreaterThan(g18.width);
-      expect(s3.x).toBeGreaterThan(g50.x);
-      expect(s4.x).toBeLessThan(g18.x);
-    });
-  }
-
-  test('Die Reihenfolge der Eckpunkte ist egal', async ({ app }) => {
+  test('Das Layout liegt richtig auf beiden Karten', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    // oben links, unten links, unten rechts, oben rechts (gegen den Uhrzeigersinn)
-    await app.placeAllCorners([0, 3, 2, 1]);
-    await app.expectVerdict('im Normalbereich');
+    await app.expectCorners();
+
+    // Große Felder sind hochkant; links der Karte steht der Streifen bei der rechten Karte (18 %),
+    // rechts neben dem großen Feld bei der linken Karte (50 %).
+    const [g50, g18, s3, s4] = [
+      await app.shapeBox('G50'),
+      await app.shapeBox('G18'),
+      await app.shapeBox('S3-0'),
+      await app.shapeBox('S4-0'),
+    ];
+    expect(g50.height).toBeGreaterThan(g50.width);
+    expect(g18.height).toBeGreaterThan(g18.width);
+    expect(s3.x).toBeGreaterThan(g50.x);
+    expect(s4.x).toBeLessThan(g18.x);
   });
 
   test('Details des Messfelds erscheinen nur beim Überfahren oder Fokussieren', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await app.placeAllCorners();
+    await app.expectCorners();
 
     await expect(app.details).toBeHidden();
     await app.scale.hover();
@@ -109,9 +84,9 @@ test.describe('Graukarten: Raum passt', () => {
         await app.startCamera();
         await app.openTab('Graukarten');
 
-        const capture = await app.button('Standbild aufnehmen').boundingBox();
-        expect(capture?.y).toBeGreaterThan(0);
-        expect((capture?.y ?? 0) + (capture?.height ?? 0)).toBeLessThanOrEqual(height);
+        const image = await app.overlay.boundingBox();
+        expect(image?.y).toBeGreaterThan(0);
+        expect((image?.y ?? 0) + (image?.height ?? 0)).toBeLessThanOrEqual(height);
         const overflow = await app.page.evaluate(
           () => document.documentElement.scrollHeight - window.innerHeight,
         );
@@ -124,52 +99,43 @@ test.describe('Graukarten: Raum passt', () => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await app.placeAllCorners();
+    await app.expectCorners();
     await app.expectVerdict('im Normalbereich');
 
     await app.button('Zurück zum Livebild').click();
+    await app.startCamera();
     await expect(app.page.locator('video')).toBeVisible();
     await expect(app.button('Zurück zum Livebild')).toBeHidden();
     await app.expectVerdict('im Normalbereich');
   });
 
-  test('Eckpunkte lassen sich zurücksetzen', async ({ app }) => {
+  test('Mit „Eckpunkte löschen“ beginnt die automatische Suche von vorn', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await app.placeAllCorners();
+    await app.expectCorners();
 
-    await app.button('Eckpunkte zurücksetzen').click();
-    await expect(app.page.locator('svg circle')).toHaveCount(0);
-    await app.expectVerdict('Noch keine Messung');
-    await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
-  });
+    await app.button('Eckpunkte löschen').click();
+    await expect(app.button('Zurück zum Livebild')).toBeHidden();
+    await expect(app.page.getByTestId('auto-hint')).toBeVisible();
+    await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
 
-  test('Eckpunkte setzt man nur auf dem Standbild', async ({ app }) => {
-    await app.open();
-    await app.startGrayStage();
-
-    const box = await app.overlay.boundingBox();
-    expect(box).not.toBeNull();
-    await app.page.mouse.click((box?.x ?? 0) + 50, (box?.y ?? 0) + 50);
-    await expect(app.page.locator('svg circle')).toHaveCount(0);
-    await expect(
-      app.page.getByText('ruhig vor die Kamera halten und ein Standbild aufnehmen'),
-    ).toBeVisible();
+    await app.captureStill();
+    await app.expectCorners();
+    await app.expectVerdict('im Normalbereich');
   });
 });
 
 test.describe('Graukarten: Raum zu dunkel', () => {
   test.use({ lighting: 'dark' });
 
-  test('Ampel verlangt mehr Licht, Weiter bleibt gesperrt', async ({ app }) => {
+  test('Ampel verlangt mehr Licht', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await app.placeAllCorners();
+    await app.expectCorners();
 
     await app.expectVerdict('Helligkeit erhöhen');
-    await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
 
@@ -180,12 +146,11 @@ test.describe('Graukarten: Raum zu hell', () => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await app.placeAllCorners();
+    await app.expectCorners();
 
     await app.expectVerdict('Helligkeit verringern');
     await expect(app.details).toContainText('überbelichtet');
     await expect(app.page.getByTestId('measure-issue')).toContainText('Helligkeit zu hoch');
-    await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
 
@@ -195,7 +160,7 @@ test.describe('Graukarten: automatische Aufnahme', () => {
   test('Die App nimmt das Standbild selbst auf, sobald die Karten im Bild sind', async ({
     app,
   }) => {
-    await app.open({ autoDetect: true });
+    await app.open();
     await app.startCamera();
     await app.openTab('Graukarten');
     await expect(app.page.getByTestId('auto-hint')).toBeVisible();
@@ -209,34 +174,13 @@ test.describe('Graukarten: automatische Aufnahme', () => {
 });
 
 test.describe('Graukarten: Hilfsrahmen', () => {
-  test('Das Livebild zeigt, wo die Karten hingehalten werden sollen, ein Knopf übernimmt die Rahmen', async ({
-    app,
-  }) => {
+  test('Das Livebild zeigt, wo die Karten hingehalten werden sollen', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await expect(app.page.getByTestId('guide')).toHaveCount(2);
 
     await app.captureStill();
-    await app.button('Eckpunkte auf Rahmen setzen').click();
-
-    await expect(app.page.locator('svg circle')).toHaveCount(8);
     await expect(app.page.getByTestId('guide')).toHaveCount(0);
-  });
-});
-
-test.describe('Graukarten: automatische Erkennung', () => {
-  test.use({ lighting: 'ok' });
-
-  test('Ein Knopf setzt die Eckpunkte beider Karten selbst', async ({ app }) => {
-    await app.open();
-    await app.startGrayStage();
-    await app.captureStill();
-
-    await app.button('Karten automatisch erkennen').click();
-
-    await expect(app.page.locator('svg circle')).toHaveCount(8);
-    await expect(app.page.getByTestId('detect-message')).toContainText('erkannt');
-    await app.expectVerdict('im Normalbereich');
   });
 });
 
@@ -250,9 +194,7 @@ test.describe('Graukarten: Messfeld', () => {
     await app.startGrayStage();
     await app.captureStill();
     await expect(app.scale).toBeVisible();
-    await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
-
-    await app.placeAllCorners();
+    await app.expectCorners();
 
     await expect(app.page.getByTestId('measure-marker')).toBeVisible();
     await app.expectVerdict('im Normalbereich');
