@@ -96,6 +96,12 @@ npm run verify:all    # verify und e2e zusammen
 
 Die Kamera funktioniert nur über `localhost` oder HTTPS.
 
+### Arbeitsablauf
+
+`main` ist geschützt: Änderungen kommen über Pull Requests, die CI (`verify` und `acceptance`) muss grün
+sein, und der Titel des Pull Requests ist ein Conventional-Commit-Titel (Squash-Merge). Details stehen in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Qualitätssicherung
 
 - **Tests:** Vitest mit mindestens **99 % Coverage** (Statements, Branches, Functions, Lines). Fällt die
