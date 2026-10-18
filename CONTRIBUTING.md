@@ -29,8 +29,10 @@ Prüfungen `verify` und `acceptance` der CI müssen grün sein.
 5. Mit **„Squash and merge“** zusammenführen. Der **Titel des Pull Requests** wird zur Commit-Nachricht
    auf `main` und steuert Changelog und Version (release-please). Er muss deshalb ein gültiger
    Conventional-Commit-Titel sein, zum Beispiel `feat(ui): neue Helligkeitsskala`; der Workflow
-   `pr-title` prüft das. Ein normaler Merge-Commit würde im Changelog doppelte Einträge erzeugen
-   (der Merge-Commit trägt den Titel des Pull Requests zusätzlich zu den Commits des Branches).
+   `pr-title` prüft das. Ein normaler Merge-Commit ist in begründeten Fällen erlaubt, etwa wenn mehrere Commits je ihre
+   eigene Aussage im Changelog haben sollen. Er erzeugt dort aber einen zusätzlichen Eintrag (der
+   Merge-Commit trägt den Titel des Pull Requests zusätzlich zu den Commits des Branches); deshalb
+   ist Squash der Normalfall.
 
 ## Prüfungen lokal ausführen
 
