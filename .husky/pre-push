@@ -1,1 +1,9 @@
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" = "main" ] && [ -z "$ALLOW_MAIN_PUSH" ]; then
+  echo "Direkte Pushes auf main sind nicht vorgesehen (Pull-Request-Pflicht)."
+  echo "Bitte einen Branch anlegen und einen Pull Request öffnen, siehe CONTRIBUTING.md."
+  echo "Ausnahme in Notfällen: ALLOW_MAIN_PUSH=1 git push"
+  exit 1
+fi
+
 npm run verify
