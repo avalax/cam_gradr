@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  DEFAULT_EXPOSURE_CONFIG,
-  assessExposure,
-  codeLuma,
-  describeContrast,
-  describeExposure,
-} from './exposure';
-import type { ExposureInput, Verdict } from './exposure';
+import { DEFAULT_EXPOSURE_CONFIG, assessExposure, codeLuma } from './exposure';
+import type { ExposureInput } from './exposure';
 import type { Rgb } from './types';
 
 const grey = (value: number): Rgb => [value, value, value];
@@ -104,31 +98,5 @@ describe('Kontrast', () => {
     const brighter = assessExposure(input({ large18: grey(0.56), large50: grey(0.84) }));
     expect(brighter.contrast).toBeCloseTo(base.contrast, 3);
     expect(brighter.delta).toBeGreaterThan(base.delta);
-  });
-
-  it('nennt je nach Abweichung einen anderen Hinweis', () => {
-    const at = (contrast: number) => ({ ...assessExposure(input()), contrast });
-    expect(describeContrast(at(0))).toContain('Normalbereich');
-    expect(describeContrast(at(0.1))).toContain('verringert werden');
-    expect(describeContrast(at(-0.1))).toContain('erhöht werden');
-    expect(describeContrast(at(0.08), 0.1)).toContain('Normalbereich');
-  });
-});
-
-describe('describeExposure', () => {
-  it('liefert für jedes Urteil einen eigenen Text', () => {
-    const verdicts: Verdict[] = ['ok', 'too-dark', 'too-bright', 'high-contrast'];
-    const texts = verdicts.map((verdict) =>
-      describeExposure({
-        verdict,
-        highlightsClipped: false,
-        shadowsCrushed: false,
-        level18: 0,
-        level50: 0,
-        delta: 0,
-        contrast: 0,
-      }),
-    );
-    expect(new Set(texts).size).toBe(4);
   });
 });

@@ -6,7 +6,9 @@ import { expect, test } from './support/fixtures';
 test.describe('Graukarten: Raum passt', () => {
   test.use({ lighting: 'ok' });
 
-  test('Skala steht im Zielbereich, danach geht es mit den Farbkarten weiter', async ({ app }) => {
+  test('Punkt steht im Normalbereich, danach geht es mit den Farbkarten weiter', async ({
+    app,
+  }) => {
     const { page } = app;
     await app.open();
 
@@ -67,9 +69,7 @@ test.describe('Graukarten: Raum passt', () => {
     await app.expectVerdict('im Normalbereich');
   });
 
-  test('Details der Helligkeitsskala erscheinen nur beim Überfahren oder Fokussieren', async ({
-    app,
-  }) => {
+  test('Details des Messfelds erscheinen nur beim Überfahren oder Fokussieren', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
@@ -90,7 +90,7 @@ test.describe('Graukarten: Raum passt', () => {
     await app.startGrayStage();
 
     const box = await app.overlay.boundingBox();
-    // Fensterbreite 1600 minus Ränder, Steuerspalte (21 rem) und Skala
+    // Fensterbreite 1600 minus Ränder, Steuerspalte (21 rem) und Messfeld
     expect(box?.width).toBeGreaterThan(1000);
   });
 
@@ -168,7 +168,7 @@ test.describe('Graukarten: Raum zu dunkel', () => {
     await app.captureStill();
     await app.placeAllCorners();
 
-    await app.expectVerdict('zu niedrig');
+    await app.expectVerdict('Helligkeit erhöhen');
     await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
@@ -176,15 +176,15 @@ test.describe('Graukarten: Raum zu dunkel', () => {
 test.describe('Graukarten: Raum zu hell', () => {
   test.use({ lighting: 'bright' });
 
-  test('Ampel verlangt weniger Licht und meldet geclippte Lichter', async ({ app }) => {
+  test('Ampel verlangt weniger Licht und meldet überbelichtete Lichter', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
     await app.placeAllCorners();
 
-    await app.expectVerdict('zu hoch');
-    await expect(app.details).toContainText('geclippt');
-    await expect(app.page.getByTestId('scale-clipped-top')).toBeVisible();
+    await app.expectVerdict('Helligkeit verringern');
+    await expect(app.details).toContainText('überbelichtet');
+    await expect(app.page.getByTestId('measure-issue')).toContainText('Helligkeit zu hoch');
     await expect(app.button('Weiter zu den Farbkarten')).toBeDisabled();
   });
 });
@@ -240,20 +240,21 @@ test.describe('Graukarten: automatische Erkennung', () => {
   });
 });
 
-test.describe('Graukarten: Kontrastskala', () => {
+test.describe('Graukarten: Messfeld', () => {
   test.use({ lighting: 'ok' });
 
-  test('Neben der Skala für das Licht zeigt eine zweite den Kontrast', async ({ app }) => {
+  test('Das Messfeld zeigt Helligkeit und Kontrast mit einem Punkt im Normalbereich', async ({
+    app,
+  }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await expect(app.page.getByTestId('contrast-scale')).toBeVisible();
-    await expect(app.page.getByTestId('contrast-marker')).toHaveCount(0);
+    await expect(app.scale).toBeVisible();
+    await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
 
     await app.placeAllCorners();
 
-    await expect(app.page.getByTestId('contrast-marker')).toBeVisible();
-    await app.page.getByTestId('contrast-scale').hover();
-    await expect(app.page.getByTestId('contrast-details')).toContainText('im Normalbereich');
+    await expect(app.page.getByTestId('measure-marker')).toBeVisible();
+    await app.expectVerdict('im Normalbereich');
   });
 });

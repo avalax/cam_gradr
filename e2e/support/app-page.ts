@@ -36,11 +36,11 @@ export class AppPage {
 
   constructor(readonly page: Page) {
     this.overlay = page.locator('svg.absolute');
-    this.scale = page.getByTestId('brightness-scale');
-    this.details = page.getByTestId('scale-details');
+    this.scale = page.getByTestId('measure-field');
+    this.details = page.getByTestId('measure-details');
   }
 
-  // Fährt über die Helligkeitsskala und prüft den Text der Detailanzeige.
+  // Fährt über das Messfeld und prüft den Text der Detailanzeige.
   async expectVerdict(text: string | RegExp): Promise<void> {
     await this.scale.hover();
     await expect(this.details).toBeVisible();
