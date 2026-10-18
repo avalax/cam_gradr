@@ -63,9 +63,9 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
             const g = Number(pixels[offset + 1]) / BYTE_MAX;
             const b = Number(pixels[offset + 2]) / BYTE_MAX;
             const [cr, cg, cb] = sampleLut(lut, [r, g, b]);
-            pixels[offset] = toByte(r + (cr - r) * options.strength);
-            pixels[offset + 1] = toByte(g + (cg - g) * options.strength);
-            pixels[offset + 2] = toByte(b + (cb - b) * options.strength);
+            pixels[offset] = toByte(cr);
+            pixels[offset + 1] = toByte(cg);
+            pixels[offset + 2] = toByte(cb);
           }
         }
       }

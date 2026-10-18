@@ -153,19 +153,19 @@ describe('ColorStep', () => {
     expect(useSolveStore().error).toBeNull();
   });
 
-  it('zeigt zwei Farbleisten: Standardfarben ohne Messung, danach Kamera und korrigiert', async () => {
+  it('zeigt den Wischer: Standardfarben ohne Messung, danach Kamera und korrigiert', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     await flushPromises();
-    const camera = wrapper.get('[data-testid="color-strip-camera"]');
+    const camera = wrapper.get('[data-testid="color-wipe-camera"]');
     expect(camera.attributes('data-measured')).toBe('false');
     expect(camera.findAll('[data-patch]')).toHaveLength(48);
     prepareMeasurements();
     await flushPromises();
-    expect(wrapper.get('[data-testid="color-strip-camera"]').attributes('data-measured')).toBe(
+    expect(wrapper.get('[data-testid="color-wipe-camera"]').attributes('data-measured')).toBe(
       'true',
     );
-    expect(wrapper.get('[data-testid="color-strip-corrected"]').attributes('data-measured')).toBe(
+    expect(wrapper.get('[data-testid="color-wipe-corrected"]').attributes('data-measured')).toBe(
       'true',
     );
   });

@@ -11,7 +11,7 @@ describe('Shader', () => {
   it('sind GLSL ES 3.00 und enthalten die benötigten Uniforms', () => {
     expect(VERTEX_SHADER.startsWith('#version 300 es')).toBe(true);
     expect(FRAGMENT_SHADER.startsWith('#version 300 es')).toBe(true);
-    for (const name of ['uImage', 'uLut', 'uLutSize', 'uStrength', 'uSplit']) {
+    for (const name of ['uImage', 'uLut', 'uLutSize', 'uSplit']) {
       expect(FRAGMENT_SHADER).toContain(name);
     }
   });
@@ -66,11 +66,11 @@ describe('createLutRenderer', () => {
     expect(renderer.outputSize({ width: 1280, height: 720 })).toEqual({ width: 1280, height: 720 });
   });
 
-  it('zeichnet das Bild mit Stärke, Trennlinie und LUT-Größe als Uniforms', () => {
+  it('zeichnet das Bild mit Trennlinie und LUT-Größe als Uniforms', () => {
     const { gl, call, constant } = createFakeGl();
     const renderer = createLutRenderer(gl);
     renderer.setLut(identityLut(9));
-    renderer.render(source, { strength: 0.75, split: 0.4 });
+    renderer.render(source, { split: 0.4 });
     expect(call('texImage2D')).toHaveBeenCalledWith(
       constant('TEXTURE_2D'),
       0,
@@ -85,20 +85,20 @@ describe('createLutRenderer', () => {
         value as number,
       ]),
     );
-    expect(floats).toEqual({ uLutSize: 9, uStrength: 0.75, uSplit: 0.4 });
+    expect(floats).toEqual({ uLutSize: 9, uSplit: 0.4 });
     expect(call('drawArrays')).toHaveBeenCalledWith(constant('TRIANGLES'), 0, 3);
   });
 
   it('passt den Ausschnitt an die aktuelle Größe der Zeichenfläche an', () => {
     const fake = createFakeGl();
     Object.assign(fake.gl, { drawingBufferWidth: 1280, drawingBufferHeight: 720 });
-    createLutRenderer(fake.gl).render(source, { strength: 1, split: 0 });
+    createLutRenderer(fake.gl).render(source, { split: 0 });
     expect(fake.call('viewport')).toHaveBeenCalledWith(0, 0, 1280, 720);
   });
 
   it('kehrt das Bild beim Hochladen um (Video hat y nach unten)', () => {
     const { gl, call, constant } = createFakeGl();
-    createLutRenderer(gl).render(source, { strength: 1, split: 0 });
+    createLutRenderer(gl).render(source, { split: 0 });
     expect(call('pixelStorei')).toHaveBeenCalledWith(constant('UNPACK_FLIP_Y_WEBGL'), true);
   });
 

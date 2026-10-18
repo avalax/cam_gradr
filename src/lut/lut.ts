@@ -49,17 +49,6 @@ export function buildLut(model: ColorModel, size: number): Lut {
   return fill(size, (r, g, b) => applyColorModel(model, [r, g, b]));
 }
 
-// Mischt zwischen Identität (Stärke 0) und der Korrektur (Stärke 1).
-export function blendLut(lut: Lut, strength: number): Lut {
-  const clamped = Math.min(Math.max(strength, 0), 1);
-  const identity = identityLut(lut.size);
-  const data = identity.data.map((value, index) => {
-    const corrected = Number(lut.data[index]);
-    return value + (corrected - value) * clamped;
-  });
-  return { size: lut.size, data };
-}
-
 // Trilineare Interpolation, wie sie die Grafikkarte beim Abtasten der 3D-Textur ausführt.
 export function sampleLut(lut: Lut, [r, g, b]: Vec3): Vec3 {
   const last = lut.size - 1;

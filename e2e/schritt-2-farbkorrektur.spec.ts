@@ -155,33 +155,33 @@ test.describe('Farbkarten: Farbkorrektur', () => {
   });
 });
 
-// Gemalte Farbe von Feld 1F in einer der beiden Farbleisten (0..255).
-async function swatch(page: Page, strip: 'camera' | 'corrected'): Promise<number[]> {
+// Gemalte Farbe von Feld 1F in einer der beiden Ebenen des Wischers (0..255).
+async function swatch(page: Page, layer: 'camera' | 'corrected'): Promise<number[]> {
   const color = await page
-    .locator(`[data-testid="color-strip-${strip}"] [data-patch="1F"]`)
+    .locator(`[data-testid="color-wipe-${layer}"] [data-patch="1F"]`)
     .evaluate((element) => getComputedStyle(element).backgroundColor);
   return (color.match(/\d+/g) ?? []).map(Number);
 }
 
-test.describe('Farbkarten: Farbleisten', () => {
+test.describe('Farbkarten: Wischer', () => {
   test('Links stehen die Farben der Kamera, rechts die korrigierten, vorher Standardfarben', async ({
     app,
   }) => {
     await app.completeStepOne();
     await app.importReference('referenz.json', dummyReferenceJson());
     await app.closeSettings();
-    await expect(app.page.getByTestId('color-strip-camera')).toHaveAttribute(
+    await expect(app.page.getByTestId('color-wipe-camera')).toHaveAttribute(
       'data-measured',
       'false',
     );
 
     await app.captureColorCards();
 
-    await expect(app.page.getByTestId('color-strip-camera')).toHaveAttribute(
+    await expect(app.page.getByTestId('color-wipe-camera')).toHaveAttribute(
       'data-measured',
       'true',
     );
-    await expect(app.page.getByTestId('color-strip-corrected')).toHaveAttribute(
+    await expect(app.page.getByTestId('color-wipe-corrected')).toHaveAttribute(
       'data-measured',
       'true',
     );

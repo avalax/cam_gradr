@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
-import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
 import { parseCube } from '../test-support/cube-parse';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -58,7 +57,6 @@ describe('ExportTab', () => {
     ]);
     expect((select.element as HTMLSelectElement).value).toBe('33');
     expect(wrapper.get('[data-testid="export-download"]').text()).toContain('cam_gradr-33.cube');
-    expect(wrapper.get('[data-testid="export-strength"]').text()).toContain('100 %');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
 
@@ -75,27 +73,18 @@ describe('ExportTab', () => {
     const parsed = parseCube(content);
     expect(parsed.lut.size).toBe(17);
     expect(parsed.lut.data).toHaveLength(17 ** 3 * 3);
-    expect(parsed.title).toContain('Stärke 100 %');
+    expect(parsed.title).toBe('cam_gradr');
     expect(wrapper.get('[data-testid="export-saved"]').text()).toContain('cam_gradr-17.cube');
   });
 
-  it('rechnet die Stärke aus der Vorschau fest in die LUT ein', async () => {
+  it('schreibt die volle Korrektur in die LUT', async () => {
     computeModel();
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-download"]').trigger('click');
-    const full = parseCube((download.mock.calls[0] as [string, string, string])[1]);
-
-    usePreviewStore().setStrength(0);
-    await wrapper.get('[data-testid="export-download"]').trigger('click');
-    const none = parseCube((download.mock.calls[1] as [string, string, string])[1]);
-
-    // Stärke 0 ergibt die Identität: der Knoten (r = 1/32 der Skala) bleibt unverändert.
+    const lut = parseCube((download.mock.calls[0] as [string, string, string])[1]);
+    // Der Knoten (r = 1/32 der Skala) wird von der Korrektur verändert, er bleibt nicht auf der Identität.
     const index = 3 * (1 + 33 * 5 + 33 * 33 * 9);
-    expect(none.lut.data[index]).toBeCloseTo(1 / 32, 5);
-    expect(none.lut.data[index + 1]).toBeCloseTo(5 / 32, 5);
-    expect(none.lut.data[index + 2]).toBeCloseTo(9 / 32, 5);
-    expect(full.lut.data[index]).not.toBeCloseTo(1 / 32, 3);
-    expect(none.title).toContain('Stärke 0 %');
+    expect(lut.lut.data[index]).not.toBeCloseTo(1 / 32, 3);
   });
 
   it('meldet den Dateinamen erst nach dem Herunterladen und blendet ihn bei Änderung der Größe aus', async () => {

@@ -3,13 +3,13 @@ import { storeToRefs } from 'pinia';
 import { computed, watch } from 'vue';
 
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import { COLOR_IDS, NEUTRAL_IDS, colorLayout, grayLayout } from '../chart/layouts';
+import { NEUTRAL_IDS, colorLayout, grayLayout } from '../chart/layouts';
 import { useReferenceStore } from '../reference/reference-store';
 import { checkGrayCards } from '../solve/gray-check';
 import { useSolveStore } from '../solve/solve-store';
 
 import CardStage from './CardStage.vue';
-import ColorStrips from './ColorStrips.vue';
+import ColorWipe from './ColorWipe.vue';
 import ResultReport from './ResultReport.vue';
 
 const chart = useColorChartStore();
@@ -24,9 +24,6 @@ const { result, error: solveError, model } = storeToRefs(solve);
 const grayCheck = computed(() =>
   model.value === null ? [] : checkGrayCards(model.value, grayChart.measurements, grayLayout),
 );
-
-// Reihenfolge der Felder in den Farbleisten: wie in der Datei des Layouts.
-const PATCH_IDS = [...COLOR_IDS];
 
 const CARD_NAMES = {
   1: 'linke Farbkarte (Spalten A–D)',
@@ -78,11 +75,12 @@ watch([measurements, selected], () => {
           :live-measure="false"
         >
           <template #side>
-            <ColorStrips
-              :ids="PATCH_IDS"
+            <ColorWipe
+              :layout="colorLayout"
               :measurements="measurements"
               :model="model"
               :reference="selected"
+              :report="result?.report ?? null"
             />
           </template>
         </CardStage>

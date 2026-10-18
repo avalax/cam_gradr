@@ -51,7 +51,7 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
 
 <template>
   <!-- Messfeld so hoch wie das Kamerabild: senkrecht die Helligkeit, waagerecht der Kontrast; Details beim Überfahren oder per Tastaturfokus. -->
-  <div class="flex w-40 shrink-0 flex-col self-stretch">
+  <div class="flex w-44 shrink-0 flex-col self-stretch">
     <div
       class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500 outline-offset-2 focus-visible:outline"
       tabindex="0"

@@ -53,23 +53,16 @@ test.describe('Vorschau', () => {
     expect(largest).toBeGreaterThan(2 * TOLERANCE);
   });
 
-  test('Stärke 0 zeigt überall das Original', async ({ app }) => {
+  test('Die Trennlinie lässt sich per Tastatur verschieben', async ({ app }) => {
     await app.computeColorModel();
     await app.openTab('Vorschau');
-    await app.page.getByTestId('strength').fill('0');
-
-    await expectPatch(app, RIGHT_PATCH, codes(cameraCode(dummyLab(RIGHT_PATCH))));
-  });
-
-  test('Die Trennlinie lässt sich verschieben', async ({ app }) => {
-    await app.computeColorModel();
-    await app.openTab('Vorschau');
-    await app.page.getByTestId('split').fill('0');
-    await expect(app.page.getByTestId('split-line')).toHaveAttribute('style', /left: 0%/);
+    await app.page.getByTestId('wipe').focus();
+    await app.page.keyboard.press('Home');
+    await expect(app.page.getByTestId('wipe-line')).toHaveAttribute('style', /left: 0%/);
 
     await expectPatch(app, LEFT_PATCH, codes(labToSrgb(dummyLab(LEFT_PATCH))));
 
-    await app.page.getByTestId('split').fill('100');
+    await app.page.keyboard.press('End');
     await expectPatch(app, RIGHT_PATCH, codes(cameraCode(dummyLab(RIGHT_PATCH))));
   });
 
@@ -107,5 +100,25 @@ test.describe('Vorschau', () => {
     await app.openTab('Vorschau');
 
     await expect(app.page.getByTestId('preview-no-source')).toBeVisible();
+  });
+
+  test('Neben dem Bild stehen zuerst die Farben, dazu umschaltbar Graukeil und Tonbereiche', async ({
+    app,
+  }) => {
+    await app.computeColorModel();
+    await app.openTab('Vorschau');
+
+    await expect(app.page.getByTestId('color-tiles')).toBeVisible();
+    await expect(app.page.locator('[data-testid="color-tiles"] [data-patch]')).toHaveCount(36);
+    await expect(app.page.getByTestId('worst-patches')).toContainText('Größte Abweichung');
+    await expect(app.page.getByTestId('preview-summary')).toContainText('Ø Abweichung');
+
+    await app.page.getByTestId('view-grays').click();
+    await expect(app.page.getByTestId('gray-wedge')).toBeVisible();
+    await expect(app.page.locator('[data-column="camera"] [data-patch]')).toHaveCount(12);
+    const changes = app.page.getByTestId('zone-changes');
+    await expect(changes).toContainText('Schatten');
+    await expect(changes).toContainText('Mitten');
+    await expect(changes).toContainText('Lichter');
   });
 });

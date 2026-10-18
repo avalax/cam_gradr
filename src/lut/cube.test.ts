@@ -8,7 +8,7 @@ import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
 
 import { CUBE_SIZES, formatCube } from './cube';
-import { blendLut, buildLut, identityLut } from './lut';
+import { buildLut, identityLut } from './lut';
 
 const reference = {
   name: 'Test',
@@ -50,7 +50,7 @@ describe('formatCube', () => {
   });
 
   it('übersteht die Rundreise mit sechs Nachkommastellen Genauigkeit', () => {
-    const lut = blendLut(buildLut(model, 17), 0.8);
+    const lut = buildLut(model, 17);
     const parsed = parseCube(formatCube(lut, 'Rundreise'));
     expect(parsed.title).toBe('Rundreise');
     expect(parsed.lut.size).toBe(17);
