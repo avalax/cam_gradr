@@ -248,7 +248,7 @@ describe('GrayStep', () => {
     expect(useChartStore().points[3]).toHaveLength(1);
   });
 
-  it('misst das Standbild, sobald alle Eckpunkte gesetzt sind, und zeigt die Skala', async () => {
+  it('misst das Standbild, sobald alle Eckpunkte gesetzt sind, und zeigt das Messfeld', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
@@ -257,8 +257,8 @@ describe('GrayStep', () => {
     await flushPromises();
     expect(useChartStore().ready).toBe(true);
     expect(useChartStore().exposure).not.toBeNull();
-    expect(wrapper.find('[data-testid="scale-marker"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('18 %-Feld');
+    expect(wrapper.find('[data-testid="measure-marker"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain('18 %-Karte');
     expect(wrapper.findAll('polygon').length).toBeGreaterThan(10);
   });
 
@@ -309,12 +309,10 @@ describe('GrayStep', () => {
     expect(measure).not.toHaveBeenCalled();
   });
 
-  it('zeigt neben dem Bild eine Skala für das Licht und eine für den Kontrast', async () => {
+  it('zeigt neben dem Bild ein Messfeld für Helligkeit und Kontrast', async () => {
     const wrapper = await mountLive();
-    expect(wrapper.find('[data-testid="brightness-scale"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="contrast-scale"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('Licht');
-    expect(wrapper.text()).toContain('Kontrast');
+    expect(wrapper.find('[data-testid="measure-field"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
   it('zeigt im Livebild zwei beschriftete Rahmen, wo die Karten hingehalten werden sollen', async () => {
@@ -495,7 +493,7 @@ describe('GrayStep', () => {
     expect(chart.points).toEqual({});
   });
 
-  it('meldet „continue“ nur bei grüner Skala', async () => {
+  it('meldet „continue“ nur bei Messung im Normalbereich', async () => {
     const wrapper = await mountLive();
     const next = () => button(wrapper, 'Weiter');
     expect(next()?.attributes('disabled')).toBeDefined();
@@ -515,7 +513,7 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('Lichter');
   });
 
-  it('zeigt Clipping und abgesoffene Schatten an', async () => {
+  it('zeigt überbelichtete Lichter und unterbelichtete Schatten an', async () => {
     const wrapper = await mountLive();
     useChartStore().exposure = {
       verdict: 'high-contrast',
@@ -527,8 +525,8 @@ describe('GrayStep', () => {
       contrast: 0,
     };
     await flushPromises();
-    expect(wrapper.text()).toContain('geclippt');
-    expect(wrapper.text()).toContain('abgesoffen');
+    expect(wrapper.text()).toContain('überbelichtet');
+    expect(wrapper.text()).toContain('unterbelichtet');
   });
 
   it('stoppt die Messung beim Entfernen', async () => {

@@ -4,9 +4,8 @@ import { storeToRefs } from 'pinia';
 import { useChartStore } from '../chart/chart-store';
 import { grayLayout } from '../chart/layouts';
 
-import BrightnessScale from './BrightnessScale.vue';
 import CardStage from './CardStage.vue';
-import ContrastScale from './ContrastScale.vue';
+import MeasureField from './MeasureField.vue';
 
 const emit = defineEmits<{ continue: [] }>();
 
@@ -24,8 +23,8 @@ const IDLE_TEXT =
       <p class="text-sm text-slate-700">
         Dieser Tab stellt die Raumhelligkeit ein. Schalte oben die Kamera ein und nimm ein Standbild
         der beiden Graukarten auf, markiere darauf die Eckpunkte (die Reihenfolge der Klicks ist
-        egal, die App ordnet sie selbst) und ändere dann das Licht, bis die Marke der Skala neben
-        dem Bild im umrahmten Zielbereich steht (Details beim Überfahren der Skala). Danach kannst
+        egal, die App ordnet sie selbst) und ändere dann das Licht, bis der Punkt im Messfeld neben
+        dem Bild im umrahmten Normalbereich steht (Details beim Überfahren des Felds). Danach kannst
         du zum Livebild zurückkehren: Solange die Karten nicht bewegt werden, misst die App dort
         laufend mit denselben Eckpunkten.
       </p>
@@ -40,16 +39,7 @@ const IDLE_TEXT =
         live-measure
       >
         <template #side>
-          <div class="flex gap-3 self-stretch">
-            <div class="flex flex-col items-center gap-1 self-stretch">
-              <BrightnessScale class="flex-1" :exposure="exposure" />
-              <span class="text-xs text-slate-600">Licht</span>
-            </div>
-            <div class="flex flex-col items-center gap-1 self-stretch">
-              <ContrastScale class="flex-1" :exposure="exposure" />
-              <span class="text-xs text-slate-600">Kontrast</span>
-            </div>
-          </div>
+          <MeasureField :exposure="exposure" />
         </template>
         <template #actions>
           <button
