@@ -26,11 +26,11 @@ Prüfungen `verify` und `acceptance` der CI müssen grün sein.
    GitHub zeigt in der Ausgabe einen Link zum Anlegen des Pull Requests.
 
 4. Warten, bis die CI grün ist (`verify` und `acceptance`).
-5. Zusammenführen: bisher mit **„Create a merge commit“**, **„Squash and merge“** ist ebenfalls erlaubt.
-   Changelog und Version (release-please) lesen die Commits auf `main`. Bei einem Merge-Commit sind das
-   die Commits des Branches, bei Squash der Titel des Pull Requests. In beiden Fällen müssen sie
-   gültige Conventional Commits sein, zum Beispiel `feat(ui): neue Helligkeitsskala`.
-   Zwischenstände vor dem Pull Request zu einem Commit zusammenfassen, damit der Changelog lesbar bleibt.
+5. Mit **„Squash and merge“** zusammenführen. Der **Titel des Pull Requests** wird zur Commit-Nachricht
+   auf `main` und steuert Changelog und Version (release-please). Er muss deshalb ein gültiger
+   Conventional-Commit-Titel sein, zum Beispiel `feat(ui): neue Helligkeitsskala`; der Workflow
+   `pr-title` prüft das. Ein normaler Merge-Commit würde im Changelog doppelte Einträge erzeugen
+   (der Merge-Commit trägt den Titel des Pull Requests zusätzlich zu den Commits des Branches).
 
 ## Prüfungen lokal ausführen
 

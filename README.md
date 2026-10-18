@@ -99,7 +99,7 @@ Die Kamera funktioniert nur über `localhost` oder HTTPS.
 ### Arbeitsablauf
 
 `main` ist geschützt: Änderungen kommen über Pull Requests, die CI (`verify` und `acceptance`) muss grün
-sein. Commits und Pull-Request-Titel sind Conventional Commits. Details stehen in
+sein, und der Titel des Pull Requests ist ein Conventional-Commit-Titel (Squash-Merge). Details stehen in
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Qualitätssicherung

@@ -1,7 +1,7 @@
 ## Zusammenfassung
 
 <!-- Was ändert sich und warum? Der Titel des Pull Requests ist ein Conventional-Commit-Titel
-(zum Beispiel `feat(ui): ...` oder `fix(camera): ...`); er wird bei einem Squash-Merge zur Commit-Nachricht. -->
+(zum Beispiel `feat(ui): ...` oder `fix(camera): ...`), denn er wird beim Squash-Merge zur Commit-Nachricht. -->
 
 ## Änderungen
 
