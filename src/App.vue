@@ -29,13 +29,13 @@ onMounted(() => {
   void useReferenceStore().load();
 });
 
-// Das Standbild darf zwischen den Tabs mitwandern. Beim direkten Wechsel zwischen Grau- und
-// Farbkarten wird es verworfen (andere Karten, andere Eckpunkte).
-watch(tab, (next, previous) => {
-  const between =
-    (next === 'gray' && previous === 'color') || (next === 'color' && previous === 'gray');
-  if (between) {
-    camera.clearStill();
+// Jeder Tab mit Kamerabild (Grau-, Farbkarten, Vorschau) hat sein eigenes Standbild: Beim Wechsel
+// wird es abgelegt und beim Zurückkommen wieder angezeigt. Der Export zeigt kein Kamerabild.
+const owner = ref<'gray' | 'color' | 'preview'>('gray');
+watch(tab, (next) => {
+  if (next !== 'export' && next !== owner.value) {
+    camera.swapStill(owner.value, next);
+    owner.value = next;
   }
 });
 
@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
     <ProjectStatus />
 
     <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
-      <GrayStep v-if="tab === 'gray'" @continue="tab = 'color'" />
+      <GrayStep v-if="tab === 'gray'" />
       <ColorStep v-else-if="tab === 'color'" />
       <PreviewTab v-else-if="tab === 'preview'" />
       <ExportTab v-else />

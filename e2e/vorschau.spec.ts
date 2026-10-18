@@ -30,14 +30,14 @@ test.describe('Vorschau', () => {
     await app.openTab('Vorschau');
 
     await expect(app.page.getByTestId('preview-no-model')).toContainText(
-      'noch keine Farbkorrektur',
+      'Noch keine Farbkorrektur',
     );
     await expect(app.page.getByTestId('preview-canvas')).toBeHidden();
   });
 
   test('Links steht das Original, rechts das korrigierte Bild', async ({ app }) => {
     await app.computeColorModel();
-    await app.openTab('Vorschau');
+    await app.openPreviewWithImage();
     await expect(app.page.getByTestId('preview-canvas')).toBeVisible();
 
     const left = dummyLab(LEFT_PATCH);
@@ -55,7 +55,7 @@ test.describe('Vorschau', () => {
 
   test('Die Trennlinie lässt sich per Tastatur verschieben', async ({ app }) => {
     await app.computeColorModel();
-    await app.openTab('Vorschau');
+    await app.openPreviewWithImage();
     await app.page.getByTestId('wipe').focus();
     await app.page.keyboard.press('Home');
     await expect(app.page.getByTestId('wipe-line')).toHaveAttribute('style', /left: 0%/);
@@ -70,8 +70,9 @@ test.describe('Vorschau', () => {
     app,
   }) => {
     await app.computeColorModel();
+    await app.openPreviewWithImage();
+    await app.captureStill();
     await app.stopCamera();
-    await app.openTab('Vorschau');
 
     await expectPatch(app, LEFT_PATCH, codes(cameraCode(dummyLab(LEFT_PATCH))));
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
@@ -95,8 +96,6 @@ test.describe('Vorschau', () => {
 
   test('Die Vorschau weist auf eine fehlende Bildquelle hin', async ({ app }) => {
     await app.computeColorModel();
-    await app.stopCamera();
-    await app.button('Zurück zum Livebild').click();
     await app.openTab('Vorschau');
 
     await expect(app.page.getByTestId('preview-no-source')).toBeVisible();

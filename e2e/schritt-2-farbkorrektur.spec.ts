@@ -140,19 +140,6 @@ test.describe('Farbkarten: Farbkorrektur', () => {
     expect(after).toBeLessThan(before / 3);
     await expect(report.locator('[data-testid^="tile-"]')).toHaveCount(48);
   });
-
-  test('Eckpunkte der Farbkarten lassen sich in beliebiger Reihenfolge setzen', async ({ app }) => {
-    await app.completeStepOne();
-    await app.importReference('referenz.json', dummyReferenceJson());
-    await app.closeSettings();
-    await app.showCards('colors');
-    await app.captureStill();
-    await app.placeAllCorners([0, 3, 2, 1]);
-
-    await expect(app.page.getByTestId('report')).toBeVisible();
-    const after = Number(await app.page.getByTestId('mean-after').innerText());
-    expect(after).toBeLessThan(1.5);
-  });
 });
 
 // Gemalte Farbe von Feld 1F in einer der beiden Ebenen des Wischers (0..255).

@@ -5,28 +5,8 @@ import type { Locator, Page } from '@playwright/test';
 
 import { dummyReferenceJson } from '../../src/test-support/dummy-reference';
 
-import { showScene } from './camera-stub';
-import { CARD_PIXELS, HEIGHT, WIDTH } from './synthetic-cards';
+import { setScene, showScene } from './camera-stub';
 import type { SceneName } from './synthetic-cards';
-
-// Eckpunkte in der Klickreihenfolge der App: linke Karte (3), dann rechte Karte (4);
-// je Karte oben links, oben rechts, unten rechts, unten links.
-function cornerOrder(clickOrder: readonly number[]): [number, number][] {
-  const corners: [number, number][] = [];
-  for (const card of [CARD_PIXELS[3], CARD_PIXELS[4]]) {
-    const quad: [number, number][] = [
-      [card.x, card.y],
-      [card.x + card.w, card.y],
-      [card.x + card.w, card.y + card.h],
-      [card.x, card.y + card.h],
-    ];
-    // clickOrder: Indizes der Ecken (0 = oben links, 1 = oben rechts, 2 = unten rechts, 3 = unten links).
-    corners.push(
-      ...clickOrder.map((index) => quad.at(index)).filter((corner) => corner !== undefined),
-    );
-  }
-  return corners;
-}
 
 // Seitenobjekt der App: kapselt Bedienung und Lesen der Oberfläche für die Akzeptanztests.
 export class AppPage {
@@ -47,22 +27,8 @@ export class AppPage {
     await expect(this.details).toContainText(text);
   }
 
-  get autoDetect(): Locator {
-    return this.page.getByLabel('Karten im Livebild automatisch erkennen');
-  }
-
-  // Öffnet die App. Die Automatik im Livebild ist aus, damit die Tests selbst entscheiden, wann ein
-  // Standbild aufgenommen wird; `autoDetect: true` lässt sie an.
-  async open(options: { autoDetect?: boolean } = {}): Promise<void> {
+  async open(): Promise<void> {
     await this.page.goto('/');
-    if (options.autoDetect !== true) {
-      await this.autoDetect.uncheck();
-    }
-  }
-
-  // Schaltet die Automatik nach einem Neuladen wieder aus.
-  async disableAutoDetect(): Promise<void> {
-    await this.autoDetect.uncheck();
   }
 
   button(name: string | RegExp): Locator {
@@ -86,11 +52,10 @@ export class AppPage {
     await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'false');
   }
 
-  // Kamera anschalten und im Tab "Graukarten" auf die Aufnahme warten (Standardweg für Schritt 1).
+  // Kamera anschalten und den Tab "Graukarten" öffnen; die App erkennt die Karten und nimmt selbst auf.
   async startGrayStage(): Promise<void> {
     await this.startCamera();
     await this.openTab('Graukarten');
-    await expect(this.button('Standbild aufnehmen')).toBeEnabled();
   }
 
   async openTab(name: 'Graukarten' | 'Farbkarten' | 'Vorschau' | 'Export'): Promise<void> {
@@ -101,9 +66,22 @@ export class AppPage {
     );
   }
 
+  // Öffnet die Vorschau und schaltet die Kamera an, falls sie aus ist, damit es ein Livebild gibt.
+  async openPreviewWithImage(): Promise<void> {
+    await this.openTab('Vorschau');
+    if ((await this.cameraSwitch.getAttribute('aria-checked')) !== 'true') {
+      await this.startCamera();
+    }
+  }
+
+  // Wartet auf das Standbild. In den Kartentabs nimmt die App es selbst auf, sobald sie die Karten
+  // erkennt; nur in der Vorschau gibt es den Knopf.
   async captureStill(): Promise<void> {
-    await this.button(/Standbild aufnehmen/).click();
-    await expect(this.button('Zurück zum Livebild')).toBeVisible();
+    const manual = this.button(/Standbild aufnehmen/);
+    if ((await manual.count()) > 0) {
+      await manual.click();
+    }
+    await expect(this.button('Zurück zum Livebild')).toBeVisible({ timeout: 20_000 });
   }
 
   // Hält andere Karten vor die Kamera (z. B. nach Schritt 1 die Farbkarten).
@@ -111,14 +89,14 @@ export class AppPage {
     await showScene(this.page, scene);
   }
 
-  // Graukarten komplett: Kamera an, Graukarten aufnehmen, Eckpunkte setzen, weiter zu den Farbkarten.
+  // Graukarten komplett: Kamera an, Karten werden erkannt und aufgenommen, dann zu den Farbkarten.
   async completeStepOne(): Promise<void> {
     await this.open();
     await this.startGrayStage();
     await this.captureStill();
-    await this.placeAllCorners();
+    await this.expectCorners();
     await this.expectVerdict('im Normalbereich');
-    await this.button('Weiter zu den Farbkarten').click();
+    await this.openTab('Farbkarten');
     await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
   }
 
@@ -243,11 +221,17 @@ export class AppPage {
     });
   }
 
-  // Farbkarten aufnehmen und Eckpunkte setzen (Schritt 2, Kamera läuft bereits).
+  // Farbkarten vorhalten und auf Aufnahme und Eckpunkte warten (Schritt 2, Kamera läuft bereits).
   async captureColorCards(): Promise<void> {
+    // Nach der automatischen Aufnahme ist die Kamera aus: erst die Szene wählen, dann starten, damit
+    // die Suche nicht die alten Karten findet.
+    await setScene(this.page, 'colors');
+    if ((await this.cameraSwitch.getAttribute('aria-checked')) !== 'true') {
+      await this.startCamera();
+    }
     await this.showCards('colors');
     await this.captureStill();
-    await this.placeAllCorners();
+    await this.expectCorners();
   }
 
   // Umgebendes Rechteck eines Feldumrisses (z. B. 'G18', 'S4-0') in Bildschirmkoordinaten.
@@ -259,19 +243,8 @@ export class AppPage {
     return box;
   }
 
-  // Klickt die acht Eckpunkte der beiden Karten auf dem Standbild, je Karte in der gewünschten Reihenfolge.
-  async placeAllCorners(clickOrder: readonly number[] = [0, 1, 2, 3]): Promise<void> {
-    await this.overlay.scrollIntoViewIfNeeded();
-    const box = await this.overlay.boundingBox();
-    if (box === null) {
-      throw new Error('Das Overlay ist nicht sichtbar.');
-    }
-    for (const [x, y] of cornerOrder(clickOrder)) {
-      await this.page.mouse.click(
-        box.x + (x / WIDTH) * box.width,
-        box.y + (y / HEIGHT) * box.height,
-      );
-    }
+  // Wartet, bis die App die Eckpunkte beider Karten (zusammen acht) gesetzt hat.
+  async expectCorners(): Promise<void> {
     await expect(this.page.locator('svg circle')).toHaveCount(8);
   }
 }

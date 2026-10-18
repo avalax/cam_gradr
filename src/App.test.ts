@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
-import { useChartStore } from './chart/chart-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
@@ -95,26 +94,6 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Auflösung');
   });
 
-  it('wechselt mit „Weiter“ zu den Farbkarten', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    useChartStore().exposure = {
-      verdict: 'ok',
-      highlightsClipped: false,
-      shadowsCrushed: false,
-      level18: 0.46,
-      level50: 0.74,
-      delta: 0,
-      contrast: 0,
-    };
-    await flushPromises();
-    await wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Weiter'))
-      ?.trigger('click');
-    expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
-  });
-
   it('hält die Kamera beim Wechsel der Tabs am Laufen', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
@@ -125,21 +104,22 @@ describe('App', () => {
     expect(useCameraStore().status).toBe('live');
   });
 
-  it('behält das Standbild beim Wechsel zu Vorschau und Export, verwirft es aber zwischen Grau und Farbe', async () => {
+  it('gibt jedem Tab mit Kamerabild sein eigenes Standbild, der Export ändert nichts', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     const camera = useCameraStore();
-    camera.still = stillFrame();
+    const gray = stillFrame();
+    camera.still = gray;
     await tabs(wrapper)[0]?.trigger('click');
-    expect(camera.still).not.toBeNull();
-    await tabs(wrapper)[2]?.trigger('click');
-    expect(camera.still).not.toBeNull();
-    await tabs(wrapper)[3]?.trigger('click');
-    expect(camera.still).not.toBeNull();
-    await tabs(wrapper)[0]?.trigger('click');
-    expect(camera.still).not.toBeNull();
+    expect(camera.still).toBe(gray);
     await tabs(wrapper)[1]?.trigger('click');
     expect(camera.still).toBeNull();
+    await tabs(wrapper)[2]?.trigger('click');
+    expect(camera.still).toBeNull();
+    await tabs(wrapper)[3]?.trigger('click');
+    expect(camera.still).toBeNull();
+    await tabs(wrapper)[0]?.trigger('click');
+    expect(camera.still).toBe(gray);
   });
 
   it('zeigt im Tab Export den Hinweis auf die fehlende Farbkorrektur', async () => {
@@ -170,7 +150,7 @@ describe('App', () => {
     installFakeCamera();
     const wrapper = mountApp();
     await tabs(wrapper)[2]?.trigger('click');
-    expect(wrapper.text()).toContain('Es gibt noch keine Farbkorrektur');
+    expect(wrapper.text()).toContain('Noch keine Farbkorrektur');
   });
 
   it('stoppt die Kamera beim Entfernen der App', async () => {

@@ -58,7 +58,7 @@ describe('ColorStep', () => {
       `${BUNDLED_NAME} (48 Felder)`,
     );
     expect(wrapper.findAll('button').map((b) => b.text())).not.toContain('Farbkorrektur berechnen');
-    expect(wrapper.text()).toContain('Beide Farbkarten ruhig vor die Kamera');
+    expect(wrapper.text()).toContain('Beide Farbkarten ruhig in die Rahmen');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
