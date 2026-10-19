@@ -10,6 +10,8 @@ Kameramonitor laden.
 
 Alles läuft im Browser. Es gibt kein Backend, Bilder und Messwerte verlassen den Rechner nicht.
 
+**Ausprobieren:** <https://avalax.github.io/cam_gradr/> (Version 1.0.0; die Kamera funktioniert nur über HTTPS oder `localhost`).
+
 ## Status
 
 Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
@@ -22,7 +24,7 @@ Die App entsteht in Meilensteinen (siehe [PLAN.md](PLAN.md)).
 | M3          | Schritt 2: Farbkarten, Referenz-Import, Korrekturberechnung | fertig |
 | M4          | LUT-Erzeugung und Live-Vorschau mit Vorher/Nachher          | fertig |
 | M5          | Export als `.cube`, Projekt speichern und laden (JSON)      | fertig |
-| M6          | Automatische Kartenerkennung, Feinschliff                   | läuft  |
+| M6          | Automatische Kartenerkennung, Feinschliff                   | fertig |
 
 Noch nicht an der echten Karte geprüft sind die Feldpositionen im Layout und die Schwellen der Ampel.
 Beides ist aus Fotos geschätzt und lässt sich in `src/data/layouts/` bzw. `src/chart/exposure.ts`
