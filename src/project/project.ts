@@ -1,6 +1,10 @@
 import { COLOR_IDS, grayLayout } from '../chart/layouts';
 import type { Point, Rgb } from '../chart/types';
+import type { StillKey } from '../camera/camera-store';
 import type { ColorModel } from '../solve/fit';
+
+import { FRAME_ENCODING } from './frame-codec';
+import type { EncodedFrame } from './frame-codec';
 
 export const PROJECT_FORMAT = 'cam_gradr-project/1';
 
@@ -26,7 +30,12 @@ export interface Project {
   // Das berechnete Korrekturmodell; Referenzwerte (Herstellerdaten) werden bewusst nicht gespeichert.
   model: ColorModel | null;
   preview: { split: number };
+  // Standbilder je Tab; fehlt in Dateien, die ohne Bilder gespeichert wurden.
+  stills?: Partial<Record<StillKey, EncodedFrame>>;
 }
+
+const STILL_KEYS: ReadonlySet<string> = new Set(['gray', 'color', 'preview']);
+const MAX_STILL_SIDE = 16_384;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -146,6 +155,47 @@ function parsePercent(value: unknown, name: string): number {
   return value;
 }
 
+function parseStill(value: unknown, key: string): EncodedFrame {
+  const where = `Standbild "${key}"`;
+  if (!isRecord(value) || value.encoding !== FRAME_ENCODING || typeof value.data !== 'string') {
+    throw new TypeError(`${where}: unbekannte Codierung`);
+  }
+  const { width, height } = value;
+  if (
+    !Number.isSafeInteger(width) ||
+    !Number.isSafeInteger(height) ||
+    Number(width) < 1 ||
+    Number(height) < 1 ||
+    Number(width) > MAX_STILL_SIDE ||
+    Number(height) > MAX_STILL_SIDE
+  ) {
+    throw new RangeError(`${where}: ungültige Größe`);
+  }
+  return {
+    width: Number(width),
+    height: Number(height),
+    encoding: FRAME_ENCODING,
+    data: value.data,
+  };
+}
+
+function parseStills(value: unknown): Partial<Record<StillKey, EncodedFrame>> | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    throw new TypeError('Standbilder: erwartet wird ein Objekt');
+  }
+  const stills: Partial<Record<StillKey, EncodedFrame>> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (!STILL_KEYS.has(key)) {
+      throw new RangeError(`Standbilder: unbekannter Tab "${key}"`);
+    }
+    stills[key as StillKey] = parseStill(entry, key);
+  }
+  return stills;
+}
+
 // Prüft eine Projektdatei und liefert typisierte Daten; Fehler haben verständliche Meldungen.
 export function parseProject(text: string): Project {
   let raw: unknown;
@@ -166,6 +216,7 @@ export function parseProject(text: string): Project {
   if (!isRecord(raw.preview)) {
     throw new TypeError('Vorschau: Einstellungen fehlen');
   }
+  const stills = parseStills(raw.stills);
   return {
     format: PROJECT_FORMAT,
     savedAt: typeof raw.savedAt === 'string' ? raw.savedAt : '',
@@ -175,6 +226,7 @@ export function parseProject(text: string): Project {
     preview: {
       split: parsePercent(raw.preview.split, 'Trennlinie'),
     },
+    ...(stills !== undefined && { stills }),
   };
 }
 

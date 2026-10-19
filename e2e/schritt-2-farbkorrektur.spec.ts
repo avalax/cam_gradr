@@ -21,7 +21,7 @@ test.describe('Farbkarten: Referenzwerte', () => {
     // Ohne Aufnahme der Farbkarten gibt es noch kein Ergebnis, mit Eckpunkten rechnet die App selbst.
     await expect(app.page.getByTestId('report')).toBeHidden();
     await app.captureColorCards();
-    await expect(app.page.getByTestId('report')).toBeVisible();
+    await app.showReport();
   });
 
   test('Das Zahnrad-Menü nennt die Quelle und bietet keinen Löschknopf für den mitgelieferten Satz', async ({
@@ -131,8 +131,8 @@ test.describe('Farbkarten: Farbkorrektur', () => {
     await app.closeSettings();
     await app.captureColorCards();
 
+    await app.showReport();
     const report = app.page.getByTestId('report');
-    await expect(report).toBeVisible();
     const before = Number(await app.page.getByTestId('mean-before').innerText());
     const after = Number(await app.page.getByTestId('mean-after').innerText());
     expect(before).toBeGreaterThan(4);

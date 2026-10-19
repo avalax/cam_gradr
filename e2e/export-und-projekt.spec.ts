@@ -45,7 +45,8 @@ test.describe('Export', () => {
         expect(Math.abs((corrected[index] ?? 0) - value)).toBeLessThanOrEqual(TOLERANCE);
       }
     }
-    await expect(app.page.getByTestId('export-saved')).toContainText('cam_gradr-33.cube');
+    // Nach dem Download gibt es keine zusätzliche Meldung.
+    await expect(app.page.getByRole('status')).toHaveCount(0);
   });
 
   test('Die Größe der LUT ist wählbar', async ({ app }) => {
@@ -83,11 +84,12 @@ test.describe('Projekt', () => {
 
     await app.page.reload();
     await app.loadProject(text);
-    await expect(app.page.getByTestId('project-notice')).toHaveText('Projekt geladen.');
+    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
 
     // Der Fehlerbericht wurde mit dem gespeicherten Referenzsatz neu berechnet.
     await app.openTab('Farbkarten');
-    await expect(app.page.getByTestId('report')).toBeVisible();
+    await app.showReport();
+    await app.hideReport();
     // Vorschau und Einstellungen sind zurück, ohne dass etwas neu aufgenommen werden muss.
     await app.openPreviewWithImage();
     await expect(app.page.getByTestId('preview-no-model')).toHaveCount(0);
@@ -139,9 +141,56 @@ test.describe('Projekt', () => {
     await app.page.reload();
     await app.loadProject(text);
 
-    await expect(app.page.getByTestId('project-notice')).toHaveText('Projekt geladen.');
+    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
     await app.openTab('Export');
     await expect(app.page.getByTestId('export-no-model')).toBeVisible();
+  });
+
+  test('Mit Standbildern kommen nach dem Laden Bilder und Umrisse zurück, die Kamera bleibt aus', async ({
+    app,
+  }) => {
+    await app.computeColorModel();
+    const { text } = await app.saveProject();
+    expect(text).toContain('"stills"');
+    await app.page.reload();
+    await app.loadProject(text);
+
+    await app.openTab('Graukarten');
+    await expect(app.page.getByTestId('card-placeholder')).toHaveCount(0);
+    await expect(app.page.locator('canvas').first()).toBeVisible();
+    await expect(app.page.locator('polygon[data-shape]').first()).toBeVisible();
+    await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+
+    await app.openTab('Farbkarten');
+    await expect(app.page.getByTestId('card-placeholder')).toHaveCount(0);
+    await expect(app.page.locator('polygon[data-shape]').first()).toBeVisible();
+  });
+
+  test('Mit laufender Kamera schaltet das Laden mit Standbildern die Kamera aus', async ({
+    app,
+  }) => {
+    await app.computeColorModel();
+    const { text } = await app.saveProject();
+    await app.openPreviewWithImage();
+    await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'true');
+    await app.loadProject(text);
+    await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+  });
+
+  test('Ohne Standbilder zeigt ein Kartentab nach dem Laden nur den Platzhalter', async ({
+    app,
+  }) => {
+    await app.computeColorModel();
+    const { text } = await app.saveProject({ withStills: false });
+    expect(text).not.toContain('"stills"');
+    await app.page.reload();
+    await app.loadProject(text);
+    await app.openTab('Farbkarten');
+
+    await expect(app.page.getByTestId('card-placeholder')).toContainText(
+      'Die Eckpunkte bleiben erhalten',
+    );
+    await expect(app.page.locator('polygon[data-shape]')).toHaveCount(0);
   });
 
   test('Die Vorschau funktioniert nach dem Laden des Projekts', async ({ app }) => {

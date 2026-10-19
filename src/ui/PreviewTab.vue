@@ -122,8 +122,13 @@ function currentSource(): { image: RenderSource; width: number; height: number }
   return null;
 }
 
-function capture(): void {
-  void captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
+// Nach der Aufnahme schaltet die App die Kamera aus (wie nach der automatischen Aufnahme). Ein neuer
+// Kamerastart verwirft das Standbild und zeigt wieder das Livebild.
+async function capture(): Promise<void> {
+  await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
+  if (still.value !== null) {
+    camera.stop();
+  }
 }
 
 function sizeKey(size: { width: number; height: number }): string {
@@ -215,15 +220,7 @@ const splitModel = computed({
           :disabled="!isLive || !videoReady"
           @click="capture"
         >
-          {{ still === null ? 'Standbild aufnehmen' : 'Neues Standbild aufnehmen' }}
-        </button>
-        <button
-          v-if="still !== null"
-          type="button"
-          class="rounded border px-3 py-1 text-sm"
-          @click="camera.clearStill()"
-        >
-          Zurück zum Livebild
+          Standbild aufnehmen
         </button>
       </div>
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>

@@ -42,7 +42,7 @@ Single-Page-Webapp (rein clientseitig, kein Backend), die mit der Webcam eine Da
 - LUT-Export:
   - `.cube` (Standard, 17/33/65 Stützstellen wählbar) – primär,
   - weitere Formate (`.3dl`, Hald-PNG) sind nicht vorgesehen.
-- Projekt speichern/laden als JSON-Datei (`cam_gradr-project/1`): Eckpunkte, Messwerte, berechnetes Modell und Vorschau-Einstellungen, damit ohne Neuaufnahme weitergearbeitet werden kann. Die Referenzwerte der Hersteller werden nicht gespeichert, nur der Name des gewählten Satzes; beim Laden wird mit einem vorhandenen Satz der Fehlerbericht neu berechnet, sonst bleibt das gespeicherte Modell für Vorschau und Export nutzbar.
+- Projekt speichern/laden als JSON-Datei (`cam_gradr-project/1`): Eckpunkte, Messwerte, berechnetes Modell und Vorschau-Einstellungen, damit ohne Neuaufnahme weitergearbeitet werden kann. Auf Wunsch (Haken „Standbilder mitspeichern“, voreingestellt) steckt je Tab mit Kamerabild das Standbild in der Datei (optionales Feld `stills`: RGB mit 8 Bit je Kanal, mit deflate gepackt, als Base64; die Größe spielt keine Rolle, weil nichts über eine Leitung geht). Beim Laden werden Eckpunkte und Standbilder wiederhergestellt und die Kamera wird ausgeschaltet; Dateien ohne Standbilder laden wie bisher, mit dem Platzhalter. Die Referenzwerte der Hersteller werden nicht gespeichert, nur der Name des gewählten Satzes; beim Laden wird mit einem vorhandenen Satz der Fehlerbericht neu berechnet, sonst bleibt das gespeicherte Modell für Vorschau und Export nutzbar.
 - Sprache der UI: Deutsch (i18n-fähig vorbereitet).
 
 ## 4. Nicht-funktionale Anforderungen

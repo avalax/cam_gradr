@@ -72,7 +72,6 @@ test.describe('Vorschau', () => {
     await app.computeColorModel();
     await app.openPreviewWithImage();
     await app.captureStill();
-    await app.stopCamera();
 
     await expectPatch(app, LEFT_PATCH, codes(cameraCode(dummyLab(LEFT_PATCH))));
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));

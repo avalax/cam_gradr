@@ -19,12 +19,22 @@ describe('ProjectStatus', () => {
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 
-  it('zeigt den Hinweis zum Projekt', async () => {
+  it('zeigt nach dem Speichern keine Meldung', async () => {
     const wrapper = mount(ProjectStatus);
-    useProjectStore().save();
+    await useProjectStore().save();
     await wrapper.vm.$nextTick();
-    expect(wrapper.get('[data-testid="project-notice"]').text()).toContain('gespeichert');
+    expect(wrapper.find('[data-testid="project-message"]').exists()).toBe(false);
+  });
+
+  it('zeigt den Hinweis zum Projekt schwebend und schließt ihn mit dem Kreuz', async () => {
+    const wrapper = mount(ProjectStatus);
+    useProjectStore().notice = 'Der Referenzsatz fehlt.';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('[data-testid="project-message"]').classes()).toContain('fixed');
+    expect(wrapper.get('[data-testid="project-notice"]').text()).toContain('Referenzsatz');
     expect(wrapper.find('[data-testid="project-error"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="project-message-close"]').trigger('click');
+    expect(wrapper.find('[data-testid="project-message"]').exists()).toBe(false);
   });
 
   it('zeigt den Fehler einer fehlerhaften Datei', async () => {

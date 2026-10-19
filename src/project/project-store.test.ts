@@ -49,9 +49,96 @@ async function workedState(): Promise<string> {
     neutralIds: NEUTRAL_IDS,
   });
   usePreviewStore().setSplit(30);
-  useProjectStore().save();
+  await useProjectStore().save();
   return (download.mock.calls.at(-1) as [string, string, string])[1];
 }
+
+const frame = (value: number) => ({
+  width: 4,
+  height: 2,
+  data: new Float32Array(4 * 2 * 3).fill(value),
+});
+
+// Rotanteil des angezeigten Standbilds.
+function shown(): number | undefined {
+  return useCameraStore().still?.data[0];
+}
+
+describe('useProjectStore mit Standbildern', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    download.mockReset();
+  });
+
+  it('speichert die Standbilder aller Tabs mit, wenn es gewünscht ist', async () => {
+    await workedState();
+    const camera = useCameraStore();
+    camera.still = frame(0.5);
+    camera.swapStill('gray', 'color');
+    camera.still = frame(0.25);
+    await useProjectStore().save({ withStills: true });
+    const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
+    expect(Object.keys(project.stills ?? {})).toHaveLength(2);
+    expect(project.stills?.color).toBeDefined();
+    expect(project.stills?.gray).toBeDefined();
+  });
+
+  it('lässt die Standbilder weg, wenn der Haken fehlt', async () => {
+    await workedState();
+    useCameraStore().still = frame(0.5);
+    await useProjectStore().save({ withStills: false });
+    const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
+    expect(project.stills).toBeUndefined();
+  });
+
+  it('stellt beim Laden die Standbilder wieder her und schaltet die Kamera aus', async () => {
+    await workedState();
+    const camera = useCameraStore();
+    camera.still = frame(0.5);
+    camera.swapStill('gray', 'color');
+    camera.still = frame(0.25);
+    camera.swapStill('color', 'gray');
+    await useProjectStore().save({ withStills: true });
+    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+
+    setActivePinia(createPinia());
+    const fresh = useCameraStore();
+    fresh.status = 'live';
+    const project = useProjectStore();
+    await project.load(text);
+
+    expect(project.error).toBeNull();
+    expect(fresh.status).toBe('idle');
+    expect(fresh.stillOwner).toBe('gray');
+    expect(shown()).toBeCloseTo(0.5, 2);
+    fresh.swapStill('gray', 'color');
+    expect(shown()).toBeCloseTo(0.25, 2);
+  });
+
+  it('lässt die Kamera an, wenn die Datei keine Standbilder enthält', async () => {
+    const text = await workedState();
+    setActivePinia(createPinia());
+    const camera = useCameraStore();
+    camera.status = 'live';
+    camera.still = frame(0.5);
+    await useProjectStore().load(text);
+    expect(camera.status).toBe('live');
+    expect(camera.still).toBeNull();
+  });
+
+  it('lehnt eine Datei mit unlesbarem Standbild ab und lässt den Stand unverändert', async () => {
+    const text = await workedState();
+    const raw = JSON.parse(text) as Record<string, unknown>;
+    raw.stills = { gray: { width: 1, height: 1, encoding: 'rgb8-deflate-base64', data: 'AAAA' } };
+    const camera = useCameraStore();
+    camera.still = frame(0.5);
+    const project = useProjectStore();
+    await project.load(JSON.stringify(raw));
+    expect(project.error).toContain('lässt sich nicht lesen');
+    expect(shown()).toBeCloseTo(0.5);
+  });
+});
 
 describe('useProjectStore', () => {
   beforeEach(() => {
@@ -72,7 +159,7 @@ describe('useProjectStore', () => {
     expect(project.model).not.toBeNull();
     expect(project.preview).toEqual({ split: 30 });
     expect(Number.isNaN(Date.parse(project.savedAt))).toBe(false);
-    expect(useProjectStore().notice).toContain('gespeichert');
+    expect(useProjectStore().notice).toBeNull();
     expect(text).not.toContain('"lab"');
   });
 
@@ -85,7 +172,7 @@ describe('useProjectStore', () => {
     await project.load(text);
 
     expect(project.error).toBeNull();
-    expect(project.notice).toBe('Projekt geladen.');
+    expect(project.notice).toBeNull();
     expect(useCameraStore().still).toBeNull();
     expect(useChartStore().points).toEqual({ 3: [{ x: 1, y: 2 }] });
     expect(useChartStore().measurements).toEqual(grayMeasurements);
@@ -95,6 +182,16 @@ describe('useProjectStore', () => {
     expect(useReferenceStore().selectedName).toBe('Mein Satz');
     expect(useSolveStore().model).not.toBeNull();
     expect(useSolveStore().result?.report.patches).toHaveLength(48);
+  });
+
+  it('schließt Fehler und Hinweis mit dismiss', async () => {
+    const project = useProjectStore();
+    await project.load('{"format":"x"}');
+    expect(project.error).not.toBeNull();
+    project.notice = 'Hinweis';
+    project.dismiss();
+    expect(project.error).toBeNull();
+    expect(project.notice).toBeNull();
   });
 
   it('nutzt das gespeicherte Modell, wenn der Referenzsatz fehlt, und weist darauf hin', async () => {
@@ -130,7 +227,7 @@ describe('useProjectStore', () => {
     const project = useProjectStore();
     await project.load(JSON.stringify(raw));
 
-    expect(project.notice).toBe('Projekt geladen.');
+    expect(project.notice).toBeNull();
     expect(useSolveStore().model).toBeNull();
   });
 
@@ -160,7 +257,7 @@ describe('useProjectStore', () => {
     const project = useProjectStore();
     await project.load('kaputt');
     expect(project.error).not.toBeNull();
-    project.save();
+    await project.save();
     expect(project.error).toBeNull();
     await project.load('kaputt');
     await project.load(text);

@@ -41,8 +41,8 @@ const tiles = computed(() =>
 
 <template>
   <section class="space-y-3" data-testid="report">
-    <h3 class="text-lg font-semibold">Ergebnis der Farbkorrektur</h3>
-    <dl class="grid max-w-xl grid-cols-3 gap-x-4 gap-y-1 text-sm" data-testid="report-summary">
+    <h3 class="text-base font-semibold">Ergebnis der Farbkorrektur</h3>
+    <dl class="grid grid-cols-3 gap-x-4 gap-y-1 text-sm" data-testid="report-summary">
       <dt class="font-medium"></dt>
       <dt class="font-medium">Vorher</dt>
       <dt class="font-medium">Nachher</dt>
@@ -66,7 +66,7 @@ const tiles = computed(() =>
 
     <p
       v-if="result.report.indistinct.length > 0"
-      class="max-w-xl text-sm text-amber-800"
+      class="text-xs text-amber-300"
       role="note"
       data-testid="indistinct-warning"
     >
@@ -77,9 +77,9 @@ const tiles = computed(() =>
       Belichtung) und stelle die Belichtung fest ein.
     </p>
 
-    <section v-if="grayRows.length > 0" class="max-w-xl space-y-1 text-sm" data-testid="gray-check">
+    <section v-if="grayRows.length > 0" class="space-y-1 text-sm" data-testid="gray-check">
       <h4 class="font-medium">Kontrolle mit den Graukarten</h4>
-      <p class="text-xs text-slate-600">
+      <p class="text-xs text-slate-300">
         Die großen Felder der Graukarten gehen nicht in die Berechnung ein. Ihre Abweichung vom
         Nennwert (ΔE2000, vorher → nachher) zeigt unabhängig, ob die Korrektur auch dort stimmt.
       </p>
@@ -88,27 +88,27 @@ const tiles = computed(() =>
           {{ row.name }}: {{ format(row.before) }} → {{ format(row.after) }}
         </li>
       </ul>
-      <p v-if="grayOff" class="text-xs text-amber-800" role="note" data-testid="gray-warning">
+      <p v-if="grayOff" class="text-xs text-amber-300" role="note" data-testid="gray-warning">
         Die Abweichung ist groß. Möglicherweise haben sich Licht oder die Automatik der Kamera
         zwischen den Aufnahmen der Graukarten und der Farbkarten geändert, oder die Nennwerte der
         Graukarten stimmen nicht genau.
       </p>
     </section>
 
-    <p class="max-w-4xl text-xs text-slate-600">
+    <p class="text-xs text-slate-300">
       Je Feld: links Soll-Farbe, Mitte Kamera, rechts korrigiert. Unter dem Feld steht der Fehler
       vorher → nachher (ΔE2000, unter etwa 2 kaum sichtbar).
     </p>
 
-    <ul class="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2">
+    <ul class="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-1.5">
       <li
         v-for="tile in tiles"
         :key="tile.id"
-        class="rounded border border-slate-300 p-1 text-center text-xs"
+        class="rounded border border-slate-600 p-1 text-center text-[10px]"
         :data-testid="`tile-${tile.id}`"
         :title="`${tile.id}: ΔE ${format(tile.before)} → ${format(tile.after)}`"
       >
-        <div class="flex h-8 overflow-hidden rounded">
+        <div class="flex h-5 overflow-hidden rounded">
           <span class="flex-1" :style="{ background: tile.referenceCss }"></span>
           <span class="flex-1" :style="{ background: tile.cameraCss }"></span>
           <span class="flex-1" :style="{ background: tile.correctedCss }"></span>

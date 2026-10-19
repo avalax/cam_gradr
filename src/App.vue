@@ -54,11 +54,9 @@ onMounted(() => {
 
 // Jeder Tab mit Kamerabild (Grau-, Farbkarten, Vorschau) hat sein eigenes Standbild: Beim Wechsel
 // wird es abgelegt und beim Zurückkommen wieder angezeigt. Der Export zeigt kein Kamerabild.
-const owner = ref<'gray' | 'color' | 'preview'>('gray');
 watch(tab, (next) => {
-  if (next !== 'export' && next !== owner.value) {
-    camera.swapStill(owner.value, next);
-    owner.value = next;
+  if (next !== 'export' && next !== camera.stillOwner) {
+    camera.swapStill(camera.stillOwner, next);
   }
 });
 

@@ -81,13 +81,16 @@ watch([measurements, selected], () => {
               :model="model"
               :reference="selected"
               :report="result?.report ?? null"
-            />
+            >
+              <template #details>
+                <ResultReport v-if="result !== null" :result="result" :gray-check="grayCheck" />
+              </template>
+            </ColorWipe>
           </template>
         </CardStage>
       </div>
     </div>
 
     <p v-if="solveError !== null" class="text-sm text-red-700" role="alert">{{ solveError }}</p>
-    <ResultReport v-if="result !== null" :result="result" :gray-check="grayCheck" />
   </section>
 </template>

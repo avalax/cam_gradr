@@ -78,7 +78,12 @@ const guides = computed(() =>
 const autoActive = computed(
   () => isLive.value && videoReady.value && !showStill.value && noPoints.value,
 );
-const shapes = computed(() => buildShapes(props.layout, corners.value));
+// Ohne Kamerabild und ohne Standbild zeigt die Bildfläche nur den Platzhalter; gespeicherte Eckpunkte
+// (zum Beispiel aus einem Projekt) werden dann nicht darüber gezeichnet.
+const showPlaceholder = computed(() => !isLive.value && !showStill.value);
+const shapes = computed(() =>
+  showPlaceholder.value ? [] : buildShapes(props.layout, corners.value),
+);
 const handles = computed(() =>
   showStill.value
     ? Object.entries(points.value).flatMap(([card, list]) =>
@@ -230,7 +235,7 @@ watch(actual, (next, previous) => {
       <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
         <!-- Platzhalter in der Größe des Bildes, solange die Kamera aus ist und es kein Standbild gibt. -->
         <div
-          v-if="!isLive && !showStill"
+          v-if="showPlaceholder"
           class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
           :style="{ aspectRatio: size.width / size.height }"
           data-testid="card-placeholder"
@@ -254,7 +259,11 @@ watch(actual, (next, previous) => {
             </template>
             <template v-else>
               <span class="block font-semibold text-zinc-800">Die Kamera ist aus</span>
-              Schalte sie oben mit „Kamera“ ein. {{ idleText }}
+              <template v-if="noPoints">Schalte sie oben mit „Kamera“ ein. {{ idleText }}</template>
+              <template v-else>
+                Die Eckpunkte bleiben erhalten. Schalte die Kamera oben ein, um im Livebild mit
+                ihnen zu messen.
+              </template>
             </template>
           </p>
         </div>
