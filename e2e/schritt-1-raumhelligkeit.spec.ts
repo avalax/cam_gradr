@@ -95,17 +95,24 @@ test.describe('Graukarten: Raum passt', () => {
     }
   }
 
-  test('Livebild misst mit denselben Eckpunkten weiter', async ({ app }) => {
+  test('Ein Kamerastart beginnt eine neue Suche, das Beenden ohne neues Standbild gibt den alten Stand zurück', async ({
+    app,
+  }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
     await app.expectCorners();
     await app.expectVerdict('im Normalbereich');
 
-    await app.button('Zurück zum Livebild').click();
+    // Im Livebild verschwinden Eckpunkte und Messung, damit ein neues Standbild entstehen kann.
     await app.startCamera();
-    await expect(app.page.locator('video')).toBeVisible();
-    await expect(app.button('Zurück zum Livebild')).toBeHidden();
+    await expect(app.page.locator('svg circle')).toHaveCount(0);
+    await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
+
+    // Ohne neue Aufnahme kehrt der bisherige Stand mit Bild und Eckpunkten zurück.
+    await app.stopCamera();
+    await app.expectCorners();
+    await expect(app.page.locator('canvas').first()).toBeVisible();
     await app.expectVerdict('im Normalbereich');
   });
 
@@ -116,7 +123,7 @@ test.describe('Graukarten: Raum passt', () => {
     await app.expectCorners();
 
     await app.button('Eckpunkte löschen').click();
-    await expect(app.button('Zurück zum Livebild')).toBeHidden();
+    await expect(app.page.locator('svg circle')).toHaveCount(0);
     await expect(app.page.getByTestId('auto-hint')).toBeVisible();
     await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
 
@@ -168,7 +175,7 @@ test.describe('Graukarten: automatische Aufnahme', () => {
     await expect(app.page.getByTestId('detect-message')).toContainText('Standbild aufgenommen');
     await expect(app.page.locator('svg circle')).toHaveCount(8);
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
-    await expect(app.button('Zurück zum Livebild')).toBeVisible();
+    await expect(app.button('Eckpunkte löschen')).toBeVisible();
     await app.expectVerdict('im Normalbereich');
   });
 });

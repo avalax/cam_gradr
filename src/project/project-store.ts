@@ -30,15 +30,16 @@ function applyStills(stills: Stills | null): void {
   }
 }
 
-// Stellt Eckpunkte, Messwerte und die Trennlinie der Vorschau her.
-function applyCharts(project: Project): void {
+// Stellt Eckpunkte, Messwerte und die Trennlinie der Vorschau her. Eckpunkte gelten nur zusammen mit einem
+// Standbild; Dateien ohne Standbilder (auch ältere) bringen keine mit.
+function applyCharts(project: Project, withStills: boolean): void {
   useChartStore().restore({
-    points: project.gray.corners,
+    points: withStills ? project.gray.corners : {},
     measurements: project.gray.measurements,
     rotated: project.gray.rotated,
   });
   useColorChartStore().restore({
-    points: project.color.corners,
+    points: withStills ? project.color.corners : {},
     measurements: project.color.measurements,
     rotated: project.color.rotated,
   });
@@ -83,21 +84,22 @@ async function decodeStills(project: Project): Promise<Stills | null> {
   return stills;
 }
 
-// Liest den aktuellen Arbeitsstand aus den Stores.
-function snapshot(): Project {
-  const gray = useChartStore();
-  const color = useColorChartStore();
+// Liest den aktuellen Arbeitsstand aus den Stores. Eckpunkte gehören zu einem Standbild: Ohne Standbilder
+// in der Datei werden sie nicht gespeichert.
+function snapshot(withCorners: boolean): Project {
+  const gray = useChartStore().committed();
+  const color = useColorChartStore().committed();
   const preview = usePreviewStore();
   return {
     format: PROJECT_FORMAT,
     savedAt: new Date().toISOString(),
     gray: {
-      corners: gray.points,
+      corners: withCorners ? gray.points : {},
       measurements: { ...gray.measurements },
       rotated: gray.rotated,
     },
     color: {
-      corners: color.points,
+      corners: withCorners ? color.points : {},
       measurements: { ...color.measurements },
       rotated: color.rotated,
       reference: useReferenceStore().selectedName,
@@ -118,8 +120,9 @@ export const useProjectStore = defineStore('project', () => {
   async function save(options?: { withStills: boolean }): Promise<void> {
     error.value = null;
     notice.value = null;
-    const project = snapshot();
-    if (options?.withStills === true) {
+    const withStills = options?.withStills === true;
+    const project = snapshot(withStills);
+    if (withStills) {
       const stills: NonNullable<Project['stills']> = {};
       for (const [key, frame] of Object.entries(useCameraStore().allStills())) {
         stills[key as StillKey] = await encodeFrame(frame);
@@ -141,7 +144,7 @@ export const useProjectStore = defineStore('project', () => {
     }
     error.value = null;
     applyStills(read.stills);
-    applyCharts(read.project);
+    applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
     // Erfolgsmeldungen gibt es nicht; nur der fehlende Referenzsatz verdient einen Hinweis.
     notice.value =

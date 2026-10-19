@@ -137,7 +137,7 @@ test.describe('Kameraschalter', () => {
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
 
     await expect(app.page.locator('canvas')).toBeVisible();
-    await expect(app.button('Zurück zum Livebild')).toBeVisible();
+    await expect(app.button('Eckpunkte löschen')).toBeVisible();
   });
 
   test('Jeder Tab behält sein Standbild beim Wechsel zwischen den Tabs', async ({ app }) => {
@@ -146,13 +146,13 @@ test.describe('Kameraschalter', () => {
     await app.captureStill();
 
     await app.openTab('Farbkarten');
-    await expect(app.button('Zurück zum Livebild')).toHaveCount(0);
+    await expect(app.button('Eckpunkte löschen')).toHaveCount(0);
     await expect(app.page.getByText('Die Kamera ist aus')).toBeVisible();
 
     await app.openTab('Vorschau');
-    await expect(app.button('Zurück zum Livebild')).toHaveCount(0);
+    await expect(app.button('Eckpunkte löschen')).toHaveCount(0);
 
     await app.openTab('Graukarten');
-    await expect(app.button('Zurück zum Livebild')).toBeVisible();
+    await expect(app.button('Eckpunkte löschen')).toBeVisible();
   });
 });

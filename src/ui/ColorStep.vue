@@ -72,7 +72,6 @@ watch([measurements, selected], () => {
           :layout="colorLayout"
           :card-names="CARD_NAMES"
           :idle-text="IDLE_TEXT"
-          :live-measure="false"
         >
           <template #side>
             <ColorWipe

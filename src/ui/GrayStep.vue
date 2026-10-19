@@ -33,7 +33,6 @@ const IDLE_TEXT = 'Beide Graukarten ruhig in die Rahmen vor die Kamera halten.';
         :layout="grayLayout"
         :card-names="CARD_NAMES"
         :idle-text="IDLE_TEXT"
-        live-measure
       >
         <template #side>
           <MeasureField :exposure="exposure" />

@@ -38,6 +38,74 @@ describe('useChartStore', () => {
     setActivePinia(createPinia());
   });
 
+  describe('Suche mit gehaltenem Stand', () => {
+    function withCards() {
+      const store = useChartStore();
+      placeCard(store, 0);
+      placeCard(store, 200);
+      store.measure(grid(200, 200));
+      return store;
+    }
+
+    it('hält beim Beginn der Suche Eckpunkte und Messwerte und leert den sichtbaren Stand', () => {
+      const store = withCards();
+      store.beginSearch();
+      expect(store.points).toEqual({});
+      expect(store.measurements).toEqual({});
+      expect(store.exposure).toBeNull();
+      expect(Object.keys(store.committed().points)).toHaveLength(2);
+      expect(Object.keys(store.committed().measurements).length).toBeGreaterThan(0);
+    });
+
+    it('stellt am Ende der Suche den bisherigen Stand wieder her, wenn nichts Neues entstand', () => {
+      const store = withCards();
+      const before = store.committed();
+      const exposureBefore = store.exposure;
+      store.beginSearch();
+      store.endSearch();
+      expect(store.points).toEqual(before.points);
+      expect(store.measurements).toEqual(before.measurements);
+      expect(store.exposure).toEqual(exposureBefore);
+      expect(store.committed().points).toEqual(before.points);
+    });
+
+    it('behält neue Eckpunkte und lässt den gehaltenen Stand fallen', () => {
+      const store = withCards();
+      store.beginSearch();
+      store.setCards([
+        [point(1, 1), point(2, 1), point(2, 2), point(1, 2)],
+        [point(3, 1), point(4, 1), point(4, 2), point(3, 2)],
+      ]);
+      store.endSearch();
+      expect(store.points[3]?.[0]).toEqual(point(1, 1));
+    });
+
+    it('beginnt keine Suche ohne Eckpunkte und hält bei einem zweiten Beginn den ersten Stand', () => {
+      const store = useChartStore();
+      store.beginSearch();
+      expect(store.committed().points).toEqual({});
+      const filled = withCards();
+      filled.beginSearch();
+      filled.beginSearch();
+      filled.endSearch();
+      expect(Object.keys(filled.points)).toHaveLength(2);
+    });
+
+    it('verwirft den gehaltenen Stand mit reset und restore', () => {
+      const store = withCards();
+      store.beginSearch();
+      store.reset();
+      store.endSearch();
+      expect(store.points).toEqual({});
+
+      const again = withCards();
+      again.beginSearch();
+      again.restore({ points: {}, measurements: {}, rotated: false });
+      again.endSearch();
+      expect(again.points).toEqual({});
+    });
+  });
+
   it('lädt das Graulayout mit beiden Karten', () => {
     expect(grayLayout.cards.map((card) => card.card)).toEqual([...GRAY_CARD_ORDER]);
   });

@@ -191,13 +191,17 @@ describe('useCameraStore', () => {
     expect(store.still).toBe(gray);
     store.swapStill('gray', 'color');
     expect(store.still).toBe(color);
-    // Kamerastart und Löschen betreffen nur das angezeigte Standbild.
+    // Kamerastart und Löschen betreffen nur das angezeigte Standbild; das Standbild bleibt gehalten.
     await store.start();
     expect(store.still).toBeNull();
+    store.stop();
+    expect(store.still).toBe(color);
     store.swapStill('color', 'gray');
     expect(store.still).toBe(gray);
     store.clearStill();
     store.swapStill('gray', 'color');
+    expect(store.still).toBe(color);
+    store.swapStill('color', 'gray');
     expect(store.still).toBeNull();
     // Ohne Standbild im verlassenen Tab bleibt nichts liegen; Verwerfen löscht alle.
     store.swapStill('color', 'gray');
@@ -205,6 +209,91 @@ describe('useCameraStore', () => {
     store.discardStills();
     store.swapStill('gray', 'color');
     expect(store.still).toBeNull();
+  });
+
+  describe('Suche mit gehaltenem Standbild', () => {
+    const frame = (value: number) => ({
+      width: 1,
+      height: 1,
+      data: new Float32Array([value, 0, 0]),
+    });
+    const grabber = {
+      grab: () => ({ width: 1, height: 1, data: [255, 0, 0, 255] }),
+      nextFrame: () => Promise.resolve(),
+    };
+
+    it('hält das bisherige Standbild beim Kamerastart und gibt es beim Beenden zurück', async () => {
+      fakeApi();
+      const store = useCameraStore();
+      const old = frame(0.2);
+      store.still = old;
+      await store.start();
+      expect(store.still).toBeNull();
+      expect(store.allStills().gray).toBe(old);
+      store.stop();
+      expect(store.still).toBe(old);
+      expect(store.allStills().gray).toBe(old);
+    });
+
+    it('behält ein neues Standbild und lässt das bisherige fallen', async () => {
+      fakeApi();
+      const store = useCameraStore();
+      const old = frame(0.2);
+      store.still = old;
+      await store.start();
+      await store.captureStill(grabber, 1);
+      const fresh = store.still;
+      expect(fresh).not.toBeNull();
+      store.stop();
+      expect(store.still).toBe(fresh);
+      expect(store.still).not.toBe(old);
+    });
+
+    it('gibt das bisherige Standbild auch nach einem Fehler beim Start zurück', async () => {
+      fakeApi({ open: vi.fn().mockRejectedValue(new CameraError('permission-denied')) });
+      const store = useCameraStore();
+      const old = frame(0.2);
+      store.still = old;
+      await store.start();
+      expect(store.status).toBe('error');
+      expect(store.still).toBe(old);
+    });
+
+    it('löscht auch das gehaltene Standbild mit clearStill und discardStills', async () => {
+      fakeApi();
+      const store = useCameraStore();
+      store.still = frame(0.2);
+      await store.start();
+      store.clearStill();
+      store.stop();
+      expect(store.still).toBeNull();
+      store.still = frame(0.3);
+      await store.start();
+      store.discardStills();
+      store.stop();
+      expect(store.still).toBeNull();
+    });
+
+    it('legt beim Tabwechsel mit laufender Kamera das Standbild ab und hält das des neuen Tabs', async () => {
+      fakeApi();
+      const store = useCameraStore();
+      const grayStill = frame(0.1);
+      store.still = grayStill;
+      store.swapStill('gray', 'color');
+      const colorStill = frame(0.2);
+      store.still = colorStill;
+      store.swapStill('color', 'gray');
+      await store.start();
+      expect(store.still).toBeNull();
+      store.swapStill('gray', 'color');
+      expect(store.still).toBeNull();
+      expect(store.allStills().gray).toBe(grayStill);
+      expect(store.allStills().color).toBe(colorStill);
+      store.stop();
+      expect(store.still).toBe(colorStill);
+      store.swapStill('color', 'gray');
+      expect(store.still).toBe(grayStill);
+    });
   });
 
   it('kennt den Besitzer des Standbilds, liefert alle Standbilder und stellt sie wieder her', () => {
