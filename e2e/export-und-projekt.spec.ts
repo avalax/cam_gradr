@@ -18,8 +18,10 @@ test.describe('Export', () => {
     await app.open();
     await app.openTab('Export');
 
-    await expect(app.page.getByTestId('export-no-model')).toContainText('noch keine Farbkorrektur');
-    await expect(app.page.getByTestId('export-download')).toHaveCount(0);
+    await expect(app.page.getByTestId('export-no-model')).toContainText('Noch keine Farbkorrektur');
+    // Man sieht, was man bekäme: der Download steht da, ist aber gesperrt.
+    await expect(app.page.getByTestId('export-download')).toBeDisabled();
+    await expect(app.page.getByTestId('export-download')).toContainText('cam_gradr-33.cube');
   });
 
   test('Die heruntergeladene .cube-Datei korrigiert die Farben', async ({ app }) => {
@@ -49,7 +51,7 @@ test.describe('Export', () => {
   test('Die Größe der LUT ist wählbar', async ({ app }) => {
     await app.computeColorModel();
     await app.openTab('Export');
-    await app.page.getByTestId('export-size').selectOption('17');
+    await app.page.getByTestId('export-size-17').click();
 
     const { fileName, text } = await app.download(app.page.getByTestId('export-download'));
 
@@ -147,9 +149,9 @@ test.describe('Projekt', () => {
     const { text } = await app.saveProject();
     await app.page.reload();
     await app.loadProject(text);
-    await app.startCamera();
-    await app.showCards('colors');
+    // Das Video steht nur in Tabs mit Kamerabild, daher zuerst die Vorschau öffnen.
     await app.openPreviewWithImage();
+    await app.showCards('colors');
 
     const patch = '1F';
     const { x, y } = colorPatchCenter(patch);

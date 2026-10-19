@@ -39,6 +39,20 @@ test.describe('Tabs', () => {
     }
   });
 
+  test('Der Inhaltsbereich ist auf allen vier Tabs gleich hoch', async ({ app }) => {
+    await app.open();
+    const heights: number[] = [];
+    for (const tab of ['Graukarten', 'Farbkarten', 'Vorschau', 'Export'] as const) {
+      await app.openTab(tab);
+      const box = await app.page.getByRole('tabpanel').boundingBox();
+      heights.push(Math.round(box?.height ?? 0));
+    }
+    expect(heights[0]).toBeGreaterThan(0);
+    for (const height of heights) {
+      expect(Math.abs(height - (heights[0] ?? 0))).toBeLessThanOrEqual(1);
+    }
+  });
+
   test('Ohne Kamera weisen die Kartentabs auf den Kameraschalter hin', async ({ app }) => {
     await app.open();
 

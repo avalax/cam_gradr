@@ -3,7 +3,7 @@
 [![CI](https://github.com/avalax/cam_gradr/actions/workflows/ci.yml/badge.svg)](https://github.com/avalax/cam_gradr/actions/workflows/ci.yml)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
 
-Webcam-LUT-Generator für die **Datacolor Spyder Checkr Photo**. Die Single-Page-Webapp nimmt die Karten
+LUT-Generator für die **Datacolor Spyder Checkr Photo**. Die Single-Page-Webapp nimmt die Karten
 mit der Webcam auf, stellt zuerst die Raumhelligkeit ein und berechnet danach eine 3D-LUT, die die
 Farbwiedergabe der Webcam korrigiert. Die LUT lässt sich als Datei exportieren und zum Beispiel in einen
 Kameramonitor laden.
@@ -30,8 +30,8 @@ anpassen.
 
 ## So funktioniert es
 
-Links oben schaltet der Schalter die Kamera an oder aus (grün „Kamera starten“, rot „Kamera stoppen“), ohne den Tab zu wechseln. Die Kameraauswahl,
-die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ oben rechts. Die App hat vier Tabs,
+Der Schalter rechts oben neben dem Zahnrad schaltet die Kamera an oder aus (grün „Kamera starten“, rot „Kamera stoppen“), ohne den Tab zu wechseln. Unter den Tab-Namen steht kurz das Ergebnis, bei Graukarten und Farbkarten dazu eine Mini-Skala aus vier Strichen: leer = noch nichts, grün = gut (Licht im Normalbereich bzw. mittlere Abweichung nach der Korrektur höchstens 2), gelb = Hinweis. Die Kameraauswahl,
+die Auflösung und der Hinweis zur Kamera-Automatik stehen im Zahnrad-Menü ⚙ oben rechts, dort als aufklappbare Abschnitte „Kamera“ und „Referenzwerte“ (zugeklappt mit Kurzfassung des Stands). Die App hat vier Tabs,
 die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau** und **Export**.
 
 1. **Tab Graukarten: Raumhelligkeit.** Beide Graukarten ruhig vor die Kamera halten.
@@ -47,7 +47,7 @@ die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau**
 
 Ohne WebGL2 zeichnet die Vorschau in einer verkleinerten Software-Darstellung; im Tab steht, welche Darstellung aktiv ist.
 
-Im Zahnrad-Menü ⚙ oben rechts sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
+Im Tab Export sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
 (Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte stehen nicht
 in der Datei, nur der Name des gewählten Satzes.
 
