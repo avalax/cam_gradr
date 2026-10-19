@@ -18,12 +18,3 @@ First release. The app turns a webcam image of the Datacolor Spyder Checkr Photo
 * **reference:** bundled unofficial Spyder Checkr 48 reference set and import of own sets (JSON or CSV)
 * **ui:** settings menu with fold-out sections for camera and reference values
 * scaffold project with tooling, CI and release pipeline
-
-
-### Bug Fixes
-
-* **camera:** wait for the first video frame before capturing a still and never hang on missing frames
-* **chart:** find the cards in bright webcam images, fit the guide frames to a real card, sort and number the corner points
-* **layout:** measure the fields of the right gray card
-* **solve:** pool neutral patches the camera cannot tell apart before building the curves
-* **preview:** software fallback when WebGL2 is missing
