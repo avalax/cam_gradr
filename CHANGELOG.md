@@ -2,60 +2,28 @@
 
 ## 1.0.0 (2026-10-19)
 
+First release. The app turns a webcam image of the Datacolor Spyder Checkr Photo cards into a 3D LUT.
 
 ### Features
 
-* **camera:** add live view, camera selection and still capture ([3f86d06](https://github.com/avalax/cam_gradr/commit/3f86d065b4d5f8b12e66f51ee888bc3fdb0a98cf))
-* **chart:** add gray card step with corner picking and exposure light ([343760b](https://github.com/avalax/cam_gradr/commit/343760b0fccc0953fe4710ddb78965592b2c1dc7))
-* **chart:** detect cards held upside down and assign the fields accordingly ([cfb0fd6](https://github.com/avalax/cam_gradr/commit/cfb0fd631db72e83fd91ca55d04609eaef1ae053))
-* **chart:** detect the cards automatically on a still image ([91f4b2f](https://github.com/avalax/cam_gradr/commit/91f4b2f5ce7b717d5d5195a75914a35071b1fc77))
-* **chart:** set corner points on a still image and merge camera into step 1 ([8c693c0](https://github.com/avalax/cam_gradr/commit/8c693c0b3bdf145db04819087038cd17ab96c7cc))
-* **color:** add color step with reference import, solver and report ([108a426](https://github.com/avalax/cam_gradr/commit/108a426bc63eef1b0fdd58b71de2b18fadf4b548))
-* **data:** add card, column and row to reference profile ([0379110](https://github.com/avalax/cam_gradr/commit/03791105d573e5ccc839da27a2bed9f494e6f986))
-* **data:** add gray card layout profile ([e42e920](https://github.com/avalax/cam_gradr/commit/e42e9205863d9d12ea5d641620a18c9ae83b82f4))
-* **data:** add unverified Spyder Checkr 48 reference profile ([533e156](https://github.com/avalax/cam_gradr/commit/533e156cadbde7b045d45420f316933152bb4d6b))
-* **export:** add cube export and json project save and load ([449f248](https://github.com/avalax/cam_gradr/commit/449f2486a063be247d44f516a98e9ceab53963e0))
-* LUT-Export als .cube und Projekt speichern/laden (M5). ([e954adf](https://github.com/avalax/cam_gradr/commit/e954adf8203c29730930df06ccf1b997118dc33e))
-* **lut:** add 3d lut, webgl2 renderer and preview tab ([92fdd27](https://github.com/avalax/cam_gradr/commit/92fdd27d9c85d3c7b5623576edbfe9d9ede1ca3c))
-* **project:** save stills with the project, show the color result as a popup, calm the layout ([ce2bded](https://github.com/avalax/cam_gradr/commit/ce2bded99afe3b732e348ee22adc891f602d2deb))
-* **project:** save stills with the project, show the color result as a popup, calm the layout ([edce275](https://github.com/avalax/cam_gradr/commit/edce275c385645fc6a2bcd73c3931d596dc1b8a0))
-* **reference:** load reference sets from a url and download them ([bc8a80e](https://github.com/avalax/cam_gradr/commit/bc8a80e154aeb2b63b4620e603276af970f2bed2))
-* **reference:** ship the unofficial reference set and drop the url import ([4503156](https://github.com/avalax/cam_gradr/commit/45031560c9e91f7b04eb9beb70084a7aa4a08add))
-* scaffold project with tooling, CI and release pipeline ([cd99b16](https://github.com/avalax/cam_gradr/commit/cd99b16248eef6c7dee150d2a47fb9a4f04017c1))
-* **solve:** split the error by neutral and color patches and check against the gray cards ([67ac4e7](https://github.com/avalax/cam_gradr/commit/67ac4e7e279db49c4db84be2969a42ff9f2647e9))
-* **ui:** add a contrast scale next to the brightness scale and show a starting camera in yellow ([fd2dae2](https://github.com/avalax/cam_gradr/commit/fd2dae2722a32f45cc3cf390c5f3ef746af972f8))
-* **ui:** capture the still automatically once the cards are held steady ([b0fcd97](https://github.com/avalax/cam_gradr/commit/b0fcd97d0ad0394de04c8c3637e1a42d24056fcd))
-* **ui:** compute the color correction automatically and show two color strips ([37d3fca](https://github.com/avalax/cam_gradr/commit/37d3fca09a94e56e760fbecfd747582772d1a15f))
-* **ui:** detect the cards automatically only and give every tab its own still image ([89e6faa](https://github.com/avalax/cam_gradr/commit/89e6faae767cbfd9c789181ea3932310a6ce1065))
-* **ui:** detect the cards automatically only and give every tab its own still image ([a3023e0](https://github.com/avalax/cam_gradr/commit/a3023e01bb322acc06366b90bc54efff0668a9d8))
-* **ui:** fit image and controls on one screen with a side column ([7ebc3b2](https://github.com/avalax/cam_gradr/commit/7ebc3b2a62d36fe9d791b6e9798ac11008f7b7a1))
-* **ui:** label the camera switch "Kamera starten" and show it in red while off ([abfae2d](https://github.com/avalax/cam_gradr/commit/abfae2d2af4758d39c4bfa939fa48137c8866b55))
-* **ui:** let the camera image use the full width ([222b341](https://github.com/avalax/cam_gradr/commit/222b3411e107e0c665e8bdd6f4cf4cadc51eacbc))
-* **ui:** move reference sets and project into a settings menu ([5795b41](https://github.com/avalax/cam_gradr/commit/5795b415b8076e853f894413354ce8feb9d2b6ed))
-* **ui:** render the brightness scale in grayscale ([2216742](https://github.com/avalax/cam_gradr/commit/22167423ddab23f05b7e6d0e4aea482e9ca4efdb))
-* **ui:** replace the brightness badge with a vertical scale next to the image ([ad7325c](https://github.com/avalax/cam_gradr/commit/ad7325c7a27fa430c5640eb1d8970df59d5c5b7b))
-* **ui:** replace the steps with free tabs and a camera on/off tab ([e50c512](https://github.com/avalax/cam_gradr/commit/e50c512881bf79dab1ffa89ed1c95a2034c3df9b))
-* **ui:** replace the two scales with one measuring field for brightness and contrast ([7bd0a24](https://github.com/avalax/cam_gradr/commit/7bd0a24f3f234b8b8fae6e0ec3aa1b114a646dbc))
-* **ui:** replace the two scales with one measuring field for brightness and contrast ([74db099](https://github.com/avalax/cam_gradr/commit/74db099414463f93bc49e48c06ccf71966aeba04))
-* **ui:** search for new cards only on stills and keep the old state until a new still exists ([7490696](https://github.com/avalax/cam_gradr/commit/7490696bfc5a362804c380d03c687ba4b55111c7))
-* **ui:** search for new cards only on stills and keep the old state until a new still exists ([255d4c4](https://github.com/avalax/cam_gradr/commit/255d4c40d8de240b7917474e994ec84fb3ebd872))
-* **ui:** show guide frames for the cards and set the corners from them ([ed093f0](https://github.com/avalax/cam_gradr/commit/ed093f0618f3005a5d4847d77cb38c9d426e3c75))
-* **ui:** show the camera switch as green "Kamera starten" and red "Kamera stoppen" ([55d9043](https://github.com/avalax/cam_gradr/commit/55d9043367de42949bf6c35bc0e9a80b6b6e9964))
-* **ui:** show the result under each tab, use folder tabs and rework export and settings ([e4240f7](https://github.com/avalax/cam_gradr/commit/e4240f788e7a589b442896fbe9610b6c692e4899))
-* **ui:** show the result under each tab, use folder tabs and rework export and settings ([203f7eb](https://github.com/avalax/cam_gradr/commit/203f7eb44d2e86cc03199d27fe83bcb0f13eeef4))
-* **ui:** turn the camera tab into an on/off switch and move its options to the menu ([514064b](https://github.com/avalax/cam_gradr/commit/514064b42ebd7e07e34b13e31568b7ba73e7f672))
-* **ui:** use a wipe for the colors and a side column with colors and grays in the preview ([ad8d222](https://github.com/avalax/cam_gradr/commit/ad8d222c10363254b32ca8d4dfa244bdadfca5cc))
-* **ui:** use a wipe for the colors and a side column with colors and grays in the preview ([9a6fbdf](https://github.com/avalax/cam_gradr/commit/9a6fbdf98c1840da644d51e7c48da5045b8e8747))
-* **ui:** use the full window width for the camera view ([34739ce](https://github.com/avalax/cam_gradr/commit/34739ce63c16bdcbe5fe77e9f75bdbc40ca9e9c1))
+* **camera:** live view with camera and resolution choice, one on/off switch and a still image averaged over several frames
+* **chart:** the cards are found in the live image by themselves; the app takes the still image, sets the corner points and switches the camera off. The corners stay draggable, cards held upside down are recognized and the fields are assigned accordingly. A camera start looks for new cards; without a new still the old image and its corners return. Measuring happens only on stills
+* **ui:** measuring field for brightness and contrast on the gray cards, with a hint what to change
+* **color:** automatic color correction from the color cards (tone curves per channel plus a 3x3 matrix); the result per patch appears as a popup
+* **ui:** wipe over both color cards (camera colors against corrected colors), the same wipe in the preview
+* **lut:** 3D LUT, preview with WebGL2 (software fallback) and a side column with color tiles and a gray wedge
+* **ui:** folder tabs that show their result with a small gauge, gray placeholders while there is no image, and every tab keeps its own still image
+* **export:** `.cube` export (17³, 33³, 65³) with a preview of the LUT and the estimated file size
+* **project:** save and load the work as JSON, optionally with the still images and their corner points
+* **reference:** bundled unofficial Spyder Checkr 48 reference set and import of own sets (JSON or CSV)
+* **ui:** settings menu with fold-out sections for camera and reference values
+* scaffold project with tooling, CI and release pipeline
 
 
 ### Bug Fixes
 
-* **camera:** wait for the first video frame before capturing a still ([cde9431](https://github.com/avalax/cam_gradr/commit/cde9431ffff21e4e39d4d251e27aa17f90829705))
-* **chart:** also search for grayer card frames so cards are found in bright webcam images ([209e7b7](https://github.com/avalax/cam_gradr/commit/209e7b7bbc746fca162570eeab28a254b4985dc9))
-* **chart:** fit the guide frames to a real card and detect the dark card frames ([54d6639](https://github.com/avalax/cam_gradr/commit/54d66390cf059c1a3ce3e9e7bfbce34aa04d9fd5))
-* **chart:** sort corner points automatically and number them ([470ce6e](https://github.com/avalax/cam_gradr/commit/470ce6e0c6ec45faeb18389672b32d995b3936b0))
-* **layout:** measure the fields of the right gray card and use neutral wording in the hints ([59085a9](https://github.com/avalax/cam_gradr/commit/59085a97c5765ead5aacd59f243187c577e5bf0c))
-* **preview:** add software fallback and make ci tests robust ([69eae65](https://github.com/avalax/cam_gradr/commit/69eae65919e1067bc8d4356c591f860886323451))
-* **solve:** pool neutral patches the camera cannot tell apart before building the curves ([fa060d7](https://github.com/avalax/cam_gradr/commit/fa060d71a735fa88feadaa16611ca93bcff86cb0))
-* stop tailwind scanning test artifacts and never hang on missing video frames ([67759f4](https://github.com/avalax/cam_gradr/commit/67759f4d69fc190af6e1b19a4c70a1af97f88ed5))
+* **camera:** wait for the first video frame before capturing a still and never hang on missing frames
+* **chart:** find the cards in bright webcam images, fit the guide frames to a real card, sort and number the corner points
+* **layout:** measure the fields of the right gray card
+* **solve:** pool neutral patches the camera cannot tell apart before building the curves
+* **preview:** software fallback when WebGL2 is missing
