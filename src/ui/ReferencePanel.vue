@@ -23,8 +23,7 @@ function onSelect(event: Event): void {
 </script>
 
 <template>
-  <section class="space-y-2" aria-labelledby="reference-heading">
-    <h2 id="reference-heading" class="text-sm font-semibold">Referenzwerte</h2>
+  <div class="space-y-2">
     <p class="text-xs text-slate-600" data-testid="reference-source">
       Der mitgelieferte Satz „{{ BUNDLED_NAME }}“ stammt aus dem Blogbeitrag
       <a :href="BUNDLED_SOURCE_URL" class="underline" target="_blank" rel="noopener noreferrer"
@@ -46,7 +45,9 @@ function onSelect(event: Event): void {
         </option>
       </select>
     </label>
-    <label class="flex flex-col text-sm">
+    <label
+      class="flex cursor-pointer flex-col gap-1 rounded-md border-[1.5px] border-dashed border-zinc-400 bg-zinc-50 p-2 text-sm text-zinc-600 focus-within:outline focus-within:outline-2"
+    >
       Eigene Datei importieren (JSON oder CSV)
       <input
         type="file"
@@ -86,5 +87,5 @@ function onSelect(event: Event): void {
     </p>
     <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
     <p v-if="warning !== null" class="text-sm text-amber-800" role="status">{{ warning }}</p>
-  </section>
+  </div>
 </template>

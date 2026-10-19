@@ -156,7 +156,7 @@ describe('GrayStep', () => {
   it('begrenzt die Bildbreite, damit Bild und Knöpfe auf einen Bildschirm passen', async () => {
     const wrapper = await mountLive();
     const style = wrapper.get('div.relative.min-w-0').attributes('style');
-    expect(style).toContain('max-width: calc((100vh - 10rem) * 1.77');
+    expect(style).toContain('max-width: calc((100vh - 12rem) * 1.77');
   });
 
   it('bindet Stream und vorhandenes Standbild beim Einhängen an', async () => {

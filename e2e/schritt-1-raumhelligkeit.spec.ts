@@ -65,8 +65,8 @@ test.describe('Graukarten: Raum passt', () => {
     await app.startGrayStage();
 
     const box = await app.overlay.boundingBox();
-    // Fensterbreite 1600 minus Ränder, Steuerspalte (21 rem) und Messfeld
-    expect(box?.width).toBeGreaterThan(1000);
+    // Fensterbreite 1600 minus Ränder, Rahmen um den Inhalt, Steuerspalte (21 rem) und Messfeld
+    expect(box?.width).toBeGreaterThan(950);
   });
 
   for (const [width, height] of [

@@ -31,21 +31,19 @@ describe('ProjectBar', () => {
     expect(wrapper.text()).toContain('Projekt laden');
   });
 
-  it('speichert das Projekt und meldet das Ende der Aktion', async () => {
+  it('speichert das Projekt', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(download).toHaveBeenCalledTimes(1);
-    expect(wrapper.emitted('done')).toHaveLength(1);
     expect(useProjectStore().notice).toContain('gespeichert');
   });
 
-  it('lädt die gewählte Datei und meldet das Ende der Aktion', async () => {
+  it('lädt die gewählte Datei', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     const saved = (download.mock.calls[0] as [string, string, string])[1];
     await chooseFile(wrapper, saved);
     expect(useProjectStore().notice).toContain('Projekt geladen');
-    expect(wrapper.emitted('done')).toHaveLength(2);
   });
 
   it('meldet eine fehlerhafte Datei im Speicher des Projekts', async () => {

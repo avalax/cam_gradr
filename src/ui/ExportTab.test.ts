@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { useSolveStore } from '../solve/solve-store';
@@ -32,12 +33,64 @@ describe('ExportTab', () => {
     download.mockReset();
   });
 
-  it('verlangt zuerst eine Farbkorrektur', () => {
+  it('verlangt zuerst eine Farbkorrektur, zeigt aber, was man bekommt', () => {
     const wrapper = mount(ExportTab);
     expect(wrapper.get('[data-testid="export-no-model"]').text()).toContain(
-      'noch keine Farbkorrektur',
+      'Noch keine Farbkorrektur',
     );
-    expect(wrapper.find('[data-testid="export-download"]').exists()).toBe(false);
+    const download = wrapper.get('[data-testid="export-download"]');
+    expect(download.attributes('disabled')).toBeDefined();
+    expect(download.text()).toContain('cam_gradr-33.cube');
+    expect(wrapper.get('[data-testid="export-size-17"]').attributes('disabled')).toBeDefined();
+  });
+
+  it('zeigt ohne Korrektur graue Schnitte und eine leere Projektliste', () => {
+    const wrapper = mount(ExportTab);
+    expect(wrapper.findAll('[data-testid="lut-slice-empty"]')).toHaveLength(4);
+    const facts = wrapper.get('[data-testid="project-facts"]');
+    expect(facts.text()).toContain('Graukarten–');
+    expect(facts.text()).toContain('Korrektur–');
+    expect(facts.text()).toContain('Referenz–');
+  });
+
+  it('nennt mit Korrektur die Schnitte, die Dateigröße und den Inhalt des Projekts', async () => {
+    computeModel();
+    useChartStore().setCards([
+      [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 1, y: 1 },
+        { x: 0, y: 1 },
+      ],
+      [
+        { x: 2, y: 0 },
+        { x: 3, y: 0 },
+        { x: 3, y: 1 },
+        { x: 2, y: 1 },
+      ],
+    ]);
+    const wrapper = mount(ExportTab);
+    expect(wrapper.findAll('[data-testid="lut-slice"]')).toHaveLength(4);
+    expect(wrapper.get('[data-testid="export-file-info"]').text()).toContain(
+      '33 × 33 × 33 · ca. 970 KB',
+    );
+    await wrapper.get('[data-testid="export-size-65"]').trigger('click');
+    expect(wrapper.get('[data-testid="export-file-info"]').text()).toContain('65 × 65 × 65');
+    const facts = wrapper.get('[data-testid="project-facts"]').text();
+    expect(facts).toContain('8 Eckpunkte · 0 Felder');
+    expect(facts).toContain('Kurven + Matrix');
+  });
+
+  it('führt mit dem Link zu den Farbkarten', async () => {
+    const wrapper = mount(ExportTab);
+    await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
+    expect(wrapper.emitted('goto')).toEqual([['color']]);
+  });
+
+  it('bietet das Projekt auch ohne Farbkorrektur an', () => {
+    const wrapper = mount(ExportTab);
+    expect(wrapper.get('[data-testid="project-save"]').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
   });
 
   it('lädt ohne Farbkorrektur nichts herunter', () => {
@@ -49,13 +102,13 @@ describe('ExportTab', () => {
   it('bietet die Größen 17, 33 und 65 mit 33 als Standard an', () => {
     computeModel();
     const wrapper = mount(ExportTab);
-    const select = wrapper.get('[data-testid="export-size"]');
-    expect(select.findAll('option').map((option) => option.text())).toEqual([
-      '17³',
-      '33³ (Standard)',
-      '65³',
+    const radios = wrapper.findAll('[role="radio"]');
+    expect(radios.map((radio) => radio.text())).toEqual(['17³', '33³ Standard', '65³']);
+    expect(radios.map((radio) => radio.attributes('aria-checked'))).toEqual([
+      'false',
+      'true',
+      'false',
     ]);
-    expect((select.element as HTMLSelectElement).value).toBe('33');
     expect(wrapper.get('[data-testid="export-download"]').text()).toContain('cam_gradr-33.cube');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
@@ -63,7 +116,7 @@ describe('ExportTab', () => {
   it('lädt eine gültige .cube-Datei in der gewählten Größe herunter', async () => {
     computeModel();
     const wrapper = mount(ExportTab);
-    await wrapper.get('[data-testid="export-size"]').setValue('17');
+    await wrapper.get('[data-testid="export-size-17"]').trigger('click');
     await wrapper.get('[data-testid="export-download"]').trigger('click');
 
     expect(download).toHaveBeenCalledTimes(1);
@@ -93,7 +146,7 @@ describe('ExportTab', () => {
     expect(wrapper.find('[data-testid="export-saved"]').exists()).toBe(false);
     await wrapper.get('[data-testid="export-download"]').trigger('click');
     expect(wrapper.find('[data-testid="export-saved"]').exists()).toBe(true);
-    await wrapper.get('[data-testid="export-size"]').setValue('65');
+    await wrapper.get('[data-testid="export-size-65"]').trigger('click');
     expect(wrapper.find('[data-testid="export-saved"]').exists()).toBe(false);
   });
 });

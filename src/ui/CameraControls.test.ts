@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { RESOLUTIONS } from '../camera/types';
 import { installFakeCamera } from '../test-support/media';
 
 import CameraControls from './CameraControls.vue';
@@ -16,8 +17,23 @@ describe('CameraControls', () => {
     installFakeCamera();
     const wrapper = mount(CameraControls);
     expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
-    expect(wrapper.findAll('select')).toHaveLength(2);
-    expect(wrapper.findAll('button')).toHaveLength(0);
+    expect(wrapper.findAll('select')).toHaveLength(1);
+    expect(wrapper.findAll('[role="radio"]')).toHaveLength(RESOLUTIONS.length);
+    expect(wrapper.get('[data-resolution="1280x720"]').attributes('aria-checked')).toBe('true');
+    expect(wrapper.get('[data-resolution="640x480"]').attributes('aria-checked')).toBe('false');
+  });
+
+  it('sperrt die Auswahl, solange die Kamera startet', async () => {
+    installFakeCamera();
+    const wrapper = mount(CameraControls);
+    const start = useCameraStore().start();
+    await flushPromises();
+    await start;
+    expect(wrapper.get('[data-resolution="640x480"]').attributes('disabled')).toBeUndefined();
+    useCameraStore().status = 'starting';
+    await flushPromises();
+    expect(wrapper.get('[data-resolution="640x480"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('select').attributes('disabled')).toBeDefined();
   });
 
   it('zeigt Geräte und die aktive Auflösung, sobald die Kamera läuft', async () => {
@@ -34,26 +50,15 @@ describe('CameraControls', () => {
     const wrapper = mount(CameraControls);
     await useCameraStore().start();
     await flushPromises();
-    const [deviceSelect, resolutionSelect] = wrapper.findAll('select');
-    await deviceSelect?.setValue('cam2');
+    const deviceSelect = wrapper.get('select');
+    await deviceSelect.setValue('cam2');
     await flushPromises();
     expect(api.open).toHaveBeenLastCalledWith('cam2', { width: 1280, height: 720 });
-    await deviceSelect?.setValue('');
+    await deviceSelect.setValue('');
     await flushPromises();
     expect(api.open).toHaveBeenLastCalledWith(null, { width: 1280, height: 720 });
-    await resolutionSelect?.setValue('1920x1080');
+    await wrapper.get('[data-resolution="1920x1080"]').trigger('click');
     await flushPromises();
     expect(api.open).toHaveBeenLastCalledWith(expect.anything(), { width: 1920, height: 1080 });
-  });
-
-  it('ignoriert unbekannte Auflösungen', async () => {
-    const api = installFakeCamera();
-    const wrapper = mount(CameraControls);
-    const select = wrapper.findAll('select')[1];
-    const option = document.createElement('option');
-    option.value = '1x1';
-    select?.element.append(option);
-    await select?.setValue('1x1');
-    expect(api.open).not.toHaveBeenCalled();
   });
 });

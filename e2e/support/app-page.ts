@@ -119,9 +119,9 @@ export class AppPage {
     };
   }
 
-  // Lädt eine Projektdatei über das Zahnrad-Menü (es schließt sich danach von selbst).
+  // Lädt eine Projektdatei über den Tab Export.
   async loadProject(text: string): Promise<void> {
-    await this.openSettings();
+    await this.openTab('Export');
     await this.page.getByTestId('project-file').setInputFiles({
       name: 'projekt.json',
       mimeType: 'application/json',
@@ -190,13 +190,19 @@ export class AppPage {
     }
   }
 
-  // Öffnet das Zahnrad-Menü (Referenzwerte, Projekt), falls es noch zu ist.
-  async openSettings(): Promise<void> {
+  // Öffnet das Zahnrad-Menü, falls es noch zu ist. Es zeigt zuerst die Kamera; mit `section` klappt
+  // der gewünschte Abschnitt auf (die Abschnitte sind ein Akkordeon, immer nur einer ist offen).
+  async openSettings(section: 'camera' | 'reference' = 'camera'): Promise<void> {
     const panel = this.page.getByTestId('settings-panel');
     if (!(await panel.isVisible())) {
       await this.page.getByTestId('settings-button').click();
     }
     await expect(panel).toBeVisible();
+    const header = this.page.getByTestId(`section-${section}`);
+    if ((await header.getAttribute('aria-expanded')) !== 'true') {
+      await header.click();
+    }
+    await expect(header).toHaveAttribute('aria-expanded', 'true');
   }
 
   // Schließt das Zahnrad-Menü, damit es nichts verdeckt.
@@ -205,15 +211,15 @@ export class AppPage {
     await expect(this.page.getByTestId('settings-panel')).toBeHidden();
   }
 
-  // Speichert das Projekt über das Zahnrad-Menü und liefert Dateiname und Inhalt.
+  // Speichert das Projekt über den Tab Export und liefert Dateiname und Inhalt.
   async saveProject(): Promise<{ fileName: string; text: string }> {
-    await this.openSettings();
+    await this.openTab('Export');
     return this.download(this.page.getByTestId('project-save'));
   }
 
   // Importiert eine Referenzdatei über das Dateifeld im Zahnrad-Menü (das Menü bleibt offen).
   async importReference(fileName: string, content: string): Promise<void> {
-    await this.openSettings();
+    await this.openSettings('reference');
     await this.page.getByTestId('reference-file').setInputFiles({
       name: fileName,
       mimeType: fileName.endsWith('.json') ? 'application/json' : 'text/csv',

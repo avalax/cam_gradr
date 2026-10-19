@@ -29,7 +29,7 @@ test.describe('Farbkarten: Referenzwerte', () => {
   }) => {
     await app.completeStepOne();
     await expect(app.page.getByTestId('settings-panel')).toBeHidden();
-    await app.openSettings();
+    await app.openSettings('reference');
 
     await expect(app.page.getByTestId('reference-source').getByRole('link')).toHaveAttribute(
       'href',
@@ -80,7 +80,7 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await expect(app.page.getByTestId('reference-saved')).toBeVisible();
 
     await app.page.reload();
-    await app.openSettings();
+    await app.openSettings('reference');
     const option = app.page
       .getByTestId('reference-select')
       .locator('option', { hasText: 'Merkliste' });
@@ -100,7 +100,7 @@ test.describe('Farbkarten: Referenzwerte', () => {
     await expect(app.page.getByTestId('reference-removed')).toBeVisible();
     await expect(app.page.getByTestId('reference-active')).not.toContainText('Weg damit');
     await app.page.reload();
-    await app.openSettings();
+    await app.openSettings('reference');
     const option = app.page
       .getByTestId('reference-select')
       .locator('option', { hasText: 'Weg damit' });
