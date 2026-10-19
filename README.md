@@ -39,8 +39,8 @@ die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau**
    laufend mit denselben Eckpunkten weiter, solange die Karten nicht bewegt werden.
 2. **Tab Farbkarten: Farbkorrektur.** Referenzwerte der Karten laden (mitgelieferter Satz oder eigene JSON-/CSV-Datei, bleiben lokal im
    Browser), beide Farbkarten ruhig in die Rahmen halten (die App erkennt sie und nimmt selbst auf). Die Korrektur wird automatisch berechnet und bei jeder Änderung der Eckpunkte neu. Ein Wischer neben dem Bild zeigt die beiden Karten untereinander: links vom Strich stehen die Farben der Kamera, rechts die korrigierten (den Strich kannst du ziehen oder mit den Pfeiltasten verschieben); darunter steht die mittlere Abweichung vorher und nachher. Ohne Messung stehen dort die Sollfarben des Referenzsatzes, ohne Referenz ein neutrales Grau. Der Bericht zeigt
-   den Farbfehler (ΔE2000) je Feld vorher und nachher.
-3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen (dort gibt es auch einen Knopf „Standbild aufnehmen“, das Bild gehört nur zu diesem Tab): derselbe Wischer wie in Schritt 2 (Strich im Bild ziehen oder mit den Pfeiltasten verschieben) zeigt links das Original und rechts das korrigierte Bild. Neben dem Bild zeigt eine Spalte zuerst die 36 bunten Felder (jedes Feld in drei Streifen: Soll, Kamera, korrigiert) mit den drei Feldern der größten Rest-Abweichung; ein Umschalter wechselt auf die Graustufen (Graukeil aus den Neutralfeldern, darunter je Tonbereich, wie viel heller die Korrektur macht und welche Farbe sie stärker oder schwächer macht). Unten steht die mittlere Abweichung vorher und nachher.
+   den Farbfehler (ΔE2000) je Feld vorher und nachher; er erscheint als Popup, wenn du das Etikett unter dem Wischer überfährst oder fokussierst.
+3. **Tab Vorschau.** Das Kamerabild mit der berechneten Korrektur ansehen (dort gibt es auch einen Knopf „Standbild aufnehmen“, das Bild gehört nur zu diesem Tab; danach schaltet die App die Kamera aus, ein neuer Kamerastart zeigt wieder das Livebild): derselbe Wischer wie in Schritt 2 (Strich im Bild ziehen oder mit den Pfeiltasten verschieben) zeigt links das Original und rechts das korrigierte Bild. Neben dem Bild zeigt eine Spalte zuerst die 36 bunten Felder (jedes Feld in drei Streifen: Soll, Kamera, korrigiert) mit den drei Feldern der größten Rest-Abweichung; ein Umschalter wechselt auf die Graustufen (Graukeil aus den Neutralfeldern, darunter je Tonbereich, wie viel heller die Korrektur macht und welche Farbe sie stärker oder schwächer macht). Unten steht die mittlere Abweichung vorher und nachher.
 4. **Tab Export.** Die Korrektur als 3D-LUT im Format `.cube` herunterladen (Größe 17³, 33³ oder 65³). Die
    Korrektur wird immer voll eingerechnet. Welche Größe dein Gerät annimmt, steht in
    dessen Handbuch.
@@ -48,8 +48,10 @@ die jederzeit frei anwählbar sind: **Graukarten**, **Farbkarten**, **Vorschau**
 Ohne WebGL2 zeichnet die Vorschau in einer verkleinerten Software-Darstellung; im Tab steht, welche Darstellung aktiv ist.
 
 Im Tab Export sichern **Projekt speichern** und **Projekt laden** den Arbeitsstand als JSON-Datei
-(Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Referenzwerte stehen nicht
-in der Datei, nur der Name des gewählten Satzes.
+(Eckpunkte, Messwerte, Korrekturmodell, Vorschau-Einstellungen). Mit dem Haken „Standbilder mitspeichern“
+(voreingestellt) liegen auch die Standbilder der Tabs in der Datei; die Datei enthält dann Kamerabilder.
+Beim Laden kommen Eckpunkte und Standbilder zurück und die Kamera wird ausgeschaltet. Referenzwerte stehen
+nicht in der Datei, nur der Name des gewählten Satzes.
 
 Wichtig für brauchbare Ergebnisse: Auto-Belichtung und Auto-Weißabgleich der Kamera vorher in der
 Kamera-Software festsetzen. Die App kann das nicht selbst tun und zeigt dazu einen Hinweis.

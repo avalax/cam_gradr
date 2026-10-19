@@ -127,7 +127,6 @@ describe('ExportTab', () => {
     expect(parsed.lut.size).toBe(17);
     expect(parsed.lut.data).toHaveLength(17 ** 3 * 3);
     expect(parsed.title).toBe('cam_gradr');
-    expect(wrapper.get('[data-testid="export-saved"]').text()).toContain('cam_gradr-17.cube');
   });
 
   it('schreibt die volle Korrektur in die LUT', async () => {
@@ -140,13 +139,10 @@ describe('ExportTab', () => {
     expect(lut.lut.data[index]).not.toBeCloseTo(1 / 32, 3);
   });
 
-  it('meldet den Dateinamen erst nach dem Herunterladen und blendet ihn bei Änderung der Größe aus', async () => {
+  it('zeigt nach dem Herunterladen keine Meldung', async () => {
     computeModel();
     const wrapper = mount(ExportTab);
-    expect(wrapper.find('[data-testid="export-saved"]').exists()).toBe(false);
     await wrapper.get('[data-testid="export-download"]').trigger('click');
-    expect(wrapper.find('[data-testid="export-saved"]').exists()).toBe(true);
-    await wrapper.get('[data-testid="export-size-65"]').trigger('click');
-    expect(wrapper.find('[data-testid="export-saved"]').exists()).toBe(false);
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 });

@@ -187,6 +187,23 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('ziehe sie bei Bedarf');
   });
 
+  it('zeichnet gespeicherte Eckpunkte nicht über den Platzhalter, solange die Kamera aus ist', async () => {
+    installFakeCamera();
+    const wrapper = mount(GrayStep);
+    placeAll();
+    await flushPromises();
+    expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(true);
+    expect(wrapper.findAll('polygon')).toHaveLength(0);
+    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain(
+      'Die Eckpunkte bleiben erhalten',
+    );
+    // Mit Livebild erscheinen die Umrisse wieder.
+    await useCameraStore().start();
+    await flushPromises();
+    expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(false);
+    expect(wrapper.findAll('polygon[data-shape]').length).toBeGreaterThan(0);
+  });
+
   it('setzt per Klick keine Eckpunkte', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);

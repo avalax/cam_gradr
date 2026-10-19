@@ -51,16 +51,16 @@ const summary = computed(() =>
 <template>
   <!-- Wischer über die Farbkarten: links vom Strich die Farben der Kamera, rechts die korrigierten. -->
   <div
-    class="flex w-44 shrink-0 flex-col self-stretch overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50"
+    class="relative flex w-44 shrink-0 flex-col self-stretch rounded-lg border border-zinc-500 bg-zinc-50"
     data-testid="color-wipe"
   >
     <p
-      class="border-b-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
+      class="rounded-t-[7px] border-b-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
     >
       links Kamera · rechts korrigiert
     </p>
 
-    <div class="relative min-h-64 flex-1">
+    <div class="relative min-h-64 flex-1 overflow-hidden">
       <div
         v-for="(layer, index) in layers"
         :key="layer.key"
@@ -89,11 +89,31 @@ const summary = computed(() =>
       <WipeDivider v-model="split" label="Wischer: Farben der Kamera links, korrigierte rechts" />
     </div>
 
-    <p
-      class="border-t-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
-      data-testid="color-wipe-summary"
+    <!-- Die Zusammenfassung ist zugleich der Auslöser: Beim Überfahren oder per Tastaturfokus erscheint
+         das Ergebnis der Farbkorrektur als Popup (wie die Details beim Messfeld der Graukarten). -->
+    <div
+      class="group relative rounded-b-[7px] outline-offset-2 focus-visible:outline"
+      :tabindex="report === null ? undefined : 0"
+      data-testid="color-wipe-result"
     >
-      {{ summary }}
-    </p>
+      <p
+        class="rounded-b-[7px] border-t-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
+        data-testid="color-wipe-summary"
+      >
+        {{ summary }}
+      </p>
+      <div
+        v-if="report !== null && $slots.details"
+        class="absolute bottom-0 right-full z-20 hidden pr-3 group-focus-within:block group-hover:block"
+        role="tooltip"
+        data-testid="color-wipe-popup"
+      >
+        <div
+          class="max-h-[min(30rem,calc(100vh-17rem))] w-[min(36rem,calc(100vw-14rem))] overflow-auto rounded bg-slate-900 p-3 text-sm text-white shadow-lg"
+        >
+          <slot name="details" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>

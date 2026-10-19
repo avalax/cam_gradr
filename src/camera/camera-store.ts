@@ -11,6 +11,10 @@ import type { CameraApi, CameraSession, Resolution, VideoDevice } from './types'
 
 export type CameraStatus = 'idle' | 'starting' | 'live' | 'error';
 
+// Die Tabs mit Kamerabild; jeder hat sein eigenes Standbild.
+export type StillKey = 'gray' | 'color' | 'preview';
+export type Stills = Partial<Record<StillKey, Frame>>;
+
 const STILL_FRAME_COUNT = 8;
 
 const holder: { api: CameraApi } = {
@@ -32,7 +36,9 @@ export const useCameraStore = defineStore('camera', () => {
   const actual = ref<Resolution | null>(null);
   const still = shallowRef<Frame | null>(null);
   // Standbilder der Tabs, die gerade nicht angezeigt werden (je Tab eines).
-  const parked = shallowRef<Readonly<Record<string, Frame>>>({});
+  const parked = shallowRef<Stills>({});
+  // Der Tab, zu dem das angezeigte Standbild gehört (der zuletzt besuchte Tab mit Kamerabild).
+  const stillOwner = ref<StillKey>('gray');
   let session: CameraSession | null = null;
 
   function release(): void {
@@ -97,10 +103,25 @@ export const useCameraStore = defineStore('camera', () => {
 
   // Wechsel zwischen zwei Tabs: Das Standbild von `from` wird abgelegt und das von `to` (falls
   // vorhanden) angezeigt, damit keiner sein Bild verliert.
-  function swapStill(from: string, to: string): void {
+  function swapStill(from: StillKey, to: StillKey): void {
     const { [to]: next, ...rest } = parked.value;
     parked.value = still.value === null ? rest : { ...rest, [from]: still.value };
     still.value = next ?? null;
+    stillOwner.value = to;
+  }
+
+  // Alle Standbilder der Tabs (das angezeigte gehört zu `stillOwner`), etwa zum Speichern im Projekt.
+  function allStills(): Stills {
+    return still.value === null
+      ? { ...parked.value }
+      : { ...parked.value, [stillOwner.value]: still.value };
+  }
+
+  // Stellt die Standbilder aller Tabs her; angezeigt wird das des aktuellen Besitzers.
+  function restoreStills(frames: Stills): void {
+    const { [stillOwner.value]: current, ...rest } = frames;
+    still.value = current ?? null;
+    parked.value = rest;
   }
 
   async function captureStill(grabber: FrameGrabber, count = STILL_FRAME_COUNT): Promise<void> {
@@ -128,6 +149,9 @@ export const useCameraStore = defineStore('camera', () => {
     captureStill,
     clearStill,
     discardStills,
+    stillOwner,
     swapStill,
+    allStills,
+    restoreStills,
   };
 });

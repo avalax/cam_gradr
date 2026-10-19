@@ -37,6 +37,33 @@ describe('ColorWipe', () => {
     expect(camera.find('[data-patch="1A"]').attributes('title')).toBe('1A (Standardwert)');
   });
 
+  it('zeigt das Ergebnis als Popup am Etikett, sobald es einen Bericht gibt', () => {
+    const wrapper = mount(ColorWipe, {
+      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report },
+      slots: { details: '<p data-testid="inhalt">Ergebnis</p>' },
+    });
+    const trigger = wrapper.get('[data-testid="color-wipe-result"]');
+    expect(trigger.attributes('tabindex')).toBe('0');
+    const popup = wrapper.get('[data-testid="color-wipe-popup"]');
+    expect(popup.attributes('role')).toBe('tooltip');
+    expect(popup.classes()).toContain('hidden');
+    expect(popup.classes()).toContain('group-hover:block');
+    expect(popup.get('[data-testid="inhalt"]').text()).toBe('Ergebnis');
+  });
+
+  it('hat ohne Bericht oder ohne Inhalt kein Popup und ist nicht fokussierbar', () => {
+    const withoutReport = mount(ColorWipe, {
+      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report: null },
+      slots: { details: '<p>Ergebnis</p>' },
+    });
+    expect(withoutReport.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
+    expect(
+      withoutReport.get('[data-testid="color-wipe-result"]').attributes('tabindex'),
+    ).toBeUndefined();
+    const withoutSlot = mountWipe({ report });
+    expect(withoutSlot.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
+  });
+
   it('ordnet die Felder wie auf den Karten, Zeile für Zeile von A nach H je Karte', () => {
     const wrapper = mountWipe();
     const ids = wrapper

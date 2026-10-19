@@ -31,11 +31,23 @@ describe('ProjectBar', () => {
     expect(wrapper.text()).toContain('Projekt laden');
   });
 
+  it('speichert standardmäßig mit Standbildern und ohne, wenn der Haken fehlt', async () => {
+    const wrapper = mount(ProjectBar);
+    const save = vi.spyOn(useProjectStore(), 'save').mockResolvedValue();
+    const box = wrapper.get('[data-testid="project-stills"]');
+    expect((box.element as HTMLInputElement).checked).toBe(true);
+    await wrapper.get('[data-testid="project-save"]').trigger('click');
+    expect(save).toHaveBeenLastCalledWith({ withStills: true });
+    await box.setValue(false);
+    await wrapper.get('[data-testid="project-save"]').trigger('click');
+    expect(save).toHaveBeenLastCalledWith({ withStills: false });
+  });
+
   it('speichert das Projekt', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(download).toHaveBeenCalledTimes(1);
-    expect(useProjectStore().notice).toContain('gespeichert');
+    expect(useProjectStore().notice).toBeNull();
   });
 
   it('lädt die gewählte Datei', async () => {
@@ -43,7 +55,8 @@ describe('ProjectBar', () => {
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     const saved = (download.mock.calls[0] as [string, string, string])[1];
     await chooseFile(wrapper, saved);
-    expect(useProjectStore().notice).toContain('Projekt geladen');
+    expect(useProjectStore().error).toBeNull();
+    expect(useProjectStore().notice).toBeNull();
   });
 
   it('meldet eine fehlerhafte Datei im Speicher des Projekts', async () => {

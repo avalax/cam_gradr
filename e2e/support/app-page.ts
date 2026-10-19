@@ -81,7 +81,20 @@ export class AppPage {
     if ((await manual.count()) > 0) {
       await manual.click();
     }
-    await expect(this.button('Zurück zum Livebild')).toBeVisible({ timeout: 20_000 });
+    // Nach der Aufnahme (automatisch oder per Knopf in der Vorschau) schaltet die App die Kamera aus.
+    await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 20_000 });
+  }
+
+  // Zeigt das Ergebnis der Farbkorrektur: Es erscheint als Popup, wenn man das Etikett im Wischer überfährt.
+  async showReport(): Promise<void> {
+    await this.page.getByTestId('color-wipe-result').hover();
+    await expect(this.page.getByTestId('report')).toBeVisible();
+  }
+
+  // Nimmt die Maus weg, damit das Popup verschwindet und nichts mehr verdeckt.
+  async hideReport(): Promise<void> {
+    await this.page.mouse.move(0, 0);
+    await expect(this.page.getByTestId('report')).toBeHidden();
   }
 
   // Hält andere Karten vor die Kamera (z. B. nach Schritt 1 die Farbkarten).
@@ -107,7 +120,7 @@ export class AppPage {
     await expect(this.page.getByTestId('reference-saved')).toBeVisible();
     await this.closeSettings();
     await this.captureColorCards();
-    await expect(this.page.getByTestId('report')).toBeVisible();
+    await expect(this.page.getByTestId('report')).toBeAttached();
   }
 
   // Klickt einen Knopf, der eine Datei herunterlädt, und liefert Dateiname und Inhalt.
@@ -211,9 +224,13 @@ export class AppPage {
     await expect(this.page.getByTestId('settings-panel')).toBeHidden();
   }
 
-  // Speichert das Projekt über den Tab Export und liefert Dateiname und Inhalt.
-  async saveProject(): Promise<{ fileName: string; text: string }> {
+  // Speichert das Projekt über den Tab Export und liefert Dateiname und Inhalt. Standardmäßig steckten die
+  // Standbilder mit in der Datei; `withStills: false` nimmt den Haken heraus.
+  async saveProject(
+    options: { withStills?: boolean } = {},
+  ): Promise<{ fileName: string; text: string }> {
     await this.openTab('Export');
+    await this.page.getByTestId('project-stills').setChecked(options.withStills !== false);
     return this.download(this.page.getByTestId('project-save'));
   }
 

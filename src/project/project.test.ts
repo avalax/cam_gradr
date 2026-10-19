@@ -133,3 +133,42 @@ describe('parseProject', () => {
     rejects((raw) => (raw.preview.split = 'x'), 'Trennlinie muss zwischen 0 und 100');
   });
 });
+
+describe('Standbilder in der Projektdatei', () => {
+  const still = { width: 2, height: 1, encoding: 'rgb8-deflate-base64', data: 'eJw=' };
+
+  function withStills(stills: unknown): string {
+    return JSON.stringify({ ...JSON.parse(serializeProject(sample())), stills });
+  }
+
+  it('lässt Standbilder weg, wenn sie fehlen', () => {
+    expect(parseProject(serializeProject(sample())).stills).toBeUndefined();
+  });
+
+  it('liest Standbilder je Tab', () => {
+    const project = parseProject(withStills({ gray: still, preview: still }));
+    expect(Object.keys(project.stills ?? {})).toEqual(['gray', 'preview']);
+    expect(project.stills?.gray).toEqual(still);
+  });
+
+  it('lehnt unbekannte Tabs, Codierungen und Größen ab', () => {
+    expect(() => parseProject(withStills('x'))).toThrow('erwartet wird ein Objekt');
+    expect(() => parseProject(withStills({ export: still }))).toThrow('unbekannter Tab');
+    expect(() => parseProject(withStills({ gray: { ...still, encoding: 'png' } }))).toThrow(
+      'unbekannte Codierung',
+    );
+    expect(() => parseProject(withStills({ gray: { ...still, data: 5 } }))).toThrow(
+      'unbekannte Codierung',
+    );
+    expect(() => parseProject(withStills({ gray: 'x' }))).toThrow('unbekannte Codierung');
+    expect(() => parseProject(withStills({ gray: { ...still, width: 0 } }))).toThrow(
+      'ungültige Größe',
+    );
+    expect(() => parseProject(withStills({ gray: { ...still, height: 1.5 } }))).toThrow(
+      'ungültige Größe',
+    );
+    expect(() => parseProject(withStills({ gray: { ...still, width: 100_000 } }))).toThrow(
+      'ungültige Größe',
+    );
+  });
+});

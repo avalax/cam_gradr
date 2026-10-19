@@ -38,7 +38,6 @@ const facts = computed(() => [
   { label: 'Referenz', value: selected.value?.name ?? '–' },
 ]);
 const size = ref<number>(DEFAULT_SIZE);
-const savedAs = ref<string | null>(null);
 
 const fileName = computed(() => `cam_gradr-${String(size.value)}.cube`);
 const fileInfo = computed(
@@ -48,7 +47,6 @@ const fileInfo = computed(
 
 function onSize(next: number): void {
   size.value = next;
-  savedAs.value = null;
 }
 
 function download(): void {
@@ -59,7 +57,6 @@ function download(): void {
       formatCube(buildLut(current, size.value), 'cam_gradr'),
       'text/plain',
     );
-    savedAs.value = fileName.value;
   }
 }
 </script>
@@ -133,14 +130,6 @@ function download(): void {
             {{ fileName }} herunterladen
           </button>
         </div>
-        <p
-          v-if="savedAs !== null"
-          class="text-sm text-slate-700"
-          role="status"
-          data-testid="export-saved"
-        >
-          Heruntergeladen als {{ savedAs }}.
-        </p>
       </article>
 
       <article

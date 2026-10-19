@@ -24,6 +24,11 @@ function fakeApi(overrides: Partial<CameraApi> = {}) {
   return api;
 }
 
+// Rotanteil des angezeigten Standbilds.
+function shown(store: ReturnType<typeof useCameraStore>): number | undefined {
+  return store.still?.data[0];
+}
+
 describe('useCameraStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -199,6 +204,37 @@ describe('useCameraStore', () => {
     await store.captureStill(grabber, 1);
     store.discardStills();
     store.swapStill('gray', 'color');
+    expect(store.still).toBeNull();
+  });
+
+  it('kennt den Besitzer des Standbilds, liefert alle Standbilder und stellt sie wieder her', () => {
+    fakeApi();
+    const store = useCameraStore();
+    const frame = (value: number) => ({
+      width: 1,
+      height: 1,
+      data: new Float32Array([value, 0, 0]),
+    });
+    expect(store.stillOwner).toBe('gray');
+    expect(store.allStills()).toEqual({});
+
+    store.still = frame(0.1);
+    store.swapStill('gray', 'color');
+    expect(store.stillOwner).toBe('color');
+    store.still = frame(0.2);
+    const stills = store.allStills();
+    expect(Object.keys(stills)).toHaveLength(2);
+    expect(stills.color?.data[0]).toBeCloseTo(0.2);
+    expect(stills.gray?.data[0]).toBeCloseTo(0.1);
+
+    store.discardStills();
+    expect(store.allStills()).toEqual({});
+    store.restoreStills({ gray: frame(0.3), color: frame(0.4), preview: frame(0.5) });
+    // Angezeigt wird das Bild des Besitzers (Farbkarten), die anderen liegen bereit.
+    expect(shown(store)).toBeCloseTo(0.4);
+    store.swapStill('color', 'preview');
+    expect(shown(store)).toBeCloseTo(0.5);
+    store.restoreStills({});
     expect(store.still).toBeNull();
   });
 
