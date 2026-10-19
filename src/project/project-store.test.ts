@@ -84,6 +84,19 @@ describe('useProjectStore mit Standbildern', () => {
     expect(project.stills?.gray).toBeDefined();
   });
 
+  it('speichert mit Standbildern auch die Eckpunkte, selbst wenn die Kamera gerade sucht', async () => {
+    await workedState();
+    useCameraStore().still = frame(0.5);
+    // Während der Suche hält der Speicher den bisherigen Stand; gespeichert wird dieser.
+    useChartStore().beginSearch();
+    expect(useChartStore().points).toEqual({});
+    await useProjectStore().save({ withStills: true });
+    const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
+    expect(project.gray.corners).toEqual({ 3: [{ x: 1, y: 2 }] });
+    expect(project.color.corners).toEqual({ 1: [{ x: 3, y: 4 }] });
+    expect(Object.keys(project.gray.measurements)).toContain('G18');
+  });
+
   it('lässt die Standbilder weg, wenn der Haken fehlt', async () => {
     await workedState();
     useCameraStore().still = frame(0.5);
@@ -112,6 +125,8 @@ describe('useProjectStore mit Standbildern', () => {
     expect(fresh.status).toBe('idle');
     expect(fresh.stillOwner).toBe('gray');
     expect(shown()).toBeCloseTo(0.5, 2);
+    expect(useChartStore().points).toEqual({ 3: [{ x: 1, y: 2 }] });
+    expect(useColorChartStore().points).toEqual({ 1: [{ x: 3, y: 4 }] });
     fresh.swapStill('gray', 'color');
     expect(shown()).toBeCloseTo(0.25, 2);
   });
@@ -147,7 +162,7 @@ describe('useProjectStore', () => {
     download.mockReset();
   });
 
-  it('speichert den Arbeitsstand als JSON-Datei', async () => {
+  it('speichert den Arbeitsstand als JSON-Datei (ohne Standbilder auch ohne Eckpunkte)', async () => {
     const text = await workedState();
     const [name, , mime] = download.mock.calls[0] as [string, string, string];
     expect(name).toBe(PROJECT_FILE_NAME);
@@ -155,7 +170,9 @@ describe('useProjectStore', () => {
     const project = parseProject(text);
     expect(project.color.reference).toBe('Mein Satz');
     expect(project.gray.measurements).toEqual(grayMeasurements);
-    expect(project.color.corners).toEqual({ 1: [{ x: 3, y: 4 }] });
+    // Ohne Standbilder in der Datei gehören auch keine Eckpunkte hinein.
+    expect(project.color.corners).toEqual({});
+    expect(project.gray.corners).toEqual({});
     expect(project.model).not.toBeNull();
     expect(project.preview).toEqual({ split: 30 });
     expect(Number.isNaN(Date.parse(project.savedAt))).toBe(false);
@@ -174,7 +191,8 @@ describe('useProjectStore', () => {
     expect(project.error).toBeNull();
     expect(project.notice).toBeNull();
     expect(useCameraStore().still).toBeNull();
-    expect(useChartStore().points).toEqual({ 3: [{ x: 1, y: 2 }] });
+    // Die Datei hat keine Standbilder, also kommen auch keine Eckpunkte zurück.
+    expect(useChartStore().points).toEqual({});
     expect(useChartStore().measurements).toEqual(grayMeasurements);
     expect(useChartStore().exposure?.verdict).toBe('ok');
     expect(useColorChartStore().measurements).toEqual(colorMeasurements);

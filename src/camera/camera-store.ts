@@ -39,6 +39,9 @@ export const useCameraStore = defineStore('camera', () => {
   const parked = shallowRef<Stills>({});
   // Der Tab, zu dem das angezeigte Standbild gehört (der zuletzt besuchte Tab mit Kamerabild).
   const stillOwner = ref<StillKey>('gray');
+  // Während die Kamera nach neuen Karten sucht, bleibt das bisherige Standbild des Tabs hier erhalten.
+  // Endet die Suche ohne neues Standbild, kehrt es zurück.
+  const held = shallowRef<Frame | null>(null);
   let session: CameraSession | null = null;
 
   function release(): void {
@@ -50,9 +53,19 @@ export const useCameraStore = defineStore('camera', () => {
     actual.value = null;
   }
 
+  // Nach dem Ende der Kamera ohne neues Standbild gilt wieder das bisherige.
+  function settle(): void {
+    if (still.value === null && held.value !== null) {
+      still.value = held.value;
+    }
+    held.value = null;
+  }
+
   async function start(): Promise<void> {
     release();
-    // Ein Kamerastart betrifft nur das Standbild des aktiven Tabs.
+    // Ein Kamerastart betrifft nur das Standbild des aktiven Tabs: Es weicht dem Livebild, bleibt aber
+    // erhalten, bis ein neues Standbild aufgenommen ist.
+    held.value = still.value ?? held.value;
     still.value = null;
     status.value = 'starting';
     errorMessage.value = null;
@@ -68,12 +81,14 @@ export const useCameraStore = defineStore('camera', () => {
       release();
       errorMessage.value = describeCameraError(toCameraError(error));
       status.value = 'error';
+      settle();
     }
   }
 
   function stop(): void {
     release();
     status.value = 'idle';
+    settle();
   }
 
   async function selectDevice(id: string | null): Promise<void> {
@@ -90,36 +105,42 @@ export const useCameraStore = defineStore('camera', () => {
     }
   }
 
-  // Verwirft das Standbild des aktiven Tabs.
+  // Verwirft das Standbild des aktiven Tabs (auch das gehaltene).
   function clearStill(): void {
     still.value = null;
+    held.value = null;
   }
 
   // Verwirft die Standbilder aller Tabs (Projekt laden).
   function discardStills(): void {
     still.value = null;
+    held.value = null;
     parked.value = {};
   }
 
   // Wechsel zwischen zwei Tabs: Das Standbild von `from` wird abgelegt und das von `to` (falls
   // vorhanden) angezeigt, damit keiner sein Bild verliert.
   function swapStill(from: StillKey, to: StillKey): void {
+    const committed = still.value ?? held.value;
     const { [to]: next, ...rest } = parked.value;
-    parked.value = still.value === null ? rest : { ...rest, [from]: still.value };
-    still.value = next ?? null;
+    parked.value = committed === null ? rest : { ...rest, [from]: committed };
+    // Läuft die Kamera, sucht auch der neue Tab nach Karten: sein Standbild wird gehalten.
+    const searching = status.value === 'live' || status.value === 'starting';
+    held.value = searching ? (next ?? null) : null;
+    still.value = searching ? null : (next ?? null);
     stillOwner.value = to;
   }
 
   // Alle Standbilder der Tabs (das angezeigte gehört zu `stillOwner`), etwa zum Speichern im Projekt.
   function allStills(): Stills {
-    return still.value === null
-      ? { ...parked.value }
-      : { ...parked.value, [stillOwner.value]: still.value };
+    const own = still.value ?? held.value;
+    return own === null ? { ...parked.value } : { ...parked.value, [stillOwner.value]: own };
   }
 
   // Stellt die Standbilder aller Tabs her; angezeigt wird das des aktuellen Besitzers.
   function restoreStills(frames: Stills): void {
     const { [stillOwner.value]: current, ...rest } = frames;
+    held.value = null;
     still.value = current ?? null;
     parked.value = rest;
   }
@@ -128,6 +149,8 @@ export const useCameraStore = defineStore('camera', () => {
     errorMessage.value = null;
     try {
       still.value = await captureAveraged(grabber, count);
+      // Das neue Standbild ersetzt das gehaltene.
+      held.value = null;
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : 'Aufnahme fehlgeschlagen.';
     }

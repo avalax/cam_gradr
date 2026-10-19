@@ -166,6 +166,27 @@ test.describe('Projekt', () => {
     await expect(app.page.locator('polygon[data-shape]').first()).toBeVisible();
   });
 
+  test('Nach dem Laden beginnt ein Kamerastart eine neue Suche, ohne dass der Zeiger mit alten Eckpunkten wegspringt', async ({
+    app,
+  }) => {
+    await app.computeColorModel();
+    const { text } = await app.saveProject();
+    await app.page.reload();
+    await app.loadProject(text);
+    await app.openTab('Graukarten');
+    await app.expectCorners();
+    await expect(app.page.getByTestId('measure-marker')).toBeVisible();
+
+    await app.startCamera();
+    await expect(app.page.locator('svg circle')).toHaveCount(0);
+    await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
+
+    // Ohne neue Aufnahme kehrt der geladene Stand zurück.
+    await app.stopCamera();
+    await app.expectCorners();
+    await expect(app.page.getByTestId('measure-marker')).toBeVisible();
+  });
+
   test('Mit laufender Kamera schaltet das Laden mit Standbildern die Kamera aus', async ({
     app,
   }) => {
@@ -188,7 +209,7 @@ test.describe('Projekt', () => {
     await app.openTab('Farbkarten');
 
     await expect(app.page.getByTestId('card-placeholder')).toContainText(
-      'Die Eckpunkte bleiben erhalten',
+      'Beide Farbkarten ruhig in die Rahmen',
     );
     await expect(app.page.locator('polygon[data-shape]')).toHaveCount(0);
   });

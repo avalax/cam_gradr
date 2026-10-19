@@ -53,12 +53,7 @@ function toRgba(frame: Frame): Uint8ClampedArray {
   return rgba;
 }
 
-// Nach dem Einhängen aufrufen: ersetzt nur die Canvas-Erzeugung für den Frame-Grabber.
-function mockGrabberCanvas() {
-  mockGrabberData(() => new Uint8ClampedArray(1280 * 720 * 4).fill(60));
-}
-
-// Wie mockGrabberCanvas, die Bilddaten werden bei jedem Auslesen neu erfragt.
+// Ersetzt die Canvas-Erzeugung für den Frame-Grabber; die Bilddaten werden bei jedem Auslesen neu erfragt.
 function mockGrabberData(next: () => Uint8ClampedArray) {
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- Überladung für beliebige Tag-Namen
   const original = document.createElement.bind(document);
@@ -166,7 +161,8 @@ describe('GrayStep', () => {
     camera.still = stillFrame(0.5);
     const wrapper = mount(GrayStep);
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
-    expect(button(wrapper, 'Zurück zum Livebild')).toBeDefined();
+    expect(button(wrapper, 'Eckpunkte löschen')).toBeDefined();
+    expect(button(wrapper, 'Zurück zum Livebild')).toBeUndefined();
   });
 
   it('zeigt Fehler bei der Aufnahme an', async () => {
@@ -187,21 +183,121 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('ziehe sie bei Bedarf');
   });
 
-  it('zeichnet gespeicherte Eckpunkte nicht über den Platzhalter, solange die Kamera aus ist', async () => {
+  it('zeigt bei ausgeschalteter Kamera ohne Standbild nur den Platzhalter, auch mit Eckpunkten', async () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     placeAll();
     await flushPromises();
     expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(true);
     expect(wrapper.findAll('polygon')).toHaveLength(0);
-    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain(
-      'Die Eckpunkte bleiben erhalten',
-    );
-    // Mit Livebild erscheinen die Umrisse wieder.
-    await useCameraStore().start();
+    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain('Beide Graukarten');
+  });
+
+  describe('Suche mit gehaltenem Stand', () => {
+    it('hält beim Kamerastart Standbild und Eckpunkte und gibt sie beim Beenden zurück', async () => {
+      installFakeCamera();
+      const wrapper = mount(GrayStep);
+      const camera = useCameraStore();
+      const chart = useChartStore();
+      camera.still = stillFrame(0.5);
+      placeAll();
+      await flushPromises();
+      expect(wrapper.findAll('circle')).toHaveLength(8);
+      expect(chart.ready).toBe(true);
+
+      await camera.start();
+      await flushPromises();
+      // Das Livebild sucht neu: keine Eckpunkte, keine Umrisse, kein altes Standbild davor.
+      expect(chart.points).toEqual({});
+      expect(chart.exposure).toBeNull();
+      expect(camera.still).toBeNull();
+      expect(wrapper.findAll('circle')).toHaveLength(0);
+      expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
+      expect(chart.committed().points[3]).toHaveLength(4);
+
+      // Ohne neue Eckpunkte gilt nach dem Beenden wieder der bisherige Stand.
+      camera.stop();
+      await flushPromises();
+      expect(camera.still).not.toBeNull();
+      expect(Object.keys(chart.points)).toHaveLength(2);
+      expect(wrapper.findAll('circle')).toHaveLength(8);
+      expect(chart.exposure).not.toBeNull();
+    });
+
+    it('behält einen neuen Stand, wenn während der Suche neue Eckpunkte entstehen', async () => {
+      installFakeCamera();
+      mount(GrayStep);
+      const camera = useCameraStore();
+      const chart = useChartStore();
+      camera.still = stillFrame(0.5);
+      placeAll();
+      await flushPromises();
+      await camera.start();
+      await flushPromises();
+      chart.setCards([
+        [
+          { x: 10, y: 10 },
+          { x: 20, y: 10 },
+          { x: 20, y: 20 },
+          { x: 10, y: 20 },
+        ],
+        [
+          { x: 30, y: 10 },
+          { x: 40, y: 10 },
+          { x: 40, y: 20 },
+          { x: 30, y: 20 },
+        ],
+      ]);
+      const fresh = stillFrame(0.7);
+      camera.still = fresh;
+      camera.stop();
+      await flushPromises();
+      expect(camera.still).toBe(fresh);
+      expect(chart.points[3]?.[0]).toEqual({ x: 10, y: 10 });
+    });
+
+    it('beginnt auch dann eine Suche, wenn der Tab bei laufender Kamera geöffnet wird', async () => {
+      installFakeCamera();
+      const camera = useCameraStore();
+      await camera.start();
+      placeAll();
+      const wrapper = mount(GrayStep);
+      await flushPromises();
+      expect(useChartStore().points).toEqual({});
+      wrapper.unmount();
+      // Beim Verlassen des Tabs kehrt der bisherige Stand zurück.
+      expect(Object.keys(useChartStore().points)).toHaveLength(2);
+    });
+
+    it('verwirft den gehaltenen Stand mit dem Papierkorb', async () => {
+      installFakeCamera();
+      const wrapper = mount(GrayStep);
+      const camera = useCameraStore();
+      camera.still = stillFrame(0.5);
+      placeAll();
+      await flushPromises();
+      // Der Papierkorb löscht Standbild und Eckpunkte und startet die Suche mit der Kamera neu.
+      await button(wrapper, 'Eckpunkte löschen')?.trigger('click');
+      await flushPromises();
+      expect(camera.status).toBe('live');
+      camera.stop();
+      await flushPromises();
+      expect(useChartStore().points).toEqual({});
+      expect(camera.still).toBeNull();
+    });
+  });
+
+  it('misst im Livebild nie, sondern nur auf Standbildern', async () => {
+    vi.useFakeTimers();
+    await mountLive();
+    const chart = useChartStore();
+    const measure = vi.spyOn(chart, 'measure');
+    placeAll();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(measure).not.toHaveBeenCalled();
+    useCameraStore().still = stillFrame(0.5);
     await flushPromises();
-    expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(false);
-    expect(wrapper.findAll('polygon[data-shape]').length).toBeGreaterThan(0);
+    expect(measure).toHaveBeenCalled();
   });
 
   it('setzt per Klick keine Eckpunkte', async () => {
@@ -264,40 +360,6 @@ describe('GrayStep', () => {
     camera.still = stillFrame(0.8);
     await flushPromises();
     expect(useChartStore().exposure?.level18).toBeGreaterThan(dark ?? 1);
-  });
-
-  it('kehrt zum Livebild zurück und misst dort mit denselben Eckpunkten', async () => {
-    vi.useFakeTimers();
-    const wrapper = await mountLive();
-    const camera = useCameraStore();
-    const chart = useChartStore();
-    camera.still = stillFrame(0.5);
-    await flushPromises();
-    placeAll();
-    await flushPromises();
-    await button(wrapper, 'Zurück zum Livebild')?.trigger('click');
-    expect(camera.still).toBeNull();
-    expect(button(wrapper, 'Zurück zum Livebild')).toBeUndefined();
-    expect(wrapper.findAll('circle')).toHaveLength(0);
-    Object.defineProperty(wrapper.get('video').element, 'videoWidth', { value: 1280 });
-    mockGrabberCanvas();
-    const measure = vi.spyOn(chart, 'measure');
-    await vi.advanceTimersByTimeAsync(300);
-    expect(measure).toHaveBeenCalledTimes(1);
-  });
-
-  it('misst im Livebild nicht, solange ein Standbild angezeigt wird', async () => {
-    vi.useFakeTimers();
-    await mountLive();
-    const chart = useChartStore();
-    useCameraStore().still = stillFrame(0.5);
-    await flushPromises();
-    placeAll();
-    await flushPromises();
-    mockGrabberCanvas();
-    const measure = vi.spyOn(chart, 'measure');
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(measure).not.toHaveBeenCalled();
   });
 
   it('zeigt neben dem Bild ein Messfeld für Helligkeit und Kontrast', async () => {

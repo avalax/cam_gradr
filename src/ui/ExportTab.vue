@@ -24,16 +24,16 @@ const gray = useChartStore();
 const color = useColorChartStore();
 
 // Was in der Projektdatei steckt: je Kartenpaar die Eckpunkte und gemessenen Felder.
-function chartFacts(store: { points: Record<number, unknown[]>; measurements: object }): string {
-  const corners = Object.values(store.points).reduce((sum, list) => sum + list.length, 0);
-  const fields = Object.keys(store.measurements).length;
+function chartFacts(state: { points: Record<number, unknown[]>; measurements: object }): string {
+  const corners = Object.values(state.points).reduce((sum, list) => sum + list.length, 0);
+  const fields = Object.keys(state.measurements).length;
   return corners === 0 && fields === 0
     ? '–'
     : `${String(corners)} Eckpunkte · ${String(fields)} Felder`;
 }
 const facts = computed(() => [
-  { label: 'Graukarten', value: chartFacts(gray) },
-  { label: 'Farbkarten', value: chartFacts(color) },
+  { label: 'Graukarten', value: chartFacts(gray.committed()) },
+  { label: 'Farbkarten', value: chartFacts(color.committed()) },
   { label: 'Korrektur', value: model.value === null ? '–' : 'Kurven + Matrix' },
   { label: 'Referenz', value: selected.value?.name ?? '–' },
 ]);

@@ -38,6 +38,13 @@ function halfTurn([a, b, c, d]: Corners): Corners {
 
 type CornerMap = Record<number, Corners | undefined>;
 
+// Eckpunkte und Messwerte einer Kartengruppe.
+interface ChartState {
+  points: Record<number, Point[]>;
+  measurements: Measurements;
+  rotated: boolean;
+}
+
 // Karten um 180° gedreht: Die linke Karte im Bild ist dann die rechte Karte des Layouts und umgekehrt,
 // jeweils auf dem Kopf.
 function turned(upright: CornerMap, order: readonly number[]): CornerMap {
@@ -57,6 +64,9 @@ function defineChartStore(options: ChartStoreOptions) {
     const exposure = shallowRef<ExposureResult | null>(null);
     // Karten sind um 180° gedreht (aus den Messwerten erkannt).
     const rotated = ref(false);
+    // Während die Kamera nach neuen Karten sucht, bleibt der bisherige Stand (Eckpunkte und Messwerte
+    // zum Standbild) hier erhalten. Kommt kein neuer Stand zustande, kehrt der bisherige zurück.
+    const held = shallowRef<ChartState | null>(null);
 
     function placed(card: number): Point[] {
       return points.value[card] ?? [];
@@ -114,19 +124,53 @@ function defineChartStore(options: ChartStoreOptions) {
       );
     }
 
-    function reset(): void {
+    function clear(): void {
       points.value = {};
       measurements.value = {};
       exposure.value = null;
       rotated.value = false;
     }
 
+    // Verwirft den Stand ganz, auch den gehaltenen.
+    function reset(): void {
+      held.value = null;
+      clear();
+    }
+
+    function current(): ChartState {
+      return {
+        points: points.value,
+        measurements: measurements.value,
+        rotated: rotated.value,
+      };
+    }
+
+    // Der gültige Stand: während der Suche der gehaltene, sonst der aktuelle (zum Speichern im Projekt).
+    function committed(): ChartState {
+      return held.value ?? current();
+    }
+
+    // Die Kamera beginnt zu suchen: Der bisherige Stand wird gehalten, die Eckpunkte verschwinden, damit
+    // ein neues Standbild mit neuen Eckpunkten entstehen kann.
+    function beginSearch(): void {
+      if (held.value === null && Object.keys(points.value).length > 0) {
+        held.value = current();
+        clear();
+      }
+    }
+
+    // Die Suche endet: Ohne neue Eckpunkte gilt wieder der bisherige Stand.
+    function endSearch(): void {
+      const previous = held.value;
+      held.value = null;
+      if (previous !== null && Object.keys(points.value).length === 0) {
+        restore(previous);
+      }
+    }
+
     // Stellt gespeicherte Eckpunkte und Messwerte wieder her (Projekt laden).
-    function restore(state: {
-      points: Record<number, Point[]>;
-      measurements: Measurements;
-      rotated: boolean;
-    }): void {
+    function restore(state: ChartState): void {
+      held.value = null;
       points.value = state.points;
       measurements.value = state.measurements;
       rotated.value = state.rotated;
@@ -179,6 +223,9 @@ function defineChartStore(options: ChartStoreOptions) {
       moveCorner,
       setCards,
       reset,
+      committed,
+      beginSearch,
+      endSearch,
       restore,
       measure,
     };

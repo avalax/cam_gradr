@@ -19,7 +19,7 @@ import { detectCards, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
 import { imageMaxWidth as maxWidthFor } from './image-size';
-import { frameGrid, measureTick, MEASURE_INTERVAL_MS } from './gray-monitor';
+import { frameGrid } from './gray-monitor';
 import { guideCorners } from './guide';
 import { buildShapes, clientToImage } from './overlay-geometry';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
@@ -31,8 +31,6 @@ const props = defineProps<{
   cardNames: Readonly<Record<number, string>>;
   // Hinweis, solange noch kein Standbild aufgenommen ist.
   idleText: string;
-  // Misst im Livebild laufend mit den gesetzten Eckpunkten (nur für die Helligkeitseinstellung).
-  liveMeasure: boolean;
 }>();
 
 // Automatik im Livebild: so oft wird nach den Karten gesucht, und so oft hintereinander müssen sie
@@ -45,7 +43,7 @@ const STEADY_SHARE = 0.02;
 
 const camera = useCameraStore();
 const { stream, actual, status, still } = storeToRefs(camera);
-const { points, ready, corners, rotated } = storeToRefs(props.store);
+const { points, corners, rotated } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -177,26 +175,20 @@ async function autoTick(): Promise<void> {
   }
 }
 
-const timer = shallowRef<ReturnType<typeof setInterval>>();
 const autoTimer = shallowRef<ReturnType<typeof setInterval>>();
 
 onMounted(() => {
   attachStream(video.value, stream.value);
   drawStill(still.value);
-  timer.value = setInterval(() => {
-    const active = props.liveMeasure && ready.value && isLive.value && !showStill.value;
-    measureTick(active, video.value, (grid) => {
-      props.store.measure(grid);
-    });
-  }, MEASURE_INTERVAL_MS);
   autoTimer.value = setInterval(() => {
     void autoTick();
   }, AUTO_INTERVAL_MS);
 });
 
 onBeforeUnmount(() => {
-  clearInterval(timer.value);
   clearInterval(autoTimer.value);
+  // Beim Verlassen des Tabs gilt wieder der bisherige Stand.
+  props.store.endSearch();
 });
 
 watch(stream, (next) => {
@@ -208,6 +200,22 @@ watch(still, (next) => {
   detectMessage.value = null;
   drawStill(next);
 });
+
+// Läuft die Kamera, sucht dieser Tab nach neuen Karten: Der bisherige Stand (Standbild mit Eckpunkten)
+// bleibt gehalten, die Eckpunkte verschwinden, damit ein neues Standbild entstehen kann. Endet die
+// Kamera ohne neue Eckpunkte, gilt wieder der bisherige Stand. Gemessen wird nur auf Standbildern.
+const searching = computed(() => status.value === 'live' || status.value === 'starting');
+watch(
+  searching,
+  (active) => {
+    if (active) {
+      props.store.beginSearch();
+    } else {
+      props.store.endSearch();
+    }
+  },
+  { immediate: true },
+);
 
 // Auf dem Standbild wird bei jeder Änderung (neues Bild, verschobene Eckpunkte) neu gemessen.
 watch([still, points], () => {
@@ -259,11 +267,7 @@ watch(actual, (next, previous) => {
             </template>
             <template v-else>
               <span class="block font-semibold text-zinc-800">Die Kamera ist aus</span>
-              <template v-if="noPoints">Schalte sie oben mit „Kamera“ ein. {{ idleText }}</template>
-              <template v-else>
-                Die Eckpunkte bleiben erhalten. Schalte die Kamera oben ein, um im Livebild mit
-                ihnen zu messen.
-              </template>
+              Schalte sie oben mit „Kamera“ ein. {{ idleText }}
             </template>
           </p>
         </div>
@@ -346,7 +350,7 @@ watch(actual, (next, previous) => {
             {{ handle.index + 1 }}
           </text>
         </svg>
-        <!-- Symbolleiste in der Bildecke: zurück zum Livebild (nur mit Standbild) und Eckpunkte löschen. -->
+        <!-- Symbolleiste in der Bildecke: Eckpunkte und Standbild löschen. -->
         <div
           v-if="showStill || !noPoints"
           class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
@@ -354,31 +358,8 @@ watch(actual, (next, previous) => {
           aria-label="Bildaktionen"
         >
           <button
-            v-if="showStill"
             type="button"
             class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
-            aria-label="Zurück zum Livebild"
-            title="Zurück zum Livebild"
-            @click="camera.clearStill()"
-          >
-            <svg
-              class="size-[18px]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M3 8a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 10l5-3v10l-5-3"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="grid h-9 w-10 place-items-center border-l border-zinc-300 first:border-l-0 hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
             aria-label="Eckpunkte löschen"
             title="Eckpunkte löschen und die Karten neu erkennen"
             @click="redetect"
