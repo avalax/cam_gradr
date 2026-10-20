@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.0.0...cam-gradr-v1.1.0) (2026-10-20)
+
+
+### Features
+
+* **i18n:** make the app bilingual and translate the repo to English ([d3c98c6](https://github.com/avalax/cam_gradr/commit/d3c98c6428e2c642ff7bc9001fb685e6e4e9a859))
+
 ## 1.0.0 (2026-10-19)
 
 First release. The app turns a webcam image of the Datacolor Spyder Checkr Photo cards into a 3D LUT.
