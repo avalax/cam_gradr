@@ -1,5 +1,5 @@
 import { t } from '../lang';
-import { deltaE2000, labToLinearSrgb, labToXyzD50, srgbToLab } from '../color/lab';
+import { deltaE2000, labToLinearSrgb, labToXyzD50, srgbToLab, xyzD50ToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Rgb } from '../chart/types';
@@ -62,10 +62,21 @@ const MIN_PATCHES = 8;
 // Strength of the regularization of the matrix toward the identity (relative to the patch
 // count).
 const RIDGE = 1e-3;
-const SAME_X = 1e-6;
 // Below this slope of the camera response curve (camera value per target value, ideally about 1)
 // the camera can hardly distinguish neighboring neutral patches: they then count as one block.
 const MIN_RESPONSE_SLOPE = 0.1;
+// The correction keeps the exposure of the shot: the reference is scaled by one gain so that the
+// mid tones of the gray ramp need no brightening. This gain is the mean over the neutral patches
+// whose target lies between these limits (linear, 1 = white).
+const EXPOSURE_FROM = 0.05;
+const EXPOSURE_TO = 0.6;
+// The tone curve is a smooth polynomial through the gray ramp (in log-log space) instead of an
+// interpolation through every noisy patch: no steps, no banding, no strong amplification of noise.
+const MAX_DEGREE = 3;
+// Largest brightening or darkening of a tone curve (factor), also beyond the measured range.
+const MAX_GAIN = 4;
+const CURVE_POINTS = 48;
+const CURVE_FLOOR = 1e-3;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
   [1, 0, 0],
   [0, 1, 0],
@@ -154,34 +165,102 @@ function poolNeutrals(neutrals: readonly Sample[]): Block[] {
   return blocks;
 }
 
-// Control points of a channel curve: neutral patches sorted, equal x averaged, y never falling,
-// plus the anchor points (0, 0) and (1, 1) so that the whole scale is covered.
-function buildCurve(points: readonly (readonly [number, number])[]): Curve {
-  const sorted = points.toSorted((a, b) => a[0] - b[0]);
-  const merged: [number, number, number][] = [];
-  for (const [x, y] of sorted) {
-    const previous = merged.at(-1);
-    if (previous !== undefined && x - previous[0] < SAME_X) {
-      previous[1] += y;
-      previous[2] += 1;
-    } else {
-      merged.push([x, y, 1]);
+// Gain by which the camera is brighter (>1) or darker (<1) than the reference in the mid tones:
+// geometric mean over the blocks of the gray ramp. Scaling the reference by it keeps the exposure
+// of the shot (only color cast and tone curve are corrected, not the brightness).
+function exposureGain(blocks: readonly Block[]): number {
+  const logs = blocks
+    .map((block) => ({ level: blockLevel(block), target: block.target / block.count }))
+    .filter(({ level, target }) => level > 0 && target >= EXPOSURE_FROM && target <= EXPOSURE_TO)
+    .map(({ level, target }) => Math.log(level / target));
+  return logs.length === 0 ? 1 : Math.exp(mean(logs));
+}
+
+// Reference color (Lab) with the exposure gain applied to its linear light.
+function scaledLab(lab: Vec3, gain: number): Vec3 {
+  const [x, y, z] = labToXyzD50(lab);
+  return xyzD50ToLab([x * gain, y * gain, z * gain]);
+}
+
+// Solves a small symmetric positive definite system given as its augmented matrix (n rows of
+// n + 1 numbers, flat) by Gaussian elimination; the normal equations of a least-squares fit need
+// no pivoting.
+function solve(augmented: number[], n: number): number[] {
+  const width = n + 1;
+  for (let column = 0; column < n; column++) {
+    for (let row = column + 1; row < n; row++) {
+      const factor =
+        Number(augmented[row * width + column]) / Number(augmented[column * width + column]);
+      for (let k = column; k <= n; k++) {
+        augmented[row * width + k] =
+          Number(augmented[row * width + k]) - factor * Number(augmented[column * width + k]);
+      }
     }
   }
-  const xs: number[] = [];
-  const ys: number[] = [];
-  const addPoint = (x: number, y: number): void => {
-    xs.push(x);
-    ys.push(Math.max(y, ys.at(-1) ?? 0));
+  const result: number[] = Array.from({ length: n }, () => 0);
+  for (let row = n - 1; row >= 0; row--) {
+    let rest = Number(augmented[row * width + n]);
+    for (let k = row + 1; k < n; k++) {
+      rest -= Number(augmented[row * width + k]) * Number(result[k]);
+    }
+    result[row] = rest / Number(augmented[row * width + row]);
+  }
+  return result;
+}
+
+// Least-squares polynomial of the given degree through the points (u, v); u is centered for
+// numerical stability. Returns a function of u.
+function polynomial(points: readonly (readonly [number, number])[], degree: number) {
+  const center = mean(points.map(([u]) => u));
+  const size = degree + 1;
+  const augmented: number[] = Array.from({ length: size * (size + 1) }, () => 0);
+  for (const [u, v] of points) {
+    const x = u - center;
+    for (let row = 0; row < size; row++) {
+      for (let column = 0; column < size; column++) {
+        augmented[row * (size + 1) + column] =
+          Number(augmented[row * (size + 1) + column]) + x ** (row + column);
+      }
+      augmented[row * (size + 1) + size] =
+        Number(augmented[row * (size + 1) + size]) + v * x ** row;
+    }
+  }
+  const coefficients = solve(augmented, size);
+  return (u: number): number => {
+    let value = 0;
+    for (const [power, coefficient] of coefficients.entries()) {
+      value += coefficient * (u - center) ** power;
+    }
+    return value;
   };
-  if (Number(merged[0]?.[0]) > 0) {
-    addPoint(0, 0);
-  }
-  for (const [x, sum, count] of merged) {
-    addPoint(x, sum / count);
-  }
-  if (Number(xs.at(-1)) < 1) {
-    addPoint(1, 1);
+}
+
+// Tone curve of a channel from the (camera value, target value) pairs of the gray ramp, both
+// linear: the logarithm of the gain (target / camera) is a polynomial of the logarithm of the
+// camera value. Beyond the measured range the gain stays constant at the edge value, and it is
+// limited so that noise is not amplified without bounds.
+function buildCurve(points: readonly (readonly [number, number])[]): Curve {
+  const usable = points.filter(([x, y]) => x > CURVE_FLOOR / 10 && y > 0);
+  const logs = usable.map(([x, y]): [number, number] => [Math.log(x), Math.log(y / x)]);
+  const limit = Math.log(MAX_GAIN);
+  const degree = Math.min(MAX_DEGREE, logs.length - 1);
+  const first = Math.min(...logs.map(([u]) => u));
+  const last = Math.max(...logs.map(([u]) => u));
+  const gain = degree < 0 ? () => 0 : polynomial(logs, degree);
+  const clamp = (value: number, from: number, to: number): number =>
+    Math.min(Math.max(value, from), to);
+  const at = (u: number): number => clamp(gain(clamp(u, first, last)), -limit, limit);
+  const low = Math.log(CURVE_FLOOR);
+  const xs: number[] = [0];
+  const ys: number[] = [0];
+  let previous = 0;
+  for (let step = 0; step < CURVE_POINTS; step++) {
+    const u = low + ((0 - low) * step) / (CURVE_POINTS - 1);
+    const x = Math.exp(u);
+    // The curve never falls.
+    previous = Math.max(x * Math.exp(at(u)), previous);
+    xs.push(x);
+    ys.push(previous);
   }
   return { xs, ys };
 }
@@ -291,11 +370,12 @@ export function fitColorModel(input: FitInput): FitResult {
     );
   }
   const blocks = poolNeutrals(neutrals);
+  const gain = exposureGain(blocks);
   const curves = [0, 1, 2].map((channel) =>
     buildCurve(
       blocks.map((block) => [
         Number(block.linear[channel]) / block.count,
-        block.target / block.count,
+        (gain * block.target) / block.count,
       ]),
     ),
   ) as unknown as ColorModel['curves'];
@@ -312,18 +392,20 @@ export function fitColorModel(input: FitInput): FitResult {
       functions[1](sample.linear[1]),
       functions[2](sample.linear[2]),
     ],
-    target: sample.target,
+    target: [sample.target[0] * gain, sample.target[1] * gain, sample.target[2] * gain],
   }));
   const model: ColorModel = { curves, matrix: fitMatrix(pairs) };
 
   const errors = all.map((sample): PatchError => {
+    // The deviation is measured against the reference at the exposure of the shot.
+    const reference = scaledLab(sample.reference, gain);
     return {
       id: sample.id,
-      reference: sample.reference,
+      reference,
       measured: sample.measured,
       neutral: sample.isNeutral,
-      before: deltaE2000(srgbToLab(sample.measured), sample.reference),
-      after: deltaE2000(srgbToLab(applyColorModel(model, sample.measured)), sample.reference),
+      before: deltaE2000(srgbToLab(sample.measured), reference),
+      after: deltaE2000(srgbToLab(applyColorModel(model, sample.measured)), reference),
     };
   });
   const indistinct = blocks.filter((block) => block.count > 1).flatMap((block) => block.ids);

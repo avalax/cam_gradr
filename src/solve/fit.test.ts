@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { labToLinearSrgb, srgbToLab } from '../color/lab';
+import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
 import { setLocale } from '../lang';
@@ -27,6 +28,11 @@ function bundledReference(): ReferenceSet {
       bundledJson.patches.map((patch) => [patch.id, patch.lab as unknown as Vec3]),
     ),
   };
+}
+
+// The same color at half the light (one stop darker).
+function halve([r, g, b]: Rgb): Rgb {
+  return [r, g, b].map((value) => linearToSrgb(srgbToLinear(value) / 2)) as unknown as Rgb;
 }
 
 function measure(reference: ReferenceSet): Record<string, Rgb> {
@@ -182,6 +188,72 @@ describe('fitColorModel', () => {
       expect(curve.xs[0]).toBe(0);
       expect(curve.xs.filter((x) => x === 0)).toHaveLength(1);
     }
+  });
+
+  it('keeps the exposure of the shot instead of brightening it to the reference', () => {
+    // The camera is one stop too dark; the correction must not turn the image brighter.
+    const dark = Object.fromEntries(
+      Object.entries(measurements).map(([id, code]) => [id, halve(code)]),
+    );
+    const fit = fitColorModel({ measurements: dark, reference, neutralIds: NEUTRAL_IDS });
+    const gray = halve(cameraCode(dummyLab('3D')));
+    const corrected = applyColorModel(fit.model, gray);
+    expect(Math.abs(corrected[1] - gray[1])).toBeLessThan(0.05);
+    // The deviation is measured at the exposure of the shot, so the dark shot is not punished.
+    expect(fit.report.meanBefore).toBeLessThan(10);
+  });
+
+  it('builds smooth tone curves that never raise a value by more than the gain limit', () => {
+    for (const curve of result.model.curves) {
+      expect(curve.xs.length).toBeGreaterThan(20);
+      for (let index = 1; index < curve.xs.length; index++) {
+        expect(Number(curve.ys[index])).toBeGreaterThanOrEqual(Number(curve.ys[index - 1]));
+        expect(Number(curve.ys[index])).toBeLessThanOrEqual(4 * Number(curve.xs[index]) + 1e-9);
+      }
+    }
+  });
+
+  it('does not amplify a crushed black without limit', () => {
+    // The camera shows the three darkest steps almost black (clipped shadows).
+    const crushed = { ...measurements };
+    for (const id of ['6E', '5E', '4E']) {
+      crushed[id] = [0.002, 0.002, 0.002];
+    }
+    const fit = fitColorModel({ measurements: crushed, reference, neutralIds: NEUTRAL_IDS });
+    for (const curve of fit.model.curves) {
+      for (const [index, x] of curve.xs.entries()) {
+        expect(Number(curve.ys[index])).toBeLessThanOrEqual(4 * x + 1e-9);
+      }
+    }
+  });
+
+  it('survives a completely black camera image', () => {
+    const black = Object.fromEntries(Object.keys(measurements).map((id) => [id, [0, 0, 0] as Rgb]));
+    const fit = fitColorModel({ measurements: black, reference, neutralIds: NEUTRAL_IDS });
+    for (const curve of fit.model.curves) {
+      expect(curve.ys.every((value) => Number.isFinite(value))).toBe(true);
+    }
+  });
+
+  it('applies no exposure gain when no neutral patch lies in the mid tones', () => {
+    const bright: ReferenceSet = {
+      name: 'Bright',
+      patches: {
+        ...Object.fromEntries(
+          ['3A', '4A', '5A', '6A', '1B', '2B', '3B', '4B'].map((id) => [id, dummyLab(id)]),
+        ),
+        '1D': [99, 0, 0],
+        '2D': [98, 0, 0],
+        '1E': [97, 0, 0],
+        '2E': [96, 0, 0],
+      },
+    };
+    const fit = fitColorModel({
+      measurements: measure(bright),
+      reference: bright,
+      neutralIds: NEUTRAL_IDS,
+    });
+    expect(fit.report.patches).toHaveLength(12);
   });
 
   it('throws with too few patches or neutral patches', () => {

@@ -173,6 +173,65 @@ describe('detectCards', () => {
     expect(detectCards(oneCard, 2)).toBeNull();
   });
 
+  it('picks the matching pair out of three charts', () => {
+    const frame = scene((f) => {
+      drawCard(f, 60, 60, 170, 260);
+      drawCard(f, 300, 60, 170, 260);
+      // Much smaller than the other two: does not fit the pair.
+      drawCard(f, 520, 150, 90, 140);
+    });
+    const found = detectCards(frame, 2);
+    expect(found).toHaveLength(2);
+    expectPoint(found?.[0]?.[0], { x: 60, y: 60 });
+    expectPoint(found?.[1]?.[0], { x: 300, y: 60 });
+  });
+
+  it('takes two of three equal charts', () => {
+    const frame = scene((f) => {
+      drawCard(f, 20, 60, 170, 260);
+      drawCard(f, 230, 60, 170, 260);
+      drawCard(f, 440, 60, 170, 260);
+    });
+    expect(detectCards(frame, 2)).toHaveLength(2);
+  });
+
+  it('rejects charts that are stacked instead of side by side', () => {
+    const frame = scene((f) => {
+      drawCard(f, 200, 10, 110, 160);
+      drawCard(f, 200, 190, 110, 160);
+    });
+    expect(detectCards(frame, 2)).toBeNull();
+  });
+
+  it('keeps the tighter frame when a shadow next to the chart makes the dark area larger', () => {
+    // A medium dark shadow strip to the right of the chart joins the area at higher thresholds.
+    const frame = scene((f) => {
+      drawCard(f, 100, 60, 160, 250, { tabs: true });
+      for (let y = 60; y < 310; y++) {
+        for (let x = 260; x < 300; x++) {
+          paint(f, x, y, 0.28);
+        }
+      }
+    });
+    const card = detectCards(frame, 1)?.[0];
+    expectPoint(card?.[1], { x: 260, y: 60 });
+    expectPoint(card?.[2], { x: 260, y: 310 });
+  });
+
+  it('still finds a chart whose edge is slightly jagged', () => {
+    const frame = scene((f) => {
+      drawCard(f, 100, 60, 160, 250);
+      // Jagged right edge (e.g. a noisy image): the edge is no longer perfectly straight.
+      for (let y = 60; y < 310; y++) {
+        const bump = Math.round(7 * Math.sin(y / 2));
+        for (let x = 260; x < 260 + bump; x++) {
+          paint(f, x, y, 0.08);
+        }
+      }
+    });
+    expect(detectCards(frame, 1)).toHaveLength(1);
+  });
+
   it('finds nothing in a uniform image', () => {
     expect(
       detectCards(

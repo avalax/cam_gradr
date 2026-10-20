@@ -8,11 +8,11 @@ import type { Corners, Point } from './types';
 // roughly the aspect ratio of an upright chart. The corners result as intersections of four
 // lines fitted to the straight sides of the area (cutouts and rounded corners hardly disturb
 // this, and skew and perspective are preserved). If a side is not straight (blurred image) or
-// the two charts do not match each other, nothing counts as detected. Which brightness is
-// "dark" depends on the light, so several thresholds are tried until exactly the expected
-// number of charts is found.
+// the charts do not match each other, nothing counts as detected. Which brightness is "dark"
+// depends on the light, so all thresholds are tried and the cleanest matching group of charts
+// is taken.
 const MAX_WIDTH = 320;
-const THRESHOLDS = [0.25, 0.2, 0.3, 0.15, 0.35, 0.45, 0.4] as const;
+const THRESHOLDS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45] as const;
 // Minimum size of the dark area (fraction of the image); the bright patches inside do not
 // count.
 const MIN_DARK_SHARE = 0.01;
@@ -28,8 +28,17 @@ const MAX_EDGE_ERROR = 0.02;
 // Fraction of edge points that go into the line, and number of repetitions.
 const KEEP_SHARE = 0.8;
 const TRIM_ROUNDS = 4;
-// Two charts in the same case are about the same size.
+// Two charts in the same case are about the same size, side by side at about the same height.
 const MAX_SIZE_RATIO = 1.25;
+const MIN_GAP = 0.8;
+const MAX_OFFSET = 0.35;
+// Candidates whose centers are closer than this (fraction of the chart width) are the same chart.
+const SAME_PLACE = 0.5;
+// Edges straighter than this count as clean. Of the clean candidates for a chart the smallest
+// one wins: a threshold that is too high lets the dark frame leak into shadows next to the chart
+// and makes the area too large, while the frame itself stays straight.
+const CLEAN_EDGE_ERROR = 0.01;
+const UNCLEAN_RANK = 1e9;
 const LUMA = [0.2126, 0.7152, 0.0722] as const;
 
 interface Gray {
@@ -50,6 +59,8 @@ interface Card {
   corners: readonly [Point, Point, Point, Point];
   width: number;
   height: number;
+  // Largest deviation of an edge from its line relative to the chart size (smaller = cleaner).
+  error: number;
 }
 
 function toGray(frame: Frame): Gray {
@@ -226,50 +237,114 @@ function cardFrom(cells: readonly number[], gray: Gray): Card | null {
   const inside = [a, b, c, d].every(
     (p) => p.x > 0 && p.y > 0 && p.x < gray.width - 1 && p.y < gray.height - 1,
   );
-  const straight =
-    Math.max(lines.left.error, lines.right.error, lines.top.error, lines.bottom.error) <=
-    MAX_EDGE_ERROR * Math.min(width, height);
+  const error =
+    Math.max(lines.left.error, lines.right.error, lines.top.error, lines.bottom.error) /
+    Math.min(width, height);
   const upright = width / height >= MIN_ASPECT && width / height <= MAX_ASPECT;
-  return inside && straight && upright ? { corners: [a, b, c, d], width, height } : null;
+  const clean = error <= MAX_EDGE_ERROR;
+  return inside && clean && upright ? { corners: [a, b, c, d], width, height, error } : null;
 }
 
 function similar(a: number, b: number): boolean {
   return Math.max(a, b) / Math.min(a, b) <= MAX_SIZE_RATIO;
 }
 
-// Two charts must be about the same size; with any other count there is nothing to compare.
+function center(card: Card): Point {
+  let x = 0;
+  let y = 0;
+  for (const corner of card.corners) {
+    x += corner.x;
+    y += corner.y;
+  }
+  return { x: x / card.corners.length, y: y / card.corners.length };
+}
+
+function area(card: Card): number {
+  return card.width * card.height;
+}
+
+// Ranking of a candidate for a chart (smaller is better): clean ones by size, unclean ones after
+// all clean ones by their edge error.
+function rank(card: Card): number {
+  return card.error <= CLEAN_EDGE_ERROR ? area(card) : UNCLEAN_RANK + card.error;
+}
+
+// Candidates from different thresholds that sit on the same chart: only the best one counts.
+function bestPerPlace(candidates: readonly Card[]): Card[] {
+  const result: Card[] = [];
+  const ranked = candidates.toSorted((p, q) => rank(p) - rank(q));
+  for (const card of ranked) {
+    const middle = center(card);
+    const taken = result.some(
+      (other) => distance(center(other), middle) < SAME_PLACE * Math.min(card.width, other.width),
+    );
+    if (!taken) {
+      result.push(card);
+    }
+  }
+  return result;
+}
+
+// Charts in the same case are about the same size, stand side by side and at about the same
+// height without overlapping.
 function fitTogether(cards: readonly Card[]): boolean {
-  const [first, second] = cards;
-  return (
-    first === undefined ||
-    second === undefined ||
-    (similar(first.width, second.width) && similar(first.height, second.height))
+  const ordered = cards.toSorted((a, b) => center(a).x - center(b).x);
+  return ordered.every((card, index) => {
+    const next = ordered[index + 1];
+    if (next === undefined) {
+      return true;
+    }
+    const gap = center(next).x - center(card).x;
+    const offset = Math.abs(center(next).y - center(card).y);
+    return (
+      similar(card.width, next.width) &&
+      similar(card.height, next.height) &&
+      gap >= MIN_GAP * Math.max(card.width, next.width) &&
+      offset <= MAX_OFFSET * Math.max(card.height, next.height)
+    );
+  });
+}
+
+// All selections of `count` items from the list.
+function selections<T>(items: readonly T[], count: number): T[][] {
+  if (count === 0) {
+    return [[]];
+  }
+  return items.flatMap((item, index) =>
+    selections(items.slice(index + 1), count - 1).map((rest) => [item, ...rest]),
   );
 }
 
-// Searches for `count` charts in the image and returns their corners from left to right. If
-// exactly this number of plausible, matching charts is not found, null is returned and the
-// corners must be set by hand.
+// Searches for `count` charts in the image and returns their corners from left to right. All
+// thresholds are tried; of the plausible charts the best matching group with the cleanest edges
+// wins (other dark objects such as hair or clothes do not matter). If no such group exists, null
+// is returned and the corners must be set by hand.
 export function detectCards(frame: Frame, count: number): Corners[] | null {
   const gray = toGray(frame);
-  for (const threshold of THRESHOLDS) {
-    const cards = darkAreas(gray, threshold)
+  const candidates = THRESHOLDS.flatMap((threshold) =>
+    darkAreas(gray, threshold)
       .map((cells) => cardFrom(cells, gray))
-      .filter((card) => card !== null);
-    if (cards.length === count && fitTogether(cards)) {
-      return cards
-        .toSorted((p, q) => p.corners[0].x - q.corners[0].x)
-        .map((card) => {
-          const [a, b, c, d] = card.corners;
-          const [p, q, r, s] = [a, b, c, d].map((point) => ({
-            x: (point.x + 0.5) * gray.scale,
-            y: (point.y + 0.5) * gray.scale,
-          }));
-          return sortCorners([p as Point, q as Point, r as Point, s as Point]);
-        });
-    }
+      .filter((card) => card !== null),
+  );
+  const groups = selections(bestPerPlace(candidates), count)
+    .filter((cards) => fitTogether(cards))
+    .toSorted(
+      (p, q) => p.reduce((sum, c) => sum + c.error, 0) - q.reduce((sum, c) => sum + c.error, 0),
+    );
+  const best = groups[0];
+  if (best === undefined) {
+    return null;
   }
-  return null;
+  return best
+    .toSorted((p, q) => center(p).x - center(q).x)
+    .map((card) => {
+      const [a, b, c, d] = card.corners;
+      const [p, q, r, s] = [a, b, c, d].map((point) => ({
+        x: (point.x + 0.5) * gray.scale,
+        y: (point.y + 0.5) * gray.scale,
+      }));
+      return sortCorners([p as Point, q as Point, r as Point, s as Point]);
+    });
 }
 
 // Checks whether two detections (e.g. from consecutive images) show the same charts at the same
