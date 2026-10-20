@@ -236,7 +236,7 @@ const splitModel = computed({
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
-      <div class="flex items-stretch gap-3">
+      <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3">
         <div class="relative min-w-0 flex-1" :style="{ maxWidth: maxWidth }">
           <!-- The video only serves as an image source and stays invisible. -->
           <video
@@ -394,6 +394,24 @@ const splitModel = computed({
             {{ summary }}
           </p>
         </div>
+
+        <!-- Legend under the image: which side of the divider is the original and which the corrected image. -->
+        <p
+          v-if="model !== null && hasSource"
+          class="col-start-1 row-start-2 mt-1.5 flex justify-between gap-3 text-xs text-zinc-700"
+          data-testid="preview-legend"
+        >
+          <span class="flex items-center gap-1.5">
+            <i class="size-2.5 rounded-full bg-zinc-400" aria-hidden="true"></i>
+            <b class="font-semibold">{{ t('preview.legendOriginal') }}</b>
+            {{ t('preview.legendOriginalHint') }}
+          </span>
+          <span class="flex items-center gap-1.5">
+            <b class="font-semibold">{{ t('preview.legendCorrected') }}</b>
+            {{ t('preview.legendCorrectedHint') }}
+            <i class="size-2.5 rounded-full bg-emerald-700" aria-hidden="true"></i>
+          </span>
+        </p>
       </div>
     </div>
   </section>
