@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.2.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.1.0...cam-gradr-v1.2.0) (2026-10-20)
+
+The color correction can leave contrast and gamma alone, the card detection is more reliable and the wipe sliders are easier to read.
+
+### Features
+
+* **color:** new option "Contrast and gamma" (on by default) in the preview and the export tab, one shared setting. Switched off, the correction only balances the color and keeps the brightness; it applies to the `.cube` export and is saved in the project
+* **ui:** the wipe slider has a round handle with a double arrow, and a legend under the preview image says which side is the original and which the corrected one
+
+### Bug Fixes
+
+* the cards are detected more reliably and the exposure of the shot is kept in the correction, so the result looks natural instead of filtered
+* the preview no longer turns cyan after toggling the correction, and the original can always be reached again
+* the gray tiles in the gray cards tab no longer jump when the correction is toggled
+* the tab status scale uses all four bars instead of two states
+* the wipe over the color cards is hidden as long as there is no still image, because there is nothing to compare yet
+
 ## [1.1.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.0.0...cam-gradr-v1.1.0) (2026-10-20)
 
 
