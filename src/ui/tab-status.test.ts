@@ -35,7 +35,20 @@ describe('grayStatus', () => {
 
   it('also warns when there is no single hint', () => {
     const status = grayStatus(exposure({ verdict: 'too-bright' }));
-    expect(status).toEqual({ level: 'warn', fill: 2, text: 'Licht prüfen' });
+    expect(status).toEqual({ level: 'warn', fill: 3, text: 'Licht prüfen' });
+  });
+});
+
+describe('grayStatus bars', () => {
+  it('grades the distance to the normal range', () => {
+    expect(grayStatus(exposure({ verdict: 'too-bright', delta: 0.08 })).fill).toBe(3);
+    expect(grayStatus(exposure({ verdict: 'too-bright', delta: 0.2 })).fill).toBe(2);
+    expect(grayStatus(exposure({ verdict: 'too-dark', delta: -0.2 })).fill).toBe(2);
+  });
+
+  it('shows one bar for clipped highlights or crushed shadows', () => {
+    expect(grayStatus(exposure({ verdict: 'too-bright', highlightsClipped: true })).fill).toBe(1);
+    expect(grayStatus(exposure({ verdict: 'too-dark', shadowsCrushed: true })).fill).toBe(1);
   });
 });
 
@@ -53,15 +66,20 @@ describe('colorStatus', () => {
     expect(colorStatus({ meanBefore: 9, meanAfter: 2 }).level).toBe('ok');
   });
 
-  it('warns above that, more strongly above 5', () => {
+  it('warns above that, more strongly above 4 and 7', () => {
     expect(colorStatus({ meanBefore: 9, meanAfter: 3.5 })).toEqual({
       level: 'warn',
       fill: 3,
       text: 'Ø 9,0 → 3,5',
     });
-    expect(colorStatus({ meanBefore: 20.2, meanAfter: 8 })).toEqual({
+    expect(colorStatus({ meanBefore: 20.2, meanAfter: 5.6 })).toEqual({
       level: 'warn',
       fill: 2,
+      text: 'Ø 20,2 → 5,6',
+    });
+    expect(colorStatus({ meanBefore: 20.2, meanAfter: 8 })).toEqual({
+      level: 'warn',
+      fill: 1,
       text: 'Ø 20,2 → 8,0',
     });
   });

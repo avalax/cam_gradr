@@ -1,3 +1,4 @@
+import { DEFAULT_EXPOSURE_CONFIG } from '../chart/exposure';
 import type { ExposureResult } from '../chart/exposure';
 import { t } from '../lang';
 
@@ -13,14 +14,41 @@ export interface TabStatus {
   text: string;
 }
 
-// Mean error (ΔE2000) after the correction: good up to here, a hint up to the second limit,
-// clearly too high above that.
+// Mean error (ΔE2000) after the correction: the limits of the four bars (good, fair, poor, else bad).
 const COLOR_GOOD = 2;
-const COLOR_FAIR = 5;
+const COLOR_FAIR = 4;
+const COLOR_POOR = 7;
+
+// Gray cards: a deviation of the large patches up to this multiple of the tolerance still counts as
+// slightly off.
+const SLIGHT_DEVIATION = 2;
 
 const FILL_OK = 4;
 const FILL_FAIR = 3;
 const FILL_POOR = 2;
+const FILL_BAD = 1;
+
+// Bars of a gray card result that is not in the normal range: clipped highlights or crushed shadows
+// are the worst case, otherwise the distance of the brightness to the target decides.
+function grayFill(exposure: ExposureResult): number {
+  if (exposure.highlightsClipped || exposure.shadowsCrushed) {
+    return FILL_BAD;
+  }
+  return Math.abs(exposure.delta) <= SLIGHT_DEVIATION * DEFAULT_EXPOSURE_CONFIG.tolerance
+    ? FILL_FAIR
+    : FILL_POOR;
+}
+
+// Bars of the color result, from the mean error after the correction.
+function colorFill(meanAfter: number): number {
+  if (meanAfter <= COLOR_GOOD) {
+    return FILL_OK;
+  }
+  if (meanAfter <= COLOR_FAIR) {
+    return FILL_FAIR;
+  }
+  return meanAfter <= COLOR_POOR ? FILL_POOR : FILL_BAD;
+}
 
 // Gray cards: green only if the measuring point is in the normal range; otherwise the most important hint.
 export function grayStatus(exposure: ExposureResult | null): TabStatus {
@@ -32,7 +60,7 @@ export function grayStatus(exposure: ExposureResult | null): TabStatus {
   }
   return {
     level: 'warn',
-    fill: FILL_POOR,
+    fill: grayFill(exposure),
     text: mainIssue(exposure)?.label ?? t('app.status.checkLight'),
   };
 }
@@ -46,8 +74,6 @@ export function colorStatus(report: { meanBefore: number; meanAfter: number } | 
     before: oneDecimal(report.meanBefore),
     after: oneDecimal(report.meanAfter),
   });
-  if (report.meanAfter <= COLOR_GOOD) {
-    return { level: 'ok', fill: FILL_OK, text };
-  }
-  return { level: 'warn', fill: report.meanAfter <= COLOR_FAIR ? FILL_FAIR : FILL_POOR, text };
+  const fill = colorFill(report.meanAfter);
+  return { level: report.meanAfter <= COLOR_GOOD ? 'ok' : 'warn', fill, text };
 }
