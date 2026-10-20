@@ -19,6 +19,8 @@ const props = defineProps<{
   model: ColorModel | null;
   reference: ReferenceSet | null;
   report: FitResult['report'] | null;
+  // The live image is shown: nothing to compare yet, so only the camera colors and no divider.
+  live?: boolean;
 }>();
 
 // Position of the divider: camera colors on the left, corrected ones on the right.
@@ -46,6 +48,9 @@ const layers = computed(() =>
   })),
 );
 
+// While the live image runs, the corrected layer and the divider would show nothing meaningful.
+const shownLayers = computed(() => (props.live ? layers.value.slice(0, 1) : layers.value));
+
 const summary = computed(() =>
   props.report === null ? t('color.wipe.noCorrection') : deviationSummary(props.report),
 );
@@ -60,12 +65,12 @@ const summary = computed(() =>
     <p
       class="rounded-t-[7px] border-b-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
     >
-      {{ t('color.wipe.caption') }}
+      {{ t(live ? 'color.wipe.liveCaption' : 'color.wipe.caption') }}
     </p>
 
     <div class="relative min-h-64 flex-1 overflow-hidden">
       <div
-        v-for="(layer, index) in layers"
+        v-for="(layer, index) in shownLayers"
         :key="layer.key"
         class="absolute inset-0 flex flex-col gap-1.5 bg-zinc-50 p-[3px]"
         :style="index === 0 ? undefined : { clipPath: `inset(0 0 0 ${String(split)}%)` }"
@@ -89,7 +94,7 @@ const summary = computed(() =>
         </div>
       </div>
 
-      <WipeDivider v-model="split" :label="t('color.wipe.divider')" />
+      <WipeDivider v-if="!live" v-model="split" :label="t('color.wipe.divider')" />
     </div>
 
     <!-- The summary is also the trigger: on hover or keyboard focus the color correction result
