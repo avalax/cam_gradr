@@ -6,7 +6,7 @@ import type { Rgb } from './types';
 
 const grey = (value: number): Rgb => [value, value, value];
 
-// Ideale Aufnahme: 18-%-Feld bei 0,46, 50-%-Feld bei 0,74, Streifen unkritisch.
+// Ideal shot: 18 % patch at 0.46, 50 % patch at 0.74, strips uncritical.
 function input(overrides: Partial<ExposureInput> = {}): ExposureInput {
   return {
     large18: grey(0.46),
@@ -18,19 +18,19 @@ function input(overrides: Partial<ExposureInput> = {}): ExposureInput {
 }
 
 describe('codeLuma', () => {
-  it('liefert für Graustufen den gleichen Wert', () => {
+  it('returns the same value for grays', () => {
     expect(codeLuma(grey(0.5))).toBeCloseTo(0.5, 6);
     expect(codeLuma(grey(0))).toBe(0);
     expect(codeLuma(grey(1))).toBeCloseTo(1, 6);
   });
 
-  it('gewichtet Grün stärker als Blau', () => {
+  it('weights green more strongly than blue', () => {
     expect(codeLuma([0, 1, 0])).toBeGreaterThan(codeLuma([0, 0, 1]));
   });
 });
 
 describe('assessExposure', () => {
-  it('bewertet eine ideale Aufnahme als ok', () => {
+  it('rates an ideal shot as ok', () => {
     const result = assessExposure(input());
     expect(result.verdict).toBe('ok');
     expect(result.highlightsClipped).toBe(false);
@@ -38,7 +38,7 @@ describe('assessExposure', () => {
     expect(result.delta).toBeCloseTo(0, 3);
   });
 
-  it('erkennt zu helle und zu dunkle Räume über die großen Felder', () => {
+  it('detects rooms that are too bright or too dark via the large patches', () => {
     expect(assessExposure(input({ large18: grey(0.6), large50: grey(0.85) })).verdict).toBe(
       'too-bright',
     );
@@ -47,31 +47,31 @@ describe('assessExposure', () => {
     );
   });
 
-  it('toleriert Abweichungen innerhalb der Toleranz', () => {
+  it('tolerates deviations within the tolerance', () => {
     const edge = DEFAULT_EXPOSURE_CONFIG.tolerance - 0.01;
     expect(
       assessExposure(input({ large18: grey(0.46 + edge), large50: grey(0.74 + edge) })).verdict,
     ).toBe('ok');
   });
 
-  it('meldet geclippte Lichter als zu hell', () => {
+  it('reports clipped highlights as too bright', () => {
     const result = assessExposure(input({ stripLight: [0.99, 0.9, 0.9] }));
     expect(result.highlightsClipped).toBe(true);
     expect(result.verdict).toBe('too-bright');
   });
 
-  it('meldet abgesoffene Schatten als zu dunkel', () => {
+  it('reports crushed shadows as too dark', () => {
     const result = assessExposure(input({ stripDark: grey(0.01) }));
     expect(result.shadowsCrushed).toBe(true);
     expect(result.verdict).toBe('too-dark');
   });
 
-  it('erkennt zu hohen Kontrast, wenn beides zugleich auftritt', () => {
+  it('detects too much contrast when both occur at once', () => {
     const result = assessExposure(input({ stripLight: grey(1), stripDark: grey(0) }));
     expect(result.verdict).toBe('high-contrast');
   });
 
-  it('nutzt eine übergebene Konfiguration', () => {
+  it('uses a passed configuration', () => {
     const strict = { ...DEFAULT_EXPOSURE_CONFIG, tolerance: 0.001 };
     expect(
       assessExposure(input({ large18: grey(0.48), large50: grey(0.76) }), strict).verdict,
@@ -80,11 +80,11 @@ describe('assessExposure', () => {
 });
 
 describe('Kontrast', () => {
-  it('ist bei idealem Abstand der großen Felder null', () => {
+  it('is zero at the ideal distance of the large patches', () => {
     expect(assessExposure(input()).contrast).toBeCloseTo(0, 3);
   });
 
-  it('ist positiv bei zu großem und negativ bei zu kleinem Abstand', () => {
+  it('is positive for too large and negative for too small a distance', () => {
     expect(
       assessExposure(input({ large18: grey(0.4), large50: grey(0.8) })).contrast,
     ).toBeGreaterThan(0.05);
@@ -93,7 +93,7 @@ describe('Kontrast', () => {
     );
   });
 
-  it('bleibt bei gleicher Verschiebung beider Felder unverändert (nur die Helligkeit ändert sich)', () => {
+  it('stays unchanged when both patches shift equally (only the brightness changes)', () => {
     const base = assessExposure(input());
     const brighter = assessExposure(input({ large18: grey(0.56), large50: grey(0.84) }));
     expect(brighter.contrast).toBeCloseTo(base.contrast, 3);

@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
+import { setLocale } from '../lang';
+
 import type { WedgeRow } from './gray-wedge';
 import GrayWedge from './GrayWedge.vue';
 
@@ -15,7 +17,7 @@ const rows: WedgeRow[] = [
 ];
 
 describe('GrayWedge', () => {
-  it('zeigt Soll, Kamera und korrigiert in drei Spalten mit je einem Feld pro Zeile', () => {
+  it('shows target, camera and corrected in three columns with one patch per row', () => {
     const wrapper = mount(GrayWedge, { props: { rows } });
     expect(wrapper.text()).toContain('Soll');
     expect(wrapper.text()).toContain('Kamera');
@@ -27,7 +29,7 @@ describe('GrayWedge', () => {
     expect(first.attributes('style')).toContain('rgb(163, 162, 159)');
   });
 
-  it('lässt das Soll eines einzelnen Felds leer, wenn nur dafür kein Referenzwert vorliegt', () => {
+  it('leaves the target of a single patch empty when only that one has no reference value', () => {
     const mixed = rows.map((row) => (row.id === '6E' ? { ...row, target: null } : row));
     const wrapper = mount(GrayWedge, { props: { rows: mixed } });
     expect(wrapper.findAll('[data-column="target"] [data-patch]')).toHaveLength(2);
@@ -39,12 +41,25 @@ describe('GrayWedge', () => {
     );
   });
 
-  it('lässt die Sollspalte weg, wenn es keine Sollfarben gibt', () => {
+  it('omits the target column when there are no target colors', () => {
     const wrapper = mount(GrayWedge, {
       props: { rows: rows.map((row) => ({ ...row, target: null })) },
     });
     expect(wrapper.find('[data-column="target"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('Soll');
     expect(wrapper.findAll('[data-column]')).toHaveLength(2);
+  });
+});
+
+describe('GrayWedge (English)', () => {
+  it('labels the columns in English', () => {
+    setLocale('en');
+    const wrapper = mount(GrayWedge, { props: { rows } });
+    expect(wrapper.text()).toContain('Target');
+    expect(wrapper.text()).toContain('Camera');
+    expect(wrapper.text()).toContain('corr.');
+    expect(wrapper.get('[data-testid="gray-wedge"]').attributes('aria-label')).toBe(
+      'Gray levels of the color cards: target, camera and after correction',
+    );
   });
 });

@@ -1,0 +1,45 @@
+{
+  "bar": {
+    "stills": "Standbilder mitspeichern (die Datei enthält dann Kamerabilder)",
+    "save": "Projekt speichern",
+    "load": "Projekt laden"
+  },
+  "status": {
+    "close": "Meldung schließen"
+  },
+  "notice": {
+    "missingReference": "Der Referenzsatz „{name}“ ist nicht vorhanden; importiere ihn in den Einstellungen, um den Bericht zu sehen. Vorschau und Export nutzen das gespeicherte Modell."
+  },
+  "errors": {
+    "invalidJson": "Die Datei ist kein gültiges JSON",
+    "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\"",
+    "triple": "{where}: erwartet werden 3 Zahlen",
+    "pointXY": "{where}: ein Eckpunkt braucht x und y",
+    "unknownCard": "{where}: unbekannte Karte {key}",
+    "badCornerList": "{where}: Karte {key} hat eine ungültige Eckpunktliste",
+    "cardWhere": "{where}, Karte {key}",
+    "unknownField": "{where}: unbekanntes Feld {id}",
+    "fieldWhere": "{where}, Feld {id}",
+    "fieldRange": "{where}, Feld {id}: Werte müssen zwischen 0 und 1 liegen",
+    "chartShape": "{where}: erwartet werden corners und measurements",
+    "chartGray": "Graukarten",
+    "chartColor": "Farbkarten",
+    "curveWhere": "Modell, Kurve {index}",
+    "curveShape": "{where}: erwartet werden xs und ys",
+    "curvePoints": "{where}: ungültige Stützpunkte",
+    "modelShape": "Modell: erwartet werden drei Kurven und eine Matrix",
+    "matrixRows": "Modell: die Matrix braucht drei Zeilen",
+    "matrixWhere": "Modell, Matrix",
+    "percentRange": "Vorschau: {name} muss zwischen 0 und 100 liegen",
+    "splitName": "Trennlinie",
+    "colorReference": "Farbkarten: reference muss ein Name oder null sein",
+    "previewMissing": "Vorschau: Einstellungen fehlen",
+    "stillWhere": "Standbild \"{key}\"",
+    "stillEncoding": "{where}: unbekannte Codierung",
+    "stillSize": "{where}: ungültige Größe",
+    "stillsObject": "Standbilder: erwartet wird ein Objekt",
+    "stillsTab": "Standbilder: unbekannter Tab \"{key}\"",
+    "frameUnreadable": "Ein Standbild in der Datei lässt sich nicht lesen",
+    "frameWrongSize": "Ein Standbild in der Datei hat nicht die angegebene Größe"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "toggle": {
+    "label": "Kamera",
+    "starting": "Kamera startet …",
+    "stop": "Kamera stoppen",
+    "start": "Kamera starten"
+  },
+  "controls": {
+    "camera": "Kamera",
+    "defaultCamera": "Standardkamera",
+    "resolution": "Auflösung",
+    "actualResolution": "Aktive Auflösung: {width} × {height}",
+    "autoHint": "Stelle Auto-Belichtung und Auto-Weißabgleich in der Kamera-Software fest. Automatische Anpassungen verfälschen die Messung."
+  },
+  "errors": {
+    "unsupported": "Kamerazugriff wird nicht unterstützt. Bitte einen aktuellen Browser über HTTPS oder localhost verwenden.",
+    "permissionDenied": "Der Zugriff auf die Kamera wurde verweigert. Bitte die Berechtigung im Browser erlauben.",
+    "notFound": "Es wurde keine Kamera gefunden.",
+    "inUse": "Die Kamera wird bereits von einer anderen Anwendung verwendet oder ist nicht lesbar.",
+    "unsatisfiable": "Die gewählte Kamera unterstützt die gewünschte Auflösung nicht.",
+    "unknown": "Die Kamera konnte nicht gestartet werden.",
+    "captureFailed": "Aufnahme fehlgeschlagen.",
+    "notReady": "Das Kamerabild ist noch nicht bereit. Bitte einen Moment warten und erneut versuchen.",
+    "noCanvas": "Canvas-Kontext nicht verfügbar."
+  }
+}

@@ -4,8 +4,8 @@ import { ref, shallowRef } from 'vue';
 import { fitColorModel } from './fit';
 import type { ColorModel, FitInput, FitResult } from './fit';
 
-// Ergebnis der Farbberechnung. Das Modell steht für Vorschau und Export bereit; der Bericht (mit den
-// Referenzwerten) gibt es nur nach einer Berechnung, nicht nach dem Laden eines Projekts.
+// Result of the color calculation. The model is available for preview and export; the report (with
+// the reference values) only exists after a calculation, not after loading a project.
 export const useSolveStore = defineStore('solve', () => {
   const result = shallowRef<FitResult | null>(null);
   const model = shallowRef<ColorModel | null>(null);
@@ -19,12 +19,12 @@ export const useSolveStore = defineStore('solve', () => {
     } catch (error_) {
       result.value = null;
       model.value = null;
-      // Die Berechnung wirft ausschließlich Error-Objekte mit verständlicher Meldung.
+      // The calculation throws only Error objects with an understandable message.
       error.value = (error_ as Error).message;
     }
   }
 
-  // Übernimmt ein gespeichertes Modell (aus einem Projekt) ohne Bericht.
+  // Adopts a saved model (from a project) without a report.
   function loadModel(next: ColorModel): void {
     result.value = null;
     model.value = next;

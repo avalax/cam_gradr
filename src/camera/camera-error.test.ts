@@ -16,18 +16,18 @@ describe('toCameraError', () => {
     ['OverconstrainedError', 'unsatisfiable'],
     ['ConstraintNotSatisfiedError', 'unsatisfiable'],
     ['SomethingElse', 'unknown'],
-  ] as const)('ordnet %s dem Code %s zu', (name, code) => {
+  ] as const)('maps %s to the code %s', (name, code) => {
     const error = toCameraError(named(name));
     expect(error).toBeInstanceOf(CameraError);
     expect(error.code).toBe(code);
   });
 
-  it('gibt vorhandene CameraErrors unverändert zurück', () => {
+  it('returns existing CameraErrors unchanged', () => {
     const original = new CameraError('unsupported');
     expect(toCameraError(original)).toBe(original);
   });
 
-  it('behandelt Nicht-Error-Werte als unbekannt', () => {
+  it('treats non-Error values as unknown', () => {
     const error = toCameraError('kaputt');
     expect(error.code).toBe('unknown');
     expect(error.cause).toBe('kaputt');
@@ -35,7 +35,7 @@ describe('toCameraError', () => {
 });
 
 describe('describeCameraError', () => {
-  it('liefert für jeden Code einen deutschen Text', () => {
+  it('returns a German text for every code', () => {
     for (const code of [
       'unsupported',
       'permission-denied',
@@ -48,7 +48,7 @@ describe('describeCameraError', () => {
     }
   });
 
-  it('setzt Name und Code', () => {
+  it('sets name and code', () => {
     const error = new CameraError('not-found');
     expect(error.name).toBe('CameraError');
     expect(error.code).toBe('not-found');

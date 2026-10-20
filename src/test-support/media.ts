@@ -5,7 +5,7 @@ import type { CameraApi } from '../camera/types';
 
 export const FAKE_STREAM = { id: 'stream' } as unknown as MediaStream;
 
-// Ersetzt die Kamera-API durch eine Attrappe (1280x720, zwei Geräte).
+// Replaces the camera API with a stand-in (1280x720, two devices).
 export function installFakeCamera(overrides: Partial<CameraApi> = {}) {
   const api = {
     enumerate: vi.fn(() =>
@@ -27,7 +27,7 @@ export function installFakeCamera(overrides: Partial<CameraApi> = {}) {
   return api;
 }
 
-// happy-dom akzeptiert nur echte MediaStreams und spielt kein Video ab; hier genügen Attrappen.
+// happy-dom accepts only real MediaStreams and plays no video; stand-ins are enough here.
 export function installMediaStubs() {
   const play = vi.fn(() => Promise.resolve());
   Object.defineProperty(HTMLMediaElement.prototype, 'play', { value: play, configurable: true });

@@ -6,7 +6,7 @@ import { parseLayout } from './layout';
 export const grayLayout = parseLayout(grayLayoutJson);
 export const colorLayout = parseLayout(colorLayoutJson);
 
-// Alle Feld-IDs der Farbkarten und die Neutralfelder (Grauleitern) darunter.
+// All patch IDs of the color charts and the neutral patches (gray ladders) among them.
 export const COLOR_IDS: ReadonlySet<string> = new Set(
   colorLayout.cards.flatMap((card) => card.patches.map((patch) => patch.id)),
 );

@@ -26,7 +26,7 @@ describe('SettingsMenu', () => {
     return mount(SettingsMenu, { attachTo: document.body });
   }
 
-  it('zeigt zunächst nur das Zahnrad', () => {
+  it('initially shows only the gear', () => {
     const wrapper = mountAttached();
     const gear = wrapper.get('[data-testid="settings-button"]');
     expect(gear.attributes('aria-label')).toBe('Einstellungen');
@@ -35,7 +35,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('öffnet und schließt das Menü mit dem Zahnrad und zeigt Referenzen und Kamera', async () => {
+  it('opens and closes the menu with the gear and shows references and camera', async () => {
     const wrapper = mountAttached();
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     expect(panel(wrapper).exists()).toBe(true);
@@ -48,7 +48,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('klappt zuerst die Kamera auf und zeigt zugeklappt eine Kurzfassung', async () => {
+  it('expands the camera first and shows a summary when collapsed', async () => {
     const wrapper = mountAttached();
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     const camera = wrapper.get('[data-testid="section-camera"]');
@@ -61,7 +61,41 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('wechselt zwischen den Abschnitten und klappt den offenen wieder zu', async () => {
+  it('offers the language choice as a third section and switches the menu texts immediately', async () => {
+    localStorage.clear();
+    const wrapper = mountAttached();
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    const language = wrapper.get('[data-testid="section-language"]');
+    expect(language.attributes('aria-expanded')).toBe('false');
+    expect(language.text()).toContain('Sprache');
+    expect(wrapper.find('[data-testid="language-options"]').exists()).toBe(false);
+
+    await language.trigger('click');
+    expect(wrapper.get('[data-testid="section-camera"]').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.find('[data-testid="language-options"]').exists()).toBe(true);
+
+    await wrapper.get('[data-language="en"]').trigger('click');
+    expect(wrapper.get('[data-testid="section-language"]').text()).toContain('Language');
+    expect(wrapper.get('[data-testid="section-language"]').text()).toContain('English');
+    expect(wrapper.get('[data-testid="section-camera"]').text()).toContain('Camera');
+    expect(wrapper.get('[data-testid="settings-button"]').attributes('aria-label')).toBe(
+      'Settings',
+    );
+    wrapper.unmount();
+  });
+
+  it('collapses and expands the camera via its heading', async () => {
+    const wrapper = mountAttached();
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    const camera = () => wrapper.get('[data-testid="section-camera"]');
+    await camera().trigger('click');
+    expect(camera().attributes('aria-expanded')).toBe('false');
+    await camera().trigger('click');
+    expect(camera().attributes('aria-expanded')).toBe('true');
+    wrapper.unmount();
+  });
+
+  it('switches between sections and collapses the open one again', async () => {
     const wrapper = mountAttached();
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     await wrapper.get('[data-testid="section-reference"]').trigger('click');
@@ -79,7 +113,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('nennt in der Kurzfassung die gewählte Kamera und die aktive Auflösung', async () => {
+  it('names the selected camera and the active resolution in the summary', async () => {
     const wrapper = mountAttached();
     const camera = useCameraStore();
     camera.devices = [{ id: 'cam2', label: 'Webcam 2' }];
@@ -92,7 +126,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('schließt mit Escape, nicht mit anderen Tasten', async () => {
+  it('closes with Escape, not with other keys', async () => {
     const wrapper = mountAttached();
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
@@ -104,7 +138,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('ignoriert Escape bei geschlossenem Menü', async () => {
+  it('ignores Escape when the menu is closed', async () => {
     const wrapper = mountAttached();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await wrapper.vm.$nextTick();
@@ -112,7 +146,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('schließt bei einem Klick außerhalb, nicht bei einem Klick darin', async () => {
+  it('closes on a click outside, not on a click inside', async () => {
     const outside = document.createElement('button');
     document.body.append(outside);
     const wrapper = mountAttached();
@@ -128,7 +162,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('ignoriert Klicks außerhalb bei geschlossenem Menü', async () => {
+  it('ignores outside clicks when the menu is closed', async () => {
     const wrapper = mountAttached();
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     await wrapper.vm.$nextTick();
@@ -136,7 +170,7 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
-  it('entfernt seine Ereignisbehandlung beim Abbau', () => {
+  it('removes its event handling on teardown', () => {
     const remove = vi.spyOn(document, 'removeEventListener');
     const wrapper = mountAttached();
     wrapper.unmount();

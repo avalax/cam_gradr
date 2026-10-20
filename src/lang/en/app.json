@@ -1,0 +1,21 @@
+{
+  "tabs": {
+    "gray": "Gray cards",
+    "color": "Color cards",
+    "preview": "Preview",
+    "export": "Export"
+  },
+  "hints": {
+    "preview": "Original / corrected",
+    "export": ".cube, project"
+  },
+  "tablist": "Sections",
+  "footer": "{id} · LUT generator for the Spyder Checkr Photo.",
+  "status": {
+    "notMeasured": "Not measured yet",
+    "lightOk": "Lighting is fine",
+    "checkLight": "Check lighting",
+    "notComputed": "Not computed yet",
+    "meanChange": "Ø {before} → {after}"
+  }
+}

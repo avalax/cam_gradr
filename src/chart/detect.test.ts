@@ -10,11 +10,11 @@ const TOLERANCE = 12;
 const BACKGROUND = 0.6;
 
 interface CardOptions {
-  // Helligkeit des dunklen Rahmens.
+  // Brightness of the dark frame.
   dark?: number;
-  // Seitlicher Versatz der Unterkante gegenüber der Oberkante (Parallelogramm).
+  // Lateral offset of the bottom edge relative to the top edge (parallelogram).
   shear?: number;
-  // Helle Laschen in der Mitte von Ober- und Unterkante (wie bei den echten Karten).
+  // Bright tabs in the middle of the top and bottom edges (as on the real charts).
   tabs?: boolean;
 }
 
@@ -22,19 +22,21 @@ function paint(frame: Frame, x: number, y: number, value: number) {
   frame.data.set([value, value, value], (y * frame.width + x) * 3);
 }
 
-// Lasche: Mitte von Ober- und Unterkante (Spalte als Anteil der Breite, Zeile ab Oberkante).
+// Tab: middle of the top and bottom edges (column as a fraction of the width, row from the
+// top edge).
 function isTab(column: number, row: number, height: number): boolean {
   return column > 0.3 && column < 0.7 && (row < 14 || height - row <= 14);
 }
 
-// Helligkeit eines Punkts der Karte: innen helle Felder (mit Rand), sonst der dunkle Rahmen.
+// Brightness of a point on the chart: bright patches inside (with margin), otherwise the dark
+// frame.
 function cardValue(column: number, row: number, w: number, h: number, o: CardOptions): number {
   const border = Math.round(w / 8);
   const inside = column >= border && column < w - border && row >= border && row < h - border;
   return inside || (o.tabs === true && isTab(column / w, row, h)) ? 0.8 : (o.dark ?? 0.08);
 }
 
-// Karte mit dunklem Rahmen und hellen Feldern innen (wie die echten Karten).
+// Chart with a dark frame and bright patches inside (like the real charts).
 function drawCard(frame: Frame, x0: number, y0: number, w: number, h: number, o: CardOptions = {}) {
   for (let y = y0; y < y0 + h; y++) {
     const offset = Math.round(((y - y0) / h) * (o.shear ?? 0));
@@ -64,8 +66,8 @@ function expectCard(card: Corners | undefined, x: number, y: number, w: number, 
 }
 
 describe('detectCards', () => {
-  it('findet zwei Karten von links nach rechts mit den Ecken im Uhrzeigersinn', () => {
-    // Die rechte Karte wird zuerst gezeichnet: die Lage im Bild zählt, nicht die Reihenfolge.
+  it('finds two charts from left to right with the corners clockwise', () => {
+    // The right chart is drawn first: the position in the image counts, not the order.
     const frame = scene((f) => {
       drawCard(f, 380, 60, 160, 250);
       drawCard(f, 90, 70, 170, 260);
@@ -76,7 +78,7 @@ describe('detectCards', () => {
     expectCard(cards?.[1], 380, 60, 160, 250);
   });
 
-  it('erkennt auch eine seitlich verzerrte Karte', () => {
+  it('also detects a laterally distorted chart', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { shear: 24 });
     });
@@ -87,28 +89,28 @@ describe('detectCards', () => {
     expectPoint(card?.[3], { x: 124, y: 310 });
   });
 
-  it('findet auch Karten, deren Rahmen im schwachen Licht heller erscheint', () => {
+  it('also finds charts whose frame appears brighter in dim light', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { dark: 0.28 });
     });
     expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
-  it('findet auch einen grauen Rahmen, wie ihn eine Webcam bei hellem Licht liefert', () => {
+  it('also finds a gray frame, as a webcam delivers in bright light', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { dark: 0.42 });
     });
     expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
-  it('findet die Ecken auch mit Laschen in Ober- und Unterkante', () => {
+  it('also finds the corners with tabs in the top and bottom edges', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { tabs: true });
     });
     expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
-  it('erkennt eine perspektivisch verzerrte Karte (oben etwas schmaler als unten)', () => {
+  it('detects a perspective-distorted chart (a bit narrower at the top)', () => {
     const frame = scene((f) => {
       for (let y = 60; y < 310; y++) {
         const inset = Math.round(((310 - y) / 250) * 10);
@@ -125,11 +127,11 @@ describe('detectCards', () => {
     expectPoint(card?.[3], { x: 100, y: 310 });
   });
 
-  it('erkennt nichts in einem verwackelten Bild', () => {
+  it('detects nothing in a blurred image', () => {
     const sharp = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { tabs: true });
     });
-    // Mittel aus acht gegeneinander verschobenen Bildern, wie eine Aufnahme aus bewegter Hand.
+    // Average of eight mutually shifted images, like a shot from a moving hand.
     const data = new Float32Array(sharp.data.length);
     for (let step = 0; step < 8; step++) {
       const dx = Math.round((step * 70) / 7);
@@ -148,7 +150,7 @@ describe('detectCards', () => {
     expect(detectCards({ ...SIZE, data }, 1)).toBeNull();
   });
 
-  it('verwirft zwei Karten, die nicht zueinander passen', () => {
+  it('rejects two charts that do not match each other', () => {
     const frame = scene((f) => {
       drawCard(f, 60, 60, 170, 260);
       drawCard(f, 380, 120, 100, 160);
@@ -156,7 +158,7 @@ describe('detectCards', () => {
     expect(detectCards(frame, 2)).toBeNull();
   });
 
-  it('arbeitet bei größeren Bildern auf einem verkleinerten Abbild', () => {
+  it('works on a downscaled copy for larger images', () => {
     const width = 1280;
     const height = 720;
     const frame = { width, height, data: new Float32Array(width * height * 3).fill(BACKGROUND) };
@@ -164,32 +166,32 @@ describe('detectCards', () => {
     expectCard(detectCards(frame, 1)?.[0], 300, 100, 340, 520);
   });
 
-  it('gibt null zurück, wenn die Zahl der Karten nicht stimmt', () => {
+  it('returns null when the number of charts is wrong', () => {
     const oneCard = scene((f) => {
       drawCard(f, 90, 70, 170, 260);
     });
     expect(detectCards(oneCard, 2)).toBeNull();
   });
 
-  it('findet in einem gleichmäßigen Bild nichts', () => {
+  it('finds nothing in a uniform image', () => {
     expect(
       detectCards(
         scene(() => {
-          // leeres Bild
+          // empty image
         }),
         1,
       ),
     ).toBeNull();
   });
 
-  it('ignoriert dunkle Flächen am Bildrand, zu kleine und querformatige', () => {
+  it('ignores dark areas at the image edge, too small ones and landscape ones', () => {
     const frame = scene((f) => {
       drawCard(f, 90, 70, 170, 260);
-      // Am linken Bildrand (wie ein dunkler Gegenstand hinter den Karten).
+      // At the left image edge (like a dark object behind the charts).
       drawCard(f, 0, 100, 50, 200);
-      // Zu klein.
+      // Too small.
       drawCard(f, 400, 20, 20, 30);
-      // Querformatig.
+      // Landscape.
       drawCard(f, 300, 200, 300, 120);
     });
     expect(detectCards(frame, 1)).toHaveLength(1);
@@ -204,11 +206,11 @@ describe('sameCards', () => {
     { x, y: 20 },
   ];
 
-  it('akzeptiert Ecken innerhalb der Toleranz', () => {
+  it('accepts corners within the tolerance', () => {
     expect(sameCards([card(0), card(50)], [card(3), card(48)], 5)).toBe(true);
   });
 
-  it('lehnt zu weit gewanderte Ecken oder eine andere Zahl an Karten ab', () => {
+  it('rejects corners that moved too far or a different number of charts', () => {
     expect(sameCards([card(0)], [card(30)], 5)).toBe(false);
     expect(sameCards([card(0), card(50)], [card(0)], 5)).toBe(false);
   });

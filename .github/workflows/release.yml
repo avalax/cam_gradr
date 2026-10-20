@@ -24,7 +24,7 @@ jobs:
       - id: release
         uses: googleapis/release-please-action@v5
         with:
-          # Eigenes Token (PAT oder GitHub App), damit die CI auf dem Release-PR läuft.
+          # Own token (PAT or GitHub App) so that CI runs on the release PR.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
@@ -48,7 +48,7 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
-      - name: Build-Artefakt zippen und an Release hängen
+      - name: Zip the build artifact and attach it to the release
         run: |
           cd dist && zip -r ../cam-gradr-${{ needs.release-please.outputs.tag_name }}.zip .
           cd .. && gh release upload "${{ needs.release-please.outputs.tag_name }}" cam-gradr-*.zip --clobber

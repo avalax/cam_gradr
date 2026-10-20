@@ -1,7 +1,7 @@
 import type { Vec3 } from '../color/lab';
 
-// Erfundene Referenzwerte für Tests. Sie stammen nicht vom Hersteller und ähneln dessen Daten nicht;
-// Graufelder sind neutral mit gleichmäßig fallender Helligkeit, Farbfelder liegen auf einem Kreis.
+// Made-up reference values for tests. They do not come from the manufacturer and do not resemble its
+// data; gray fields are neutral with evenly falling lightness, color fields lie on a circle.
 const COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const ROWS = 6;
 
@@ -23,15 +23,15 @@ export function dummyLab(id: string): Vec3 {
   ];
 }
 
-// Feld-IDs aller Farbkarten: Ziffer = Reihe (1–6), Buchstabe = Spalte (A–H).
+// Field IDs of all color cards: digit = row (1–6), letter = column (A–H).
 export function dummyIds(): string[] {
   return COLUMN_LETTERS.flatMap((letter) =>
     Array.from({ length: ROWS }, (_, row) => `${String(row + 1)}${letter}`),
   );
 }
 
-// Referenzdatei im Importformat (JSON) mit erfundenen Werten.
-export function dummyReferenceJson(name = 'Testdaten'): string {
+// Reference file in the import format (JSON) with made-up values.
+export function dummyReferenceJson(name = 'Test data'): string {
   return JSON.stringify({
     format: 'cam_gradr-reference/1',
     name,

@@ -1,0 +1,31 @@
+{
+  "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie siehst du das Original, rechts das korrigierte Bild. Den Strich kannst du im Bild ziehen oder mit den Pfeiltasten verschieben.",
+  "capture": "Standbild aufnehmen",
+  "rendererWebgl": "Darstellung: Grafikkarte (WebGL2)",
+  "rendererCpu": "Darstellung: Software, verkleinert (kein WebGL2 verfügbar)",
+  "noModelTitle": "Noch keine Farbkorrektur",
+  "noModelText": "Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und nachher.",
+  "noSourceTitle": "Noch kein Bild",
+  "noSourceText": "Schalte oben die Kamera an, um das Livebild zu sehen oder ein Standbild aufzunehmen.",
+  "divider": "Trennlinie: links Original, rechts korrigiert",
+  "viewLabel": "Ansicht der Seitenspalte",
+  "viewColors": "Farben",
+  "viewGrays": "Graustufen",
+  "emptyNoModel": "Noch keine Korrektur. Berechne sie zuerst im Tab „Farbkarten“.",
+  "emptyNoCards": "Für diese Ansicht fehlen gemessene Farbkarten.",
+  "tilesLegend": "Jedes Feld: Soll, Kamera, korrigiert (von links nach rechts).",
+  "worstTitle": "Größte Abweichung",
+  "neutral": ", neutral",
+  "pointsLegend": "Punkte auf der Skala 0–100: + Farbe wird stärker, − schwächer.",
+  "errors": {
+    "createFailed": "WebGL konnte {what} nicht anlegen.",
+    "shader": "einen Shader",
+    "program": "ein Shader-Programm",
+    "vertexArray": "ein Vertex-Array",
+    "imageTexture": "die Bildtextur",
+    "lutTexture": "die LUT-Textur",
+    "compileFailed": "Shader konnte nicht übersetzt werden: {log}",
+    "linkFailed": "Shader-Programm konnte nicht gelinkt werden: {log}",
+    "noContext": "Weder WebGL2 noch ein 2D-Zeichenkontext sind verfügbar, die Vorschau ist nicht möglich."
+  }
+}

@@ -9,7 +9,7 @@ function fakeVideo() {
 }
 
 describe('attachStream', () => {
-  it('ignoriert eine abgebrochene Wiedergabe, etwa wenn das Element entfernt wird', async () => {
+  it('ignores an aborted playback, e.g. when the element is removed', async () => {
     const { video, play } = fakeVideo();
     play.mockReturnValueOnce(Promise.reject(new DOMException('abgebrochen', 'AbortError')));
     attachStream(video, {} as MediaStream);
@@ -17,7 +17,7 @@ describe('attachStream', () => {
     expect(play).toHaveBeenCalledTimes(1);
   });
 
-  it('setzt den Stream und startet die Wiedergabe', () => {
+  it('sets the stream and starts playback', () => {
     const { video, play } = fakeVideo();
     const stream = {} as MediaStream;
     attachStream(video, stream);
@@ -25,14 +25,14 @@ describe('attachStream', () => {
     expect(play).toHaveBeenCalledTimes(1);
   });
 
-  it('löst den Stream ohne Wiedergabe', () => {
+  it('detaches the stream without playback', () => {
     const { video, play } = fakeVideo();
     attachStream(video, null);
     expect(video.srcObject).toBeNull();
     expect(play).not.toHaveBeenCalled();
   });
 
-  it('ignoriert ein fehlendes Video-Element', () => {
+  it('ignores a missing video element', () => {
     expect(() => {
       attachStream(null, {} as MediaStream);
     }).not.toThrow();
@@ -40,7 +40,7 @@ describe('attachStream', () => {
 });
 
 describe('captureFromVideo', () => {
-  it('übergibt einen Frame-Grabber an die Aufnahmefunktion', async () => {
+  it('passes a frame grabber to the capture function', async () => {
     const capture = vi.fn(() => Promise.resolve());
     await captureFromVideo(fakeVideo().video, capture);
     expect(capture).toHaveBeenCalledTimes(1);
@@ -49,7 +49,7 @@ describe('captureFromVideo', () => {
     expect(typeof calls[0][0].nextFrame).toBe('function');
   });
 
-  it('macht ohne Video-Element nichts', async () => {
+  it('does nothing without a video element', async () => {
     const capture = vi.fn(() => Promise.resolve());
     await captureFromVideo(null, capture);
     expect(capture).not.toHaveBeenCalled();
@@ -57,12 +57,12 @@ describe('captureFromVideo', () => {
 });
 
 describe('grabVideoFrame', () => {
-  it('liefert nichts ohne Video-Element oder solange das Video noch kein Bild hat', () => {
+  it('returns nothing without a video element or while the video has no image yet', () => {
     expect(grabVideoFrame(null)).toBeNull();
     expect(grabVideoFrame({ videoWidth: 0 } as HTMLVideoElement)).toBeNull();
   });
 
-  it('liest das aktuelle Bild als Frame mit Werten von 0 bis 1', () => {
+  it('reads the current image as a frame with values from 0 to 1', () => {
     const context = {
       drawImage: vi.fn(),
       getImageData: () => ({ width: 1, height: 1, data: new Uint8ClampedArray([255, 0, 51, 255]) }),

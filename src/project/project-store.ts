@@ -5,6 +5,7 @@ import { useCameraStore } from '../camera/camera-store';
 import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
+import { t } from '../lang';
 import { downloadFile } from '../lut/download';
 import { usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
@@ -14,13 +15,13 @@ import { decodeFrame, encodeFrame } from './frame-codec';
 import { PROJECT_FORMAT, parseProject, serializeProject } from './project';
 import type { Project } from './project';
 
-// Prüft die Datei und entpackt ihre Standbilder, noch bevor sich etwas im Zustand ändert.
+// Checks the file and unpacks its still images before anything in the state changes.
 async function readProject(text: string): Promise<{ project: Project; stills: Stills | null }> {
   const project = parseProject(text);
   return { project, stills: await decodeStills(project) };
 }
 
-// Ersetzt die Standbilder; mit gespeicherten Bildern ist das Livebild nicht mehr nötig.
+// Replaces the still images; with saved images the live image is no longer needed.
 function applyStills(stills: Stills | null): void {
   const camera = useCameraStore();
   camera.discardStills();
@@ -30,8 +31,8 @@ function applyStills(stills: Stills | null): void {
   }
 }
 
-// Stellt Eckpunkte, Messwerte und die Trennlinie der Vorschau her. Eckpunkte gelten nur zusammen mit einem
-// Standbild; Dateien ohne Standbilder (auch ältere) bringen keine mit.
+// Restores corner points, measurements and the preview's divider line. Corner points only apply together
+// with a still image; files without still images (including older ones) bring none.
 function applyCharts(project: Project, withStills: boolean): void {
   useChartStore().restore({
     points: withStills ? project.gray.corners : {},
@@ -46,8 +47,8 @@ function applyCharts(project: Project, withStills: boolean): void {
   usePreviewStore().setSplit(project.preview.split);
 }
 
-// Berechnet die Korrektur mit dem gewählten Referenzsatz neu oder nutzt das gespeicherte Modell.
-// Liefert den Namen des Referenzsatzes, wenn er fehlt, sonst null.
+// Recomputes the correction with the selected reference set or uses the saved model.
+// Returns the name of the reference set if it is missing, otherwise null.
 async function applyCorrection(project: Project): Promise<string | null> {
   const references = useReferenceStore();
   await references.load();
@@ -58,7 +59,7 @@ async function applyCorrection(project: Project): Promise<string | null> {
   }
   const reference = references.selected;
   if (reference !== null && reference.name === name) {
-    // Mit vorhandenen Referenzwerten lässt sich der Fehlerbericht neu berechnen.
+    // With reference values available, the error report can be recomputed.
     solve.compute({
       measurements: project.color.measurements,
       reference,
@@ -72,7 +73,7 @@ async function applyCorrection(project: Project): Promise<string | null> {
   return missing ? name : null;
 }
 
-// Entpackt die Standbilder einer Projektdatei (null, wenn die Datei keine enthält).
+// Unpacks the still images of a project file (null if the file has none).
 async function decodeStills(project: Project): Promise<Stills | null> {
   if (project.stills === undefined) {
     return null;
@@ -84,8 +85,8 @@ async function decodeStills(project: Project): Promise<Stills | null> {
   return stills;
 }
 
-// Liest den aktuellen Arbeitsstand aus den Stores. Eckpunkte gehören zu einem Standbild: Ohne Standbilder
-// in der Datei werden sie nicht gespeichert.
+// Reads the current working state from the stores. Corner points belong to a still image: without still
+// images in the file they are not saved.
 function snapshot(withCorners: boolean): Project {
   const gray = useChartStore().committed();
   const color = useColorChartStore().committed();
@@ -109,14 +110,14 @@ function snapshot(withCorners: boolean): Project {
   };
 }
 
-export const PROJECT_FILE_NAME = 'cam_gradr-projekt.json';
+export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 
-// Speichern und Laden des Arbeitsstands als JSON-Datei (ohne Referenzwerte der Hersteller).
+// Saving and loading the working state as a JSON file (without the manufacturers' reference values).
 export const useProjectStore = defineStore('project', () => {
   const error = ref<string | null>(null);
   const notice = ref<string | null>(null);
 
-  // Speichert den Arbeitsstand; mit `withStills` stecken die Standbilder der Tabs in der Datei.
+  // Saves the working state; with `withStills` the tabs' still images are included in the file.
   async function save(options?: { withStills: boolean }): Promise<void> {
     error.value = null;
     notice.value = null;
@@ -132,7 +133,7 @@ export const useProjectStore = defineStore('project', () => {
     downloadFile(PROJECT_FILE_NAME, serializeProject(project), 'application/json');
   }
 
-  // Übernimmt eine Projektdatei; bei einer fehlerhaften Datei bleibt der bisherige Stand erhalten.
+  // Applies a project file; with a faulty file the previous state is kept.
   async function load(text: string): Promise<void> {
     notice.value = null;
     let read: { project: Project; stills: Stills | null };
@@ -146,14 +147,12 @@ export const useProjectStore = defineStore('project', () => {
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
-    // Erfolgsmeldungen gibt es nicht; nur der fehlende Referenzsatz verdient einen Hinweis.
+    // There are no success messages; only a missing reference set deserves a notice.
     notice.value =
-      missing === null
-        ? null
-        : `Der Referenzsatz „${missing}“ ist nicht vorhanden; importiere ihn in den Einstellungen, um den Bericht zu sehen. Vorschau und Export nutzen das gespeicherte Modell.`;
+      missing === null ? null : t('project.notice.missingReference', { name: missing });
   }
 
-  // Schließt die Meldung.
+  // Dismisses the message.
   function dismiss(): void {
     error.value = null;
     notice.value = null;

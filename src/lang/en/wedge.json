@@ -1,0 +1,23 @@
+{
+  "target": "Target",
+  "camera": "Camera",
+  "corrected": "corr.",
+  "grayAria": "Gray levels of the color cards: target, camera and after correction",
+  "tilesAria": "Color patches: target, camera and after correction",
+  "deviationSummary": "Ø deviation {before} → {after}",
+  "zones": {
+    "shadows": "Shadows",
+    "midtones": "Midtones",
+    "highlights": "Highlights"
+  },
+  "channels": {
+    "red": "Red",
+    "green": "Green",
+    "blue": "Blue"
+  },
+  "brightness": {
+    "same": "same brightness",
+    "brighter": "{points} brighter",
+    "darker": "{points} darker"
+  }
+}

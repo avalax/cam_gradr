@@ -1,13 +1,16 @@
+import { t } from '../lang';
+import { formatDecimal } from '../lang/format';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
 
 import { cssColor } from './color-css';
 
-// Blauanteile der vier Schnitte durch den Farbwürfel (je ein Rot-Grün-Feld bei festem Blau).
+// Blue fractions of the four slices through the color cube (one red-green field each at fixed
+// blue).
 const BLUE_LEVELS = [0.15, 0.4, 0.65, 0.9] as const;
 
-// Die LUT als vier kleine Farbfelder: Jedes Feld zeigt, in welche Farben die Korrektur die Rot-Grün-Ebene
-// bei einem festen Blauanteil verschiebt (oben Grün, rechts Rot).
+// The LUT as four small color fields: each field shows which colors the correction maps the
+// red-green plane to at a fixed blue fraction (green at the top, red on the right).
 export function lutSlices(model: ColorModel, cells: number): string[][] {
   const last = cells - 1;
   return BLUE_LEVELS.map((blue) => {
@@ -22,7 +25,7 @@ export function lutSlices(model: ColorModel, cells: number): string[][] {
   });
 }
 
-// Geschätzte Größe der .cube-Datei: Jede Zeile hat 27 Zeichen (drei Werte mit sechs Nachkommastellen).
+// Estimated size of the .cube file: each line has 27 characters (three values with six decimals).
 const BYTES_PER_LINE = 27;
 const HEADER_BYTES = 110;
 const KILO = 1000;
@@ -31,7 +34,7 @@ export function cubeSizeText(size: number): string {
   const bytes = size ** 3 * BYTES_PER_LINE + HEADER_BYTES;
   const mega = bytes / (KILO * KILO);
   if (mega < 1) {
-    return `ca. ${String(Math.round(bytes / KILO))} KB`;
+    return t('export.lut.sizeKb', { value: String(Math.round(bytes / KILO)) });
   }
-  return `ca. ${mega.toFixed(1).replace('.', ',')} MB`;
+  return t('export.lut.sizeMb', { value: formatDecimal(mega, 1) });
 }

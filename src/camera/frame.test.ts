@@ -7,7 +7,7 @@ function raw(width: number, values: number[]) {
 }
 
 describe('averageFrames', () => {
-  it('mittelt RGB und ignoriert den Alphakanal', () => {
+  it('averages RGB and ignores the alpha channel', () => {
     const a = raw(1, [0, 100, 255, 7]);
     const b = raw(1, [255, 100, 255, 9]);
     const result = averageFrames([a, b]);
@@ -25,18 +25,18 @@ describe('averageFrames', () => {
     expect([...averageFrames([frame]).data]).toEqual([1, 0, 0, 0, 1, 0]);
   });
 
-  it('wertet fehlende Daten als 0', () => {
+  it('treats missing data as 0', () => {
     const short = { width: 1, height: 1, data: [] };
     expect([...averageFrames([short]).data]).toEqual([0, 0, 0]);
   });
 
-  it('lehnt eine leere Liste ab', () => {
-    expect(() => averageFrames([])).toThrow('Mindestens ein Frame');
+  it('rejects an empty list', () => {
+    expect(() => averageFrames([])).toThrow('At least one frame');
   });
 
-  it('lehnt unterschiedliche Größen ab', () => {
+  it('rejects different sizes', () => {
     expect(() => averageFrames([raw(1, [0, 0, 0, 0]), raw(2, [0, 0, 0, 0, 0, 0, 0, 0])])).toThrow(
-      'gleiche Größe',
+      'same size',
     );
   });
 });

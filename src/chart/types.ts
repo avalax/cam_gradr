@@ -3,7 +3,7 @@ export interface Point {
   y: number;
 }
 
-// Rechteck relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links).
+// Rectangle relative to the outer chart rectangle (0..1, origin top left).
 export interface Rect {
   x: number;
   y: number;
@@ -13,14 +13,14 @@ export interface Rect {
 
 export type Rgb = readonly [number, number, number];
 
-// Eckpunkte einer Karte im Bild: oben links, oben rechts, unten rechts, unten links.
+// Corners of a chart in the image: top left, top right, bottom right, bottom left.
 export type Corners = readonly [Point, Point, Point, Point];
 
 export interface PatchLayout {
   id: string;
   rect: Rect;
   role?: 'large' | 'strip' | 'neutral';
-  // Nennwert (Lab, D50), falls bekannt; nur für Kontrollfelder, nicht aus einer Messung.
+  // Nominal value (Lab, D50) if known; only for check patches, not from a measurement.
   nominalLab?: readonly [number, number, number];
 }
 
@@ -33,7 +33,7 @@ export interface ChartLayout {
   cards: readonly CardLayout[];
 }
 
-// Pixelraster beliebiger Kanalzahl (z. B. RGBA mit 0..255 oder RGB mit 0..1).
+// Pixel grid with any number of channels (e.g. RGBA with 0..255 or RGB with 0..1).
 export interface PixelGrid {
   width: number;
   height: number;

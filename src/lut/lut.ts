@@ -2,8 +2,8 @@ import type { Vec3 } from '../color/lab';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
 
-// 3D-LUT über sRGB-codierte Werte (0..1). Die Daten liegen im üblichen Würfelformat vor:
-// size³ Einträge zu je drei Werten (R, G, B), wobei R am schnellsten und B am langsamsten läuft.
+// 3D LUT over sRGB-encoded values (0..1). The data is in the usual cube format:
+// size³ entries of three values each (R, G, B), with R varying fastest and B slowest.
 export interface Lut {
   size: number;
   data: Float32Array;
@@ -16,7 +16,7 @@ const CHANNELS = 3;
 function checkSize(size: number): void {
   if (!Number.isSafeInteger(size) || size < MIN_SIZE || size > MAX_SIZE) {
     throw new RangeError(
-      `Die LUT-Größe muss eine ganze Zahl von ${String(MIN_SIZE)} bis ${String(MAX_SIZE)} sein.`,
+      `The LUT size must be an integer from ${String(MIN_SIZE)} to ${String(MAX_SIZE)}.`,
     );
   }
 }
@@ -44,12 +44,12 @@ export function identityLut(size: number): Lut {
   return fill(size, (r, g, b) => [r, g, b]);
 }
 
-// Wertet das Korrekturmodell an allen Gitterpunkten aus.
+// Evaluates the correction model at all grid points.
 export function buildLut(model: ColorModel, size: number): Lut {
   return fill(size, (r, g, b) => applyColorModel(model, [r, g, b]));
 }
 
-// Trilineare Interpolation, wie sie die Grafikkarte beim Abtasten der 3D-Textur ausführt.
+// Trilinear interpolation, as the graphics card performs it when sampling the 3D texture.
 export function sampleLut(lut: Lut, [r, g, b]: Vec3): Vec3 {
   const last = lut.size - 1;
   const position = [r, g, b].map((value) => Math.min(Math.max(value, 0), 1) * last);

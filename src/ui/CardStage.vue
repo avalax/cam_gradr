@@ -10,6 +10,7 @@ import {
   useTemplateRef,
   watch,
 } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
@@ -27,38 +28,40 @@ import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings
 const props = defineProps<{
   store: ChartStore;
   layout: ChartLayout;
-  // Namen der Karten für die Klickanweisung, z. B. { 3: 'linke Graukarte (50 %)' }.
+  // Names of the cards for the click instruction, e.g. { 3: 'left gray card (50 %)' }.
   cardNames: Readonly<Record<number, string>>;
-  // Hinweis, solange noch kein Standbild aufgenommen ist.
+  // Hint shown while no still image has been captured yet.
   idleText: string;
 }>();
 
-// Automatik im Livebild: so oft wird nach den Karten gesucht, und so oft hintereinander müssen sie
-// gefunden werden, bevor das Standbild aufgenommen wird (ein verwackeltes Bild zählt nicht).
+// Automation in the live image: how often the cards are searched for, and how many times in a row
+// they must be found before the still image is captured (a shaky image does not count).
 const AUTO_INTERVAL_MS = 1000;
 const AUTO_CONFIRMATIONS = 2;
-// So weit (Anteil der Bildbreite) dürfen die Ecken zwischen zwei Suchläufen wandern: sonst bewegt sich
-// jemand noch, und das gemittelte Standbild wäre verwackelt.
+// How far (fraction of the image width) the corners may move between two searches: otherwise
+// someone is still moving, and the averaged still image would be blurred.
 const STEADY_SHARE = 0.02;
 
+const { t } = useI18n();
 const camera = useCameraStore();
 const { stream, actual, status, still } = storeToRefs(camera);
 const { points, corners, rotated } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
-const detectMessage = ref<string | null>(null);
+// Set after an automatic capture; the message is looked up when rendered, so it follows the language.
+const detected = ref(false);
 const dragging = ref<{ card: number; index: number } | null>(null);
-// Erst wenn das Video ein Bild liefert, ist eine Aufnahme sinnvoll.
+// A capture only makes sense once the video delivers an image.
 const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
 const showStill = computed(() => still.value !== null);
 const size = computed(() => still.value ?? actual.value ?? { width: 1280, height: 720 });
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
-// Hilfsrahmen, solange noch keine Eckpunkte gesetzt sind.
+// Guide frame while no corner points have been set yet.
 const noPoints = computed(() => Object.keys(points.value).length === 0);
-// Hilfsrahmen nur im Livebild: Bei ausgeschalteter Kamera zeigt der Platzhalter das Wichtige.
+// Guide frame only in the live image: with the camera off, the placeholder shows what matters.
 const guides = computed(() =>
   noPoints.value && isLive.value
     ? guideCorners(size.value, props.layout.cards.length).map((corners, index) => {
@@ -72,12 +75,12 @@ const guides = computed(() =>
       })
     : [],
 );
-// Die Automatik sucht im laufenden Livebild, solange noch keine Eckpunkte gesetzt sind.
+// The automation searches the running live image while no corner points have been set yet.
 const autoActive = computed(
   () => isLive.value && videoReady.value && !showStill.value && noPoints.value,
 );
-// Ohne Kamerabild und ohne Standbild zeigt die Bildfläche nur den Platzhalter; gespeicherte Eckpunkte
-// (zum Beispiel aus einem Projekt) werden dann nicht darüber gezeichnet.
+// Without a camera image and without a still image the picture area only shows the placeholder;
+// saved corner points (for example from a project) are then not drawn over it.
 const showPlaceholder = computed(() => !isLive.value && !showStill.value);
 const shapes = computed(() =>
   showPlaceholder.value ? [] : buildShapes(props.layout, corners.value),
@@ -89,8 +92,8 @@ const handles = computed(() =>
       )
     : [],
 );
-// Bild und Knöpfe sollen zusammen auf einen Bildschirm passen: die Bildhöhe ist auf die Fensterhöhe
-// abzüglich Kopfzeile, Hinweiszeile und Knopfleiste begrenzt (Breite = Höhe × Seitenverhältnis).
+// Image and buttons should fit on one screen together: the image height is limited to the window
+// height minus header, hint line and button bar (width = height × aspect ratio).
 const imageMaxWidth = computed(() => maxWidthFor(size.value.width / size.value.height));
 
 function imagePoint(event: PointerEvent | MouseEvent) {
@@ -119,8 +122,8 @@ function drawStill(frame: Frame | null): void {
   }
 }
 
-// Verwirft Eckpunkte und Standbild und schaltet die Kamera ein, falls sie aus ist (die Automatik
-// schaltet sie nach der Aufnahme aus): Im Livebild beginnt die Suche von vorn.
+// Discards corner points and still image and turns the camera on if it is off (the automation
+// turns it off after the capture): the search starts over in the live image.
 function redetect(): void {
   props.store.reset();
   camera.clearStill();
@@ -133,14 +136,14 @@ const hits = ref(0);
 const previous = ref<Corners[] | null>(null);
 const capturing = ref(false);
 
-// Nimmt das Standbild auf und setzt die Ecken (auf dem gemittelten Standbild noch einmal genauer
-// gesucht) und beendet die Kamera. Passt das Standbild nicht zu den Ecken aus dem Livebild (die
-// Karten wurden beim Mitteln bewegt), wird es verworfen und die Suche läuft weiter.
+// Captures the still image, sets the corners (searched once more, more precisely, on the averaged
+// still image) and stops the camera. If the still image does not match the corners from the live
+// image (the cards were moved during averaging), it is discarded and the search continues.
 async function autoCapture(fromLive: Corners[]): Promise<void> {
   capturing.value = true;
   await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
   const frame = still.value;
-  /* v8 ignore next 4 -- ein Aufnahmefehler wird vom Kamera-Store gemeldet */
+  /* v8 ignore next 4 -- a capture error is reported by the camera store */
   if (frame === null) {
     capturing.value = false;
     return;
@@ -150,15 +153,14 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
     props.store.setCards(found);
     camera.stop();
     await nextTick();
-    detectMessage.value =
-      'Die Karten wurden erkannt und das Standbild aufgenommen. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.';
+    detected.value = true;
   } else {
     camera.clearStill();
   }
   capturing.value = false;
 }
 
-// Trifft die Suche dieselben Karten an derselben Stelle wie beim letzten Mal?
+// Does the search hit the same cards in the same place as last time?
 function isSteady(found: Corners[], width: number): boolean {
   return previous.value !== null && sameCards(found, previous.value, STEADY_SHARE * width);
 }
@@ -187,7 +189,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearInterval(autoTimer.value);
-  // Beim Verlassen des Tabs gilt wieder der bisherige Stand.
+  // When leaving the tab, the previous state applies again.
   props.store.endSearch();
 });
 
@@ -197,13 +199,13 @@ watch(stream, (next) => {
 });
 
 watch(still, (next) => {
-  detectMessage.value = null;
+  detected.value = false;
   drawStill(next);
 });
 
-// Läuft die Kamera, sucht dieser Tab nach neuen Karten: Der bisherige Stand (Standbild mit Eckpunkten)
-// bleibt gehalten, die Eckpunkte verschwinden, damit ein neues Standbild entstehen kann. Endet die
-// Kamera ohne neue Eckpunkte, gilt wieder der bisherige Stand. Gemessen wird nur auf Standbildern.
+// While the camera is running, this tab searches for new cards: the previous state (still image with corner points)
+// is kept, the corner points disappear so that a new still image can be created. If the
+// camera ends without new corner points, the previous state applies again. Only still images are measured.
 const searching = computed(() => status.value === 'live' || status.value === 'starting');
 watch(
   searching,
@@ -217,7 +219,7 @@ watch(
   { immediate: true },
 );
 
-// Auf dem Standbild wird bei jeder Änderung (neues Bild, verschobene Eckpunkte) neu gemessen.
+// On the still image, every change (new image, moved corner points) triggers a new measurement.
 watch([still, points], () => {
   const frame = still.value;
   if (frame !== null) {
@@ -225,7 +227,7 @@ watch([still, points], () => {
   }
 });
 
-// Eckpunkte gelten nur für eine Bildgröße; bei anderer Auflösung neu beginnen.
+// Corner points only apply to one image size; start over at a different resolution.
 watch(actual, (next, previous) => {
   if (
     next !== null &&
@@ -241,7 +243,7 @@ watch(actual, (next, previous) => {
   <div class="space-y-4">
     <div class="flex items-stretch gap-3">
       <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
-        <!-- Platzhalter in der Größe des Bildes, solange die Kamera aus ist und es kein Standbild gibt. -->
+        <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
         <div
           v-if="showPlaceholder"
           class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
@@ -262,12 +264,16 @@ watch(actual, (next, previous) => {
           </svg>
           <p class="max-w-xs text-sm leading-snug">
             <template v-if="status === 'starting'">
-              <span class="block font-semibold text-zinc-800">Die Kamera startet …</span>
-              Einen Moment bitte.
+              <span class="block font-semibold text-zinc-800">{{
+                t('cards.stage.starting.title')
+              }}</span>
+              {{ t('cards.stage.starting.text') }}
             </template>
             <template v-else>
-              <span class="block font-semibold text-zinc-800">Die Kamera ist aus</span>
-              Schalte sie oben mit „Kamera“ ein. {{ idleText }}
+              <span class="block font-semibold text-zinc-800">{{
+                t('cards.stage.off.title')
+              }}</span>
+              {{ t('cards.stage.off.text') }} {{ idleText }}
             </template>
           </p>
         </div>
@@ -281,7 +287,7 @@ watch(actual, (next, previous) => {
           @loadeddata="videoReady = true"
         ></video>
         <canvas v-show="showStill" ref="canvas" class="w-full rounded bg-black"></canvas>
-        <!-- Die Eckpunkte werden per Zeiger gesetzt; reine Tastaturbedienung ist hier nicht sinnvoll. -->
+        <!-- The corner points are set by pointer; keyboard-only operation makes no sense here. -->
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <svg
           class="absolute inset-0 h-full w-full touch-none"
@@ -350,18 +356,18 @@ watch(actual, (next, previous) => {
             {{ handle.index + 1 }}
           </text>
         </svg>
-        <!-- Symbolleiste in der Bildecke: Eckpunkte und Standbild löschen. -->
+        <!-- Toolbar in the image corner: delete corner points and still image. -->
         <div
           v-if="showStill || !noPoints"
           class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
           role="toolbar"
-          aria-label="Bildaktionen"
+          :aria-label="t('cards.stage.toolbar')"
         >
           <button
             type="button"
             class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
-            aria-label="Eckpunkte löschen"
-            title="Eckpunkte löschen und die Karten neu erkennen"
+            :aria-label="t('cards.stage.deleteCorners')"
+            :title="t('cards.stage.deleteCornersTitle')"
             @click="redetect"
           >
             <svg
@@ -389,14 +395,13 @@ watch(actual, (next, previous) => {
     </p>
 
     <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
-      Halte die Karten in die Rahmen. Sobald sie erkannt sind, nimmt die App das Standbild selbst
-      auf und schaltet die Kamera aus.
+      {{ t('cards.stage.autoHint') }}
     </p>
     <p v-if="rotated" class="text-sm text-slate-700" data-testid="rotated-note">
-      Die Karten sind um 180° gedreht. Die Zuordnung der Felder wurde entsprechend angepasst.
+      {{ t('cards.stage.rotated') }}
     </p>
-    <p v-if="detectMessage !== null" class="text-sm text-slate-700" data-testid="detect-message">
-      {{ detectMessage }}
+    <p v-if="detected" class="text-sm text-slate-700" data-testid="detect-message">
+      {{ t('cards.stage.detected') }}
     </p>
   </div>
 </template>

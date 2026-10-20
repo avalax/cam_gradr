@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { setLocale } from '../lang';
 import { identityLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
 
 import { CPU_MAX_WIDTH, createCpuRenderer } from './cpu-renderer';
 
-// Zwei Pixel: ein dunkles und ein helles Grau; der Test-LUT kehrt alle Werte um.
+// Two pixels: a dark and a light gray; the test LUT inverts all values.
 const INPUT = [51, 51, 51, 255, 204, 204, 204, 255];
 
 function invertedLut(): Lut {
@@ -34,12 +35,12 @@ describe('createCpuRenderer', () => {
     vi.restoreAllMocks();
   });
 
-  it('beschreibt sich als Software-Renderer', () => {
+  it('describes itself as a software renderer', () => {
     const { canvas } = setup();
     expect(createCpuRenderer(canvas).kind).toBe('cpu');
   });
 
-  it('rechnet große Bilder auf die Maximalbreite herunter und behält das Seitenverhältnis', () => {
+  it('scales large images down to the maximum width and keeps the aspect ratio', () => {
     const { canvas } = setup();
     const renderer = createCpuRenderer(canvas);
     expect(renderer.outputSize({ width: 1280, height: 720 })).toEqual({
@@ -48,7 +49,7 @@ describe('createCpuRenderer', () => {
     });
   });
 
-  it('vergrößert kleine Bilder nicht und liefert mindestens einen Pixel', () => {
+  it('does not enlarge small images and returns at least one pixel', () => {
     const { canvas } = setup();
     const renderer = createCpuRenderer(canvas);
     expect(renderer.outputSize({ width: 8, height: 4 })).toEqual({ width: 8, height: 4 });
@@ -58,7 +59,7 @@ describe('createCpuRenderer', () => {
     });
   });
 
-  it('wendet LUT und volle Stärke auf alle Pixel an', () => {
+  it('applies LUT and full strength to all pixels', () => {
     const { canvas, scratch, scratchCanvas, output, image } = setup();
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());
@@ -71,7 +72,7 @@ describe('createCpuRenderer', () => {
     expect(output.putImageData).toHaveBeenCalledWith(image, 0, 0);
   });
 
-  it('lässt links der Trennlinie das Original stehen', () => {
+  it('leaves the original left of the split line', () => {
     const { canvas, image } = setup();
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());
@@ -79,14 +80,14 @@ describe('createCpuRenderer', () => {
     expect([...image.data]).toEqual([51, 51, 51, 255, 51, 51, 51, 255]);
   });
 
-  it('zeichnet das Bild unverändert, solange keine LUT gesetzt ist', () => {
+  it('draws the image unchanged as long as no LUT is set', () => {
     const { canvas, image, output } = setup();
     createCpuRenderer(canvas).render({} as HTMLVideoElement, { split: 0 });
     expect([...image.data]).toEqual(INPUT);
     expect(output.putImageData).toHaveBeenCalledTimes(1);
   });
 
-  it('vergisst die LUT beim Aufräumen', () => {
+  it('forgets the LUT on cleanup', () => {
     const { canvas, image } = setup();
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());
@@ -95,12 +96,21 @@ describe('createCpuRenderer', () => {
     expect([...image.data]).toEqual(INPUT);
   });
 
-  it('meldet einen fehlenden 2D-Kontext der Zeichenfläche oder der Arbeitsfläche', () => {
+  it('reports a missing 2D context of the drawing surface or the work surface', () => {
     expect(() => createCpuRenderer(setup({ canvasContext: false }).canvas)).toThrow(
       'Weder WebGL2 noch ein 2D-Zeichenkontext',
     );
     expect(() => createCpuRenderer(setup({ scratchContext: false }).canvas)).toThrow(
       'Weder WebGL2 noch ein 2D-Zeichenkontext',
+    );
+  });
+});
+
+describe('createCpuRenderer (English)', () => {
+  it('reports a missing 2D context in English', () => {
+    setLocale('en');
+    expect(() => createCpuRenderer(setup({ canvasContext: false }).canvas)).toThrow(
+      'Neither WebGL2 nor a 2D drawing context is available',
     );
   });
 });

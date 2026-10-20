@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import type { WedgeRow } from './gray-wedge';
 
+const { t } = useI18n();
 const props = defineProps<{ cards: readonly (readonly WedgeRow[])[] }>();
 
-// Soll nur, wenn es einen Referenzsatz gibt.
+// Target only if there is a reference set.
 const hasTarget = computed(() =>
   props.cards.some((card) => card.some((row) => row.target !== null)),
 );
@@ -17,11 +19,11 @@ const stripes = computed(() =>
 </script>
 
 <template>
-  <!-- Jedes Feld ist in Streifen geteilt: Soll, Kamera, korrigiert (die Karten stehen untereinander). -->
+  <!-- Each patch is split into strips: target, camera, corrected (the cards are stacked). -->
   <div
     class="flex size-full flex-col gap-1.5"
     role="img"
-    aria-label="Farbfelder: Soll, Kamera und nach der Korrektur"
+    :aria-label="t('wedge.tilesAria')"
     data-testid="color-tiles"
   >
     <div

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
@@ -31,11 +32,12 @@ import GrayWedge from './GrayWedge.vue';
 import { attachStream, captureFromVideo } from './video-bindings';
 import WipeDivider from './WipeDivider.vue';
 
-// Stützstellen der LUT in der Vorschau; fein genug für glatte Verläufe, schnell genug zu berechnen.
+// LUT sample points in the preview; fine enough for smooth gradients, fast enough to compute.
 const PREVIEW_LUT_SIZE = 33;
-// Mindestens ein aktuelles Videobild liegt vor (HTMLMediaElement.HAVE_CURRENT_DATA).
+// At least one current video frame is available (HTMLMediaElement.HAVE_CURRENT_DATA).
 const HAVE_CURRENT_DATA = 2;
 
+const { t } = useI18n();
 const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
@@ -45,15 +47,15 @@ const { split } = storeToRefs(preview);
 const { measurements } = storeToRefs(useColorChartStore());
 const { selected } = storeToRefs(useReferenceStore());
 
-// Ansicht der Seitenspalte: zuerst die Farben, dazu umschaltbar die Graustufen.
-const VIEWS = [
-  { key: 'colors', label: 'Farben' },
-  { key: 'grays', label: 'Graustufen' },
-] as const;
-const view = ref<(typeof VIEWS)[number]['key']>('colors');
+// Side column view: colors first, switchable to the grayscale.
+const viewOptions = computed(() => [
+  { key: 'colors', label: t('preview.viewColors') } as const,
+  { key: 'grays', label: t('preview.viewGrays') } as const,
+]);
+const view = ref<'colors' | 'grays'>('colors');
 const WORST_COUNT = 3;
 
-// Farbraster aus den gemessenen bunten Feldern und die Felder mit der größten Rest-Abweichung.
+// Color grid from the measured chromatic patches and the patches with the largest residual error.
 const tiles = computed(() =>
   colorCards(colorLayout, NEUTRAL_IDS, measurements.value, model.value, selected.value),
 );
@@ -61,27 +63,25 @@ const worst = computed(() =>
   result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
 );
 
-// Graukeil aus den gemessenen Neutralfeldern und was die Korrektur je Tonbereich ändert.
+// Gray wedge from the measured neutral patches and what the correction changes per tonal range.
 const rows = computed(() =>
   wedgeRows(NEUTRAL_IDS, measurements.value, model.value, selected.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
 const emptyText = computed(() =>
-  model.value === null
-    ? 'Noch keine Korrektur. Berechne sie zuerst im Tab „Farbkarten“.'
-    : 'Für diese Ansicht fehlen gemessene Farbkarten.',
+  t(model.value === null ? 'preview.emptyNoModel' : 'preview.emptyNoCards'),
 );
-// Farben der Punkte vor den Kanälen.
-const CAST_COLORS: Readonly<Record<string, string>> = {
-  Rot: '#b45353',
-  Grün: '#4f8f5b',
-  Blau: '#4f6fb4',
-};
+// Colors of the dots in front of the channels.
+const CAST_COLORS = {
+  red: '#b45353',
+  green: '#4f8f5b',
+  blue: '#4f6fb4',
+} as const;
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const error = ref<string | null>(null);
-// Erst wenn das Video ein Bild liefert, ist eine Aufnahme sinnvoll.
+// A capture only makes sense once the video delivers an image.
 const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
@@ -92,7 +92,7 @@ const maxWidth = computed(() => maxWidthFor(aspect.value));
 
 const renderer = shallowRef<LutRenderer | null>(null);
 const stopLoop = shallowRef<(() => void) | null>(null);
-// Standbild als Zeichenfläche, die sich wie ein Video in die Textur laden lässt.
+// Still image as a canvas that can be loaded into the texture like a video.
 const stillCanvas = document.createElement('canvas');
 
 function drawStill(): void {
@@ -105,7 +105,7 @@ function drawStill(): void {
   }
 }
 
-// Wählt die Bildquelle: das Standbild dieses Tabs, sonst das Livebild.
+// Chooses the image source: this tab's still image, otherwise the live image.
 function currentSource(): { image: RenderSource; width: number; height: number } | null {
   if (still.value !== null && stillCanvas.width > 0) {
     return { image: stillCanvas, width: stillCanvas.width, height: stillCanvas.height };
@@ -122,8 +122,8 @@ function currentSource(): { image: RenderSource; width: number; height: number }
   return null;
 }
 
-// Nach der Aufnahme schaltet die App die Kamera aus (wie nach der automatischen Aufnahme). Ein neuer
-// Kamerastart verwirft das Standbild und zeigt wieder das Livebild.
+// After the capture the app turns the camera off (as after the automatic capture). A new
+// camera start discards the still image and shows the live image again.
 async function capture(): Promise<void> {
   await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
   if (still.value !== null) {
@@ -151,13 +151,13 @@ function drawFrameToCanvas(): void {
 
 function setup(): void {
   const target = canvas.value;
-  /* v8 ignore next 3 -- die Zeichenfläche existiert, sobald die Komponente eingehängt ist */
+  /* v8 ignore next 3 -- the canvas exists as soon as the component is mounted */
   if (target === null) {
     return;
   }
   const gl = target.getContext('webgl2', { preserveDrawingBuffer: true });
   try {
-    // Ohne WebGL2 übernimmt die Software-Darstellung, damit die Vorschau trotzdem funktioniert.
+    // Without WebGL2 the software rendering takes over so the preview still works.
     renderer.value = gl ? createLutRenderer(gl) : createCpuRenderer(target);
   } catch (error_) {
     error.value = (error_ as Error).message;
@@ -191,8 +191,8 @@ watch(lut, (next) => {
   }
 });
 
-// Der Wischer über dem Bild schreibt die Lage der Trennlinie in den Speicher.
-// Mittlere Abweichung vor und nach der Korrektur, solange der Bericht vorliegt.
+// The wipe over the image writes the divider position to the store.
+// Mean error before and after the correction while the report is available.
 const summary = computed(() =>
   result.value === null ? null : deviationSummary(result.value.report),
 );
@@ -209,9 +209,7 @@ const splitModel = computed({
   <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
     <aside class="space-y-4 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
       <p class="text-sm text-slate-700">
-        Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie
-        siehst du das Original, rechts das korrigierte Bild. Den Strich kannst du im Bild ziehen
-        oder mit den Pfeiltasten verschieben.
+        {{ t('preview.intro') }}
       </p>
       <div class="flex flex-wrap gap-2">
         <button
@@ -220,7 +218,7 @@ const splitModel = computed({
           :disabled="!isLive || !videoReady"
           @click="capture"
         >
-          Standbild aufnehmen
+          {{ t('preview.capture') }}
         </button>
       </div>
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
@@ -230,19 +228,15 @@ const splitModel = computed({
         data-testid="preview-renderer"
         :data-renderer="renderer.kind"
       >
-        {{
-          renderer.kind === 'webgl2'
-            ? 'Darstellung: Grafikkarte (WebGL2)'
-            : 'Darstellung: Software, verkleinert (kein WebGL2 verfügbar)'
-        }}
+        {{ t(renderer.kind === 'webgl2' ? 'preview.rendererWebgl' : 'preview.rendererCpu') }}
       </p>
     </aside>
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-      <!-- Wie in den Kartentabs: links das Bild, rechts eine schmale Spalte; so ist das Bild überall gleich groß. -->
+      <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
       <div class="flex items-stretch gap-3">
         <div class="relative min-w-0 flex-1" :style="{ maxWidth: maxWidth }">
-          <!-- Das Video dient nur als Bildquelle und bleibt unsichtbar. -->
+          <!-- The video only serves as an image source and stays invisible. -->
           <video
             ref="video"
             class="hidden"
@@ -250,7 +244,7 @@ const splitModel = computed({
             playsinline
             @loadeddata="videoReady = true"
           ></video>
-          <!-- Platzhalter in der Größe des Bildes, solange es nichts zu zeigen gibt. -->
+          <!-- Placeholder the size of the image while there is nothing to show. -->
           <div
             v-if="model === null || !hasSource"
             class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
@@ -280,13 +274,14 @@ const splitModel = computed({
               class="max-w-xs text-sm leading-snug"
               data-testid="preview-no-model"
             >
-              <span class="block font-semibold text-zinc-800">Noch keine Farbkorrektur</span>
-              Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und
-              nachher.
+              <span class="block font-semibold text-zinc-800">{{ t('preview.noModelTitle') }}</span>
+              {{ t('preview.noModelText') }}
             </p>
             <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
-              <span class="block font-semibold text-zinc-800">Noch kein Bild</span>
-              Schalte oben die Kamera an, um das Livebild zu sehen oder ein Standbild aufzunehmen.
+              <span class="block font-semibold text-zinc-800">{{
+                t('preview.noSourceTitle')
+              }}</span>
+              {{ t('preview.noSourceText') }}
             </p>
           </div>
           <canvas
@@ -298,7 +293,7 @@ const splitModel = computed({
           <WipeDivider
             v-if="model !== null && hasSource"
             v-model="splitModel"
-            label="Trennlinie: links Original, rechts korrigiert"
+            :label="t('preview.divider')"
           />
         </div>
 
@@ -309,10 +304,10 @@ const splitModel = computed({
           <div
             class="flex gap-1 border-b-[3px] border-zinc-700 bg-zinc-200 p-1.5"
             role="group"
-            aria-label="Ansicht der Seitenspalte"
+            :aria-label="t('preview.viewLabel')"
           >
             <button
-              v-for="option in VIEWS"
+              v-for="option in viewOptions"
               :key="option.key"
               type="button"
               class="flex-1 rounded border px-1 py-1 text-[11px] font-semibold"
@@ -340,14 +335,14 @@ const splitModel = computed({
               {{ emptyText }}
             </p>
             <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              Jedes Feld: Soll, Kamera, korrigiert (von links nach rechts).
+              {{ t('preview.tilesLegend') }}
             </p>
             <div
               v-if="worst.length > 0"
               class="text-[11px] leading-snug"
               data-testid="worst-patches"
             >
-              <p class="font-semibold">Größte Abweichung</p>
+              <p class="font-semibold">{{ t('preview.worstTitle') }}</p>
               <p>
                 <template v-for="(patch, index) in worst" :key="patch.id">
                   <template v-if="index > 0"> · </template>{{ patch.id }}
@@ -372,12 +367,12 @@ const splitModel = computed({
                 <dt class="font-semibold">{{ zone.name }}</dt>
                 <dd>
                   {{ brightnessText(zone.brighter) }}
-                  <template v-if="zone.casts.length === 0">, neutral</template>
-                  <template v-for="cast in zone.casts" :key="cast.channel">
+                  <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
+                  <template v-for="cast in zone.casts" :key="cast.key">
                     ·
                     <i
                       class="inline-block size-2 rounded-full"
-                      :style="{ background: CAST_COLORS[cast.channel] }"
+                      :style="{ background: CAST_COLORS[cast.key] }"
                     ></i>
                     {{ cast.channel }} {{ signedPoints(cast.points) }}
                   </template>
@@ -385,7 +380,7 @@ const splitModel = computed({
               </div>
             </dl>
             <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              Punkte auf der Skala 0–100: + Farbe wird stärker, − schwächer.
+              {{ t('preview.pointsLegend') }}
             </p>
           </div>
           <p

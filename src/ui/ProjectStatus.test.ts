@@ -13,20 +13,20 @@ describe('ProjectStatus', () => {
     setActivePinia(createPinia());
   });
 
-  it('zeigt ohne Meldung nichts', () => {
+  it('shows nothing without a message', () => {
     const wrapper = mount(ProjectStatus);
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 
-  it('zeigt nach dem Speichern keine Meldung', async () => {
+  it('shows no message after saving', async () => {
     const wrapper = mount(ProjectStatus);
     await useProjectStore().save();
     await wrapper.vm.$nextTick();
     expect(wrapper.find('[data-testid="project-message"]').exists()).toBe(false);
   });
 
-  it('zeigt den Hinweis zum Projekt schwebend und schließt ihn mit dem Kreuz', async () => {
+  it('shows the project hint floating and closes it with the cross', async () => {
     const wrapper = mount(ProjectStatus);
     useProjectStore().notice = 'Der Referenzsatz fehlt.';
     await wrapper.vm.$nextTick();
@@ -37,7 +37,7 @@ describe('ProjectStatus', () => {
     expect(wrapper.find('[data-testid="project-message"]').exists()).toBe(false);
   });
 
-  it('zeigt den Fehler einer fehlerhaften Datei', async () => {
+  it('shows the error of a faulty file', async () => {
     const wrapper = mount(ProjectStatus);
     await useProjectStore().load('{"format":"x"}');
     await wrapper.vm.$nextTick();

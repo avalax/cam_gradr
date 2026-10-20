@@ -24,7 +24,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Commit-Nachrichten prüfen (nur Pull Requests)
+      - name: Check commit messages (pull requests only)
         if: github.event_name == 'pull_request'
         run: npx commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}"
       - name: actionlint
@@ -36,7 +36,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint:knip
       - run: npm run audit
-      - name: Tests mit Coverage-Schwellwert 99 %
+      - name: Tests with coverage threshold 99 %
         run: npm run test:coverage
       - uses: actions/upload-artifact@v7
         if: always()
@@ -55,9 +55,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Browser für die Akzeptanztests installieren (Chrome und Firefox)
+      - name: Install browsers for the acceptance tests (Chrome and Firefox)
         run: npx playwright install --with-deps chrome firefox
-      - name: Akzeptanztests (Playwright, Chrome und Firefox)
+      - name: Acceptance tests (Playwright, Chrome and Firefox)
         run: npm run e2e
       - uses: actions/upload-artifact@v7
         if: failure()

@@ -21,7 +21,7 @@ function fakeMedia(overrides: Partial<MediaApi> = {}): MediaApi {
 }
 
 describe('createBrowserCamera', () => {
-  it('listet nur Videoeingänge und vergibt Ersatznamen', async () => {
+  it('lists only video inputs and assigns fallback names', async () => {
     const camera = createBrowserCamera(() =>
       fakeMedia({
         enumerateDevices: () =>
@@ -38,7 +38,7 @@ describe('createBrowserCamera', () => {
     ]);
   });
 
-  it('meldet fehlende Medien-API als unsupported', async () => {
+  it('reports a missing media API as unsupported', async () => {
     const camera = createBrowserCamera(vi.fn<() => MediaApi | undefined>());
     await expect(camera.enumerate()).rejects.toMatchObject({ code: 'unsupported' });
     await expect(camera.open(null, { width: 1, height: 1 })).rejects.toMatchObject({
@@ -46,14 +46,14 @@ describe('createBrowserCamera', () => {
     });
   });
 
-  it('wandelt Fehler beim Auflisten um', async () => {
+  it('converts errors while listing', async () => {
     const camera = createBrowserCamera(() =>
       fakeMedia({ enumerateDevices: () => Promise.reject(new Error('x')) }),
     );
     await expect(camera.enumerate()).rejects.toMatchObject({ code: 'unknown' });
   });
 
-  it('öffnet ohne Gerät mit idealer Auflösung und liest die Ist-Werte', async () => {
+  it('opens without a device at ideal resolution and reads the actual values', async () => {
     const getUserMedia = vi.fn(() =>
       Promise.resolve(fakeStream({ width: 1280, height: 720, deviceId: 'dev' }).stream),
     );
@@ -66,7 +66,7 @@ describe('createBrowserCamera', () => {
     expect(session.settings).toEqual({ width: 1280, height: 720, deviceId: 'dev' });
   });
 
-  it('verlangt ein bestimmtes Gerät exakt und nutzt Ersatzwerte ohne Settings', async () => {
+  it('requires a specific device exactly and uses fallback values without settings', async () => {
     const getUserMedia = vi.fn(() => Promise.resolve(fakeStream({}).stream));
     const camera = createBrowserCamera(() => fakeMedia({ getUserMedia }));
     const session = await camera.open('abc', { width: 640, height: 480 });
@@ -77,7 +77,7 @@ describe('createBrowserCamera', () => {
     expect(session.settings).toEqual({ width: 640, height: 480, deviceId: 'abc' });
   });
 
-  it('nutzt leere Geräte-ID, wenn weder Track noch Gerät sie liefern', async () => {
+  it('uses an empty device ID when neither track nor device provides one', async () => {
     const camera = createBrowserCamera(() =>
       fakeMedia({ getUserMedia: () => Promise.resolve(fakeStream(null).stream) }),
     );
@@ -85,7 +85,7 @@ describe('createBrowserCamera', () => {
     expect(session.settings.deviceId).toBe('');
   });
 
-  it('wandelt Fehler beim Öffnen um', async () => {
+  it('converts errors while opening', async () => {
     const error = new DOMException('x', 'NotAllowedError');
     const camera = createBrowserCamera(() =>
       fakeMedia({ getUserMedia: () => Promise.reject(error) }),
@@ -95,7 +95,7 @@ describe('createBrowserCamera', () => {
     });
   });
 
-  it('stoppt beim Schließen alle Tracks', () => {
+  it('stops all tracks on close', () => {
     const { stream, stop } = fakeStream({});
     createBrowserCamera(() => fakeMedia()).close({
       stream,

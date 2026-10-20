@@ -1,0 +1,25 @@
+{
+  "lut": {
+    "heading": "LUT für Monitor oder Software",
+    "description": "Die Farbkorrektur als {file}-Datei. Größere LUTs sind genauer, manche Geräte nehmen nur 17³ oder 33³ an (siehe Handbuch).",
+    "sizeLabel": "Größe der LUT (Stützstellen je Achse)",
+    "sizeOption": "{size}³",
+    "sizeDefault": "{size}³ Standard",
+    "noModelTitle": "Noch keine Farbkorrektur.",
+    "noModelText": "Berechne sie im Tab „Farbkarten“ oder lade ein Projekt.",
+    "gotoColor": "Zu den Farbkarten",
+    "download": "{file} herunterladen",
+    "sizeKb": "ca. {value} KB",
+    "sizeMb": "ca. {value} MB"
+  },
+  "project": {
+    "heading": "Projekt sichern",
+    "description": "Zum Weiterarbeiten ohne neue Aufnahme, als {file}. Das steckt darin:",
+    "corners": "{corners} Eckpunkte · {fields} Felder",
+    "gray": "Graukarten",
+    "color": "Farbkarten",
+    "correction": "Korrektur",
+    "correctionValue": "Kurven + Matrix",
+    "reference": "Referenz"
+  }
+}

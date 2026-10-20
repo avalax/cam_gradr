@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef } from 'vue';
 
+import { t } from '../lang';
+
 import { createBrowserCamera } from './browser-camera';
 import { captureAveraged } from './capture';
 import type { FrameGrabber } from './capture';
@@ -11,7 +13,7 @@ import type { CameraApi, CameraSession, Resolution, VideoDevice } from './types'
 
 export type CameraStatus = 'idle' | 'starting' | 'live' | 'error';
 
-// Die Tabs mit Kamerabild; jeder hat sein eigenes Standbild.
+// The tabs with a camera image; each has its own still image.
 export type StillKey = 'gray' | 'color' | 'preview';
 export type Stills = Partial<Record<StillKey, Frame>>;
 
@@ -21,7 +23,7 @@ const holder: { api: CameraApi } = {
   api: createBrowserCamera(() => navigator.mediaDevices),
 };
 
-// Austauschpunkt für Tests und spätere Alternativen.
+// Swap point for tests and later alternatives.
 export function setCameraApi(next: CameraApi): void {
   holder.api = next;
 }
@@ -35,12 +37,12 @@ export const useCameraStore = defineStore('camera', () => {
   const stream = shallowRef<MediaStream | null>(null);
   const actual = ref<Resolution | null>(null);
   const still = shallowRef<Frame | null>(null);
-  // Standbilder der Tabs, die gerade nicht angezeigt werden (je Tab eines).
+  // Still images of the tabs that are not currently shown (one per tab).
   const parked = shallowRef<Stills>({});
-  // Der Tab, zu dem das angezeigte Standbild gehört (der zuletzt besuchte Tab mit Kamerabild).
+  // The tab the shown still image belongs to (the last visited tab with a camera image).
   const stillOwner = ref<StillKey>('gray');
-  // Während die Kamera nach neuen Karten sucht, bleibt das bisherige Standbild des Tabs hier erhalten.
-  // Endet die Suche ohne neues Standbild, kehrt es zurück.
+  // While the camera searches for new charts, the tab's previous still image is kept here.
+  // If the search ends without a new still image, it comes back.
   const held = shallowRef<Frame | null>(null);
   let session: CameraSession | null = null;
 
@@ -53,7 +55,7 @@ export const useCameraStore = defineStore('camera', () => {
     actual.value = null;
   }
 
-  // Nach dem Ende der Kamera ohne neues Standbild gilt wieder das bisherige.
+  // After the camera ends without a new still image, the previous one applies again.
   function settle(): void {
     if (still.value === null && held.value !== null) {
       still.value = held.value;
@@ -63,8 +65,8 @@ export const useCameraStore = defineStore('camera', () => {
 
   async function start(): Promise<void> {
     release();
-    // Ein Kamerastart betrifft nur das Standbild des aktiven Tabs: Es weicht dem Livebild, bleibt aber
-    // erhalten, bis ein neues Standbild aufgenommen ist.
+    // Starting the camera only affects the active tab's still image: it yields to the live image
+    // but is kept until a new still image has been captured.
     held.value = still.value ?? held.value;
     still.value = null;
     status.value = 'starting';
@@ -74,7 +76,7 @@ export const useCameraStore = defineStore('camera', () => {
       stream.value = session.stream;
       actual.value = { width: session.settings.width, height: session.settings.height };
       selectedDeviceId.value = session.settings.deviceId === '' ? null : session.settings.deviceId;
-      // Gerätenamen sind erst nach erteilter Berechtigung verfügbar.
+      // Device names are only available once permission has been granted.
       devices.value = await holder.api.enumerate();
       status.value = 'live';
     } catch (error) {
@@ -105,39 +107,39 @@ export const useCameraStore = defineStore('camera', () => {
     }
   }
 
-  // Verwirft das Standbild des aktiven Tabs (auch das gehaltene).
+  // Discards the active tab's still image (including the held one).
   function clearStill(): void {
     still.value = null;
     held.value = null;
   }
 
-  // Verwirft die Standbilder aller Tabs (Projekt laden).
+  // Discards the still images of all tabs (loading a project).
   function discardStills(): void {
     still.value = null;
     held.value = null;
     parked.value = {};
   }
 
-  // Wechsel zwischen zwei Tabs: Das Standbild von `from` wird abgelegt und das von `to` (falls
-  // vorhanden) angezeigt, damit keiner sein Bild verliert.
+  // Switching between two tabs: the still image of `from` is stored and that of `to` (if
+  // present) is shown, so that no tab loses its image.
   function swapStill(from: StillKey, to: StillKey): void {
     const committed = still.value ?? held.value;
     const { [to]: next, ...rest } = parked.value;
     parked.value = committed === null ? rest : { ...rest, [from]: committed };
-    // Läuft die Kamera, sucht auch der neue Tab nach Karten: sein Standbild wird gehalten.
+    // If the camera is running, the new tab also searches for charts: its still image is held.
     const searching = status.value === 'live' || status.value === 'starting';
     held.value = searching ? (next ?? null) : null;
     still.value = searching ? null : (next ?? null);
     stillOwner.value = to;
   }
 
-  // Alle Standbilder der Tabs (das angezeigte gehört zu `stillOwner`), etwa zum Speichern im Projekt.
+  // All still images of the tabs (the shown one belongs to `stillOwner`), e.g. for saving.
   function allStills(): Stills {
     const own = still.value ?? held.value;
     return own === null ? { ...parked.value } : { ...parked.value, [stillOwner.value]: own };
   }
 
-  // Stellt die Standbilder aller Tabs her; angezeigt wird das des aktuellen Besitzers.
+  // Restores the still images of all tabs; the current owner's image is the one shown.
   function restoreStills(frames: Stills): void {
     const { [stillOwner.value]: current, ...rest } = frames;
     held.value = null;
@@ -149,10 +151,11 @@ export const useCameraStore = defineStore('camera', () => {
     errorMessage.value = null;
     try {
       still.value = await captureAveraged(grabber, count);
-      // Das neue Standbild ersetzt das gehaltene.
+      // The new still image replaces the held one.
       held.value = null;
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : 'Aufnahme fehlgeschlagen.';
+      errorMessage.value =
+        error instanceof Error ? error.message : t('camera.errors.captureFailed');
     }
   }
 

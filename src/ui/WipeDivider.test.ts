@@ -23,7 +23,7 @@ function lastValue(wrapper: ReturnType<typeof mountDivider>): number {
 }
 
 describe('WipeDivider', () => {
-  it('zeigt Strich und Griff an der aktuellen Lage und beschreibt sich als Schieberegler', () => {
+  it('shows line and handle at the current position and describes itself as a slider', () => {
     const wrapper = mountDivider(30);
     expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 30%');
     expect(wrapper.get('[data-testid="wipe-grip"]').attributes('style')).toContain('left: 30%');
@@ -35,7 +35,7 @@ describe('WipeDivider', () => {
     expect(area.attributes('tabindex')).toBe('0');
   });
 
-  it('setzt den Strich beim Klicken und Ziehen auf die Zeigerposition', async () => {
+  it('sets the line to the pointer position on click and drag', async () => {
     const wrapper = mountDivider();
     const area = wrapper.get('[data-testid="wipe"]');
     await area.trigger('pointerdown', { clientX: 150, pointerId: 1 });
@@ -48,7 +48,7 @@ describe('WipeDivider', () => {
     expect(lastValue(wrapper)).toBe(0);
   });
 
-  it('folgt dem Zeiger nur, solange er gedrückt ist', async () => {
+  it('follows the pointer only while it is pressed', async () => {
     const wrapper = mountDivider();
     const element = wrapper.get('[data-testid="wipe"]').element as HTMLElement;
     element.hasPointerCapture = vi.fn(() => false);
@@ -58,7 +58,7 @@ describe('WipeDivider', () => {
     expect(lastValue(wrapper)).toBe(50);
   });
 
-  it('ignoriert Zeigerbewegungen, solange die Fläche keine Breite hat', async () => {
+  it('ignores pointer moves while the surface has no width', async () => {
     const wrapper = mountDivider();
     const element = wrapper.get('[data-testid="wipe"]').element as HTMLElement;
     element.getBoundingClientRect = () => ({ left: 0, width: 0 }) as DOMRect;
@@ -66,7 +66,7 @@ describe('WipeDivider', () => {
     expect(lastValue(wrapper)).toBe(50);
   });
 
-  it('wird mit den Pfeiltasten verschoben, mit Umschalt in größeren Schritten', async () => {
+  it('moves with the arrow keys, in larger steps with Shift', async () => {
     const wrapper = mountDivider();
     const area = wrapper.get('[data-testid="wipe"]');
     await area.trigger('keydown', { key: 'ArrowRight' });
@@ -82,7 +82,7 @@ describe('WipeDivider', () => {
     expect(lastValue(wrapper)).toBe(50);
   });
 
-  it('springt mit Pos1 und Ende an den Rand und bleibt auf der Fläche', async () => {
+  it('jumps to the edge with Home and End and stays on the surface', async () => {
     const wrapper = mountDivider();
     const area = wrapper.get('[data-testid="wipe"]');
     await area.trigger('keydown', { key: 'Home' });
@@ -95,7 +95,7 @@ describe('WipeDivider', () => {
     expect(lastValue(wrapper)).toBe(100);
   });
 
-  it('lässt andere Tasten unberührt', async () => {
+  it('leaves other keys alone', async () => {
     const wrapper = mountDivider();
     await wrapper.get('[data-testid="wipe"]').trigger('keydown', { key: 'a' });
     expect(lastValue(wrapper)).toBe(50);

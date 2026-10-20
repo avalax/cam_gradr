@@ -24,19 +24,19 @@ function jsonWith(patches: unknown, extra: Record<string, unknown> = {}): string
 const neutralPatches = [...NEUTRAL_IDS].map((id) => ({ id, lab: dummyLab(id) }));
 
 describe('parseReferenceJson', () => {
-  it('liest eine vollständige Datei', () => {
+  it('reads a complete file', () => {
     const set = parseReferenceJson(dummyReferenceJson('Mein Satz'), rules);
     expect(set.name).toBe('Mein Satz');
     expect(Object.keys(set.patches)).toHaveLength(48);
     expect(set.patches['1D']).toEqual(dummyLab('1D'));
   });
 
-  it('nutzt einen Standardnamen, wenn keiner angegeben ist', () => {
+  it('uses a default name when none is given', () => {
     expect(parseReferenceJson(jsonWith(neutralPatches), rules).name).toBe('Import');
     expect(parseReferenceJson(jsonWith(neutralPatches, { name: '  ' }), rules).name).toBe('Import');
   });
 
-  it('akzeptiert D50 ausdrücklich und lehnt andere Weißpunkte ab', () => {
+  it('accepts D50 explicitly and rejects other white points', () => {
     expect(() =>
       parseReferenceJson(jsonWith(neutralPatches, { illuminant: 'D50' }), rules),
     ).not.toThrow();
@@ -45,7 +45,7 @@ describe('parseReferenceJson', () => {
     ).toThrow('D50');
   });
 
-  it('lehnt ungültiges JSON und falsches Format ab', () => {
+  it('rejects invalid JSON and a wrong format', () => {
     expect(() => parseReferenceJson('{kaputt', rules)).toThrow('kein gültiges JSON');
     expect(() => parseReferenceJson('[]', rules)).toThrow('Unbekanntes Format');
     expect(() => parseReferenceJson('{"format":"x","patches":[]}', rules)).toThrow(
@@ -56,7 +56,7 @@ describe('parseReferenceJson', () => {
     );
   });
 
-  it('lehnt unvollständige oder ungültige Felder ab', () => {
+  it('rejects incomplete or invalid fields', () => {
     expect(() => parseReferenceJson(jsonWith([null]), rules)).toThrow('id');
     expect(() => parseReferenceJson(jsonWith([{ id: '1A' }]), rules)).toThrow('id');
     expect(() => parseReferenceJson(jsonWith([{ id: '1A', lab: [50, 'x', 1] }]), rules)).toThrow(
@@ -73,7 +73,7 @@ describe('parseReferenceJson', () => {
     );
   });
 
-  it('lehnt unbekannte und doppelte IDs ab', () => {
+  it('rejects unknown and duplicate IDs', () => {
     expect(() => parseReferenceJson(jsonWith([{ id: 'ZZ', lab: [50, 0, 0] }]), rules)).toThrow(
       'Unbekannte Feld-ID: ZZ',
     );
@@ -88,7 +88,7 @@ describe('parseReferenceJson', () => {
     ).toThrow('Doppelte Feld-ID: 1A');
   });
 
-  it('verlangt genug Felder und genug Neutralfelder', () => {
+  it('requires enough fields and enough neutral fields', () => {
     expect(() => parseReferenceJson(jsonWith(neutralPatches.slice(0, 5)), rules)).toThrow(
       'Zu wenige Felder',
     );
@@ -102,14 +102,14 @@ describe('parseReferenceJson', () => {
 });
 
 describe('parseReferenceCsv', () => {
-  it('liest eine Datei mit Kopfzeile und Semikolon', () => {
+  it('reads a file with header row and semicolon', () => {
     const set = parseReferenceCsv(dummyReferenceCsv(), 'messung.csv', rules);
     expect(set.name).toBe('messung');
     expect(Object.keys(set.patches)).toHaveLength(48);
     expect(set.patches['1D']?.[0]).toBeCloseTo(dummyLab('1D')[0], 1);
   });
 
-  it('versteht Komma, Tabulator, Dezimalkomma, Kommentare und leere Zeilen', () => {
+  it('understands comma, tab, decimal comma, comments and empty lines', () => {
     const ids = [...NEUTRAL_IDS];
     const asLine = (separator: string, decimal: string) =>
       ids
@@ -127,13 +127,13 @@ describe('parseReferenceCsv', () => {
     expect(german.patches['2D']).toEqual(comma.patches['2D']);
   });
 
-  it('lehnt leere Dateien und Zeilen mit fehlenden Werten ab', () => {
+  it('rejects empty files and lines with missing values', () => {
     expect(() => parseReferenceCsv('\n\n', 'a.csv', rules)).toThrow('leer');
     expect(() => parseReferenceCsv('1A;50;1', 'a.csv', rules)).toThrow('Zeile 1');
     expect(() => parseReferenceCsv('id;L;a;b\n1A;50;x;1', 'a.csv', rules)).toThrow('Zeile 2');
   });
 
-  it('nutzt einen Standardnamen für Dateien ohne Namen', () => {
+  it('uses a default name for files without a name', () => {
     const ids = [...NEUTRAL_IDS];
     const text = ids.map((id) => `${id};${dummyLab(id).join(';')}`).join('\n');
     expect(parseReferenceCsv(text, '', rules).name).toBe('Import');
@@ -141,7 +141,7 @@ describe('parseReferenceCsv', () => {
 });
 
 describe('parseReferenceFile', () => {
-  it('wählt das Format nach Endung oder Inhalt', () => {
+  it('chooses the format by extension or content', () => {
     expect(parseReferenceFile('a.json', dummyReferenceJson('J'), rules).name).toBe('J');
     expect(parseReferenceFile('ohne-endung', dummyReferenceJson('K'), rules).name).toBe('K');
     expect(parseReferenceFile('a.csv', dummyReferenceCsv(), rules).name).toBe('a');
@@ -149,7 +149,7 @@ describe('parseReferenceFile', () => {
 });
 
 describe('serializeReferenceJson', () => {
-  it('schreibt ein Format, das sich unverändert wieder einlesen lässt', () => {
+  it('writes a format that can be read back unchanged', () => {
     const set = parseReferenceJson(dummyReferenceJson('Satz'), rules);
     const text = serializeReferenceJson(set);
     expect(text).toContain('"format": "cam_gradr-reference/1"');

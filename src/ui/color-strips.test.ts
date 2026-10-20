@@ -27,7 +27,7 @@ const REFERENCE = { name: 'Test', patches: { '1A': [50, 20, -10] as const } };
 const IDS = ['1A', '1B'];
 
 describe('buildStrips', () => {
-  it('zeigt ohne Messung und Modell die Sollwerte der Referenz und sonst ein neutrales Grau', () => {
+  it('shows the reference target values without a measurement and model, and neutral gray otherwise', () => {
     const { camera, corrected } = buildStrips(IDS, {}, null, REFERENCE);
     const expected = cssColor(labToSrgb([50, 20, -10]));
     expect(camera).toEqual([
@@ -37,12 +37,12 @@ describe('buildStrips', () => {
     expect(corrected).toEqual(camera);
   });
 
-  it('nimmt ohne Referenz das neutrale Grau', () => {
+  it('uses neutral gray without a reference', () => {
     const { camera } = buildStrips(IDS, {}, null, null);
     expect(camera.map((swatch) => swatch.css)).toEqual([NEUTRAL_SWATCH, NEUTRAL_SWATCH]);
   });
 
-  it('zeigt links die gemessenen Farben und rechts ohne Modell genau dieselben', () => {
+  it('shows the measured colors on the left and, without a model, exactly the same on the right', () => {
     const { camera, corrected } = buildStrips(IDS, { '1A': [1, 0, 0] }, null, REFERENCE);
     expect(camera[0]).toEqual({ id: '1A', css: 'rgb(255, 0, 0)', measured: true });
     expect(camera[1]?.measured).toBe(false);
@@ -51,7 +51,7 @@ describe('buildStrips', () => {
     expect(corrected[1]?.css).toBe(camera[1]?.css);
   });
 
-  it('wendet das Korrekturmodell auf die gemessenen Farben an', () => {
+  it('applies the correction model to the measured colors', () => {
     const measured = [0.4, 0.5, 0.6] as const;
     const { corrected } = buildStrips(IDS, { '1B': measured }, BRIGHTEN, REFERENCE);
     expect(corrected[1]).toEqual({

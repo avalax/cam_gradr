@@ -4,10 +4,10 @@
   "illuminant": "D50",
   "source": "https://www.bartneck.de/2017/10/24/patch-color-definitions-for-datacolor-spydercheckr-48/",
   "notes": [
-    "Quelle nennt Transkriptionsfehler bei 5C, 6C, 5H (Beschriftung, hier korrigiert) und 2G; dort wurde sRGB 58/88/159 laut Leserhinweis statt 99/86/156 verwendet, passt besser zu Lab.",
-    "Modell des Nutzers: SCK300 (laut Händlerseiten baugleich zur SCK310 mit anderem Gehäuse; 4 Karten, 62 Farbziele insgesamt). Dass die 48 Farbfelder mit der SpyderCheckr 48 identisch sind, ist wahrscheinlich, aber nicht belegt.",
-    "Layout (am Foto einer SCK300 visuell bestätigt): zwei Farbkarten im Hochformat, je 4 Spalten x 6 Reihen. Karte 1 = Spalten A-D, Karte 2 = Spalten E-H; der Buchstabe der ID ist die Spalte, die Ziffer die Reihe (von oben, 1-6). column und row zählen ab 0 von links bzw. oben. Die Farbwerte selbst bleiben unbestätigt.",
-    "\"check\" ist dE76 zwischen angegebenem Lab und aus sRGB (D65->D50) berechnetem Lab, nur als Plausibilitätstest."
+    "The source reports transcription errors at 5C, 6C, 5H (labeling, corrected here) and 2G; there, sRGB 58/88/159 was used instead of 99/86/156 according to a reader's note, which fits Lab better.",
+    "User's model: SCK300 (according to retailer pages identical to the SCK310 with a different case; 4 cards, 62 color targets in total). That the 48 color fields are identical to the SpyderCheckr 48 is likely but not proven.",
+    "Layout (visually confirmed on a photo of an SCK300): two color cards in portrait orientation, 4 columns x 6 rows each. Card 1 = columns A-D, card 2 = columns E-H; the letter of the ID is the column, the digit the row (from the top, 1-6). column and row count from 0 from the left and top respectively. The color values themselves remain unconfirmed.",
+    "\"check\" is dE76 between the given Lab and the Lab computed from sRGB (D65->D50), only as a plausibility test."
   ],
   "patches": [
     {

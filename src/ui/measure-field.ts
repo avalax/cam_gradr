@@ -1,7 +1,9 @@
 import { DEFAULT_EXPOSURE_CONFIG } from '../chart/exposure';
 import type { ExposureResult } from '../chart/exposure';
+import { t } from '../lang';
+import { formatDecimal, formatSigned } from '../lang/format';
 
-// Abweichung (in Anteilen der Helligkeit), die den vollen Ausschlag des Messfelds ergibt.
+// Deviation (as a fraction of brightness) that gives the full deflection of the measuring field.
 const LIGHT_RANGE = 0.3;
 const CONTRAST_RANGE = 0.25;
 const HALF = 50;
@@ -15,8 +17,8 @@ export interface Position {
   top: number;
 }
 
-// Lage der Messung im Feld in Prozent: waagerecht der Kontrast (rechts = zu hoch), senkrecht die
-// Helligkeit (oben = zu hoch).
+// Position of the measurement in the field in percent: horizontal is contrast (right = too high),
+// vertical is brightness (top = too high).
 export function fieldPosition(exposure: ExposureResult): Position {
   return {
     left: clamp(HALF + (exposure.contrast / CONTRAST_RANGE) * HALF),
@@ -29,7 +31,7 @@ export interface Box extends Position {
   height: number;
 }
 
-// Normalbereich in der Mitte des Felds, passend zu den erlaubten Abweichungen.
+// Normal range in the middle of the field, matching the allowed deviations.
 export function okBox(
   lightTolerance = DEFAULT_EXPOSURE_CONFIG.tolerance,
   contrastTolerance = DEFAULT_EXPOSURE_CONFIG.contrastTolerance,
@@ -47,12 +49,11 @@ export function okBox(
 }
 
 function percent(value: number): string {
-  return `${(value * 100).toFixed(0)} %`;
+  return t('measure.percent', { value: formatDecimal(value * 100, 0) });
 }
 
 function signed(value: number): string {
-  const points = value * 100;
-  return `${points >= 0 ? '+' : '−'}${Math.abs(points).toFixed(0)} Punkte`;
+  return t('measure.points', { value: formatSigned(value * 100, 0) });
 }
 
 export interface DetailRow {
@@ -60,96 +61,99 @@ export interface DetailRow {
   value: string;
 }
 
-// Überschrift der Messwerte im Popup: Die Prozentwerte sind Helligkeiten im Kamerabild.
-export const DETAIL_CAPTION = 'Helligkeit der Graufelder im Bild (0 % schwarz, 100 % weiß)';
+// Heading of the measured values in the popup: the percentages are brightness values in the camera
+// image.
+export function detailCaption(): string {
+  return t('measure.caption');
+}
 
-function toleranceOf(value: number): string {
-  return `Toleranz ±${(value * 100).toFixed(0)}`;
+function withTolerance(value: number, tolerance: number): string {
+  return t('measure.withTolerance', {
+    value: signed(value),
+    tolerance: t('measure.tolerance', { value: formatDecimal(tolerance * 100, 0) }),
+  });
+}
+
+function withTarget(level: number, target: number): string {
+  return t('measure.target', { level: percent(level), target: percent(target) });
 }
 
 export function detailRows(exposure: ExposureResult): DetailRow[] {
   const { target18, target50, tolerance, contrastTolerance } = DEFAULT_EXPOSURE_CONFIG;
   return [
-    { label: '18 %-Karte', value: `${percent(exposure.level18)} (Soll ${percent(target18)})` },
-    { label: '50 %-Karte', value: `${percent(exposure.level50)} (Soll ${percent(target50)})` },
-    { label: 'Helligkeit', value: `${signed(exposure.delta)} (${toleranceOf(tolerance)})` },
+    { label: t('measure.rows.card18'), value: withTarget(exposure.level18, target18) },
+    { label: t('measure.rows.card50'), value: withTarget(exposure.level50, target50) },
+    { label: t('measure.rows.brightness'), value: withTolerance(exposure.delta, tolerance) },
     {
-      label: 'Kontrast',
-      value: `${signed(exposure.contrast)} (${toleranceOf(contrastTolerance)})`,
+      label: t('measure.rows.contrast'),
+      value: withTolerance(exposure.contrast, contrastTolerance),
     },
-    { label: 'Lichter', value: exposure.highlightsClipped ? 'überbelichtet' : 'ok' },
-    { label: 'Schatten', value: exposure.shadowsCrushed ? 'unterbelichtet' : 'ok' },
+    {
+      label: t('measure.rows.highlights'),
+      value: t(exposure.highlightsClipped ? 'measure.rows.overexposed' : 'measure.rows.ok'),
+    },
+    {
+      label: t('measure.rows.shadows'),
+      value: t(exposure.shadowsCrushed ? 'measure.rows.underexposed' : 'measure.rows.ok'),
+    },
   ];
 }
 
 export type Edge = 'top' | 'bottom' | 'left' | 'right';
 
-// Wichtigste Meldung: Sie sitzt am Rand des Felds, in dessen Richtung die Messung abweicht, und nennt
-// zusammen mit dem Hinweis den nächsten Schritt.
+// Most important message: it sits on the edge of the field towards which the measurement deviates,
+// and names the next step together with the hint.
 export interface Issue {
   edge: Edge;
   label: string;
   hint: string;
 }
 
-const AFTER_BRIGHTNESS = 'Danach den Kontrast prüfen.';
-
-const TOO_DARK: Issue = {
+// The issues are built when needed (not as constants), so they follow the current language.
+const tooDark = (): Issue => ({
   edge: 'bottom',
-  label: 'Helligkeit zu niedrig',
-  hint: `Helligkeit erhöhen (Beleuchtung verstärken oder Belichtung der Kamera erhöhen). ${AFTER_BRIGHTNESS}`,
-};
-const TOO_BRIGHT: Issue = {
+  label: t('measure.issue.tooDark.label'),
+  hint: t('measure.issue.tooDark.hint'),
+});
+const tooBright = (): Issue => ({
   edge: 'top',
-  label: 'Helligkeit zu hoch',
-  hint: `Helligkeit verringern (Beleuchtung abschwächen oder Belichtung der Kamera verringern). ${AFTER_BRIGHTNESS}`,
-};
-const LOW_CONTRAST: Issue = {
+  label: t('measure.issue.tooBright.label'),
+  hint: t('measure.issue.tooBright.hint'),
+});
+const lowContrast = (): Issue => ({
   edge: 'left',
-  label: 'Kontrast zu niedrig',
-  hint: 'Helligkeit passt. Kontrast erhöhen (Kontrast der Kamera erhöhen).',
-};
-const HIGH_CONTRAST: Issue = {
+  label: t('measure.issue.lowContrast.label'),
+  hint: t('measure.issue.lowContrast.hint'),
+});
+const highContrast = (hint = t('measure.issue.highContrast.hint')): Issue => ({
   edge: 'right',
-  label: 'Kontrast zu hoch',
-  hint: 'Helligkeit passt. Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden).',
-};
+  label: t('measure.issue.highContrast.label'),
+  hint,
+});
 
-// Helligkeit und Kontrast beeinflussen sich (mehr Kontrast drückt die Schatten bei den meisten Kameras
-// wieder nach unten). Deshalb gibt es immer nur einen Schritt: zuerst die Helligkeit, beurteilt am
-// dunkelsten Streifenfeld und an den großen Feldern, danach der Kontrast.
+// Brightness and contrast influence each other (more contrast pushes the shadows down on most
+// cameras again). So there is only ever one step: brightness first, judged by the darkest strip
+// patch and the large patches, then contrast.
 function brightnessStep(exposure: ExposureResult): Issue | null {
   const { tolerance } = DEFAULT_EXPOSURE_CONFIG;
   if (exposure.shadowsCrushed && exposure.highlightsClipped) {
-    return {
-      ...HIGH_CONTRAST,
-      hint: 'Schatten unterbelichtet und Lichter überbelichtet: Kontrast verringern, das Licht gleichmäßiger ausrichten und Reflexe auf der Karte vermeiden.',
-    };
+    return highContrast(t('measure.issue.bothClipped'));
   }
   if (exposure.shadowsCrushed) {
-    return {
-      ...TOO_DARK,
-      hint: `Schatten unterbelichtet: erst die Helligkeit erhöhen (Beleuchtung verstärken oder Belichtung der Kamera erhöhen), bis das dunkelste Streifenfeld nicht mehr schwarz ist. ${AFTER_BRIGHTNESS}`,
-    };
+    return { ...tooDark(), hint: t('measure.issue.shadowsCrushed') };
   }
   if (exposure.highlightsClipped) {
     return exposure.delta > tolerance
-      ? {
-          ...TOO_BRIGHT,
-          hint: `Lichter überbelichtet: Helligkeit verringern (Beleuchtung abschwächen oder Belichtung der Kamera verringern). ${AFTER_BRIGHTNESS}`,
-        }
-      : {
-          ...HIGH_CONTRAST,
-          hint: 'Lichter überbelichtet: Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden).',
-        };
+      ? { ...tooBright(), hint: t('measure.issue.highlightsBright') }
+      : highContrast(t('measure.issue.highlightsContrast'));
   }
   if (exposure.delta < -tolerance) {
-    return TOO_DARK;
+    return tooDark();
   }
-  return exposure.delta > tolerance ? TOO_BRIGHT : null;
+  return exposure.delta > tolerance ? tooBright() : null;
 }
 
-// Das Problem, das als Nächstes zu beheben ist (null im Normalbereich oder ohne Messung).
+// The problem to fix next (null in the normal range or without a measurement).
 export function mainIssue(exposure: ExposureResult | null): Issue | null {
   if (exposure === null) {
     return null;
@@ -160,15 +164,15 @@ export function mainIssue(exposure: ExposureResult | null): Issue | null {
     return step;
   }
   if (exposure.contrast < -contrastTolerance) {
-    return LOW_CONTRAST;
+    return lowContrast();
   }
-  return exposure.contrast > contrastTolerance ? HIGH_CONTRAST : null;
+  return exposure.contrast > contrastTolerance ? highContrast() : null;
 }
 
-// Kurzer Hinweis unter dem Feld: was als Nächstes an Kamera oder Licht zu ändern ist.
+// Short hint below the field: what to change next about the camera or light.
 export function fieldHint(exposure: ExposureResult | null): string {
   if (exposure === null) {
-    return 'Noch keine Messung.';
+    return t('measure.noMeasurement');
   }
-  return mainIssue(exposure)?.hint ?? 'Helligkeit und Kontrast befinden sich im Normalbereich.';
+  return mainIssue(exposure)?.hint ?? t('measure.normal');
 }

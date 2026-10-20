@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- die Tests verändern JSON bewusst ohne feste Typen */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- the tests deliberately modify JSON without fixed types */
 import { describe, expect, it } from 'vitest';
 
 import { NEUTRAL_IDS } from '../chart/layouts';
@@ -39,7 +39,7 @@ function sample(): Project {
   };
 }
 
-// Erzeugt eine Kopie der Beispieldatei mit einer Änderung und prüft, dass sie abgelehnt wird.
+// Creates a copy of the sample file with one change and checks that it is rejected.
 function rejects(change: (raw: Record<string, any>) => void, message: string | RegExp): void {
   const raw = structuredClone(sample()) as unknown as Record<string, any>;
   change(raw);
@@ -53,7 +53,7 @@ describe('parseProject', () => {
     expect(parseProject(text)).toEqual(sample());
   });
 
-  it('akzeptiert ein Projekt ohne Modell, ohne Referenz und ohne Datum', () => {
+  it('accepts a project without model, without reference and without date', () => {
     const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
     raw.model = null;
     raw.color.reference = null;
@@ -64,7 +64,7 @@ describe('parseProject', () => {
     expect(project.savedAt).toBe('');
   });
 
-  it('liest ältere Dateien mit Stärke und ignoriert sie', () => {
+  it('reads older files with strength and ignores it', () => {
     const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
     raw.preview = { strength: 60, split: 25 };
     const project = parseProject(JSON.stringify(raw));
@@ -81,7 +81,7 @@ describe('parseProject', () => {
     }
   });
 
-  it('lehnt ungültiges JSON und falsches Format ab', () => {
+  it('rejects invalid JSON and a wrong format', () => {
     expect(() => parseProject('{kaputt')).toThrow('kein gültiges JSON');
     expect(() => parseProject('[]')).toThrow('Unbekanntes Format');
     rejects((raw) => (raw.format = 'anderes/1'), 'Unbekanntes Format');
@@ -101,7 +101,7 @@ describe('parseProject', () => {
     rejects((raw) => (raw.gray.corners = { 3: [null] }), 'braucht x und y');
   });
 
-  it('lehnt unbekannte Felder und ungültige Messwerte ab', () => {
+  it('rejects unknown fields and invalid measurements', () => {
     rejects((raw) => (raw.gray.measurements = { ZZ: [0, 0, 0] }), 'unbekanntes Feld ZZ');
     rejects((raw) => (raw.color.measurements = { '1A': [0, 0] }), '3 Zahlen');
     rejects((raw) => (raw.color.measurements = { '1A': [0, 0, 'x'] }), '3 Zahlen');
@@ -109,12 +109,12 @@ describe('parseProject', () => {
     rejects((raw) => (raw.color.measurements = { '1A': [-0.1, 0, 0] }), 'zwischen 0 und 1');
   });
 
-  it('lehnt eine ungültige Referenz ab', () => {
+  it('rejects an invalid reference', () => {
     rejects((raw) => (raw.color.reference = 5), 'reference muss ein Name oder null sein');
     rejects((raw) => delete raw.color.reference, 'reference muss ein Name oder null sein');
   });
 
-  it('lehnt ein fehlerhaftes Modell ab', () => {
+  it('rejects a faulty model', () => {
     rejects((raw) => (raw.model = 5), 'drei Kurven');
     rejects((raw) => (raw.model = { curves: [] }), 'drei Kurven');
     rejects((raw) => (raw.model.curves[0] = null), 'Kurve 1: erwartet werden xs und ys');
@@ -134,14 +134,14 @@ describe('parseProject', () => {
   });
 });
 
-describe('Standbilder in der Projektdatei', () => {
+describe('still images in the project file', () => {
   const still = { width: 2, height: 1, encoding: 'rgb8-deflate-base64', data: 'eJw=' };
 
   function withStills(stills: unknown): string {
     return JSON.stringify({ ...JSON.parse(serializeProject(sample())), stills });
   }
 
-  it('lässt Standbilder weg, wenn sie fehlen', () => {
+  it('omits still images when they are missing', () => {
     expect(parseProject(serializeProject(sample())).stills).toBeUndefined();
   });
 
@@ -151,7 +151,7 @@ describe('Standbilder in der Projektdatei', () => {
     expect(project.stills?.gray).toEqual(still);
   });
 
-  it('lehnt unbekannte Tabs, Codierungen und Größen ab', () => {
+  it('rejects unknown tabs, encodings and sizes', () => {
     expect(() => parseProject(withStills('x'))).toThrow('erwartet wird ein Objekt');
     expect(() => parseProject(withStills({ export: still }))).toThrow('unbekannter Tab');
     expect(() => parseProject(withStills({ gray: { ...still, encoding: 'png' } }))).toThrow(

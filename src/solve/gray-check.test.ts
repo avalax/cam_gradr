@@ -18,7 +18,7 @@ const measurements = Object.fromEntries(
 const { model } = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
 
 describe('checkGrayCards', () => {
-  it('vergleicht die großen Graufelder vor und nach der Korrektur mit dem Nennwert', () => {
+  it('compares the large gray patches with the nominal value before and after correction', () => {
     const gray: Record<string, Rgb> = {
       G50: cameraCode([76.07, 0, 0]),
       G18: cameraCode([49.5, 0, 0]),
@@ -32,7 +32,7 @@ describe('checkGrayCards', () => {
     }
   });
 
-  it('übergeht Felder ohne Messung', () => {
+  it('skips patches without a measurement', () => {
     expect(checkGrayCards(model, { G50: cameraCode([76.07, 0, 0]) }, grayLayout)).toHaveLength(1);
     expect(checkGrayCards(model, {}, grayLayout)).toEqual([]);
   });

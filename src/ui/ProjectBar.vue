@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { useProjectStore } from '../project/project-store';
 
-// Die Meldung zu Speichern und Laden steht über dem Inhalt (ProjectStatus).
+const { t } = useI18n();
+
+// The message about saving and loading sits above the content (ProjectStatus).
 const project = useProjectStore();
-// Die Standbilder zeigen, was die Kamera sieht; die Datei enthält dann Kamerabilder.
+// The still images show what the camera sees; the file then contains camera images.
 const withStills = ref(true);
 
 async function save(): Promise<void> {
@@ -18,7 +21,7 @@ async function onFile(event: Event): Promise<void> {
   if (file !== undefined) {
     await project.load(await file.text());
   }
-  // Dieselbe Datei soll sich erneut wählen lassen.
+  // The same file should be selectable again.
   input.value = '';
 }
 </script>
@@ -27,7 +30,7 @@ async function onFile(event: Event): Promise<void> {
   <div class="flex flex-col gap-2">
     <label class="flex items-start gap-2 text-xs text-zinc-600">
       <input v-model="withStills" type="checkbox" class="mt-0.5" data-testid="project-stills" />
-      <span>Standbilder mitspeichern (die Datei enthält dann Kamerabilder)</span>
+      <span>{{ t('project.bar.stills') }}</span>
     </label>
     <div class="flex flex-wrap items-center gap-2">
       <button
@@ -36,12 +39,12 @@ async function onFile(event: Event): Promise<void> {
         data-testid="project-save"
         @click="save"
       >
-        Projekt speichern
+        {{ t('project.bar.save') }}
       </button>
       <label
         class="cursor-pointer rounded border border-zinc-800 bg-white px-3 py-1 text-sm focus-within:outline focus-within:outline-2"
       >
-        Projekt laden
+        {{ t('project.bar.load') }}
         <input
           type="file"
           accept=".json,application/json"

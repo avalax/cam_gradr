@@ -1,0 +1,44 @@
+{
+  "noMeasurement": "No measurement yet.",
+  "normal": "Brightness and contrast are within the normal range.",
+  "aria": "Brightness and contrast: {hint}",
+  "caption": "Brightness of the gray fields in the image (0% black, 100% white)",
+  "percent": "{value}%",
+  "points": "{value} points",
+  "target": "{level} (target {target})",
+  "tolerance": "Tolerance ±{value}",
+  "withTolerance": "{value} ({tolerance})",
+  "rows": {
+    "card18": "18% card",
+    "card50": "50% card",
+    "brightness": "Brightness",
+    "contrast": "Contrast",
+    "highlights": "Highlights",
+    "shadows": "Shadows",
+    "overexposed": "overexposed",
+    "underexposed": "underexposed",
+    "ok": "ok"
+  },
+  "issue": {
+    "tooDark": {
+      "label": "Brightness too low",
+      "hint": "Increase the brightness (add light or raise the camera exposure). Then check the contrast."
+    },
+    "tooBright": {
+      "label": "Brightness too high",
+      "hint": "Reduce the brightness (dim the light or lower the camera exposure). Then check the contrast."
+    },
+    "lowContrast": {
+      "label": "Contrast too low",
+      "hint": "Brightness is fine. Increase the contrast (raise the camera contrast)."
+    },
+    "highContrast": {
+      "label": "Contrast too high",
+      "hint": "Brightness is fine. Reduce the contrast (lower the camera contrast or use softer light)."
+    },
+    "bothClipped": "Shadows underexposed and highlights overexposed: reduce the contrast, align the light more evenly and avoid reflections on the card.",
+    "shadowsCrushed": "Shadows underexposed: first increase the brightness (add light or raise the camera exposure) until the darkest stripe field is no longer black. Then check the contrast.",
+    "highlightsBright": "Highlights overexposed: reduce the brightness (dim the light or lower the camera exposure). Then check the contrast.",
+    "highlightsContrast": "Highlights overexposed: reduce the contrast (lower the camera contrast or use softer light)."
+  }
+}

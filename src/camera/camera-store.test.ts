@@ -24,7 +24,7 @@ function fakeApi(overrides: Partial<CameraApi> = {}) {
   return api;
 }
 
-// Rotanteil des angezeigten Standbilds.
+// Red component of the shown still image.
 function shown(store: ReturnType<typeof useCameraStore>): number | undefined {
   return store.still?.data[0];
 }
@@ -34,7 +34,7 @@ describe('useCameraStore', () => {
     setActivePinia(createPinia());
   });
 
-  it('startet die Kamera und übernimmt Gerät, Auflösung und Geräteliste', async () => {
+  it('starts the camera and adopts device, resolution and device list', async () => {
     const api = fakeApi();
     const store = useCameraStore();
     await store.start();
@@ -45,14 +45,14 @@ describe('useCameraStore', () => {
     expect(api.open).toHaveBeenCalledWith(null, { width: 1280, height: 720 });
   });
 
-  it('lässt die Geräteauswahl leer, wenn die Kamera keine ID meldet', async () => {
+  it('leaves the device selection empty when the camera reports no ID', async () => {
     fakeApi({ open: () => Promise.resolve(session('')) });
     const store = useCameraStore();
     await store.start();
     expect(store.selectedDeviceId).toBeNull();
   });
 
-  it('meldet Fehler und gibt die Kamera frei', async () => {
+  it('reports errors and releases the camera', async () => {
     const api = fakeApi({
       open: vi.fn().mockRejectedValue(new CameraError('permission-denied')),
     });
@@ -64,7 +64,7 @@ describe('useCameraStore', () => {
     expect(api.close).not.toHaveBeenCalled();
   });
 
-  it('gibt die Sitzung frei, wenn das Auflisten nach dem Öffnen fehlschlägt', async () => {
+  it('releases the session when listing fails after opening', async () => {
     const api = fakeApi({ enumerate: () => Promise.reject(new CameraError('unknown')) });
     const store = useCameraStore();
     await store.start();
@@ -72,7 +72,7 @@ describe('useCameraStore', () => {
     expect(api.close).toHaveBeenCalledTimes(1);
   });
 
-  it('stoppt die Kamera', async () => {
+  it('stops the camera', async () => {
     const api = fakeApi();
     const store = useCameraStore();
     await store.start();
@@ -85,7 +85,7 @@ describe('useCameraStore', () => {
     expect(api.close).toHaveBeenCalledTimes(1);
   });
 
-  it('startet bei erneutem Start die laufende Sitzung neu', async () => {
+  it('restarts the running session on a repeated start', async () => {
     const api = fakeApi();
     const store = useCameraStore();
     await store.start();
@@ -94,7 +94,7 @@ describe('useCameraStore', () => {
     expect(api.open).toHaveBeenCalledTimes(2);
   });
 
-  it('wechselt das Gerät nur im Livebetrieb sofort', async () => {
+  it('switches the device immediately only in live mode', async () => {
     const api = fakeApi();
     const store = useCameraStore();
     await store.selectDevice('cam2');
@@ -105,12 +105,12 @@ describe('useCameraStore', () => {
     expect(api.open).toHaveBeenLastCalledWith('cam1', { width: 1280, height: 720 });
   });
 
-  it('wechselt die Auflösung nur im Livebetrieb sofort', async () => {
+  it('switches the resolution immediately only in live mode', async () => {
     const api = fakeApi();
     const store = useCameraStore();
     const full = RESOLUTIONS[2];
     if (full === undefined) {
-      throw new Error('Auflösung fehlt');
+      throw new Error('resolution missing');
     }
     await store.selectResolution(full);
     expect(store.resolution).toEqual(full);
@@ -120,7 +120,7 @@ describe('useCameraStore', () => {
     expect(api.open).toHaveBeenLastCalledWith('cam1', { width: 640, height: 480 });
   });
 
-  it('nimmt ein gemitteltes Standbild auf', async () => {
+  it('captures an averaged still image', async () => {
     fakeApi();
     const store = useCameraStore();
     const grab = vi.fn(() => ({ width: 1, height: 1, data: [255, 255, 255, 255] }));
@@ -130,7 +130,7 @@ describe('useCameraStore', () => {
     expect(store.errorMessage).toBeNull();
   });
 
-  it('meldet Fehler bei der Aufnahme', async () => {
+  it('reports errors during capture', async () => {
     fakeApi();
     const store = useCameraStore();
     const failing = {
@@ -144,7 +144,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBeNull();
   });
 
-  it('nutzt eine Standardmeldung bei Nicht-Error-Fehlern', async () => {
+  it('uses a default message for non-Error failures', async () => {
     fakeApi();
     const store = useCameraStore();
     const failing = {
@@ -158,7 +158,7 @@ describe('useCameraStore', () => {
     expect(store.errorMessage).toBe('Aufnahme fehlgeschlagen.');
   });
 
-  it('verwirft das Standbild beim Löschen und bei jedem Kamerastart', async () => {
+  it('discards the still image on clearing and on every camera start', async () => {
     fakeApi();
     const store = useCameraStore();
     const grabber = {
@@ -173,7 +173,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBeNull();
   });
 
-  it('legt beim Wechsel zwischen Schritten das Standbild ab und holt das des anderen zurück', async () => {
+  it('stores the still image when switching steps and restores the image of the other step', async () => {
     fakeApi();
     const store = useCameraStore();
     const grabber = {
@@ -191,7 +191,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBe(gray);
     store.swapStill('gray', 'color');
     expect(store.still).toBe(color);
-    // Kamerastart und Löschen betreffen nur das angezeigte Standbild; das Standbild bleibt gehalten.
+    // Camera start and clearing only affect the shown still image; the parked image is kept.
     await store.start();
     expect(store.still).toBeNull();
     store.stop();
@@ -203,7 +203,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBe(color);
     store.swapStill('color', 'gray');
     expect(store.still).toBeNull();
-    // Ohne Standbild im verlassenen Tab bleibt nichts liegen; Verwerfen löscht alle.
+    // Without a still image in the tab being left, nothing is parked; discarding clears all.
     store.swapStill('color', 'gray');
     await store.captureStill(grabber, 1);
     store.discardStills();
@@ -211,7 +211,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBeNull();
   });
 
-  describe('Suche mit gehaltenem Standbild', () => {
+  describe('search with held still image', () => {
     const frame = (value: number) => ({
       width: 1,
       height: 1,
@@ -222,7 +222,7 @@ describe('useCameraStore', () => {
       nextFrame: () => Promise.resolve(),
     };
 
-    it('hält das bisherige Standbild beim Kamerastart und gibt es beim Beenden zurück', async () => {
+    it('holds the previous still image on camera start and returns it on stop', async () => {
       fakeApi();
       const store = useCameraStore();
       const old = frame(0.2);
@@ -235,7 +235,7 @@ describe('useCameraStore', () => {
       expect(store.allStills().gray).toBe(old);
     });
 
-    it('behält ein neues Standbild und lässt das bisherige fallen', async () => {
+    it('keeps a new still image and drops the previous one', async () => {
       fakeApi();
       const store = useCameraStore();
       const old = frame(0.2);
@@ -249,7 +249,7 @@ describe('useCameraStore', () => {
       expect(store.still).not.toBe(old);
     });
 
-    it('gibt das bisherige Standbild auch nach einem Fehler beim Start zurück', async () => {
+    it('returns the previous still image even after a start error', async () => {
       fakeApi({ open: vi.fn().mockRejectedValue(new CameraError('permission-denied')) });
       const store = useCameraStore();
       const old = frame(0.2);
@@ -259,7 +259,7 @@ describe('useCameraStore', () => {
       expect(store.still).toBe(old);
     });
 
-    it('löscht auch das gehaltene Standbild mit clearStill und discardStills', async () => {
+    it('also deletes the held still image with clearStill and discardStills', async () => {
       fakeApi();
       const store = useCameraStore();
       store.still = frame(0.2);
@@ -274,7 +274,7 @@ describe('useCameraStore', () => {
       expect(store.still).toBeNull();
     });
 
-    it('legt beim Tabwechsel mit laufender Kamera das Standbild ab und hält das des neuen Tabs', async () => {
+    it('stores the still image on tab switch with a running camera and holds the image of the new tab', async () => {
       fakeApi();
       const store = useCameraStore();
       const grayStill = frame(0.1);
@@ -296,7 +296,7 @@ describe('useCameraStore', () => {
     });
   });
 
-  it('kennt den Besitzer des Standbilds, liefert alle Standbilder und stellt sie wieder her', () => {
+  it('knows the owner of the still image, returns all still images and restores them', () => {
     fakeApi();
     const store = useCameraStore();
     const frame = (value: number) => ({
@@ -319,7 +319,7 @@ describe('useCameraStore', () => {
     store.discardStills();
     expect(store.allStills()).toEqual({});
     store.restoreStills({ gray: frame(0.3), color: frame(0.4), preview: frame(0.5) });
-    // Angezeigt wird das Bild des Besitzers (Farbkarten), die anderen liegen bereit.
+    // The owner's image (color charts) is shown, the others are parked.
     expect(shown(store)).toBeCloseTo(0.4);
     store.swapStill('color', 'preview');
     expect(shown(store)).toBeCloseTo(0.5);
@@ -327,7 +327,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBeNull();
   });
 
-  it('nutzt die Standardanzahl an Frames', async () => {
+  it('uses the default number of frames', async () => {
     fakeApi();
     const store = useCameraStore();
     const grab = vi.fn(() => ({ width: 1, height: 1, data: [0, 0, 0, 0] }));

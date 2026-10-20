@@ -1,15 +1,15 @@
 import type { Corners } from '../chart/types';
 
-// Hilfsrahmen im Livebild: zeigt, wo die Karten (dunkler Rahmen der Karte) hingehalten werden sollen.
-// Maße aus einem Foto des geöffneten Etuis: hochkant, Breite zu Höhe etwa 0,63.
+// Guide frame in the live image: shows where to hold the cards (dark card frame).
+// Dimensions from a photo of the opened case: portrait, width to height about 0.63.
 const HEIGHT_SHARE = 0.81;
 const ASPECT = 0.63;
-// Mittelpunkte der Karten im Bild (Anteil der Breite): so liegen sie im aufgeklappten Etui, wenn es
-// formatfüllend gehalten wird; zwischen den Karten bleibt nur das Scharnier.
+// Card centers in the image (fraction of the width): this is where they lie in the unfolded case when
+// it is held filling the frame; only the hinge remains between the cards.
 const FIRST_CENTRE = 0.34;
 const CENTRE_SPACING = 0.36;
 
-// Ecken der Rahmen für `count` Karten, von links nach rechts (oben links, oben rechts, unten rechts,
+// Corners of the frames for `count` cards, from left to right (top left, top right, bottom right,
 // unten links).
 export function guideCorners(size: { width: number; height: number }, count: number): Corners[] {
   const height = size.height * HEIGHT_SHARE;

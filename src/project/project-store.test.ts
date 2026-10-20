@@ -29,7 +29,7 @@ const grayMeasurements: Record<string, Rgb> = {
   'S3-5': [0.85, 0.85, 0.85],
 };
 
-// Bringt alle Stores in einen vollständigen Arbeitsstand und liefert die gespeicherte Datei.
+// Brings all stores into a complete working state and returns the saved file.
 async function workedState(): Promise<string> {
   const references = useReferenceStore();
   await references.importFile('referenz.json', dummyReferenceJson('Mein Satz'));
@@ -64,14 +64,14 @@ function shown(): number | undefined {
   return useCameraStore().still?.data[0];
 }
 
-describe('useProjectStore mit Standbildern', () => {
+describe('useProjectStore with still images', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
     download.mockReset();
   });
 
-  it('speichert die Standbilder aller Tabs mit, wenn es gewünscht ist', async () => {
+  it('saves the still images of all tabs when requested', async () => {
     await workedState();
     const camera = useCameraStore();
     camera.still = frame(0.5);
@@ -84,10 +84,10 @@ describe('useProjectStore mit Standbildern', () => {
     expect(project.stills?.gray).toBeDefined();
   });
 
-  it('speichert mit Standbildern auch die Eckpunkte, selbst wenn die Kamera gerade sucht', async () => {
+  it('saves the corner points along with still images, even while the camera is searching', async () => {
     await workedState();
     useCameraStore().still = frame(0.5);
-    // Während der Suche hält der Speicher den bisherigen Stand; gespeichert wird dieser.
+    // During the search the store keeps the previous state; that is what gets saved.
     useChartStore().beginSearch();
     expect(useChartStore().points).toEqual({});
     await useProjectStore().save({ withStills: true });
@@ -97,7 +97,7 @@ describe('useProjectStore mit Standbildern', () => {
     expect(Object.keys(project.gray.measurements)).toContain('G18');
   });
 
-  it('lässt die Standbilder weg, wenn der Haken fehlt', async () => {
+  it('omits the still images when the checkbox is unchecked', async () => {
     await workedState();
     useCameraStore().still = frame(0.5);
     await useProjectStore().save({ withStills: false });
@@ -105,7 +105,7 @@ describe('useProjectStore mit Standbildern', () => {
     expect(project.stills).toBeUndefined();
   });
 
-  it('stellt beim Laden die Standbilder wieder her und schaltet die Kamera aus', async () => {
+  it('restores the still images on load and turns the camera off', async () => {
     await workedState();
     const camera = useCameraStore();
     camera.still = frame(0.5);
@@ -131,7 +131,7 @@ describe('useProjectStore mit Standbildern', () => {
     expect(shown()).toBeCloseTo(0.25, 2);
   });
 
-  it('lässt die Kamera an, wenn die Datei keine Standbilder enthält', async () => {
+  it('keeps the camera on when the file contains no still images', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
     const camera = useCameraStore();
@@ -142,7 +142,7 @@ describe('useProjectStore mit Standbildern', () => {
     expect(camera.still).toBeNull();
   });
 
-  it('lehnt eine Datei mit unlesbarem Standbild ab und lässt den Stand unverändert', async () => {
+  it('rejects a file with an unreadable still image and leaves the state unchanged', async () => {
     const text = await workedState();
     const raw = JSON.parse(text) as Record<string, unknown>;
     raw.stills = { gray: { width: 1, height: 1, encoding: 'rgb8-deflate-base64', data: 'AAAA' } };
@@ -162,7 +162,7 @@ describe('useProjectStore', () => {
     download.mockReset();
   });
 
-  it('speichert den Arbeitsstand als JSON-Datei (ohne Standbilder auch ohne Eckpunkte)', async () => {
+  it('saves the working state as a JSON file (without still images also without corner points)', async () => {
     const text = await workedState();
     const [name, , mime] = download.mock.calls[0] as [string, string, string];
     expect(name).toBe(PROJECT_FILE_NAME);
@@ -170,7 +170,7 @@ describe('useProjectStore', () => {
     const project = parseProject(text);
     expect(project.color.reference).toBe('Mein Satz');
     expect(project.gray.measurements).toEqual(grayMeasurements);
-    // Ohne Standbilder in der Datei gehören auch keine Eckpunkte hinein.
+    // Without still images in the file, no corner points belong in it either.
     expect(project.color.corners).toEqual({});
     expect(project.gray.corners).toEqual({});
     expect(project.model).not.toBeNull();
@@ -180,9 +180,9 @@ describe('useProjectStore', () => {
     expect(text).not.toContain('"lab"');
   });
 
-  it('stellt den Arbeitsstand aus der Datei wieder her und berechnet den Bericht neu', async () => {
+  it('restores the working state from the file and recomputes the report', async () => {
     const text = await workedState();
-    // Neuer, leerer Zustand wie nach dem Neuladen der Seite; der Referenzsatz bleibt gespeichert.
+    // New, empty state as after reloading the page; the reference set stays stored.
     setActivePinia(createPinia());
     useCameraStore().still = { width: 1, height: 1, data: new Float32Array(3) };
     const project = useProjectStore();
@@ -191,7 +191,7 @@ describe('useProjectStore', () => {
     expect(project.error).toBeNull();
     expect(project.notice).toBeNull();
     expect(useCameraStore().still).toBeNull();
-    // Die Datei hat keine Standbilder, also kommen auch keine Eckpunkte zurück.
+    // The file has no still images, so no corner points come back either.
     expect(useChartStore().points).toEqual({});
     expect(useChartStore().measurements).toEqual(grayMeasurements);
     expect(useChartStore().exposure?.verdict).toBe('ok');
@@ -202,7 +202,7 @@ describe('useProjectStore', () => {
     expect(useSolveStore().result?.report.patches).toHaveLength(48);
   });
 
-  it('schließt Fehler und Hinweis mit dismiss', async () => {
+  it('closes error and notice with dismiss', async () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}');
     expect(project.error).not.toBeNull();
@@ -212,7 +212,7 @@ describe('useProjectStore', () => {
     expect(project.notice).toBeNull();
   });
 
-  it('nutzt das gespeicherte Modell, wenn der Referenzsatz fehlt, und weist darauf hin', async () => {
+  it('uses the saved model when the reference set is missing, and points that out', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere'));
@@ -224,7 +224,7 @@ describe('useProjectStore', () => {
     expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
   });
 
-  it('nimmt auch ein anderes gewähltes Referenzset nicht für den Bericht', async () => {
+  it('does not use another selected reference set for the report either', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'dritte'));
@@ -236,7 +236,7 @@ describe('useProjectStore', () => {
     expect(useSolveStore().model).not.toBeNull();
   });
 
-  it('lädt ein Projekt ohne Referenz und ohne Modell', async () => {
+  it('loads a project without reference and without model', async () => {
     const text = await workedState();
     const raw = JSON.parse(text) as { color: { reference: string | null }; model: unknown };
     raw.color.reference = null;
@@ -249,7 +249,7 @@ describe('useProjectStore', () => {
     expect(useSolveStore().model).toBeNull();
   });
 
-  it('fällt auf das gespeicherte Modell zurück, wenn die Neuberechnung nicht möglich ist', async () => {
+  it('falls back to the saved model when the recomputation is not possible', async () => {
     const text = await workedState();
     const raw = JSON.parse(text) as { color: { measurements: Record<string, Rgb> } };
     raw.color.measurements = { '1A': [0.5, 0.5, 0.5] };
@@ -260,7 +260,7 @@ describe('useProjectStore', () => {
     expect(useSolveStore().model).not.toBeNull();
   });
 
-  it('meldet fehlerhafte Dateien und lässt den bisherigen Stand unverändert', async () => {
+  it('reports faulty files and leaves the previous state unchanged', async () => {
     const project = useProjectStore();
     useChartStore().restore({ points: { 3: [{ x: 5, y: 6 }] }, measurements: {}, rotated: false });
     await project.load('{"format":"anderes"}');
@@ -270,7 +270,7 @@ describe('useProjectStore', () => {
     expect(useChartStore().points).toEqual({ 3: [{ x: 5, y: 6 }] });
   });
 
-  it('löscht eine frühere Fehlermeldung nach erfolgreichem Laden und Speichern', async () => {
+  it('clears an earlier error message after a successful load and save', async () => {
     const text = await workedState();
     const project = useProjectStore();
     await project.load('kaputt');

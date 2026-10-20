@@ -1,0 +1,19 @@
+{
+  "title": "Ergebnis der Farbkorrektur",
+  "before": "Vorher",
+  "after": "Nachher",
+  "meanError": "Mittlerer Fehler (ΔE2000)",
+  "maxError": "Größter Fehler (ΔE2000)",
+  "neutralMean": "Neutralfelder ({count}), Mittel",
+  "colorMean": "Farbfelder ({count}), Mittel",
+  "indistinct": "Die Kamera unterscheidet die hellsten Neutralfelder ({patches}) kaum: Ihre Lichter sind komprimiert oder gekappt. Das lässt sich in der Korrektur nicht ausgleichen. Schalte besser Automatiken der Kamera aus (HDR, Lichtkorrektur, automatische Belichtung) und stelle die Belichtung fest ein.",
+  "grayTitle": "Kontrolle mit den Graukarten",
+  "grayIntro": "Die großen Felder der Graukarten gehen nicht in die Berechnung ein. Ihre Abweichung vom Nennwert (ΔE2000, vorher → nachher) zeigt unabhängig, ob die Korrektur auch dort stimmt.",
+  "gray50": "Graukarte 50 %",
+  "gray18": "Graukarte 18 %",
+  "grayRow": "{name}: {before} → {after}",
+  "grayWarning": "Die Abweichung ist groß. Möglicherweise haben sich Licht oder die Automatik der Kamera zwischen den Aufnahmen der Graukarten und der Farbkarten geändert, oder die Nennwerte der Graukarten stimmen nicht genau.",
+  "tileHelp": "Je Feld: links Soll-Farbe, Mitte Kamera, rechts korrigiert. Unter dem Feld steht der Fehler vorher → nachher (ΔE2000, unter etwa 2 kaum sichtbar).",
+  "tileTitle": "{id}: ΔE {before} → {after}",
+  "tileLabel": "{id}: {before} → {after}"
+}

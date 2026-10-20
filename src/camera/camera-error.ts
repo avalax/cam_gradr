@@ -1,3 +1,5 @@
+import { t } from '../lang';
+
 export type CameraErrorCode =
   'unsupported' | 'permission-denied' | 'not-found' | 'in-use' | 'unsatisfiable' | 'unknown';
 
@@ -21,15 +23,14 @@ const NAME_TO_CODE: Readonly<Record<string, CameraErrorCode>> = {
   ConstraintNotSatisfiedError: 'unsatisfiable',
 };
 
-const MESSAGES: Readonly<Record<CameraErrorCode, string>> = {
-  unsupported:
-    'Kamerazugriff wird nicht unterstützt. Bitte einen aktuellen Browser über HTTPS oder localhost verwenden.',
-  'permission-denied':
-    'Der Zugriff auf die Kamera wurde verweigert. Bitte die Berechtigung im Browser erlauben.',
-  'not-found': 'Es wurde keine Kamera gefunden.',
-  'in-use': 'Die Kamera wird bereits von einer anderen Anwendung verwendet oder ist nicht lesbar.',
-  unsatisfiable: 'Die gewählte Kamera unterstützt die gewünschte Auflösung nicht.',
-  unknown: 'Die Kamera konnte nicht gestartet werden.',
+// Each text is looked up when needed, so a language switch applies to the next error.
+const MESSAGES: Readonly<Record<CameraErrorCode, () => string>> = {
+  unsupported: () => t('camera.errors.unsupported'),
+  'permission-denied': () => t('camera.errors.permissionDenied'),
+  'not-found': () => t('camera.errors.notFound'),
+  'in-use': () => t('camera.errors.inUse'),
+  unsatisfiable: () => t('camera.errors.unsatisfiable'),
+  unknown: () => t('camera.errors.unknown'),
 };
 
 export function toCameraError(error: unknown): CameraError {
@@ -41,5 +42,5 @@ export function toCameraError(error: unknown): CameraError {
 }
 
 export function describeCameraError(error: CameraError): string {
-  return MESSAGES[error.code];
+  return MESSAGES[error.code]();
 }

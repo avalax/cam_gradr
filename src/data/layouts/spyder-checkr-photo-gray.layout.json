@@ -1,11 +1,11 @@
 {
   "format": "cam_gradr-layout/2",
   "notes": [
-    "Layout aus Fotos der beiden Graukarten einer SCK300 abgeleitet (Karte 3 links, Karte 4 rechts im aufgeklappten Etui). Rechtecke sind relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links) und geschätzt.",
-    "Jede Graukarte hat ein großes Graufeld und einen Streifen mit 6 kleinen Feldern (Index 0 = oben = Schwarz, 5 = unten = fast Weiß). Karte 3: Streifen rechts vom Großfeld, Karte 4: Streifen links.",
-    "Große Felder: Nominalwerte aus der Reflexion berechnet (L* = 116*Y^(1/3) - 16), neutral. Keine Messwerte von Datacolor.",
-    "Zuordnung: Karte 3 (links, heller) = 50 %, Karte 4 (rechts, dunkler) = 18 %; Helligkeitsunterschied vom Nutzer bestätigt, auf den Karten ist keine Beschriftung sichtbar.",
-    "Karte 4 (rechts) nachgemessen an einem scharfen Foto: Großfeld x 0,345 / y 0,095 / Breite 0,57 / Höhe 0,81, Streifenfelder x 0,065 / Breite 0,185 / Höhe 0,112 mit denselben Zeilenabständen wie bei Karte 3 (Quelle der Zeilen: Helligkeitsprofil entlang der Karte)."
+    "Layout derived from photos of the two gray cards of an SCK300 (card 3 left, card 4 right in the opened case). Rectangles are relative to the outer card rectangle (0..1, origin top left) and estimated.",
+    "Each gray card has one large gray field and a strip of 6 small fields (index 0 = top = black, 5 = bottom = almost white). Card 3: strip to the right of the large field, card 4: strip on the left.",
+    "Large fields: nominal values computed from the reflectance (L* = 116*Y^(1/3) - 16), neutral. No measured values from Datacolor.",
+    "Assignment: card 3 (left, lighter) = 50 %, card 4 (right, darker) = 18 %; brightness difference confirmed by the user, no labeling is visible on the cards.",
+    "Card 4 (right) re-measured on a sharp photo: large field x 0.345 / y 0.095 / width 0.57 / height 0.81, strip fields x 0.065 / width 0.185 / height 0.112 with the same row spacing as card 3 (source of the rows: brightness profile along the card)."
   ],
   "cards": [
     {

@@ -6,6 +6,7 @@ import { useCameraStore } from '../camera/camera-store';
 import type { Frame } from '../camera/frame';
 import { useChartStore } from '../chart/chart-store';
 import type { Corners } from '../chart/types';
+import { setLocale } from '../lang';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
 
 import GrayStep from './GrayStep.vue';
@@ -29,7 +30,7 @@ function stillFrame(value: number): Frame {
   };
 }
 
-// Zwei hochkante Karten mit dunklem Rahmen und hellen Feldern auf ruhigem Hintergrund.
+// Two portrait cards with a dark frame and light patches on a calm background.
 function twoCardFrame(shift = 0): Frame {
   const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.6) };
   for (const x0 of [200 + shift, 760 + shift]) {
@@ -53,9 +54,9 @@ function toRgba(frame: Frame): Uint8ClampedArray {
   return rgba;
 }
 
-// Ersetzt die Canvas-Erzeugung für den Frame-Grabber; die Bilddaten werden bei jedem Auslesen neu erfragt.
+// Replaces the canvas creation for the frame grabber; image data is requested anew on every read.
 function mockGrabberData(next: () => Uint8ClampedArray) {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- Überladung für beliebige Tag-Namen
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- overload for arbitrary tag names
   const original = document.createElement.bind(document);
   const context = {
     drawImage: vi.fn(),
@@ -80,7 +81,7 @@ async function mountLive() {
 
 type Wrapper = Awaited<ReturnType<typeof mountLive>>;
 
-// Setzt die Eckpunkte beider Karten, wie es die automatische Erkennung tut.
+// Sets the corner points of both cards, as the automatic detection does.
 function placeAll() {
   const corners = CORNERS.map(([x, y]) => ({ x, y }));
   useChartStore().setCards([
@@ -116,7 +117,7 @@ describe('GrayStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('weist bei ausgeschalteter Kamera auf den Kameraschalter hin', () => {
+  it('points to the camera switch when the camera is off', () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     expect(wrapper.text()).toContain('Die Kamera ist aus');
@@ -125,7 +126,17 @@ describe('GrayStep', () => {
     expect(wrapper.find('select').exists()).toBe(false);
   });
 
-  it('zeigt beim Start keinen Wartetext, damit der Seitenaufbau ruhig bleibt', async () => {
+  it('shows the English texts when the language is English', () => {
+    installFakeCamera();
+    setLocale('en');
+    const wrapper = mount(GrayStep);
+    expect(wrapper.text()).toContain('The camera is off');
+    expect(wrapper.text()).toContain('Hold both gray cards steady in the frames');
+    expect(wrapper.text()).toContain('This tab sets the room brightness');
+    expect(wrapper.text()).toContain('No measurement yet.');
+  });
+
+  it('shows no waiting text at start so the page layout stays calm', async () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     await useCameraStore().start();
@@ -137,24 +148,24 @@ describe('GrayStep', () => {
     expect(wrapper.text()).not.toContain('einen Moment bitte');
   });
 
-  it('reserviert dem Video sein Seitenverhältnis, damit die Bildfläche beim Start nicht springt', async () => {
+  it('reserves the video its aspect ratio so the image area does not jump at start', async () => {
     const wrapper = await mountLive();
     expect(wrapper.get('video').attributes('style')).toContain('aspect-ratio: 1.77');
   });
 
-  it('verbindet den laufenden Stream mit dem Video', async () => {
+  it('connects the running stream to the video', async () => {
     const wrapper = await mountLive();
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
     expect(wrapper.text()).not.toContain('Die Kamera ist aus');
   });
 
-  it('begrenzt die Bildbreite, damit Bild und Knöpfe auf einen Bildschirm passen', async () => {
+  it('limits the image width so image and buttons fit on one screen', async () => {
     const wrapper = await mountLive();
     const style = wrapper.get('div.relative.min-w-0').attributes('style');
     expect(style).toContain('max-width: calc((100vh - 12rem) * 1.77');
   });
 
-  it('bindet Stream und vorhandenes Standbild beim Einhängen an', async () => {
+  it('binds stream and existing still image on mount', async () => {
     installFakeCamera();
     const camera = useCameraStore();
     await camera.start();
@@ -165,14 +176,14 @@ describe('GrayStep', () => {
     expect(button(wrapper, 'Zurück zum Livebild')).toBeUndefined();
   });
 
-  it('zeigt Fehler bei der Aufnahme an', async () => {
+  it('shows capture errors', async () => {
     const wrapper = await mountLive();
     useCameraStore().errorMessage = 'Aufnahme fehlgeschlagen.';
     await flushPromises();
     expect(wrapper.get('[role="alert"]').text()).toContain('Aufnahme fehlgeschlagen');
   });
 
-  it('zeigt die Eckpunkte nur auf dem Standbild und weist dort auf das Ziehen hin', async () => {
+  it('shows the corner points only on the still image and hints at dragging there', async () => {
     const wrapper = await mountLive();
     placeAll();
     await flushPromises();
@@ -183,7 +194,7 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('ziehe sie bei Bedarf');
   });
 
-  it('zeigt bei ausgeschalteter Kamera ohne Standbild nur den Platzhalter, auch mit Eckpunkten', async () => {
+  it('shows only the placeholder with the camera off and no still image, even with corner points', async () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     placeAll();
@@ -193,8 +204,8 @@ describe('GrayStep', () => {
     expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain('Beide Graukarten');
   });
 
-  describe('Suche mit gehaltenem Stand', () => {
-    it('hält beim Kamerastart Standbild und Eckpunkte und gibt sie beim Beenden zurück', async () => {
+  describe('search with held state', () => {
+    it('holds still image and corner points on camera start and restores them on stop', async () => {
       installFakeCamera();
       const wrapper = mount(GrayStep);
       const camera = useCameraStore();
@@ -207,7 +218,7 @@ describe('GrayStep', () => {
 
       await camera.start();
       await flushPromises();
-      // Das Livebild sucht neu: keine Eckpunkte, keine Umrisse, kein altes Standbild davor.
+      // The live view searches anew: no corner points, no outlines, no old still image before it.
       expect(chart.points).toEqual({});
       expect(chart.exposure).toBeNull();
       expect(camera.still).toBeNull();
@@ -215,7 +226,7 @@ describe('GrayStep', () => {
       expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
       expect(chart.committed().points[3]).toHaveLength(4);
 
-      // Ohne neue Eckpunkte gilt nach dem Beenden wieder der bisherige Stand.
+      // Without new corner points the previous state applies again after stopping.
       camera.stop();
       await flushPromises();
       expect(camera.still).not.toBeNull();
@@ -224,7 +235,7 @@ describe('GrayStep', () => {
       expect(chart.exposure).not.toBeNull();
     });
 
-    it('behält einen neuen Stand, wenn während der Suche neue Eckpunkte entstehen', async () => {
+    it('keeps a new state when new corner points appear during the search', async () => {
       installFakeCamera();
       mount(GrayStep);
       const camera = useCameraStore();
@@ -256,7 +267,7 @@ describe('GrayStep', () => {
       expect(chart.points[3]?.[0]).toEqual({ x: 10, y: 10 });
     });
 
-    it('beginnt auch dann eine Suche, wenn der Tab bei laufender Kamera geöffnet wird', async () => {
+    it('also starts a search when the tab is opened while the camera is running', async () => {
       installFakeCamera();
       const camera = useCameraStore();
       await camera.start();
@@ -265,18 +276,19 @@ describe('GrayStep', () => {
       await flushPromises();
       expect(useChartStore().points).toEqual({});
       wrapper.unmount();
-      // Beim Verlassen des Tabs kehrt der bisherige Stand zurück.
+      // Leaving the tab restores the previous state.
       expect(Object.keys(useChartStore().points)).toHaveLength(2);
     });
 
-    it('verwirft den gehaltenen Stand mit dem Papierkorb', async () => {
+    it('discards the held state with the trash button', async () => {
       installFakeCamera();
       const wrapper = mount(GrayStep);
       const camera = useCameraStore();
       camera.still = stillFrame(0.5);
       placeAll();
       await flushPromises();
-      // Der Papierkorb löscht Standbild und Eckpunkte und startet die Suche mit der Kamera neu.
+      // The trash button deletes still image and corner points and restarts the search with the
+      // camera.
       await button(wrapper, 'Eckpunkte löschen')?.trigger('click');
       await flushPromises();
       expect(camera.status).toBe('live');
@@ -287,7 +299,7 @@ describe('GrayStep', () => {
     });
   });
 
-  it('misst im Livebild nie, sondern nur auf Standbildern', async () => {
+  it('never measures in the live view, only on still images', async () => {
     vi.useFakeTimers();
     await mountLive();
     const chart = useChartStore();
@@ -300,7 +312,7 @@ describe('GrayStep', () => {
     expect(measure).toHaveBeenCalled();
   });
 
-  it('setzt per Klick keine Eckpunkte', async () => {
+  it('sets no corner points on click', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
@@ -308,7 +320,7 @@ describe('GrayStep', () => {
     expect(useChartStore().points).toEqual({});
   });
 
-  it('verschiebt einen Eckpunkt per Ziehen und beendet das Ziehen', async () => {
+  it('moves a corner point by dragging and ends the drag', async () => {
     const wrapper = await mountLive();
     placeAll();
     useCameraStore().still = stillFrame(0.5);
@@ -326,7 +338,7 @@ describe('GrayStep', () => {
     expect(first()).toEqual({ x: 300, y: 200 });
   });
 
-  it('nummeriert die Eckpunkte pro Karte', async () => {
+  it('numbers the corner points per card', async () => {
     const wrapper = await mountLive();
     placeAll();
     useCameraStore().still = stillFrame(0.5);
@@ -335,7 +347,7 @@ describe('GrayStep', () => {
     expect(labels).toEqual(['1', '2', '3', '4', '1', '2', '3', '4']);
   });
 
-  it('misst das Standbild, sobald alle Eckpunkte gesetzt sind, und zeigt das Messfeld', async () => {
+  it('measures the still image once all corner points are set, and shows the measuring field', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
@@ -349,7 +361,7 @@ describe('GrayStep', () => {
     expect(wrapper.findAll('polygon').length).toBeGreaterThan(10);
   });
 
-  it('misst bei einem neuen Standbild mit den vorhandenen Eckpunkten erneut', async () => {
+  it('measures again with the existing corner points on a new still image', async () => {
     await mountLive();
     const camera = useCameraStore();
     camera.still = stillFrame(0.3);
@@ -362,13 +374,13 @@ describe('GrayStep', () => {
     expect(useChartStore().exposure?.level18).toBeGreaterThan(dark ?? 1);
   });
 
-  it('zeigt neben dem Bild ein Messfeld für Helligkeit und Kontrast', async () => {
+  it('shows a measuring field for brightness and contrast next to the image', async () => {
     const wrapper = await mountLive();
     expect(wrapper.find('[data-testid="measure-field"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
-  it('zeigt im Livebild zwei beschriftete Rahmen, wo die Karten hingehalten werden sollen', async () => {
+  it('shows two labeled frames in the live view where the cards should be held', async () => {
     const wrapper = await mountLive();
     const guides = wrapper.findAll('[data-testid="guide"]');
     expect(guides).toHaveLength(2);
@@ -376,8 +388,26 @@ describe('GrayStep', () => {
     expect(guides[1]?.text()).toContain('rechte Graukarte (18 %)');
   });
 
-  describe('automatische Aufnahme im Livebild', { timeout: 30_000 }, () => {
-    // Einmal berechnet, weil die Automatik das Bild mehrfach ausliest.
+  it('shows the live view texts in English and the note for rotated cards', async () => {
+    setLocale('en');
+    const wrapper = await mountLive();
+    const guides = wrapper.findAll('[data-testid="guide"]');
+    expect(guides[0]?.text()).toContain('left gray card (50%)');
+    expect(guides[1]?.text()).toContain('right gray card (18%)');
+    expect(wrapper.get('[data-testid="auto-hint"]').text()).toContain(
+      'Hold the cards in the frames',
+    );
+    expect(wrapper.find('[data-testid="rotated-note"]').exists()).toBe(false);
+    useChartStore().rotated = true;
+    await flushPromises();
+    expect(wrapper.get('[data-testid="rotated-note"]').text()).toContain('rotated by 180°');
+    setLocale('de');
+    await flushPromises();
+    expect(wrapper.get('[data-testid="rotated-note"]').text()).toContain('um 180° gedreht');
+  });
+
+  describe('automatic capture in the live view', { timeout: 30_000 }, () => {
+    // Computed once, because the automatic mode reads the image several times.
     const cardsData = toRgba(twoCardFrame());
     const movedData = toRgba(twoCardFrame(120));
     const emptyData = new Uint8ClampedArray(1280 * 720 * 4).fill(153);
@@ -401,7 +431,7 @@ describe('GrayStep', () => {
       return wrapper;
     }
 
-    it('nimmt das Standbild selbst auf, setzt die Ecken und schaltet die Kamera aus', async () => {
+    it('captures the still image by itself, sets the corners and switches the camera off', async () => {
       const wrapper = await mountAuto(cards);
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(true);
       await vi.advanceTimersByTimeAsync(2500);
@@ -415,7 +445,7 @@ describe('GrayStep', () => {
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
     });
 
-    it('verwirft ein Standbild, das nicht zu den Ecken aus dem Livebild passt', async () => {
+    it('discards a still image that does not match the corners from the live view', async () => {
       let reads = 0;
       await mountAuto(() => (reads++ < 2 ? cards() : movedData));
       await vi.advanceTimersByTimeAsync(2500);
@@ -425,7 +455,7 @@ describe('GrayStep', () => {
       expect(useChartStore().points).toEqual({});
     });
 
-    it('wartet, bis die Karten ruhig gehalten werden', async () => {
+    it('waits until the cards are held steady', async () => {
       let reads = 0;
       await mountAuto(() => (reads++ < 1 ? cards() : movedData));
       await vi.advanceTimersByTimeAsync(2500);
@@ -436,7 +466,7 @@ describe('GrayStep', () => {
       expect(useChartStore().ready).toBe(true);
     });
 
-    it('wartet weiter, solange keine Karten zu sehen sind', async () => {
+    it('keeps waiting while no cards are visible', async () => {
       await mountAuto(empty);
       await vi.advanceTimersByTimeAsync(5000);
       expect(useCameraStore().still).toBeNull();
@@ -452,14 +482,14 @@ describe('GrayStep', () => {
       expect(useCameraStore().still).toBeNull();
     });
 
-    it('läuft nicht, wenn die Eckpunkte schon gesetzt sind', async () => {
+    it('does not run when the corner points are already set', async () => {
       await mountAuto(cards);
       placeAll();
       await vi.advanceTimersByTimeAsync(4000);
       expect(useCameraStore().still).toBeNull();
     });
 
-    it('wartet mit dem Suchen, bis das Video ein Bild liefert', async () => {
+    it('delays searching until the video delivers an image', async () => {
       vi.useFakeTimers();
       await mountLive();
       mockGrabberData(cards);
@@ -468,7 +498,7 @@ describe('GrayStep', () => {
     });
   });
 
-  it('beginnt mit „Eckpunkte löschen“ von vorn: Eckpunkte und Standbild fallen weg', async () => {
+  it('starts over with “Eckpunkte löschen”: corner points and still image are dropped', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
@@ -477,11 +507,11 @@ describe('GrayStep', () => {
     expect(useChartStore().points).toEqual({});
     expect(useCameraStore().still).toBeNull();
     expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
-    // Die Kamera läuft schon: kein neuer Start.
+    // The camera is already running: no new start.
     expect(useCameraStore().status).toBe('live');
   });
 
-  it('schaltet die Kamera mit „Eckpunkte löschen“ wieder ein, wenn sie aus ist', async () => {
+  it('switches the camera back on with “Eckpunkte löschen” when it is off', async () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     const camera = useCameraStore();
@@ -495,7 +525,7 @@ describe('GrayStep', () => {
     expect(camera.status).toBe('live');
   });
 
-  it('beginnt bei geänderter Auflösung neu, nicht bei gleicher oder fehlender', async () => {
+  it('starts over when the resolution changes, not when it is the same or missing', async () => {
     await mountLive();
     const camera = useCameraStore();
     const chart = useChartStore();
@@ -514,7 +544,7 @@ describe('GrayStep', () => {
     expect(chart.points).toEqual({});
   });
 
-  it('zeigt überbelichtete Lichter und unterbelichtete Schatten an', async () => {
+  it('shows overexposed highlights and underexposed shadows', async () => {
     const wrapper = await mountLive();
     useChartStore().exposure = {
       verdict: 'high-contrast',
@@ -530,7 +560,7 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('unterbelichtet');
   });
 
-  it('stoppt die Messung beim Entfernen', async () => {
+  it('stops the measurement on unmount', async () => {
     vi.useFakeTimers();
     const wrapper = await mountLive();
     const measure = vi.spyOn(useChartStore(), 'measure');

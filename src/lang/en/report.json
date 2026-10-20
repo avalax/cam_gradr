@@ -1,0 +1,19 @@
+{
+  "title": "Color correction result",
+  "before": "Before",
+  "after": "After",
+  "meanError": "Mean error (ΔE2000)",
+  "maxError": "Largest error (ΔE2000)",
+  "neutralMean": "Neutral patches ({count}), mean",
+  "colorMean": "Color patches ({count}), mean",
+  "indistinct": "The camera can hardly tell the brightest neutral patches ({patches}) apart: their highlights are compressed or clipped. The correction cannot compensate for this. Better turn off the camera automatics (HDR, light correction, auto exposure) and set the exposure manually.",
+  "grayTitle": "Check with the gray cards",
+  "grayIntro": "The large patches of the gray cards are not part of the calculation. Their deviation from the nominal value (ΔE2000, before → after) shows independently whether the correction is also right there.",
+  "gray50": "Gray card 50 %",
+  "gray18": "Gray card 18 %",
+  "grayRow": "{name}: {before} → {after}",
+  "grayWarning": "The deviation is large. The light or the camera automatics may have changed between the shots of the gray cards and the color cards, or the nominal values of the gray cards are not exact.",
+  "tileHelp": "Per patch: reference color on the left, camera in the middle, corrected on the right. Below the patch is the error before → after (ΔE2000, barely visible below about 2).",
+  "tileTitle": "{id}: ΔE {before} → {after}",
+  "tileLabel": "{id}: {before} → {after}"
+}

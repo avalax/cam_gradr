@@ -1,0 +1,23 @@
+{
+  "target": "Soll",
+  "camera": "Kamera",
+  "corrected": "korr.",
+  "grayAria": "Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur",
+  "tilesAria": "Farbfelder: Soll, Kamera und nach der Korrektur",
+  "deviationSummary": "Ø Abweichung {before} → {after}",
+  "zones": {
+    "shadows": "Schatten",
+    "midtones": "Mitten",
+    "highlights": "Lichter"
+  },
+  "channels": {
+    "red": "Rot",
+    "green": "Grün",
+    "blue": "Blau"
+  },
+  "brightness": {
+    "same": "gleich hell",
+    "brighter": "{points} heller",
+    "darker": "{points} dunkler"
+  }
+}

@@ -26,7 +26,7 @@ describe('trackHeight', () => {
     vi.unstubAllGlobals();
   });
 
-  it('meldet die gerundete Höhe und beendet die Beobachtung', () => {
+  it('reports the rounded height and ends the observation', () => {
     vi.stubGlobal('ResizeObserver', FakeObserver);
     const element = document.createElement('div');
     vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({ height: 452.4 } as DOMRect);

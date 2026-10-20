@@ -1,19 +1,20 @@
 import type { ExposureResult } from '../chart/exposure';
+import { t } from '../lang';
 
 import { oneDecimal } from './gray-wedge';
 import { mainIssue } from './measure-field';
 
 export type StatusLevel = 'off' | 'warn' | 'ok';
 
-// Status eines Tabs: Stufe, Füllung der Mini-Skala (0 bis 4 Striche) und ein kurzer Ergebnistext.
+// Status of a tab: level, fill of the mini scale (0 to 4 bars) and a short result text.
 export interface TabStatus {
   level: StatusLevel;
   fill: number;
   text: string;
 }
 
-// Mittlere Abweichung (ΔE2000) nach der Korrektur: bis hierher gut, bis zur zweiten Grenze ein Hinweis,
-// darüber deutlich zu hoch.
+// Mean error (ΔE2000) after the correction: good up to here, a hint up to the second limit,
+// clearly too high above that.
 const COLOR_GOOD = 2;
 const COLOR_FAIR = 5;
 
@@ -21,27 +22,30 @@ const FILL_OK = 4;
 const FILL_FAIR = 3;
 const FILL_POOR = 2;
 
-// Graukarten: grün nur, wenn der Messpunkt im Normalbereich liegt; sonst der wichtigste Hinweis.
+// Gray cards: green only if the measuring point is in the normal range; otherwise the most important hint.
 export function grayStatus(exposure: ExposureResult | null): TabStatus {
   if (exposure === null) {
-    return { level: 'off', fill: 0, text: 'Noch nicht gemessen' };
+    return { level: 'off', fill: 0, text: t('app.status.notMeasured') };
   }
   if (exposure.verdict === 'ok') {
-    return { level: 'ok', fill: FILL_OK, text: 'Licht passt' };
+    return { level: 'ok', fill: FILL_OK, text: t('app.status.lightOk') };
   }
   return {
     level: 'warn',
     fill: FILL_POOR,
-    text: mainIssue(exposure)?.label ?? 'Licht prüfen',
+    text: mainIssue(exposure)?.label ?? t('app.status.checkLight'),
   };
 }
 
-// Farbkarten: der Status folgt der mittleren Abweichung nach der Korrektur, nicht dem bloßen Berechnen.
+// Color cards: the status follows the mean error after the correction, not mere computation.
 export function colorStatus(report: { meanBefore: number; meanAfter: number } | null): TabStatus {
   if (report === null) {
-    return { level: 'off', fill: 0, text: 'Noch nicht berechnet' };
+    return { level: 'off', fill: 0, text: t('app.status.notComputed') };
   }
-  const text = `Ø ${oneDecimal(report.meanBefore)} → ${oneDecimal(report.meanAfter)}`;
+  const text = t('app.status.meanChange', {
+    before: oneDecimal(report.meanBefore),
+    after: oneDecimal(report.meanAfter),
+  });
   if (report.meanAfter <= COLOR_GOOD) {
     return { level: 'ok', fill: FILL_OK, text };
   }

@@ -1,11 +1,11 @@
 {
   "format": "cam_gradr-layout/2",
   "notes": [
-    "Nur Geometrie/Reihenfolge, aus Fotos einer SCK300 abgeleitet. Keine Farbwerte, keine Herstellerbezeichnungen.",
-    "Zwei Farbkarten im Hochformat, je 4 Spalten x 6 Reihen. Karte 1 = Spalten A-D, Karte 2 = Spalten E-H; Buchstabe = Spalte, Ziffer = Reihe von oben.",
-    "rect: Position und Größe des Feldes relativ zum äußeren Kartenrechteck (0..1, Ursprung oben links); aus Fotos geschätzt und per Overlay zu prüfen.",
-    "role \"neutral\": Felder der beiden Grauleitern (Spalte D und E); sie liefern Weißabgleich und Tonkurve.",
-    "Farbkarten nachgemessen an einem scharfen Foto (beide Karten um 180° gedreht gehalten): Felder der linken Karte (E–H) lagen etwa 3 % der Plattenbreite zu weit links, bei beiden Karten war der Zeilenabstand um etwa 0,5 % der Plattenhöhe zu groß; Feldbreite und -höhe blieben unverändert."
+    "Geometry and order only, derived from photos of an SCK300. No color values, no manufacturer designations.",
+    "Two color cards in portrait orientation, 4 columns x 6 rows each. Card 1 = columns A-D, card 2 = columns E-H; letter = column, digit = row from the top.",
+    "rect: position and size of the field relative to the outer card rectangle (0..1, origin top left); estimated from photos and to be checked with the overlay.",
+    "role \"neutral\": fields of the two gray ramps (columns D and E); they provide the white balance and the tone curve.",
+    "Color cards re-measured on a sharp photo (both cards held rotated by 180°): fields of the left card (E–H) were about 3 % of the plate width too far left, and on both cards the row spacing was about 0.5 % of the plate height too large; field width and height stayed unchanged."
   ],
   "cards": [
     {

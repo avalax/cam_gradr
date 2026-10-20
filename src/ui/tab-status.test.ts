@@ -18,33 +18,33 @@ function exposure(overrides: Partial<ExposureResult>): ExposureResult {
 }
 
 describe('grayStatus', () => {
-  it('ist offen ohne Messung', () => {
+  it('is open without a measurement', () => {
     expect(grayStatus(null)).toEqual({ level: 'off', fill: 0, text: 'Noch nicht gemessen' });
   });
 
-  it('ist grün im Normalbereich', () => {
+  it('is green in the normal range', () => {
     expect(grayStatus(exposure({}))).toEqual({ level: 'ok', fill: 4, text: 'Licht passt' });
   });
 
-  it('warnt mit dem wichtigsten Hinweis, wenn das Licht nicht passt', () => {
+  it('warns with the most important hint when the light does not fit', () => {
     const status = grayStatus(exposure({ verdict: 'too-dark', delta: -0.2 }));
     expect(status.level).toBe('warn');
     expect(status.fill).toBe(2);
     expect(status.text).toBe('Helligkeit zu niedrig');
   });
 
-  it('warnt auch dann, wenn es keinen einzelnen Hinweis gibt', () => {
+  it('also warns when there is no single hint', () => {
     const status = grayStatus(exposure({ verdict: 'too-bright' }));
     expect(status).toEqual({ level: 'warn', fill: 2, text: 'Licht prüfen' });
   });
 });
 
 describe('colorStatus', () => {
-  it('ist offen, solange nichts berechnet ist', () => {
+  it('is open as long as nothing is computed', () => {
     expect(colorStatus(null)).toEqual({ level: 'off', fill: 0, text: 'Noch nicht berechnet' });
   });
 
-  it('ist grün bis zu einer mittleren Abweichung von 2', () => {
+  it('is green up to a mean deviation of 2', () => {
     expect(colorStatus({ meanBefore: 5.1, meanAfter: 0.4 })).toEqual({
       level: 'ok',
       fill: 4,
@@ -53,7 +53,7 @@ describe('colorStatus', () => {
     expect(colorStatus({ meanBefore: 9, meanAfter: 2 }).level).toBe('ok');
   });
 
-  it('warnt darüber, stärker über 5', () => {
+  it('warns above that, more strongly above 5', () => {
     expect(colorStatus({ meanBefore: 9, meanAfter: 3.5 })).toEqual({
       level: 'warn',
       fill: 3,

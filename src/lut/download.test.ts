@@ -7,7 +7,7 @@ describe('downloadFile', () => {
     vi.restoreAllMocks();
   });
 
-  it('erzeugt einen Link mit Dateiname und löst den Download aus', async () => {
+  it('creates a link with file name and triggers the download', async () => {
     const create = vi.fn(() => 'blob:test');
     const revoke = vi.fn();
     Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });

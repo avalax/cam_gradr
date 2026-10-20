@@ -21,10 +21,10 @@ function check(model: ColorModel, patch: PatchLayout, measured: Measurements[str
   };
 }
 
-// Kontrolle mit den Graukarten: Die großen Felder (mit Nennwert) gehen nicht in die Berechnung ein.
-// Wie weit sie vor und nach der Korrektur vom Nennwert abweichen, zeigt unabhängig, ob die Tonkurve
-// auch dort stimmt, wo sie nicht angepasst wurde (oder ob sich das Licht zwischen den Aufnahmen
-// geändert hat).
+// Check with the gray cards: the large patches (with nominal value) do not enter the calculation.
+// How far they deviate from the nominal value before and after the correction independently shows
+// whether the tone curve is also right where it was not fitted (or whether the light changed
+// between the shots).
 export function checkGrayCards(
   model: ColorModel,
   measurements: Measurements,

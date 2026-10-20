@@ -1,4 +1,4 @@
-// Löst im Browser den Download einer Datei aus (Blob und unsichtbarer Link).
+// Triggers the download of a file in the browser (blob and invisible link).
 export function downloadFile(fileName: string, content: string, mimeType: string): void {
   const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
   const link = document.createElement('a');

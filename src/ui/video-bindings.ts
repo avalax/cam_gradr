@@ -3,17 +3,17 @@ import { averageFrames } from '../camera/frame';
 import type { Frame } from '../camera/frame';
 import { createVideoGrabber } from '../camera/video-grabber';
 
-// Startet die Wiedergabe. Wird das Element vorher entfernt (Tabwechsel), bricht play() ab; das ist
-// hier ohne Folgen.
+// Starts playback. If the element is removed beforehand (tab switch), play() aborts; that is
+// harmless here.
 async function play(element: HTMLVideoElement): Promise<void> {
   try {
     await element.play();
   } catch {
-    // Abgebrochene Wiedergabe ignorieren.
+    // Ignore aborted playback.
   }
 }
 
-// Verbindet einen Kamera-Stream mit dem Video-Element (falls vorhanden) und startet die Wiedergabe.
+// Connects a camera stream to the video element (if present) and starts playback.
 export function attachStream(element: HTMLVideoElement | null, stream: MediaStream | null): void {
   if (element !== null) {
     element.srcObject = stream;
@@ -23,7 +23,7 @@ export function attachStream(element: HTMLVideoElement | null, stream: MediaStre
   }
 }
 
-// Nimmt über das Video-Element ein Standbild auf (falls das Element vorhanden ist).
+// Captures a still image via the video element (if the element is present).
 export async function captureFromVideo(
   element: HTMLVideoElement | null,
   capture: (grabber: FrameGrabber) => Promise<void>,
@@ -33,7 +33,8 @@ export async function captureFromVideo(
   }
 }
 
-// Liest das aktuelle Videobild als Frame, solange das Video schon ein Bild liefert (sonst null).
+// Reads the current video image as a frame as long as the video already delivers an image (else
+// null).
 export function grabVideoFrame(element: HTMLVideoElement | null): Frame | null {
   return element !== null && element.videoWidth > 0
     ? averageFrames([createVideoGrabber(element, () => document.createElement('canvas')).grab()])

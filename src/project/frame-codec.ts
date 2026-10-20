@@ -1,7 +1,9 @@
 import type { Frame } from '../camera/frame';
+import { t } from '../lang';
 
-// Ein Standbild in der Projektdatei: RGB mit 8 Bit je Kanal, mit deflate gepackt und als Base64 geschrieben.
-// Das ist verlustfrei bis auf die Rundung auf 8 Bit (die Anzeige und Messung arbeiten ohnehin damit).
+// A still image in the project file: RGB with 8 bits per channel, packed with deflate and written as
+// Base64.
+// This is lossless apart from the rounding to 8 bits (display and measurement work with that anyway).
 export const FRAME_ENCODING = 'rgb8-deflate-base64';
 
 export interface EncodedFrame {
@@ -35,15 +37,15 @@ async function collect(reader: ReadableStreamDefaultReader<Uint8Array>): Promise
   return result;
 }
 
-// Schickt die Bytes durch den Packer oder Entpacker. Das Lesen läuft gleichzeitig mit dem Schreiben,
-// sonst staut sich der Strom.
+// Sends the bytes through the packer or unpacker. Reading runs concurrently with writing,
+// otherwise the stream backs up.
 async function pump(stream: CompressionStream | DecompressionStream, bytes: Bytes): Promise<Bytes> {
   const writer = stream.writable.getWriter();
   const writing = (async () => {
     await writer.write(bytes);
     await writer.close();
   })();
-  // Beide Seiten werden zusammen abgewartet: Bei defekten Daten scheitern beide, und keine Ablehnung
+  // Both sides are awaited together: with corrupt data both fail, and no rejection
   // bleibt unbehandelt.
   const [, output] = await Promise.all([writing, collect(stream.readable.getReader())]);
   return output;
@@ -87,10 +89,10 @@ export async function decodeFrame(encoded: EncodedFrame): Promise<Frame> {
   try {
     raw = await pump(new DecompressionStream('deflate'), fromBase64(encoded.data));
   } catch (error) {
-    throw new Error('Ein Standbild in der Datei lässt sich nicht lesen', { cause: error });
+    throw new Error(t('project.errors.frameUnreadable'), { cause: error });
   }
   if (raw.length !== encoded.width * encoded.height * CHANNELS) {
-    throw new RangeError('Ein Standbild in der Datei hat nicht die angegebene Größe');
+    throw new RangeError(t('project.errors.frameWrongSize'));
   }
   const data = new Float32Array(raw.length);
   for (const [index, value] of raw.entries()) {

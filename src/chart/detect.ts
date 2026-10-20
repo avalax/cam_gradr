@@ -3,31 +3,32 @@ import type { Frame } from '../camera/frame';
 import { sortCorners } from './corner-order';
 import type { Corners, Point } from './types';
 
-// Einfache Kartensuche ohne Bibliothek: Die Karten haben einen dunklen Rahmen um die Felder. Im
-// verkleinerten Graubild werden dunkle Flächen gesucht, die nicht am Bildrand liegen und ungefähr
-// das Seitenverhältnis einer hochkanten Karte haben. Die Ecken ergeben sich als Schnittpunkte von
-// vier Geraden, die an die geraden Seiten der Fläche angepasst werden (Aussparungen und runde Ecken
-// stören so kaum, und Schräglage und Perspektive bleiben erhalten). Ist eine Seite nicht gerade
-// (verwackeltes Bild) oder passen die beiden Karten nicht zueinander, gilt nichts als erkannt.
-// Welche Helligkeit "dunkel" ist, hängt vom Licht ab; deshalb werden mehrere Schwellen probiert,
-// bis genau die erwartete Zahl an Karten gefunden ist.
+// Simple chart detection without a library: the charts have a dark frame around the patches. In
+// the downscaled gray image, dark areas are searched that do not touch the image edge and have
+// roughly the aspect ratio of an upright chart. The corners result as intersections of four
+// lines fitted to the straight sides of the area (cutouts and rounded corners hardly disturb
+// this, and skew and perspective are preserved). If a side is not straight (blurred image) or
+// the two charts do not match each other, nothing counts as detected. Which brightness is
+// "dark" depends on the light, so several thresholds are tried until exactly the expected
+// number of charts is found.
 const MAX_WIDTH = 320;
 const THRESHOLDS = [0.25, 0.2, 0.3, 0.15, 0.35, 0.45, 0.4] as const;
-// Mindestgröße der dunklen Fläche (Anteil am Bild); die hellen Felder innen zählen nicht mit.
+// Minimum size of the dark area (fraction of the image); the bright patches inside do not
+// count.
 const MIN_DARK_SHARE = 0.01;
 const MIN_ASPECT = 0.45;
 const MAX_ASPECT = 0.85;
-// Von jeder Seite gehen nur die beiden Endstücke (zwischen 10 % und 30 % der Länge vom Ende) in die
-// Gerade ein: In der Mitte von Ober- und Unterkante liegen die Laschen der Karte, ganz am Ende die
-// runden Ecken.
+// Only the two end pieces of each side (between 10 % and 30 % of the length from the end) go
+// into the line: the tabs of the chart sit in the middle of the top and bottom edges, and the
+// rounded corners at the very end.
 const END_FROM = 0.1;
 const END_TO = 0.3;
-// Größte mittlere Abweichung der Randpunkte von ihrer Geraden, als Anteil der Kartengröße.
+// Largest mean deviation of the edge points from their line, as a fraction of the chart size.
 const MAX_EDGE_ERROR = 0.02;
-// Anteil der Randpunkte, der in die Gerade eingeht, und Zahl der Wiederholungen.
+// Fraction of edge points that go into the line, and number of repetitions.
 const KEEP_SHARE = 0.8;
 const TRIM_ROUNDS = 4;
-// Zwei Karten im selben Etui sind etwa gleich groß.
+// Two charts in the same case are about the same size.
 const MAX_SIZE_RATIO = 1.25;
 const LUMA = [0.2126, 0.7152, 0.0722] as const;
 
@@ -38,7 +39,7 @@ interface Gray {
   data: Float32Array;
 }
 
-// Gerade u = offset + slope * v (u: x bei den Seiten, y bei Ober- und Unterkante).
+// Line u = offset + slope * v (u: x for the sides, y for the top and bottom edges).
 interface Line {
   offset: number;
   slope: number;
@@ -74,7 +75,7 @@ function toGray(frame: Frame): Gray {
   return { width, height, scale, data };
 }
 
-// Nachbarn eines Pixels (4er-Nachbarschaft) innerhalb des Bildes.
+// Neighbors of a pixel (4-neighborhood) within the image.
 function neighboursOf(cell: number, width: number, height: number): number[] {
   const x = cell % width;
   const y = Math.floor(cell / width);
@@ -86,7 +87,7 @@ function neighboursOf(cell: number, width: number, height: number): number[] {
   ].filter((next) => next >= 0);
 }
 
-// Sammelt die zusammenhängende dunkle Fläche ab einem Startpixel (Pixelnummern).
+// Collects the connected dark area from a start pixel (pixel indices).
 function floodArea(gray: Gray, threshold: number, start: number, seen: Uint8Array): number[] {
   const { width, height, data } = gray;
   const cells: number[] = [];
@@ -104,7 +105,7 @@ function floodArea(gray: Gray, threshold: number, start: number, seen: Uint8Arra
   return cells;
 }
 
-// Eine Fläche, die den Bildrand berührt, ist angeschnitten und keine ganze Karte.
+// An area that touches the image edge is cut off and not a whole chart.
 function touchesBorder(cells: readonly number[], gray: Gray): boolean {
   return cells.some((cell) => {
     const x = cell % gray.width;
@@ -113,7 +114,7 @@ function touchesBorder(cells: readonly number[], gray: Gray): boolean {
   });
 }
 
-// Alle zusammenhängenden dunklen Flächen des Bildes, die groß genug sind und ganz im Bild liegen.
+// All connected dark areas of the image that are large enough and lie entirely within it.
 function darkAreas(gray: Gray, threshold: number): number[][] {
   const seen = new Uint8Array(gray.data.length);
   const minCells = MIN_DARK_SHARE * gray.data.length;
@@ -131,7 +132,7 @@ function darkAreas(gray: Gray, threshold: number): number[][] {
 
 type Sample = readonly [number, number];
 
-// Ausgleichsgerade u = offset + slope · v durch die Punkte.
+// Best-fit line u = offset + slope · v through the points.
 function leastSquares(list: readonly Sample[]): Line {
   const n = list.length;
   const meanV = list.reduce((sum, [v]) => sum + v, 0) / n;
@@ -144,9 +145,9 @@ function leastSquares(list: readonly Sample[]): Line {
   return { offset, slope, error };
 }
 
-// Gerade durch die Randpunkte. Aussparungen der Karte (Laschen oben und unten) liegen auf einer Seite
-// der Geraden und würden sie verziehen; deshalb werden mehrmals nur die am besten passenden Punkte
-// verwendet (getrimmte Ausgleichsrechnung).
+// Line through the edge points. Cutouts of the chart (tabs at the top and bottom) lie on one side
+// of the line and would distort it; therefore only the best-fitting points are used repeatedly
+// (trimmed least squares).
 function fitLine(points: readonly Sample[]): Line {
   const keep = Math.max(2, Math.ceil(points.length * KEEP_SHARE));
   let line = leastSquares(points);
@@ -164,7 +165,7 @@ function fitLine(points: readonly Sample[]): Line {
   return line;
 }
 
-// Nummern (Zeilen oder Spalten) der beiden Endstücke einer Seite, soweit die Fläche dort vorkommt.
+// Indices (rows or columns) of the two end pieces of a side, as far as the area exists there.
 function endIndices(extent: readonly number[]): number[] {
   const present = extent.map((_, index) => index).filter((index) => Number.isFinite(extent[index]));
   const first = Number(present[0]);
@@ -177,7 +178,7 @@ function endIndices(extent: readonly number[]): number[] {
   );
 }
 
-// Randpunkte der Fläche: je Zeile links und rechts, je Spalte oben und unten.
+// Edge points of the area: left and right per row, top and bottom per column.
 function edgeLines(cells: readonly number[], gray: Gray) {
   const { width, height } = gray;
   const left = Array.from({ length: height }, () => Infinity);
@@ -202,7 +203,7 @@ function edgeLines(cells: readonly number[], gray: Gray) {
   };
 }
 
-// Schnittpunkt einer Seite x = a + b·y mit Ober- oder Unterkante y = c + d·x.
+// Intersection of a side x = a + b·y with the top or bottom edge y = c + d·x.
 function cross(side: Line, edge: Line): Point {
   const x = (side.offset + side.slope * edge.offset) / (1 - side.slope * edge.slope);
   return { x, y: edge.offset + edge.slope * x };
@@ -212,7 +213,8 @@ function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-// Bestimmt Ecken und Maße einer Fläche; null, wenn sie keine hochkante Karte mit geraden Seiten ist.
+// Determines the corners and dimensions of an area; null if it is not an upright chart with
+// straight sides.
 function cardFrom(cells: readonly number[], gray: Gray): Card | null {
   const lines = edgeLines(cells, gray);
   const a = cross(lines.left, lines.top);
@@ -235,7 +237,7 @@ function similar(a: number, b: number): boolean {
   return Math.max(a, b) / Math.min(a, b) <= MAX_SIZE_RATIO;
 }
 
-// Zwei Karten müssen etwa gleich groß sein; bei anderer Zahl gibt es nichts zu vergleichen.
+// Two charts must be about the same size; with any other count there is nothing to compare.
 function fitTogether(cards: readonly Card[]): boolean {
   const [first, second] = cards;
   return (
@@ -245,9 +247,9 @@ function fitTogether(cards: readonly Card[]): boolean {
   );
 }
 
-// Sucht `count` Karten im Bild und gibt ihre Ecken von links nach rechts zurück. Findet sich nicht
-// genau diese Zahl plausibler, zueinander passender Karten, kommt null zurück und die Ecken müssen
-// von Hand gesetzt werden.
+// Searches for `count` charts in the image and returns their corners from left to right. If
+// exactly this number of plausible, matching charts is not found, null is returned and the
+// corners must be set by hand.
 export function detectCards(frame: Frame, count: number): Corners[] | null {
   const gray = toGray(frame);
   for (const threshold of THRESHOLDS) {
@@ -270,8 +272,8 @@ export function detectCards(frame: Frame, count: number): Corners[] | null {
   return null;
 }
 
-// Prüft, ob zwei Erkennungen (z. B. aus aufeinanderfolgenden Bildern) dieselben Karten an derselben
-// Stelle zeigen: jede Ecke darf höchstens `tolerance` Pixel abweichen.
+// Checks whether two detections (e.g. from consecutive images) show the same charts at the same
+// place: each corner may deviate by at most `tolerance` pixels.
 export function sameCards(
   a: readonly Corners[],
   b: readonly Corners[],

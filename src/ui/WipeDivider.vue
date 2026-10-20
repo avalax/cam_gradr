@@ -3,7 +3,7 @@ import { useTemplateRef } from 'vue';
 
 defineProps<{ label: string }>();
 
-// Lage des Strichs in Prozent der Breite (links davon steht das Original).
+// Position of the divider in percent of the width (the original is to its left).
 const position = defineModel<number>({ required: true });
 
 const FULL = 100;
@@ -34,7 +34,7 @@ function onMove(event: PointerEvent): void {
   }
 }
 
-// Pfeiltasten verschieben den Strich (mit Umschalt in größeren Schritten), Pos1/Ende springen an den Rand.
+// Arrow keys move the divider (larger steps with Shift), Home/End jump to the edge.
 function onKey(event: KeyboardEvent): void {
   const step = event.shiftKey ? BIG_STEP : STEP;
   const target: Record<string, number> = {
@@ -54,7 +54,7 @@ function onKey(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <!-- Wischer: Der Strich lässt sich ziehen oder per Tastatur verschieben; links davon steht das Original. -->
+  <!-- Wipe: the divider can be dragged or moved by keyboard; the original is to its left. -->
   <div
     ref="area"
     class="absolute inset-0 cursor-ew-resize touch-none select-none outline-offset-2 focus-visible:outline"

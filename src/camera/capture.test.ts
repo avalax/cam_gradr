@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { captureAveraged } from './capture';
 
 describe('captureAveraged', () => {
-  it('nimmt count Frames auf und wartet zwischen den Frames', async () => {
+  it('captures count frames and waits between the frames', async () => {
     const grab = vi.fn(() => ({ width: 1, height: 1, data: [255, 0, 0, 255] }));
     const nextFrame = vi.fn(() => Promise.resolve());
     const frame = await captureAveraged({ grab, nextFrame }, 3);
@@ -12,7 +12,7 @@ describe('captureAveraged', () => {
     expect([...frame.data]).toEqual([1, 0, 0]);
   });
 
-  it('wartet bei einem einzelnen Frame nicht', async () => {
+  it('does not wait for a single frame', async () => {
     const nextFrame = vi.fn(() => Promise.resolve());
     await captureAveraged(
       { grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }), nextFrame },

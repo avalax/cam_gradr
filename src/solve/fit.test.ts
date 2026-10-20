@@ -5,6 +5,7 @@ import type { Rgb } from '../chart/types';
 import { labToLinearSrgb, srgbToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
+import { setLocale } from '../lang';
 import { cameraCode } from '../test-support/synthetic-camera';
 import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -18,7 +19,7 @@ function referenceSet(ids = dummyIds()): ReferenceSet {
   };
 }
 
-// Der mitgelieferte Referenzsatz als ReferenceSet.
+// The bundled reference set as a ReferenceSet.
 function bundledReference(): ReferenceSet {
   return {
     name: bundledJson.name,
@@ -34,8 +35,8 @@ function measure(reference: ReferenceSet): Record<string, Rgb> {
   );
 }
 
-describe('Testdaten', () => {
-  it('liegen innerhalb des sRGB-Farbraums (sonst wäre keine Korrektur möglich)', () => {
+describe('test data', () => {
+  it('lie within the sRGB color space (otherwise no correction would be possible)', () => {
     for (const id of dummyIds()) {
       const linear = labToLinearSrgb(dummyLab(id));
       for (const value of linear) {
@@ -51,7 +52,7 @@ describe('fitColorModel', () => {
   const measurements = measure(reference);
   const result = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
 
-  it('weist den Fehler getrennt für Neutralfelder und Farbfelder aus', () => {
+  it('reports the error separately for neutral patches and color patches', () => {
     const { neutral, color } = result.report;
     expect(neutral?.count).toBe(NEUTRAL_IDS.size);
     expect(color?.count).toBe(dummyIds().length - NEUTRAL_IDS.size);
@@ -59,9 +60,9 @@ describe('fitColorModel', () => {
     expect(color?.meanAfter).toBeLessThan(color?.meanBefore ?? 0);
   });
 
-  it('gleicht komprimierte Lichter aus, ohne die hellen Neutralfelder zu verfärben', () => {
-    // Neutralleiter einer echten Webcam bei schwachem Licht: ab 2E sind die Lichter komprimiert
-    // (2E, 2D und 1D liefern fast denselben Wert, obwohl ihre Helligkeit weit auseinanderliegt).
+  it('compensates compressed highlights without tinting the bright neutral patches', () => {
+    // Neutral ladder of a real webcam in dim light: from 2E the highlights are compressed
+    // (2E, 2D and 1D give almost the same value although their brightness is far apart).
     const ladder: Record<string, Rgb> = {
       '6E': [0.025, 0.022, 0.035],
       '6D': [0.108, 0.113, 0.138],
@@ -92,11 +93,11 @@ describe('fitColorModel', () => {
     expect(compressed.report.neutral?.meanAfter).toBeLessThan(3.5);
   });
 
-  it('meldet keine unterscheidbaren Neutralfelder, wenn die Kamera sauber misst', () => {
+  it('reports no indistinguishable neutral patches when the camera measures cleanly', () => {
     expect(result.report.indistinct).toEqual([]);
   });
 
-  it('lässt eine Gruppe leer, wenn es keine solchen Felder gibt', () => {
+  it('leaves a group empty when there are no such patches', () => {
     const onlyNeutral = referenceSet([...NEUTRAL_IDS]);
     const gray = fitColorModel({
       measurements: measure(onlyNeutral),
@@ -107,14 +108,14 @@ describe('fitColorModel', () => {
     expect(gray.report.neutral?.count).toBe(NEUTRAL_IDS.size);
   });
 
-  it('macht die bekannte Verfälschung der künstlichen Webcam weitgehend rückgängig', () => {
+  it('largely undoes the known distortion of the artificial webcam', () => {
     expect(result.report.meanBefore).toBeGreaterThan(4);
     expect(result.report.meanAfter).toBeLessThan(1);
     expect(result.report.maxAfter).toBeLessThan(2.5);
     expect(result.report.meanAfter).toBeLessThan(result.report.meanBefore / 4);
   });
 
-  it('berichtet jedes Feld mit Fehler vorher und nachher', () => {
+  it('reports every patch with its error before and after', () => {
     expect(result.report.patches).toHaveLength(48);
     const patch = result.report.patches.find((entry) => entry.id === '3A');
     expect(patch?.before).toBeGreaterThan(0);
@@ -122,10 +123,10 @@ describe('fitColorModel', () => {
     expect(result.report.maxBefore).toBe(Math.max(...result.report.patches.map((p) => p.before)));
   });
 
-  it('lässt Grautöne grau und Weiß bei Weiß', () => {
+  it('keeps grays gray and white white', () => {
     for (const gray of [0.05, 0.2, 0.4, 0.6, 0.8, 1]) {
       const camera = cameraCode(
-        // neutraler Lab-Wert zur gewünschten Helligkeit
+        // neutral Lab value for the desired lightness
         srgbToLab([gray, gray, gray]),
       );
       const [r, g, b] = applyColorModel(result.model, camera);
@@ -135,7 +136,7 @@ describe('fitColorModel', () => {
     }
   });
 
-  it('hält Matrixzeilen bei Summe 1 und bleibt im Wertebereich', () => {
+  it('keeps matrix rows at sum 1 and stays within the value range', () => {
     for (const row of result.model.matrix) {
       expect(row[0] + row[1] + row[2]).toBeCloseTo(1, 10);
     }
@@ -148,7 +149,7 @@ describe('fitColorModel', () => {
     }
   });
 
-  it('funktioniert auch mit nur einem Teil der Felder', () => {
+  it('also works with only some of the patches', () => {
     const ids = dummyIds().filter((id, index) => NEUTRAL_IDS.has(id) || index % 3 === 0);
     const partial = referenceSet(ids);
     const fit = fitColorModel({
@@ -159,22 +160,22 @@ describe('fitColorModel', () => {
     expect(fit.report.meanAfter).toBeLessThan(fit.report.meanBefore);
   });
 
-  it('ignoriert Felder ohne Messwert', () => {
+  it('ignores patches without a measurement', () => {
     const fewer = { ...measurements };
     delete fewer['1A'];
     const fit = fitColorModel({ measurements: fewer, reference, neutralIds: NEUTRAL_IDS });
     expect(fit.report.patches.some((entry) => entry.id === '1A')).toBe(false);
   });
 
-  it('verarbeitet Kurven mit doppelten Messwerten und Ankern', () => {
-    // Weiß und eine hellere Stufe messen exakt gleich (geclippt), das Schwarz liegt über 0.
+  it('handles curves with duplicate measurements and anchors', () => {
+    // White and a lighter step measure exactly the same (clipped), the black is above 0.
     const clipped = { ...measurements, '1E': [1, 1, 1] as Rgb, '1D': [1, 1, 1] as Rgb };
     expect(() =>
       fitColorModel({ measurements: clipped, reference, neutralIds: NEUTRAL_IDS }),
     ).not.toThrow();
   });
 
-  it('nutzt ein gemessenes Schwarz bei 0 ohne zusätzlichen Ankerpunkt', () => {
+  it('uses a measured black at 0 without an additional anchor point', () => {
     const blackIsZero = { ...measurements, '6E': [0, 0, 0] as Rgb };
     const fit = fitColorModel({ measurements: blackIsZero, reference, neutralIds: NEUTRAL_IDS });
     for (const curve of fit.model.curves) {
@@ -183,7 +184,7 @@ describe('fitColorModel', () => {
     }
   });
 
-  it('wirft bei zu wenigen Feldern oder Neutralfeldern', () => {
+  it('throws with too few patches or neutral patches', () => {
     const few = referenceSet(['1D', '2D', '3D']);
     expect(() =>
       fitColorModel({ measurements: measure(few), reference: few, neutralIds: NEUTRAL_IDS }),
@@ -198,7 +199,7 @@ describe('fitColorModel', () => {
     ).toThrow('Zu wenige Messwerte');
   });
 
-  it('bleibt bei ununterscheidbaren Feldern nahe der Einheitsmatrix', () => {
+  it('stays close to the identity matrix for indistinguishable patches', () => {
     const flat: Record<string, Rgb> = Object.fromEntries(
       dummyIds().map((id) => [id, [0.5, 0.5, 0.5]]),
     );
@@ -206,5 +207,15 @@ describe('fitColorModel', () => {
     for (const [index, row] of fit.model.matrix.entries()) {
       expect(row[index]).toBeGreaterThan(0.5);
     }
+  });
+});
+
+describe('fitColorModel (English)', () => {
+  it('reports too few measurements in English', () => {
+    setLocale('en');
+    const few = referenceSet(['1D', '2D', '3D']);
+    expect(() =>
+      fitColorModel({ measurements: measure(few), reference: few, neutralIds: NEUTRAL_IDS }),
+    ).toThrow(/^Too few measurements: at least \d+ patches, \d+ of them neutral$/);
   });
 });

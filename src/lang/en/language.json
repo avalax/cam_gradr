@@ -1,0 +1,8 @@
+{
+  "title": "Language",
+  "label": "Language of the app",
+  "auto": "Automatic (browser)",
+  "summaryAuto": "{language} (automatic)",
+  "summary": "{language}",
+  "hint": "Automatic follows the language of your browser."
+}

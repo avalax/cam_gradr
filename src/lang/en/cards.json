@@ -1,0 +1,24 @@
+{
+  "stage": {
+    "starting": {
+      "title": "The camera is starting …",
+      "text": "One moment please."
+    },
+    "off": {
+      "title": "The camera is off",
+      "text": "Switch it on above with “Start camera”."
+    },
+    "toolbar": "Image actions",
+    "deleteCorners": "Delete corner points",
+    "deleteCornersTitle": "Delete the corner points and detect the cards again",
+    "autoHint": "Hold the cards in the frames. As soon as they are detected, the app captures the still image itself and turns the camera off.",
+    "rotated": "The cards are rotated by 180°. The assignment of the fields was adjusted accordingly.",
+    "detected": "The cards were detected and the still image was captured. Check the corner points and drag them into place if needed."
+  },
+  "gray": {
+    "intro": "This tab sets the room brightness. Turn the camera on above and hold both gray cards in the frames: the app detects them by itself and captures a still image. Check the corner points and drag them into place if needed. Then change the lighting and turn the camera on again until the dot in the measuring field next to the image is inside the framed normal range (details appear when you hover over the field). Measuring only happens on still images; starting the camera begins a new search, and if the camera ends without a new still image the old state comes back.",
+    "idle": "Hold both gray cards steady in the frames in front of the camera.",
+    "left": "left gray card (50%)",
+    "right": "right gray card (18%)"
+  }
+}

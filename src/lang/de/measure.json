@@ -1,0 +1,44 @@
+{
+  "noMeasurement": "Noch keine Messung.",
+  "normal": "Helligkeit und Kontrast befinden sich im Normalbereich.",
+  "aria": "Helligkeit und Kontrast: {hint}",
+  "caption": "Helligkeit der Graufelder im Bild (0 % schwarz, 100 % weiß)",
+  "percent": "{value} %",
+  "points": "{value} Punkte",
+  "target": "{level} (Soll {target})",
+  "tolerance": "Toleranz ±{value}",
+  "withTolerance": "{value} ({tolerance})",
+  "rows": {
+    "card18": "18 %-Karte",
+    "card50": "50 %-Karte",
+    "brightness": "Helligkeit",
+    "contrast": "Kontrast",
+    "highlights": "Lichter",
+    "shadows": "Schatten",
+    "overexposed": "überbelichtet",
+    "underexposed": "unterbelichtet",
+    "ok": "ok"
+  },
+  "issue": {
+    "tooDark": {
+      "label": "Helligkeit zu niedrig",
+      "hint": "Helligkeit erhöhen (Beleuchtung verstärken oder Belichtung der Kamera erhöhen). Danach den Kontrast prüfen."
+    },
+    "tooBright": {
+      "label": "Helligkeit zu hoch",
+      "hint": "Helligkeit verringern (Beleuchtung abschwächen oder Belichtung der Kamera verringern). Danach den Kontrast prüfen."
+    },
+    "lowContrast": {
+      "label": "Kontrast zu niedrig",
+      "hint": "Helligkeit passt. Kontrast erhöhen (Kontrast der Kamera erhöhen)."
+    },
+    "highContrast": {
+      "label": "Kontrast zu hoch",
+      "hint": "Helligkeit passt. Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden)."
+    },
+    "bothClipped": "Schatten unterbelichtet und Lichter überbelichtet: Kontrast verringern, das Licht gleichmäßiger ausrichten und Reflexe auf der Karte vermeiden.",
+    "shadowsCrushed": "Schatten unterbelichtet: erst die Helligkeit erhöhen (Beleuchtung verstärken oder Belichtung der Kamera erhöhen), bis das dunkelste Streifenfeld nicht mehr schwarz ist. Danach den Kontrast prüfen.",
+    "highlightsBright": "Lichter überbelichtet: Helligkeit verringern (Beleuchtung abschwächen oder Belichtung der Kamera verringern). Danach den Kontrast prüfen.",
+    "highlightsContrast": "Lichter überbelichtet: Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden)."
+  }
+}

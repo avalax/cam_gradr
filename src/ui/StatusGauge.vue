@@ -7,12 +7,12 @@ const props = defineProps<{ level: StatusLevel; fill: number }>();
 
 const BARS = [0, 1, 2, 3] as const;
 
-// Gefüllt: grün bei gutem Ergebnis, gelb bei einem Hinweis.
+// Filled: green for a good result, yellow for a hint.
 const filledClass = computed(() => (props.level === 'ok' ? 'bg-[#4f8f5b]' : 'bg-[#b8892f]'));
 </script>
 
 <template>
-  <!-- Mini-Skala aus vier Strichen; der Text im Tab nennt das Ergebnis, die Skala zeigt es nur an. -->
+  <!-- Mini scale of four bars; the text in the tab states the result, the scale only displays it. -->
   <span
     class="flex shrink-0 gap-0.5"
     aria-hidden="true"

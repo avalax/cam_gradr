@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { startPreviewLoop } from './preview-loop';
 
-// Zeitplaner zum Auslösen einzelner Bilder von Hand.
+// Scheduler for triggering single frames by hand.
 function manualScheduler() {
   const queue: (() => void)[] = [];
   return {
@@ -17,7 +17,7 @@ function manualScheduler() {
 }
 
 describe('startPreviewLoop', () => {
-  it('zeichnet bei jedem Durchlauf und plant den nächsten', () => {
+  it('draws on every pass and schedules the next one', () => {
     const scheduler = manualScheduler();
     const frame = vi.fn();
     startPreviewLoop(frame, scheduler.schedule, scheduler.cancel);
@@ -28,7 +28,7 @@ describe('startPreviewLoop', () => {
     expect(scheduler.pending()).toBe(1);
   });
 
-  it('hört nach dem Stopp auf und bricht den geplanten Durchlauf ab', () => {
+  it('stops after the stop call and cancels the scheduled pass', () => {
     const scheduler = manualScheduler();
     const frame = vi.fn();
     const stop = startPreviewLoop(frame, scheduler.schedule, scheduler.cancel);
@@ -40,7 +40,7 @@ describe('startPreviewLoop', () => {
     expect(scheduler.pending()).toBe(0);
   });
 
-  it('nutzt standardmäßig requestAnimationFrame', () => {
+  it('uses requestAnimationFrame by default', () => {
     const request = vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(7);
     const cancel = vi.spyOn(globalThis, 'cancelAnimationFrame').mockReturnValue(undefined);
     const stop = startPreviewLoop(vi.fn());

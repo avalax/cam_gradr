@@ -13,7 +13,7 @@ const slices = computed(() => (props.model === null ? null : lutSlices(props.mod
 </script>
 
 <template>
-  <!-- Vier Schnitte durch die LUT; ohne Farbkorrektur stehen graue Felder bereit. -->
+  <!-- Four slices through the LUT; without color correction, gray patches stand in. -->
   <div
     class="grid grid-cols-[repeat(4,minmax(0,5rem))] gap-2"
     data-testid="lut-slices"

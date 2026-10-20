@@ -11,13 +11,13 @@ function layoutWith(patch: unknown) {
   return { format: 'cam_gradr-layout/2', cards: [{ card: 1, patches: [patch] }] };
 }
 
-describe('parseLayout mit den mitgelieferten Dateien', () => {
-  it('liest das Farblayout: 2 Karten mit je 24 Feldern', () => {
+describe('parseLayout with the bundled files', () => {
+  it('reads the color layout: 2 charts with 24 patches each', () => {
     const layout = parseLayout(colorJson);
     expect(layout.cards.map((card) => card.patches.length)).toEqual([24, 24]);
   });
 
-  it('markiert die zwölf Neutralfelder der Farbkarten (Spalte D und E)', () => {
+  it('marks the twelve neutral patches of the color charts (columns D and E)', () => {
     const layout = parseLayout(colorJson);
     const neutral = layout.cards.flatMap((card) =>
       card.patches.filter((patch) => patch.role === 'neutral').map((patch) => patch.id),
@@ -29,7 +29,7 @@ describe('parseLayout mit den mitgelieferten Dateien', () => {
     );
   });
 
-  it('liest das Graulayout: 2 Karten mit je einem großen Feld und 6 Streifenfeldern', () => {
+  it('reads the gray layout: 2 charts with one large patch and 6 strip patches each', () => {
     const layout = parseLayout(grayJson);
     expect(layout.cards.map((card) => card.card)).toEqual([3, 4]);
     for (const card of layout.cards) {
@@ -39,8 +39,8 @@ describe('parseLayout mit den mitgelieferten Dateien', () => {
   });
 });
 
-describe('Nennwerte der Felder', () => {
-  it('liest nominalLab der großen Graufelder', () => {
+describe('nominal values of the patches', () => {
+  it('reads nominalLab of the large gray patches', () => {
     const layout = parseLayout(grayJson);
     const nominal = Object.fromEntries(
       layout.cards.flatMap((card) => card.patches.map((patch) => [patch.id, patch.nominalLab])),
@@ -50,7 +50,7 @@ describe('Nennwerte der Felder', () => {
     expect(nominal['S3-0']).toBeUndefined();
   });
 
-  it('lehnt ein nominalLab ohne drei Zahlen ab', () => {
+  it('rejects a nominalLab without three numbers', () => {
     expect(() => parseLayout(layoutWith({ id: 'a', rect, nominalLab: [1, 2] }))).toThrow(
       'nominalLab',
     );
@@ -60,50 +60,48 @@ describe('Nennwerte der Felder', () => {
   });
 });
 
-describe('parseLayout Fehlerfälle', () => {
-  it('lehnt falsches Format ab', () => {
-    expect(() => parseLayout(null)).toThrow('Ungültiges Layout-Format');
-    expect(() => parseLayout({ format: 'x', cards: [] })).toThrow('Ungültiges Layout-Format');
-    expect(() => parseLayout({ format: 'cam_gradr-layout/2' })).toThrow('Ungültiges Layout-Format');
+describe('parseLayout error cases', () => {
+  it('rejects a wrong format', () => {
+    expect(() => parseLayout(null)).toThrow('Invalid layout format');
+    expect(() => parseLayout({ format: 'x', cards: [] })).toThrow('Invalid layout format');
+    expect(() => parseLayout({ format: 'cam_gradr-layout/2' })).toThrow('Invalid layout format');
   });
 
-  it('lehnt ungültige Karten ab', () => {
-    expect(() => parseLayout({ format: 'cam_gradr-layout/2', cards: [1] })).toThrow(
-      'Ungültige Karte',
-    );
+  it('rejects invalid charts', () => {
+    expect(() => parseLayout({ format: 'cam_gradr-layout/2', cards: [1] })).toThrow('Invalid card');
     expect(() =>
       parseLayout({ format: 'cam_gradr-layout/2', cards: [{ card: 'a', patches: [] }] }),
-    ).toThrow('Ungültige Karte');
+    ).toThrow('Invalid card');
     expect(() =>
       parseLayout({ format: 'cam_gradr-layout/2', cards: [{ card: 1, patches: 5 }] }),
-    ).toThrow('Ungültige Karte');
+    ).toThrow('Invalid card');
   });
 
-  it('lehnt Felder ohne ID ab', () => {
-    expect(() => parseLayout(layoutWith(null))).toThrow('ohne gültige ID');
-    expect(() => parseLayout(layoutWith({ id: 5, rect }))).toThrow('ohne gültige ID');
-    expect(() => parseLayout(layoutWith({ id: '', rect }))).toThrow('ohne gültige ID');
+  it('rejects patches without an ID', () => {
+    expect(() => parseLayout(layoutWith(null))).toThrow('without a valid id');
+    expect(() => parseLayout(layoutWith({ id: 5, rect }))).toThrow('without a valid id');
+    expect(() => parseLayout(layoutWith({ id: '', rect }))).toThrow('without a valid id');
   });
 
-  it('lehnt fehlende oder ungültige Rechtecke ab', () => {
-    expect(() => parseLayout(layoutWith({ id: 'a' }))).toThrow('rect fehlt');
+  it('rejects missing or invalid rectangles', () => {
+    expect(() => parseLayout(layoutWith({ id: 'a' }))).toThrow('rect is missing');
     expect(() => parseLayout(layoutWith({ id: 'a', rect: { ...rect, w: 'x' } }))).toThrow(
-      'ungültige Zahlen',
+      'invalid numbers',
     );
     expect(() => parseLayout(layoutWith({ id: 'a', rect: { ...rect, x: NaN } }))).toThrow(
-      'ungültige Zahlen',
+      'invalid numbers',
     );
   });
 
-  it('lehnt Rechtecke außerhalb der Karte ab', () => {
+  it('rejects rectangles outside the chart', () => {
     for (const bad of [{ w: 0 }, { h: -1 }, { x: -0.1 }, { y: -0.1 }, { x: 0.9 }, { y: 0.9 }]) {
       expect(() => parseLayout(layoutWith({ id: 'a', rect: { ...rect, ...bad } }))).toThrow(
-        'nicht innerhalb',
+        'not inside the card',
       );
     }
   });
 
-  it('lehnt doppelte IDs ab', () => {
+  it('rejects duplicate IDs', () => {
     const doubled = {
       format: 'cam_gradr-layout/2',
       cards: [
@@ -116,10 +114,10 @@ describe('parseLayout Fehlerfälle', () => {
         },
       ],
     };
-    expect(() => parseLayout(doubled)).toThrow('Doppelte Feld-ID');
+    expect(() => parseLayout(doubled)).toThrow('Duplicate patch id');
   });
 
-  it('übernimmt role nur für bekannte Werte', () => {
+  it('adopts role only for known values', () => {
     const layout = parseLayout(layoutWith({ id: 'a', rect, role: 'large' }));
     expect(layout.cards[0]?.patches[0]?.role).toBe('large');
     expect(

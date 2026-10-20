@@ -1,15 +1,16 @@
 import type { Vec3 } from '../color/lab';
+import { t } from '../lang';
 
-// Referenzwerte der Farbfelder: Lab (D50) je Feld-ID. Kommt vom Nutzer, nicht aus dem Repo.
+// Reference values of the color fields: Lab (D50) per field ID. Comes from the user, not the repo.
 export interface ReferenceSet {
   name: string;
   patches: Readonly<Record<string, Vec3>>;
 }
 
 export interface ReferenceRules {
-  // Gültige Feld-IDs der Farbkarten.
+  // Valid field IDs of the color cards.
   knownIds: ReadonlySet<string>;
-  // Neutralfelder (Grauleitern), aus denen die Tonkurven entstehen.
+  // Neutral fields (gray ramps) from which the tone curves are built.
   neutralIds: ReadonlySet<string>;
 }
 
@@ -25,7 +26,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function toLab(values: readonly unknown[], where: string): Vec3 {
   const [l, a, b] = values;
   if ([l, a, b].some((value) => typeof value !== 'number' || !Number.isFinite(value))) {
-    throw new TypeError(`${where}: Lab-Werte sind keine Zahlen`);
+    throw new TypeError(t('reference.errors.notNumbers', { where }));
   }
   const lab = [l, a, b] as unknown as Vec3;
   if (
@@ -34,31 +35,29 @@ function toLab(values: readonly unknown[], where: string): Vec3 {
     Math.abs(lab[1]) > MAX_ABS_AB ||
     Math.abs(lab[2]) > MAX_ABS_AB
   ) {
-    throw new RangeError(`${where}: Lab-Wert außerhalb des gültigen Bereichs`);
+    throw new RangeError(t('reference.errors.labRange', { where }));
   }
   return lab;
 }
 
-// Prüft die gesammelten Felder gegen Regeln des Layouts und bildet den Datensatz.
+// Checks the collected fields against the layout's rules and builds the data set.
 function build(name: string, entries: [string, Vec3][], rules: ReferenceRules): ReferenceSet {
   const patches: Record<string, Vec3> = {};
   for (const [id, lab] of entries) {
     if (!rules.knownIds.has(id)) {
-      throw new RangeError(`Unbekannte Feld-ID: ${id}`);
+      throw new RangeError(t('reference.errors.unknownId', { id }));
     }
     if (Object.hasOwn(patches, id)) {
-      throw new RangeError(`Doppelte Feld-ID: ${id}`);
+      throw new RangeError(t('reference.errors.duplicateId', { id }));
     }
     patches[id] = lab;
   }
   const ids = Object.keys(patches);
   if (ids.length < MIN_PATCHES) {
-    throw new RangeError(`Zu wenige Felder: mindestens ${String(MIN_PATCHES)} nötig`);
+    throw new RangeError(t('reference.errors.tooFewPatches', { min: String(MIN_PATCHES) }));
   }
   if (ids.filter((id) => rules.neutralIds.has(id)).length < MIN_NEUTRAL) {
-    throw new RangeError(
-      `Zu wenige Neutralfelder (Grauleitern): mindestens ${String(MIN_NEUTRAL)} nötig`,
-    );
+    throw new RangeError(t('reference.errors.tooFewNeutral', { min: String(MIN_NEUTRAL) }));
   }
   return { name, patches };
 }
@@ -68,19 +67,22 @@ export function parseReferenceJson(text: string, rules: ReferenceRules): Referen
   try {
     raw = JSON.parse(text);
   } catch (error) {
-    throw new SyntaxError('Die Datei ist kein gültiges JSON', { cause: error });
+    throw new SyntaxError(t('reference.errors.invalidJson'), { cause: error });
   }
   if (!isRecord(raw) || raw.format !== FORMAT || !Array.isArray(raw.patches)) {
-    throw new TypeError(`Unbekanntes Format, erwartet wird "${FORMAT}"`);
+    throw new TypeError(t('reference.errors.unknownFormat', { format: FORMAT }));
   }
   if (raw.illuminant !== undefined && raw.illuminant !== 'D50') {
-    throw new RangeError('Es werden nur Lab-Werte mit Weißpunkt D50 unterstützt');
+    throw new RangeError(t('reference.errors.onlyD50'));
   }
   const entries = (raw.patches as unknown[]).map((patch): [string, Vec3] => {
     if (!isRecord(patch) || typeof patch.id !== 'string' || !Array.isArray(patch.lab)) {
-      throw new TypeError('Ein Feld braucht "id" und "lab"');
+      throw new TypeError(t('reference.errors.patchShape'));
     }
-    return [patch.id, toLab(patch.lab as unknown[], `Feld ${patch.id}`)];
+    return [
+      patch.id,
+      toLab(patch.lab as unknown[], t('reference.errors.patchWhere', { id: patch.id })),
+    ];
   });
   const name = typeof raw.name === 'string' && raw.name.trim() !== '' ? raw.name.trim() : 'Import';
   return build(name, entries, rules);
@@ -95,8 +97,8 @@ function detectDelimiter(line: string): string {
   return ',';
 }
 
-// CSV mit Spalten id, L, a, b (Trennzeichen Semikolon, Tab oder Komma; optionale Kopfzeile).
-// Bei Semikolon oder Tab ist auch das Dezimalkomma erlaubt.
+// CSV with columns id, L, a, b (separator semicolon, tab or comma; optional header row).
+// With semicolon or tab the decimal comma is also allowed.
 export function parseReferenceCsv(
   text: string,
   fileName: string,
@@ -108,7 +110,7 @@ export function parseReferenceCsv(
     .filter((line) => line !== '' && !line.startsWith('#'));
   const first = lines[0];
   if (first === undefined) {
-    throw new RangeError('Die Datei ist leer');
+    throw new RangeError(t('reference.errors.emptyFile'));
   }
   const delimiter = detectDelimiter(first);
   const entries: [string, Vec3][] = [];
@@ -121,22 +123,23 @@ export function parseReferenceCsv(
     const isHeader = index === 0 && values.some((value) => Number.isNaN(value));
     if (!isHeader) {
       if (values.length < 3) {
-        throw new TypeError(`Zeile ${String(index + 1)}: erwartet id, L, a, b`);
+        throw new TypeError(t('reference.errors.lineShape', { line: String(index + 1) }));
       }
-      entries.push([id, toLab(values, `Zeile ${String(index + 1)}`)]);
+      const where = t('reference.errors.lineWhere', { line: String(index + 1) });
+      entries.push([id, toLab(values, where)]);
     }
   }
   return build(fileName.replace(/\.[^.]*$/, '') || 'Import', entries, rules);
 }
 
-// Schreibt einen Satz im JSON-Format, das sich wieder importieren lässt.
+// Writes a set in the JSON format that can be imported again.
 export function serializeReferenceJson(set: ReferenceSet): string {
   const patches = Object.entries(set.patches).map(([id, lab]) => ({ id, lab }));
   return `${JSON.stringify({ format: FORMAT, name: set.name, illuminant: 'D50', patches }, null, 2)}
 `;
 }
 
-// Wählt das Format nach Dateiendung bzw. Inhalt.
+// Chooses the format by file extension or content.
 export function parseReferenceFile(
   fileName: string,
   text: string,
