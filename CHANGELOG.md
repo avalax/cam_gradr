@@ -2,18 +2,20 @@
 
 ## [1.2.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.1.0...cam-gradr-v1.2.0) (2026-10-20)
 
+The color correction can leave contrast and gamma alone, the card detection is more reliable and the wipe sliders are easier to read.
 
 ### Features
 
-* round wipe handle and a legend under the preview image ([#27](https://github.com/avalax/cam_gradr/issues/27)) ([8255415](https://github.com/avalax/cam_gradr/commit/82554152bb7fcfb3401050c1de3f8054f431b4cb))
-
+* **color:** new option "Contrast and gamma" (on by default) in the preview and the export tab, one shared setting. Switched off, the correction only balances the color and keeps the brightness; it applies to the `.cube` export and is saved in the project
+* **ui:** the wipe slider has a round handle with a double arrow, and a legend under the preview image says which side is the original and which the corrected one
 
 ### Bug Fixes
 
-* detect the cards more reliably and keep the shot's exposure in the correction ([#24](https://github.com/avalax/cam_gradr/issues/24)) ([c1fe563](https://github.com/avalax/cam_gradr/commit/c1fe5635f23d8ee4a965f02799de7b113de3fa1a))
-* grade the tab status scale over all four bars ([#26](https://github.com/avalax/cam_gradr/issues/26)) ([4744180](https://github.com/avalax/cam_gradr/commit/4744180af90b0246fe22737ac8885105e7cf8050))
-* hide the color wipe divider as long as there is no still image ([#29](https://github.com/avalax/cam_gradr/issues/29)) ([0371dbc](https://github.com/avalax/cam_gradr/commit/0371dbce7bf2b97ad7578de56d9a9b88ad3caad7))
-* hide the color wipe divider while the live image is shown ([#28](https://github.com/avalax/cam_gradr/issues/28)) ([c2dcc73](https://github.com/avalax/cam_gradr/commit/c2dcc73d27e47339673e02f9b73cdc67e4fc8544))
+* the cards are detected more reliably and the exposure of the shot is kept in the correction, so the result looks natural instead of filtered
+* the preview no longer turns cyan after toggling the correction, and the original can always be reached again
+* the gray tiles in the gray cards tab no longer jump when the correction is toggled
+* the tab status scale uses all four bars instead of two states
+* the wipe over the color cards is hidden as long as there is no still image, because there is nothing to compare yet
 
 ## [1.1.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.0.0...cam-gradr-v1.1.0) (2026-10-20)
 
