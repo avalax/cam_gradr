@@ -268,10 +268,14 @@ describe('fitColorModel', () => {
       tone: false,
     });
     for (const curve of plain.model.curves) {
-      expect(curve.xs).toEqual([0, 1]);
+      expect(curve.xs).toHaveLength(3);
       expect(curve.ys[0]).toBe(0);
     }
-    // The curve is a straight line, so mid and dark tones keep their ratio.
+    // White stays white, so blown-out highlights do not get a color.
+    for (const value of applyColorModel(plain.model, [1, 1, 1])) {
+      expect(value).toBeCloseTo(1, 3);
+    }
+    // Below the knee the curve is a straight line, so dark and mid tones keep their ratio.
     const [red] = plain.model.curves;
     const dark = applyColorModel(plain.model, [0.2, 0.2, 0.2]);
     const mid = applyColorModel(plain.model, [0.4, 0.4, 0.4]);

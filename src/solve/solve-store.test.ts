@@ -75,9 +75,9 @@ describe('the tone setting', () => {
     store.setTone(false);
     expect(store.tone).toBe(false);
     expect(store.model).not.toBe(withTone);
-    expect(store.model?.curves[0].xs).toEqual([0, 1]);
+    expect(store.model?.curves[0].xs).toHaveLength(3);
     store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
-    expect(store.model?.curves[0].xs).toEqual([0, 1]);
+    expect(store.model?.curves[0].xs).toHaveLength(3);
   });
 
   it('only remembers the setting without a calculation', () => {

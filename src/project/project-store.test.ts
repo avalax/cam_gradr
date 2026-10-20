@@ -308,6 +308,6 @@ describe('the tone setting in the project', () => {
     setActivePinia(createPinia());
     await useProjectStore().load(text);
     expect(useSolveStore().tone).toBe(false);
-    expect(useSolveStore().model?.curves[0].xs).toEqual([0, 1]);
+    expect(useSolveStore().model?.curves[0].xs).toHaveLength(3);
   });
 });

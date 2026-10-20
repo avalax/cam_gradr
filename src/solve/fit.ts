@@ -78,6 +78,10 @@ const EXPOSURE_TO = 0.6;
 const MAX_DEGREE = 3;
 // Largest brightening or darkening of a tone curve (factor), also beyond the measured range.
 const MAX_GAIN = 4;
+// Without the tone correction the curve is a straight line up to this knee (at most this value after
+// the factor), then it bends to white.
+const PLAIN_KNEE = 0.5;
+const PLAIN_KNEE_TOP = 0.9;
 const CURVE_POINTS = 48;
 const CURVE_FLOOR = 1e-3;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
@@ -312,12 +316,15 @@ function fitMatrix(pairs: readonly Pair[]): readonly [Vec3, Vec3, Vec3] {
   return rows as unknown as readonly [Vec3, Vec3, Vec3];
 }
 
-// Without a tone curve each channel only gets one factor (white balance) that brings its mid tones
-// to the exposure of the shot; a line through the origin leaves contrast and gamma as they are.
+// Without a tone curve each channel gets one factor (white balance) that brings its mid tones to
+// the exposure of the shot, so contrast and gamma stay as they are. Only above the knee the curve
+// bends so that it ends at white: a clipped white pixel must stay white, otherwise a factor below 1
+// turns every blown-out highlight into a colored one.
 function buildPlainCurve(blocks: readonly Block[], channel: number, gain: number): Curve {
   const level = (block: Block): number => Number(block.linear[channel]) / block.count;
   const factor = Math.min(Math.max(gain / midGain(blocks, level), 1 / MAX_GAIN), MAX_GAIN);
-  return { xs: [0, 1], ys: [0, factor] };
+  const knee = Math.min(PLAIN_KNEE, PLAIN_KNEE_TOP / factor);
+  return { xs: [0, knee, 1], ys: [0, factor * knee, 1] };
 }
 
 const evaluators = new WeakMap<ColorModel, readonly ((x: number) => number)[]>();

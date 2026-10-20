@@ -45,7 +45,7 @@ describe('CorrectionOptions', () => {
     expect(box.element.closest('label')?.getAttribute('title')).toBeNull();
     await box.setValue(false);
     expect(solve.tone).toBe(false);
-    expect(solve.model?.curves[0].xs).toEqual([0, 1]);
+    expect(solve.model?.curves[0].xs).toHaveLength(3);
     expect(wrapper.get('[data-testid="correction-summary"]').text()).toBe('Aktiv: Farbe');
     await box.setValue(true);
     expect(solve.model?.curves[0].xs.length).toBeGreaterThan(2);
