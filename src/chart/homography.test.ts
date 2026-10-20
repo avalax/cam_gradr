@@ -9,7 +9,7 @@ function expectPoint(actual: { x: number; y: number }, x: number, y: number) {
 }
 
 describe('homographyFromCorners', () => {
-  it('bildet ein achsparalleles Rechteck affin ab', () => {
+  it('maps an axis-aligned rectangle affinely', () => {
     const corners: Corners = [
       { x: 10, y: 20 },
       { x: 110, y: 20 },
@@ -22,7 +22,7 @@ describe('homographyFromCorners', () => {
     expectPoint(project(h, 0.5, 0.5), 60, 120);
   });
 
-  it('trifft bei perspektivischer Verzerrung alle vier Ecken', () => {
+  it('hits all four corners under perspective distortion', () => {
     const corners: Corners = [
       { x: 100, y: 50 },
       { x: 420, y: 80 },
@@ -36,7 +36,7 @@ describe('homographyFromCorners', () => {
     expectPoint(project(h, 0, 1), 60, 350);
   });
 
-  it('verschiebt die Mitte bei Perspektive zur fernen (schmalen) Kante', () => {
+  it('shifts the center toward the far (narrow) edge under perspective', () => {
     const corners: Corners = [
       { x: 0, y: 0 },
       { x: 100, y: 0 },
@@ -48,13 +48,13 @@ describe('homographyFromCorners', () => {
     expect(centre.y).toBeGreaterThan(50);
   });
 
-  it('lehnt Eckpunkte auf einer Linie ab', () => {
+  it('rejects corners on one line', () => {
     const corners: Corners = [
       { x: 0, y: 0 },
       { x: 10, y: 10 },
       { x: 20, y: 20 },
       { x: 5, y: 5 },
     ];
-    expect(() => homographyFromCorners(corners)).toThrow('auf einer Linie');
+    expect(() => homographyFromCorners(corners)).toThrow('lie on one line');
   });
 });

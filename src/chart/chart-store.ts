@@ -9,9 +9,9 @@ import { measureChart, exposureInput } from './measure';
 import type { Measurements } from './measure';
 import type { ChartLayout, Corners, PixelGrid, Point } from './types';
 
-// Reihenfolge der Graukarten bei der Eckpunktwahl: links (50 %), dann rechts (18 %).
+// Order of the gray cards when picking corners: left (50 %), then right (18 %).
 export const GRAY_CARD_ORDER = [3, 4] as const;
-// Reihenfolge der Farbkarten: links (Spalten A–D), dann rechts (Spalten E–H).
+// Order of the color charts: left (columns A–D), then right (columns E–H).
 const COLOR_CARD_ORDER = [1, 2] as const;
 export const CORNERS_PER_CARD = 4;
 
@@ -24,29 +24,29 @@ interface ChartStoreOptions {
   id: string;
   layout: ChartLayout;
   cardOrder: readonly number[];
-  // Paare (dunkelstes, hellstes Feld) einer Karte: an ihnen erkennt die App, ob die Karten um 180°
-  // gedreht gehalten werden (dann liegt das dunkle Feld unten statt oben).
+  // Pairs (darkest, brightest patch) of a chart: they let the app detect whether the charts are
+  // held rotated by 180° (the dark patch is then at the bottom instead of the top).
   orientation: readonly (readonly [string, string])[];
-  // Nur die Graukarten bewerten zusätzlich die Raumhelligkeit.
+  // Only the gray cards also rate the room brightness.
   assessLighting: boolean;
 }
 
-// Dreht die Ecken einer Karte um 180°: aus oben links wird unten rechts usw.
+// Rotates the corners of a chart by 180°: top left becomes bottom right, etc.
 function halfTurn([a, b, c, d]: Corners): Corners {
   return [c, d, a, b];
 }
 
 type CornerMap = Record<number, Corners | undefined>;
 
-// Eckpunkte und Messwerte einer Kartengruppe.
+// Corners and measurements of a chart group.
 interface ChartState {
   points: Record<number, Point[]>;
   measurements: Measurements;
   rotated: boolean;
 }
 
-// Karten um 180° gedreht: Die linke Karte im Bild ist dann die rechte Karte des Layouts und umgekehrt,
-// jeweils auf dem Kopf.
+// Charts rotated by 180°: the left chart in the image is then the right chart of the layout and
+// vice versa, each upside down.
 function turned(upright: CornerMap, order: readonly number[]): CornerMap {
   const [first = -1, second = -1] = order;
   const left = upright[first];
@@ -56,23 +56,23 @@ function turned(upright: CornerMap, order: readonly number[]): CornerMap {
     : { ...upright, [first]: halfTurn(right), [second]: halfTurn(left) };
 }
 
-// Zustand für eine Kartengruppe (Karten, Eckpunkte, Messwerte); eine Instanz je Schritt.
+// State for a chart group (charts, corners, measurements); one instance per step.
 function defineChartStore(options: ChartStoreOptions) {
   return defineStore(options.id, () => {
     const points = ref<Record<number, Point[]>>({});
     const measurements = shallowRef<Measurements>({});
     const exposure = shallowRef<ExposureResult | null>(null);
-    // Karten sind um 180° gedreht (aus den Messwerten erkannt).
+    // Charts are rotated by 180° (detected from the measurements).
     const rotated = ref(false);
-    // Während die Kamera nach neuen Karten sucht, bleibt der bisherige Stand (Eckpunkte und Messwerte
-    // zum Standbild) hier erhalten. Kommt kein neuer Stand zustande, kehrt der bisherige zurück.
+    // While the camera searches for new charts, the previous state (corners and measurements for
+    // the still image) is kept here. If no new state results, the previous one comes back.
     const held = shallowRef<ChartState | null>(null);
 
     function placed(card: number): Point[] {
       return points.value[card] ?? [];
     }
 
-    // Nächster freier Eckpunkt in der festen Reihenfolge, oder null, wenn alles gesetzt ist.
+    // Next free corner in the fixed order, or null if everything is set.
     const nextSlot = computed<CornerSlot | null>(() => {
       for (const card of options.cardOrder) {
         if (placed(card).length < CORNERS_PER_CARD) {
@@ -89,7 +89,7 @@ function defineChartStore(options: ChartStoreOptions) {
       for (const card of options.cardOrder) {
         const [a, b, c, d] = placed(card);
         if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
-          // Die Reihenfolge der Klicks ist egal: die Ecken werden selbst einsortiert.
+          // The order of the clicks does not matter: the corners are sorted automatically.
           result[card] = sortCorners([a, b, c, d]);
         }
       }
@@ -117,7 +117,7 @@ function defineChartStore(options: ChartStoreOptions) {
       }
     }
 
-    // Setzt die Ecken aller Karten auf einmal (automatische Erkennung), von links nach rechts.
+    // Sets the corners of all charts at once (automatic detection), from left to right.
     function setCards(found: readonly Corners[]): void {
       points.value = Object.fromEntries(
         options.cardOrder.map((card, index) => [card, [...(found[index] ?? [])]]),
@@ -131,7 +131,7 @@ function defineChartStore(options: ChartStoreOptions) {
       rotated.value = false;
     }
 
-    // Verwirft den Stand ganz, auch den gehaltenen.
+    // Discards the state entirely, including the held one.
     function reset(): void {
       held.value = null;
       clear();
@@ -145,13 +145,13 @@ function defineChartStore(options: ChartStoreOptions) {
       };
     }
 
-    // Der gültige Stand: während der Suche der gehaltene, sonst der aktuelle (zum Speichern im Projekt).
+    // The valid state: the held one during the search, otherwise the current one (for saving).
     function committed(): ChartState {
       return held.value ?? current();
     }
 
-    // Die Kamera beginnt zu suchen: Der bisherige Stand wird gehalten, die Eckpunkte verschwinden, damit
-    // ein neues Standbild mit neuen Eckpunkten entstehen kann.
+    // The camera starts searching: the previous state is held and the corners disappear so that
+    // a new still image with new corners can be created.
     function beginSearch(): void {
       if (held.value === null && Object.keys(points.value).length > 0) {
         held.value = current();
@@ -159,7 +159,7 @@ function defineChartStore(options: ChartStoreOptions) {
       }
     }
 
-    // Die Suche endet: Ohne neue Eckpunkte gilt wieder der bisherige Stand.
+    // The search ends: without new corners the previous state applies again.
     function endSearch(): void {
       const previous = held.value;
       held.value = null;
@@ -168,7 +168,7 @@ function defineChartStore(options: ChartStoreOptions) {
       }
     }
 
-    // Stellt gespeicherte Eckpunkte und Messwerte wieder her (Projekt laden).
+    // Restores saved corners and measurements (loading a project).
     function restore(state: ChartState): void {
       held.value = null;
       points.value = state.points;
@@ -180,7 +180,7 @@ function defineChartStore(options: ChartStoreOptions) {
       }
     }
 
-    // Misst die Felder im aktuellen Bild (bei den Graukarten zusätzlich die Raumhelligkeit).
+    // Measures the patches in the current image (for the gray cards also the room brightness).
     function orientationScore(found: Measurements): number {
       let score = 0;
       for (const [dark, light] of options.orientation) {
@@ -193,8 +193,8 @@ function defineChartStore(options: ChartStoreOptions) {
       return score;
     }
 
-    // Misst in beiden Lagen (aufrecht und um 180° gedreht) und nimmt die, in der die Streifenfelder von
-    // dunkel nach hell laufen; bei Gleichstand bleibt die bisherige Lage.
+    // Measures in both orientations (upright and rotated by 180°) and takes the one in which the
+    // strip patches run from dark to bright; on a tie the previous orientation stays.
     function measure(grid: PixelGrid): void {
       const straight = measureChart(options.layout, uprightCorners.value, grid);
       const flipped = measureChart(
@@ -247,7 +247,7 @@ export const useColorChartStore = defineChartStore({
   id: 'chart-color',
   layout: colorLayout,
   cardOrder: COLOR_CARD_ORDER,
-  // Grauleiter der Farbkarten: oben (Zeile 1) hell, unten (Zeile 6) dunkel.
+  // Gray ladder of the color charts: bright at the top (row 1), dark at the bottom (row 6).
   orientation: [
     ['6D', '1D'],
     ['6E', '1E'],

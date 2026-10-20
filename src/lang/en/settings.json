@@ -1,0 +1,8 @@
+{
+  "title": "Settings",
+  "sections": {
+    "camera": "Camera",
+    "reference": "Reference values"
+  },
+  "bundledSet": "Bundled set"
+}

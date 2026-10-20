@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import type { ExposureResult } from '../chart/exposure';
 
 import type { Edge } from './measure-field';
 import {
-  DETAIL_CAPTION,
+  detailCaption,
   detailRows,
   fieldHint,
   fieldPosition,
@@ -14,8 +15,9 @@ import {
 } from './measure-field';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
+const { t } = useI18n();
 
-// Die Meldung sitzt am Rand des Felds, zu dem die Messung abweicht: dunkle Linie mit grauem Etikett.
+// The message sits at the edge of the field the measurement deviates towards: dark line with gray label.
 const EDGE_CLASSES: Readonly<Record<Edge, string>> = {
   top: 'inset-x-0 top-0 border-b-[3px]',
   bottom: 'inset-x-0 bottom-0 border-t-[3px]',
@@ -23,10 +25,10 @@ const EDGE_CLASSES: Readonly<Record<Edge, string>> = {
   right: 'inset-y-0 right-0 border-l-[3px] [writing-mode:vertical-rl]',
 };
 
-// Fünf feine Graustufen senkrecht (hell = Helligkeit zu hoch, dunkel = zu niedrig), ähnlich dem
-// Zonensystem der Fotografie.
+// Five fine gray levels vertically (light = brightness too high, dark = too low), similar to the
+// zone system of photography.
 const BANDS = ['#fafafa', '#e9e9ec', '#d2d2d7', '#b7b7be', '#9a9aa2'] as const;
-// Nach links wird die Fläche heller und flacher, nach rechts dunkler und kontrastreicher.
+// To the left the area gets lighter and flatter, to the right darker and higher in contrast.
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
 
@@ -37,6 +39,7 @@ const boxStyle = {
   width: `${String(box.width)}%`,
   height: `${String(box.height)}%`,
 };
+const caption = computed(() => detailCaption());
 const hint = computed(() => fieldHint(props.exposure));
 const issue = computed(() => mainIssue(props.exposure));
 const markerStyle = computed(() => {
@@ -50,13 +53,13 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
 </script>
 
 <template>
-  <!-- Messfeld so hoch wie das Kamerabild: senkrecht die Helligkeit, waagerecht der Kontrast; Details beim Überfahren oder per Tastaturfokus. -->
+  <!-- Measuring field as tall as the camera image: brightness vertically, contrast horizontally; details on hover or keyboard focus. -->
   <div class="flex w-44 shrink-0 flex-col self-stretch">
     <div
       class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500 outline-offset-2 focus-visible:outline"
       tabindex="0"
       role="img"
-      :aria-label="`Helligkeit und Kontrast: ${hint}`"
+      :aria-label="t('measure.aria', { hint })"
       data-testid="measure-field"
     >
       <div class="absolute inset-0 overflow-hidden rounded-[inherit]">
@@ -65,7 +68,7 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
         </div>
         <div class="absolute inset-0" :style="{ background: CONTRAST_SHADE }"></div>
 
-        <!-- Normalbereich: so weit dürfen Helligkeit und Kontrast vom Soll abweichen. -->
+        <!-- Normal range: brightness and contrast may deviate this far from the target. -->
         <div
           class="pointer-events-none absolute rounded-sm border-2 border-zinc-900 bg-white/20 ring-2 ring-white/70"
           :class="exposure === null ? 'opacity-40' : ''"
@@ -73,7 +76,7 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
           data-testid="measure-ok-box"
         ></div>
 
-        <!-- Wichtigste Meldung am Rand, zu dem die Messung abweicht. -->
+        <!-- Most important message at the edge the measurement deviates towards. -->
         <div
           v-if="issue !== null"
           class="absolute flex items-center justify-center border-zinc-700 text-center bg-zinc-200 px-2 py-1.5 text-xs font-semibold leading-tight text-zinc-800"
@@ -98,7 +101,7 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
         data-testid="measure-details"
       >
         <p class="font-medium" data-testid="measure-hint">{{ hint }}</p>
-        <p v-if="rows.length > 0" class="mt-2 text-xs text-slate-300">{{ DETAIL_CAPTION }}</p>
+        <p v-if="rows.length > 0" class="mt-2 text-xs text-slate-300">{{ caption }}</p>
         <dl v-if="rows.length > 0" class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
           <template v-for="row in rows" :key="row.label">
             <dt class="text-slate-300">{{ row.label }}</dt>

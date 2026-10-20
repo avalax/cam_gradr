@@ -6,7 +6,7 @@ import type { ChartLayout, Corners, PixelGrid, Rgb } from './types';
 
 export type Measurements = Readonly<Record<string, Rgb>>;
 
-// Misst alle Felder der Karten, für die Eckpunkte vorliegen.
+// Measures all patches of the charts for which corners are available.
 export function measureChart(
   layout: ChartLayout,
   corners: Readonly<Record<number, Corners | undefined>>,
@@ -43,7 +43,7 @@ function pick(measurements: Measurements, ids: readonly string[]): Rgb[] {
 const STRIP_DARK_IDS = ['S3-0', 'S4-0'] as const;
 const STRIP_LIGHT_IDS = ['S3-5', 'S4-5'] as const;
 
-// Leitet aus den Messwerten die Eingabe der Belichtungsbewertung ab (null, wenn Felder fehlen).
+// Derives the exposure rating input from the measurements (null if patches are missing).
 export function exposureInput(measurements: Measurements): ExposureInput | null {
   const large18 = measurements.G18;
   const large50 = measurements.G50;

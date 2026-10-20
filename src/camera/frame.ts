@@ -4,7 +4,7 @@ export interface RawFrame {
   data: ArrayLike<number>;
 }
 
-// Gemittelter Frame: RGB, sRGB-codiert, Werte 0..1.
+// Averaged frame: RGB, sRGB-encoded, values 0..1.
 export interface Frame {
   width: number;
   height: number;
@@ -15,15 +15,15 @@ const CHANNELS_IN = 4;
 const CHANNELS_OUT = 3;
 const MAX_CODE = 255;
 
-// Mittelt mehrere gleich große RGBA-Frames zu einem RGB-Frame (Rauschreduktion).
+// Averages several RGBA frames of equal size into one RGB frame (noise reduction).
 export function averageFrames(frames: readonly RawFrame[]): Frame {
   const first = frames[0];
   if (first === undefined) {
-    throw new Error('Mindestens ein Frame wird benötigt.');
+    throw new Error('At least one frame is required.');
   }
   for (const frame of frames) {
     if (frame.width !== first.width || frame.height !== first.height) {
-      throw new Error('Alle Frames müssen die gleiche Größe haben.');
+      throw new Error('All frames must have the same size.');
     }
   }
   const scale = 1 / (frames.length * MAX_CODE);

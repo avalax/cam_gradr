@@ -3,16 +3,17 @@ import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Rgb } from './types';
 
 export interface ExposureConfig {
-  // Ab diesem Kanalwert (0..1) gilt das hellste Streifenfeld als geclippt.
+  // From this channel value (0..1) the brightest strip patch counts as clipped.
   highlightClip: number;
-  // Bis zu diesem Helligkeitswert (0..1) gilt das dunkelste Streifenfeld als abgesoffen.
+  // Up to this brightness value (0..1) the darkest strip patch counts as crushed.
   shadowFloor: number;
-  // Sollhelligkeit (sRGB-codiert, 0..1) der großen Felder: 18 % Reflexion ≈ 0,46, 50 % ≈ 0,74.
+  // Target brightness (sRGB-encoded, 0..1) of the large patches: 18 % reflectance ≈ 0.46,
+  // 50 % ≈ 0.74.
   target18: number;
   target50: number;
-  // Erlaubte mittlere Abweichung der großen Felder vom Sollwert.
+  // Allowed mean deviation of the large patches from the target value.
   tolerance: number;
-  // Erlaubte Abweichung des Abstands zwischen den beiden großen Feldern vom Sollabstand.
+  // Allowed deviation of the distance between the two large patches from the target distance.
   contrastTolerance: number;
 }
 
@@ -40,14 +41,14 @@ export interface ExposureResult {
   shadowsCrushed: boolean;
   level18: number;
   level50: number;
-  // Mittlere Abweichung der großen Felder vom Sollwert (positiv = zu hell).
+  // Mean deviation of the large patches from the target value (positive = too bright).
   delta: number;
-  // Abweichung des Abstands zwischen dem 50 %- und dem 18 %-Feld vom Sollabstand (positiv = zu viel
-  // Kontrast, negativ = zu flach).
+  // Deviation of the distance between the 50 % and the 18 % patch from the target distance
+  // (positive = too much contrast, negative = too flat).
   contrast: number;
 }
 
-// Helligkeit eines sRGB-codierten Farbwerts (Rec.709-Luminanz, wieder sRGB-codiert).
+// Brightness of an sRGB-encoded color value (Rec.709 luminance, sRGB-encoded again).
 export function codeLuma(rgb: Rgb): number {
   const [r, g, b] = rgb;
   return linearToSrgb(

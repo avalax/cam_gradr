@@ -21,14 +21,14 @@ describe('useSolveStore', () => {
     setActivePinia(createPinia());
   });
 
-  it('berechnet das Modell und den Fehlerbericht', () => {
+  it('computes the model and the error report', () => {
     const store = useSolveStore();
     store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
     expect(store.error).toBeNull();
     expect(store.result?.report.meanAfter).toBeLessThan(store.result?.report.meanBefore ?? 0);
   });
 
-  it('meldet zu wenige Messwerte und verwirft ein altes Ergebnis', () => {
+  it('reports too few measurements and discards an old result', () => {
     const store = useSolveStore();
     store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
     store.compute({ measurements: {}, reference, neutralIds: NEUTRAL_IDS });
@@ -37,7 +37,7 @@ describe('useSolveStore', () => {
     expect(store.error).toContain('Zu wenige Messwerte');
   });
 
-  it('stellt das Modell bereit, auch ohne Bericht nach dem Laden', () => {
+  it('provides the model, even without a report after loading', () => {
     const store = useSolveStore();
     store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
     const model = store.model;
@@ -52,7 +52,7 @@ describe('useSolveStore', () => {
     expect(store.error).toBeNull();
   });
 
-  it('setzt zurück', () => {
+  it('resets', () => {
     const store = useSolveStore();
     store.compute({ measurements: {}, reference, neutralIds: NEUTRAL_IDS });
     store.reset();

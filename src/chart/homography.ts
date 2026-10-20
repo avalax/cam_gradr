@@ -1,11 +1,11 @@
 import type { Corners, Point } from './types';
 
-// Projektive Abbildung vom Einheitsquadrat auf ein Viereck: [a, b, c, d, e, f, g, h].
+// Projective mapping from the unit square onto a quadrilateral: [a, b, c, d, e, f, g, h].
 export type Homography = readonly [number, number, number, number, number, number, number, number];
 
 const EPSILON = 1e-12;
 
-// Bildet (0,0) -> oben links, (1,0) -> oben rechts, (1,1) -> unten rechts, (0,1) -> unten links ab.
+// Maps (0,0) -> top left, (1,0) -> top right, (1,1) -> bottom right, (0,1) -> bottom left.
 export function homographyFromCorners(corners: Corners): Homography {
   const [p0, p1, p2, p3] = corners;
   const sx = p0.x - p1.x + p2.x - p3.x;
@@ -19,7 +19,7 @@ export function homographyFromCorners(corners: Corners): Homography {
   const dy2 = p3.y - p2.y;
   const denominator = dx1 * dy2 - dx2 * dy1;
   if (Math.abs(denominator) < EPSILON) {
-    throw new RangeError('Die Eckpunkte liegen auf einer Linie.');
+    throw new RangeError('The corner points lie on one line.');
   }
   const g = (sx * dy2 - dx2 * sy) / denominator;
   const h = (dx1 * sy - sx * dy1) / denominator;
@@ -35,7 +35,7 @@ export function homographyFromCorners(corners: Corners): Homography {
   ];
 }
 
-// Wendet die Abbildung auf einen Punkt (u, v) im Einheitsquadrat an.
+// Applies the mapping to a point (u, v) in the unit square.
 export function project(homography: Homography, u: number, v: number): Point {
   const [a, b, c, d, e, f, g, h] = homography;
   const w = g * u + h * v + 1;

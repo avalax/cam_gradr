@@ -1,0 +1,8 @@
+{
+  "title": "Sprache",
+  "label": "Sprache der App",
+  "auto": "Automatisch (Browser)",
+  "summaryAuto": "{language} (automatisch)",
+  "summary": "{language}",
+  "hint": "Automatisch folgt der Sprache deines Browsers."
+}

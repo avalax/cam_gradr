@@ -7,7 +7,7 @@ export interface DrawContext {
 
 const MAX_CODE = 255;
 
-// Zeichnet einen gemittelten RGB-Frame auf ein Canvas (Vorschau des Standbilds).
+// Draws an averaged RGB frame onto a canvas (preview of the still image).
 export function drawFrame(context: DrawContext, frame: Frame): void {
   const image = context.createImageData(frame.width, frame.height);
   const pixels = frame.width * frame.height;

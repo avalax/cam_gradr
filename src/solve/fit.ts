@@ -1,3 +1,4 @@
+import { t } from '../lang';
 import { deltaE2000, labToLinearSrgb, labToXyzD50, srgbToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
@@ -7,8 +8,8 @@ import type { ReferenceSet } from '../reference/reference';
 import { createPchip } from './pchip';
 import type { Curve } from './pchip';
 
-// Korrekturmodell: je Kanal eine Tonkurve (inklusive Weißabgleich) auf linearen Werten, danach
-// eine 3×3-Matrix, deren Zeilen sich zu 1 summieren (Neutral bleibt neutral).
+// Correction model: one tone curve per channel (including white balance) on linear values, then
+// a 3×3 matrix whose rows sum to 1 (neutral stays neutral).
 export interface ColorModel {
   curves: readonly [Curve, Curve, Curve];
   matrix: readonly [Vec3, Vec3, Vec3];
@@ -16,7 +17,7 @@ export interface ColorModel {
 
 interface PatchError {
   id: string;
-  // Soll-Farbe (Lab, D50) und gemessener Kamerawert (sRGB-codiert) des Feldes.
+  // Target color (Lab, D50) and measured camera value (sRGB-encoded) of the patch.
   reference: Vec3;
   measured: Rgb;
   before: number;
@@ -24,7 +25,7 @@ interface PatchError {
   neutral: boolean;
 }
 
-// Mittlerer Fehler einer Feldgruppe (Neutral- oder Farbfelder).
+// Mean error of a patch group (neutral or color patches).
 interface GroupStats {
   count: number;
   meanBefore: number;
@@ -37,10 +38,10 @@ interface FitReport {
   meanAfter: number;
   maxBefore: number;
   maxAfter: number;
-  // Getrennt nach Neutralfeldern (Grauleiter) und bunten Feldern; null, wenn es keine gibt.
+  // Separated into neutral patches (gray ladder) and colored patches; null if there are none.
   neutral: GroupStats | null;
   color: GroupStats | null;
-  // Neutralfelder, die die Kamera nicht mehr auseinanderhält (komprimierte oder gekappte Lichter).
+  // Neutral patches the camera can no longer tell apart (compressed or clipped highlights).
   indistinct: string[];
 }
 
@@ -50,7 +51,7 @@ export interface FitResult {
 }
 
 export interface FitInput {
-  // Gemessene Kamerawerte (sRGB-codiert, 0..1) je Feld-ID.
+  // Measured camera values (sRGB-encoded, 0..1) per patch ID.
   measurements: Readonly<Record<string, Rgb>>;
   reference: ReferenceSet;
   neutralIds: ReadonlySet<string>;
@@ -58,11 +59,12 @@ export interface FitInput {
 
 const MIN_NEUTRAL = 4;
 const MIN_PATCHES = 8;
-// Stärke der Regularisierung der Matrix zur Einheitsmatrix (relativ zur Feldanzahl).
+// Strength of the regularization of the matrix toward the identity (relative to the patch
+// count).
 const RIDGE = 1e-3;
 const SAME_X = 1e-6;
-// Flacher als dieser Anstieg der Kamerakennlinie (Kamerawert je Sollwert, im Idealfall etwa 1) kann
-// die Kamera benachbarte Neutralfelder kaum noch unterscheiden: Sie gelten dann als ein Block.
+// Below this slope of the camera response curve (camera value per target value, ideally about 1)
+// the camera can hardly distinguish neighboring neutral patches: they then count as one block.
 const MIN_RESPONSE_SLOPE = 0.1;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
   [1, 0, 0],
@@ -91,7 +93,7 @@ function samples(input: FitInput): Sample[] {
         measured,
         reference: lab,
         linear: [srgbToLinear(measured[0]), srgbToLinear(measured[1]), srgbToLinear(measured[2])],
-        // Neutralfelder haben als Ziel ein reines Grau gleicher Helligkeit.
+        // Neutral patches target a pure gray of the same lightness.
         target: isNeutral ? [gray, gray, gray] : labToLinearSrgb(lab),
         isNeutral,
       });
@@ -111,7 +113,7 @@ function blockLevel(block: Block): number {
   return (block.linear[0] + block.linear[1] + block.linear[2]) / (3 * block.count);
 }
 
-// Verschmilzt den obersten Block mit dem darunter, solange die Kamera beide nicht auseinanderhält.
+// Merges the topmost block with the one below as long as the camera cannot tell them apart.
 function mergeFlatTop(blocks: Block[]): void {
   const top = blocks.at(-1);
   const below = blocks.at(-2);
@@ -134,9 +136,9 @@ function mergeFlatTop(blocks: Block[]): void {
   }
 }
 
-// Fasst Neutralfelder zusammen, die die Kamera nicht mehr auseinanderhält (Lichter sind gekappt oder
-// komprimiert, oder die Messwerte fallen sogar wieder). Sonst sortieren die drei Kanäle diese Felder
-// verschieden, und die Kurven erzeugen einen Farbstich. Alle Kanäle teilen sich dieselben Blöcke.
+// Groups neutral patches the camera can no longer tell apart (highlights are clipped or
+// compressed, or the measured values even drop again). Otherwise the three channels order these
+// patches differently, and the curves produce a color cast. All channels share the same blocks.
 function poolNeutrals(neutrals: readonly Sample[]): Block[] {
   const sorted = neutrals.toSorted((a, b) => a.target[0] - b.target[0]);
   const blocks: Block[] = [];
@@ -152,8 +154,8 @@ function poolNeutrals(neutrals: readonly Sample[]): Block[] {
   return blocks;
 }
 
-// Stützpunkte einer Kanalkurve: Neutralfelder sortiert, gleiche x gemittelt, y nie fallend,
-// zusätzlich die Ankerpunkte (0, 0) und (1, 1), damit die ganze Skala abgedeckt ist.
+// Control points of a channel curve: neutral patches sorted, equal x averaged, y never falling,
+// plus the anchor points (0, 0) and (1, 1) so that the whole scale is covered.
 function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   const sorted = points.toSorted((a, b) => a[0] - b[0]);
   const merged: [number, number, number][] = [];
@@ -184,15 +186,15 @@ function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   return { xs, ys };
 }
 
-// Zeilenweise Kleinste-Quadrate-Schätzung der Matrix mit Nebenbedingung Zeilensumme = 1 und
-// schwacher Regularisierung zur Einheitsmatrix.
+// Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
+// weak regularization toward the identity matrix.
 interface Pair {
   corrected: Vec3;
   target: Vec3;
 }
 
-// Zeilenweise Kleinste-Quadrate-Schätzung der Matrix mit Nebenbedingung Zeilensumme = 1 und
-// schwacher Regularisierung zur Einheitsmatrix.
+// Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
+// weak regularization toward the identity matrix.
 function fitMatrix(pairs: readonly Pair[]): readonly [Vec3, Vec3, Vec3] {
   const lambda = RIDGE * pairs.length;
   const rows = IDENTITY.map((prior, row): Vec3 => {
@@ -211,7 +213,7 @@ function fitMatrix(pairs: readonly Pair[]): readonly [Vec3, Vec3, Vec3] {
       b1 += d1 * r;
       b2 += d2 * r;
     }
-    // Die Regularisierung hält die Determinante stets deutlich über 0.
+    // The regularization keeps the determinant well above 0 at all times.
     const det = a11 * a22 - a12 * a12;
     const m1 = (a22 * b1 - a12 * b2) / det;
     const m2 = (a11 * b2 - a12 * b1) / det;
@@ -235,7 +237,7 @@ function toCode(value: number): number {
   return linearToSrgb(Math.min(Math.max(value, 0), 1));
 }
 
-// Wendet das Modell auf einen sRGB-codierten Kamerawert an und liefert den korrigierten Wert.
+// Applies the model to an sRGB-encoded camera value and returns the corrected value.
 export function applyColorModel(model: ColorModel, code: Vec3): Vec3 {
   const [fr, fg, fb] = curveFunctions(model) as readonly [
     (x: number) => number,
@@ -285,7 +287,7 @@ export function fitColorModel(input: FitInput): FitResult {
   const neutrals = all.filter((sample) => sample.isNeutral);
   if (all.length < MIN_PATCHES || neutrals.length < MIN_NEUTRAL) {
     throw new RangeError(
-      `Zu wenige Messwerte: mindestens ${String(MIN_PATCHES)} Felder, davon ${String(MIN_NEUTRAL)} neutrale`,
+      t('solve.tooFewMeasurements', { patches: MIN_PATCHES, neutral: MIN_NEUTRAL }),
     );
   }
   const blocks = poolNeutrals(neutrals);

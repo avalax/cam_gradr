@@ -1,0 +1,33 @@
+{
+  "panel": {
+    "sourceBefore": "Der mitgelieferte Satz „{name}“ stammt aus dem Blogbeitrag",
+    "sourceAfter": "und ist keine Datei von Datacolor. Abweichungen zur eigenen Karte sind möglich. Er wird beim Start immer geladen; alle Sätze bleiben nur lokal im Browser.",
+    "activeSet": "Aktiver Satz",
+    "import": "Eigene Datei importieren (JSON oder CSV)",
+    "delete": "Satz löschen",
+    "download": "Satz herunterladen",
+    "saved": "Lokal im Browser gespeichert.",
+    "removed": "Satz „{name}“ lokal gelöscht."
+  },
+  "warnings": {
+    "loadFailed": "Gespeicherte Referenzen konnten nicht geladen werden.",
+    "saveFailed": "Der Satz konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
+    "removeFailed": "Der Satz konnte lokal nicht gelöscht werden."
+  },
+  "errors": {
+    "notNumbers": "{where}: Lab-Werte sind keine Zahlen",
+    "labRange": "{where}: Lab-Wert außerhalb des gültigen Bereichs",
+    "unknownId": "Unbekannte Feld-ID: {id}",
+    "duplicateId": "Doppelte Feld-ID: {id}",
+    "tooFewPatches": "Zu wenige Felder: mindestens {min} nötig",
+    "tooFewNeutral": "Zu wenige Neutralfelder (Grauleitern): mindestens {min} nötig",
+    "invalidJson": "Die Datei ist kein gültiges JSON",
+    "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\"",
+    "onlyD50": "Es werden nur Lab-Werte mit Weißpunkt D50 unterstützt",
+    "patchShape": "Ein Feld braucht \"id\" und \"lab\"",
+    "patchWhere": "Feld {id}",
+    "emptyFile": "Die Datei ist leer",
+    "lineWhere": "Zeile {line}",
+    "lineShape": "Zeile {line}: erwartet id, L, a, b"
+  }
+}

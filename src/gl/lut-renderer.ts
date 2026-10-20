@@ -1,16 +1,17 @@
+import { t } from '../lang';
 import type { Lut } from '../lut/lut';
 
 export const VERTEX_SHADER = `#version 300 es
 out vec2 vUv;
 void main() {
-  // Ein bildschirmfüllendes Dreieck ohne Vertexdaten.
+  // A full-screen triangle without vertex data.
   vec2 corner = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
   vUv = corner;
   gl_Position = vec4(corner * 2.0 - 1.0, 0.0, 1.0);
 }
 `;
 
-// Wendet die 3D-LUT auf jedes Pixel an. uSplit trennt Vorher (links) und Nachher (rechts).
+// Applies the 3D LUT to every pixel. uSplit separates before (left) and after (right).
 export const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 precision highp sampler3D;
@@ -22,7 +23,7 @@ in vec2 vUv;
 out vec4 outColor;
 void main() {
   vec3 original = texture(uImage, vUv).rgb;
-  // Auf Texelmitten abbilden, damit 0 und 1 genau die ersten und letzten Gitterpunkte treffen.
+  // Map to texel centers so that 0 and 1 hit exactly the first and last grid points.
   vec3 coord = original * ((uLutSize - 1.0) / uLutSize) + 0.5 / uLutSize;
   vec3 corrected = texture(uLut, coord).rgb;
   outColor = vec4(vUv.x < uSplit ? original : corrected, 1.0);
@@ -30,45 +31,45 @@ void main() {
 `;
 
 interface RenderOptions {
-  // Trennlinie als Anteil der Breite: links Original, rechts korrigiert (0 = alles korrigiert).
+  // Split line as a fraction of the width: original left, corrected right (0 = all corrected).
   split: number;
 }
 
-// Bildquellen, die sich sowohl in eine WebGL-Textur als auch auf eine 2D-Fläche zeichnen lassen.
+// Image sources that can be drawn both into a WebGL texture and onto a 2D surface.
 export type RenderSource = HTMLVideoElement | HTMLCanvasElement;
 
 export interface LutRenderer {
-  // Womit gezeichnet wird: Grafikkarte (WebGL2) oder Software auf der CPU.
+  // What is drawn with: the graphics card (WebGL2) or software on the CPU.
   kind: 'webgl2' | 'cpu';
-  // Größe der Zeichenfläche für eine Bildquelle dieser Größe.
+  // Size of the drawing surface for an image source of this size.
   outputSize: (source: { width: number; height: number }) => { width: number; height: number };
   setLut: (lut: Lut) => void;
   render: (source: RenderSource, options: RenderOptions) => void;
   dispose: () => void;
 }
 
-// WebGL liefert bei Ressourcenmangel null; das soll als verständlicher Fehler enden.
+// WebGL returns null when resources run out; this should end as an understandable error.
 function required<T>(value: T | null, what: string): T {
   if (value === null) {
-    throw new Error(`WebGL konnte ${what} nicht anlegen.`);
+    throw new Error(t('preview.errors.createFailed', { what }));
   }
   return value;
 }
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-  const shader = required(gl.createShader(type), 'einen Shader');
+  const shader = required(gl.createShader(type), t('preview.errors.shader'));
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   if (gl.getShaderParameter(shader, gl.COMPILE_STATUS) === false) {
     const log = gl.getShaderInfoLog(shader) ?? '';
     gl.deleteShader(shader);
-    throw new Error(`Shader konnte nicht übersetzt werden: ${log}`);
+    throw new Error(t('preview.errors.compileFailed', { log }));
   }
   return shader;
 }
 
 function link(gl: WebGL2RenderingContext): WebGLProgram {
-  const program = required(gl.createProgram(), 'ein Shader-Programm');
+  const program = required(gl.createProgram(), t('preview.errors.program'));
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
   const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
   gl.attachShader(program, vertex);
@@ -79,7 +80,7 @@ function link(gl: WebGL2RenderingContext): WebGLProgram {
   if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
     const log = gl.getProgramInfoLog(program) ?? '';
     gl.deleteProgram(program);
-    throw new Error(`Shader-Programm konnte nicht gelinkt werden: ${log}`);
+    throw new Error(t('preview.errors.linkFailed', { log }));
   }
   return program;
 }
@@ -91,7 +92,7 @@ function configureTexture(gl: WebGL2RenderingContext, target: number): void {
   gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
 
-// RGB-Gleitkommadaten der LUT als RGBA-Bytes (Alpha 255).
+// RGB float data of the LUT as RGBA bytes (alpha 255).
 function toRgba8(lut: Lut): Uint8Array {
   const count = lut.size ** 3;
   const bytes = new Uint8Array(count * 4);
@@ -105,12 +106,12 @@ function toRgba8(lut: Lut): Uint8Array {
   return bytes;
 }
 
-// Dünner Adapter um WebGL2: zeichnet ein Bild (Video, Canvas) mit angewandter 3D-LUT.
+// Thin adapter around WebGL2: draws an image (video, canvas) with the 3D LUT applied.
 export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
   const program = link(gl);
-  const vao = required(gl.createVertexArray(), 'ein Vertex-Array');
-  const imageTexture = required(gl.createTexture(), 'die Bildtextur');
-  const lutTexture = required(gl.createTexture(), 'die LUT-Textur');
+  const vao = required(gl.createVertexArray(), t('preview.errors.vertexArray'));
+  const imageTexture = required(gl.createTexture(), t('preview.errors.imageTexture'));
+  const lutTexture = required(gl.createTexture(), t('preview.errors.lutTexture'));
   const uniforms = {
     image: gl.getUniformLocation(program, 'uImage'),
     lut: gl.getUniformLocation(program, 'uLut'),
@@ -134,7 +135,7 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
       lutSize = lut.size;
       gl.bindTexture(gl.TEXTURE_3D, lutTexture);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      // 8 Bit je Kanal genügen für die Ausgabe und laufen überall, auch mit Software-GL.
+      // 8 bits per channel are enough for the output and work everywhere, even with software GL.
       gl.texImage3D(
         gl.TEXTURE_3D,
         0,
@@ -150,7 +151,7 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
     },
 
     render(source: RenderSource, options: RenderOptions): void {
-      // Der Ausschnitt folgt der Zeichenfläche, deren Größe sich mit dem Bild ändert.
+      // The viewport follows the drawing surface, whose size changes with the image.
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
       gl.useProgram(program);
       gl.bindVertexArray(vao);

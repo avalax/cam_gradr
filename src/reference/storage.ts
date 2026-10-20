@@ -1,6 +1,6 @@
 import type { ReferenceSet } from './reference';
 
-// Lokale Ablage der importierten Referenzsätze (nur im Browser des Nutzers).
+// Local storage of the imported reference sets (only in the user's browser).
 export interface ReferenceStorage {
   list: () => Promise<ReferenceSet[]>;
   save: (set: ReferenceSet) => Promise<void>;
@@ -16,7 +16,7 @@ function wrap<T>(request: IDBRequest<T>): Promise<T> {
       resolve(request.result);
     });
     request.addEventListener('error', () => {
-      reject(request.error ?? new Error('IndexedDB-Fehler'));
+      reject(request.error ?? new Error('IndexedDB error'));
     });
   });
 }
@@ -35,7 +35,7 @@ function done(transaction: IDBTransaction): Promise<void> {
       resolve();
     });
     transaction.addEventListener('error', () => {
-      reject(transaction.error ?? new Error('IndexedDB-Fehler'));
+      reject(transaction.error ?? new Error('IndexedDB error'));
     });
   });
 }

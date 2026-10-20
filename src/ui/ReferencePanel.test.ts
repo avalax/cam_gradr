@@ -41,7 +41,7 @@ describe('ReferencePanel', () => {
     download.mockReset();
   });
 
-  it('nennt die Quelle des mitgelieferten Satzes und dass er nicht vom Hersteller ist', () => {
+  it('names the source of the bundled set and that it is not from the manufacturer', () => {
     const wrapper = mount(ReferencePanel);
     const source = wrapper.get('[data-testid="reference-source"]');
     expect(source.text()).toContain('keine Datei von Datacolor');
@@ -49,7 +49,7 @@ describe('ReferencePanel', () => {
     expect(source.get('a').attributes('rel')).toBe('noopener noreferrer');
   });
 
-  it('bietet den mitgelieferten Satz als aktiven Satz an, ohne ihn löschen zu lassen', async () => {
+  it('offers the bundled set as the active set without allowing it to be deleted', async () => {
     const wrapper = await mountLoaded();
     const select = wrapper.get('[data-testid="reference-select"]');
     expect(select.text()).toContain(BUNDLED_NAME);
@@ -57,7 +57,7 @@ describe('ReferencePanel', () => {
     expect(button(wrapper, 'Satz herunterladen')).toBeDefined();
   });
 
-  it('importiert eine JSON-Datei und wählt sie', async () => {
+  it('imports a JSON file and selects it', async () => {
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
     expect(useReferenceStore().selected?.name).toBe('Mein Satz');
@@ -66,7 +66,7 @@ describe('ReferencePanel', () => {
     ).toBe('Mein Satz');
   });
 
-  it('zeigt, dass der Satz lokal gespeichert wurde', async () => {
+  it('shows that the set was saved locally', async () => {
     const wrapper = await mountLoaded();
     expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
     await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
@@ -76,7 +76,7 @@ describe('ReferencePanel', () => {
     expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
   });
 
-  it('importiert eine CSV-Datei', async () => {
+  it('imports a CSV file', async () => {
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'werte.csv', dummyReferenceCsv());
     expect(useReferenceStore().selected?.name).toBe('werte');
@@ -88,7 +88,7 @@ describe('ReferencePanel', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');
   });
 
-  it('macht ohne gewählte Datei nichts', async () => {
+  it('does nothing without a selected file', async () => {
     const wrapper = await mountLoaded();
     const input = wrapper.get('[data-testid="reference-file"]');
     Object.defineProperty(input.element, 'files', { value: [], configurable: true });
@@ -97,7 +97,7 @@ describe('ReferencePanel', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
   });
 
-  it('wechselt zwischen Sätzen und löscht eigene Sätze', async () => {
+  it('switches between sets and deletes custom sets', async () => {
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'a.json', dummyReferenceJson('Satz A'));
     await chooseFile(wrapper, 'b.json', dummyReferenceJson('Satz B'));
@@ -113,20 +113,20 @@ describe('ReferencePanel', () => {
     expect(wrapper.get('[data-testid="reference-removed"]').text()).toContain('Satz A');
   });
 
-  it('lädt den aktiven Satz als Datei herunter', async () => {
+  it('downloads the active set as a file', async () => {
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
     await button(wrapper, 'Satz herunterladen')?.trigger('click');
     expect(download).toHaveBeenCalledWith('Mein Satz.json', expect.any(String), 'application/json');
   });
 
-  it('zeigt eine Warnung, wenn der Speicher nicht funktioniert', async () => {
+  it('shows a warning when storage does not work', async () => {
     setReferenceStorage(null);
     const wrapper = await mountLoaded();
     expect(wrapper.get('[role="status"]').text()).toContain('geladen');
   });
 
-  it('zeigt vor dem Laden keine Knöpfe zum Satz', () => {
+  it('shows no set buttons before loading', () => {
     const wrapper = mount(ReferencePanel);
     expect(button(wrapper, 'Satz herunterladen')).toBeUndefined();
   });

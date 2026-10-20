@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
 import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
+import { t } from '../lang';
 import { APP_ID } from '../ui/app-info';
 import { downloadFile } from '../lut/download';
 
@@ -15,7 +16,7 @@ const rules = { knownIds: COLOR_IDS, neutralIds: NEUTRAL_IDS };
 
 const holder: { storage: ReferenceStorage | null } = { storage: null };
 
-// Austauschpunkt für Tests; im Betrieb wird IndexedDB des Browsers genutzt.
+// Swap point for tests; in operation the browser's IndexedDB is used.
 export function setReferenceStorage(next: ReferenceStorage | null): void {
   holder.storage = next;
 }
@@ -30,28 +31,28 @@ export const useReferenceStore = defineStore('reference', () => {
   const selectedName = ref<string | null>(null);
   const error = ref<string | null>(null);
   const warning = ref<string | null>(null);
-  // Name des Satzes, der zuletzt erfolgreich lokal gespeichert wurde.
+  // Name of the set that was last saved locally successfully.
   const lastSaved = ref<string | null>(null);
-  // Name des Satzes, der zuletzt erfolgreich aus dem lokalen Speicher gelöscht wurde.
+  // Name of the set that was last deleted from local storage successfully.
   const lastRemoved = ref<string | null>(null);
 
   const selected = computed(
     () => sets.value.find((set) => set.name === selectedName.value) ?? null,
   );
 
-  // Lädt die lokal gespeicherten Referenzsätze. Der mitgelieferte Satz ist immer dabei und
-  // vorgewählt, solange nichts anderes gewählt ist; ein gleichnamiger eigener Satz hat Vorrang.
+  // Loads the locally saved reference sets. The bundled set is always included and
+  // preselected as long as nothing else is selected; a custom set of the same name takes precedence.
   async function load(): Promise<void> {
     try {
       const stored = await storage().list();
-      // Zwischenzeitlich importierte Sätze gehen vor (das Laden kann länger dauern als ein Import).
+      // Sets imported in the meantime take precedence (loading can take longer than an import).
       const local = sets.value;
       sets.value = [
         ...stored.filter((set) => local.every((existing) => existing.name !== set.name)),
         ...local,
       ];
     } catch {
-      warning.value = 'Gespeicherte Referenzen konnten nicht geladen werden.';
+      warning.value = t('reference.warnings.loadFailed');
     }
     if (sets.value.every((set) => set.name !== BUNDLED_NAME)) {
       sets.value = [
@@ -62,7 +63,7 @@ export const useReferenceStore = defineStore('reference', () => {
     selectedName.value ??= BUNDLED_NAME;
   }
 
-  // Liest eine Datei, prüft sie und speichert sie lokal (ein Satz gleichen Namens wird ersetzt).
+  // Reads a file, validates it and saves it locally (a set of the same name is replaced).
   async function importFile(fileName: string, text: string): Promise<void> {
     error.value = null;
     warning.value = null;
@@ -74,16 +75,15 @@ export const useReferenceStore = defineStore('reference', () => {
         await storage().save(set);
         lastSaved.value = set.name;
       } catch {
-        warning.value =
-          'Der Satz konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.';
+        warning.value = t('reference.warnings.saveFailed');
       }
     } catch (error_) {
-      // Die Prüfung wirft ausschließlich Error-Objekte mit verständlicher Meldung.
+      // The validation throws only Error objects with an understandable message.
       error.value = (error_ as Error).message;
     }
   }
 
-  // Speichert den gewählten Satz als JSON-Datei, damit er sich später oder anderswo importieren lässt.
+  // Saves the selected set as a JSON file so it can be imported later or elsewhere.
   function downloadSelected(): void {
     const set = selected.value;
     if (set !== null) {
@@ -106,7 +106,7 @@ export const useReferenceStore = defineStore('reference', () => {
       await storage().remove(name);
       lastRemoved.value = name;
     } catch {
-      warning.value = 'Der Satz konnte lokal nicht gelöscht werden.';
+      warning.value = t('reference.warnings.removeFailed');
     }
   }
 

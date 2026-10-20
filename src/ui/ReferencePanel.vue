@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { useReferenceStore } from '../reference/reference-store';
 
+const { t } = useI18n();
 const references = useReferenceStore();
 const { sets, selected, error, warning, lastSaved, lastRemoved } = storeToRefs(references);
 
@@ -13,7 +15,7 @@ async function onFile(event: Event): Promise<void> {
   if (file !== undefined) {
     await references.importFile(file.name, await file.text());
   }
-  // Dieselbe Datei soll sich erneut wählen lassen.
+  // The same file should be selectable again.
   input.value = '';
 }
 
@@ -25,15 +27,14 @@ function onSelect(event: Event): void {
 <template>
   <div class="space-y-2">
     <p class="text-xs text-slate-600" data-testid="reference-source">
-      Der mitgelieferte Satz „{{ BUNDLED_NAME }}“ stammt aus dem Blogbeitrag
+      {{ t('reference.panel.sourceBefore', { name: BUNDLED_NAME }) }}
       <a :href="BUNDLED_SOURCE_URL" class="underline" target="_blank" rel="noopener noreferrer"
         >bartneck.de</a
       >
-      und ist keine Datei von Datacolor. Abweichungen zur eigenen Karte sind möglich. Er wird beim
-      Start immer geladen; alle Sätze bleiben nur lokal im Browser.
+      {{ t('reference.panel.sourceAfter') }}
     </p>
     <label class="flex flex-col text-sm">
-      Aktiver Satz
+      {{ t('reference.panel.activeSet') }}
       <select
         class="rounded border p-1"
         :value="selected?.name"
@@ -48,7 +49,7 @@ function onSelect(event: Event): void {
     <label
       class="flex cursor-pointer flex-col gap-1 rounded-md border-[1.5px] border-dashed border-zinc-400 bg-zinc-50 p-2 text-sm text-zinc-600 focus-within:outline focus-within:outline-2"
     >
-      Eigene Datei importieren (JSON oder CSV)
+      {{ t('reference.panel.import') }}
       <input
         type="file"
         accept=".json,.csv,application/json,text/csv"
@@ -64,7 +65,7 @@ function onSelect(event: Event): void {
         class="rounded border px-3 py-1 text-sm"
         @click="references.remove(selected.name)"
       >
-        Satz löschen
+        {{ t('reference.panel.delete') }}
       </button>
       <button
         type="button"
@@ -72,7 +73,7 @@ function onSelect(event: Event): void {
         data-testid="reference-download"
         @click="references.downloadSelected()"
       >
-        Satz herunterladen
+        {{ t('reference.panel.download') }}
       </button>
     </div>
     <p
@@ -80,10 +81,10 @@ function onSelect(event: Event): void {
       class="text-xs text-slate-600"
       data-testid="reference-saved"
     >
-      Lokal im Browser gespeichert.
+      {{ t('reference.panel.saved') }}
     </p>
     <p v-if="lastRemoved !== null" class="text-xs text-slate-600" data-testid="reference-removed">
-      Satz „{{ lastRemoved }}“ lokal gelöscht.
+      {{ t('reference.panel.removed', { name: lastRemoved }) }}
     </p>
     <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
     <p v-if="warning !== null" class="text-sm text-amber-800" role="status">{{ warning }}</p>

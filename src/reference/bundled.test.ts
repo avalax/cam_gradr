@@ -6,7 +6,7 @@ import { BUNDLED_NAME, BUNDLED_SOURCE_URL, bundledReferenceText } from './bundle
 import { parseReferenceJson } from './reference';
 
 describe('mitgelieferter Referenzsatz', () => {
-  it('ist ein gültiger Satz mit allen 48 Farbfeldern', () => {
+  it('is a valid set with all 48 color fields', () => {
     const set = parseReferenceJson(bundledReferenceText(), {
       knownIds: COLOR_IDS,
       neutralIds: NEUTRAL_IDS,

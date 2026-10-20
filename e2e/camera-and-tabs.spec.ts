@@ -1,10 +1,13 @@
 import { expect, test } from './support/fixtures';
 
-// Akzeptanztests für die Bedienung: Tabs, der Kameraschalter neben den Tabs und die Kameraeinstellungen
-// im Zahnrad-Menü.
+// Acceptance tests for the operation: tabs, the camera switch next to the tabs and the camera
+// settings in the gear menu. The browser locale is de-DE by default, so the assertions check the
+// German interface.
 
 test.describe('Tabs', () => {
-  test('Alle Tabs sind sofort frei anwählbar, zuerst steht Graukarten offen', async ({ app }) => {
+  test('All tabs can be selected freely right away, the gray cards tab is open first', async ({
+    app,
+  }) => {
     await app.open();
 
     await expect(app.page.getByRole('tab')).toHaveCount(4);
@@ -21,7 +24,7 @@ test.describe('Tabs', () => {
     await expect(app.page.getByTestId('export-no-model')).toBeVisible();
   });
 
-  test('Bild und Seitenspalte haben auf Graukarten, Farbkarten und Vorschau dieselbe Größe und Lage', async ({
+  test('Image and side column have the same size and position on gray cards, color cards and preview', async ({
     app,
   }) => {
     await app.open();
@@ -39,7 +42,7 @@ test.describe('Tabs', () => {
     }
   });
 
-  test('Der Inhaltsbereich ist auf allen vier Tabs gleich hoch', async ({ app }) => {
+  test('The content area has the same height on all four tabs', async ({ app }) => {
     await app.open();
     const heights: number[] = [];
     for (const tab of ['Graukarten', 'Farbkarten', 'Vorschau', 'Export'] as const) {
@@ -53,15 +56,15 @@ test.describe('Tabs', () => {
     }
   });
 
-  test('Ohne Kamera weisen die Kartentabs auf den Kameraschalter hin', async ({ app }) => {
+  test('Without a camera the card tabs point to the camera switch', async ({ app }) => {
     await app.open();
 
     await expect(app.page.getByText('Die Kamera ist aus')).toBeVisible();
   });
 });
 
-test.describe('Kameraschalter', () => {
-  test('Der Schalter startet und stoppt die Kamera, ohne den Tab zu wechseln', async ({ app }) => {
+test.describe('Camera switch', () => {
+  test('The switch starts and stops the camera without changing the tab', async ({ app }) => {
     await app.open();
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
     await expect(app.cameraSwitch).toHaveText('Kamera starten');
@@ -80,10 +83,12 @@ test.describe('Kameraschalter', () => {
     await expect(app.page.getByText('Die Kamera ist aus')).toBeVisible();
   });
 
-  test('Die Bildfläche behält beim Kamerastart ihre Größe, nichts flackert', async ({ app }) => {
+  test('The image area keeps its size when the camera starts, nothing flickers', async ({
+    app,
+  }) => {
     await app.open();
     await app.openTab('Graukarten');
-    // Merkt sich jede Größe der Bildfläche, die während des Starts und der Aufnahme auftritt.
+    // Remembers every size of the image area that occurs during the start and the capture.
     const watcher = await app.page.evaluateHandle(() => {
       const sizes: string[] = [];
       const stage = document.querySelector('.relative.min-w-0.flex-1');
@@ -104,7 +109,7 @@ test.describe('Kameraschalter', () => {
     expect(sizes).toHaveLength(1);
   });
 
-  test('Die Kamera läuft beim Wechsel der Tabs weiter', async ({ app }) => {
+  test('The camera keeps running when switching tabs', async ({ app }) => {
     await app.open();
     await app.startCamera();
     await app.openTab('Farbkarten');
@@ -113,7 +118,7 @@ test.describe('Kameraschalter', () => {
     await expect(app.cameraSwitch).toHaveAttribute('data-status', 'live');
   });
 
-  test('Kameraauswahl, Auflösung und Hinweis zur Automatik liegen im Zahnrad-Menü', async ({
+  test('Camera selection, resolution and the note on automatic mode are in the gear menu', async ({
     app,
   }) => {
     await app.open();
@@ -129,18 +134,18 @@ test.describe('Kameraschalter', () => {
     await expect(app.page.getByText('Aktive Auflösung')).toBeVisible();
   });
 
-  test('Ein Standbild bleibt nach dem Ausschalten der Kamera sichtbar', async ({ app }) => {
+  test('A still image stays visible after the camera is turned off', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    // Die App schaltet die Kamera nach der automatischen Aufnahme selbst aus.
+    // The app turns the camera off by itself after the automatic capture.
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
 
     await expect(app.page.locator('canvas')).toBeVisible();
     await expect(app.button('Eckpunkte löschen')).toBeVisible();
   });
 
-  test('Jeder Tab behält sein Standbild beim Wechsel zwischen den Tabs', async ({ app }) => {
+  test('Each tab keeps its still image when switching between tabs', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();

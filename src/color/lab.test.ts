@@ -11,7 +11,7 @@ import {
 } from './lab';
 import type { Vec3 } from './lab';
 
-// Deterministische Pseudozufallswerte, damit die Tests reproduzierbar bleiben.
+// Deterministic pseudo-random values so that the tests stay reproducible.
 function sequence(seed: number): () => number {
   let state = seed;
   return () => {
@@ -25,29 +25,29 @@ function referenceDelta(a: Vec3, b: Vec3): number {
 }
 
 describe('deltaE2000', () => {
-  // Testdaten aus Sharma, Wu, Dalal (2005): (Lab1, Lab2, erwartetes ΔE00).
+  // Test data from Sharma, Wu, Dalal (2005): (Lab1, Lab2, expected ΔE00).
   it.each([
     [[50, 2.6772, -79.7751], [50, 0, -82.7485], 2.0425],
     [[50, -1.3802, -84.2814], [50, 0, -82.7485], 1],
     [[50, 0, 0], [50, -1, 2], 2.3669],
     [[50, 2.49, -0.001], [50, -2.49, 0.0009], 7.1792],
     [[60.2574, -34.0099, 36.2677], [60.4626, -34.1751, 39.4387], 1.2644],
-  ] as const)('stimmt mit den Literaturwerten überein (%#)', (first, second, expected) => {
+  ] as const)('matches the literature values (%#)', (first, second, expected) => {
     expect(deltaE2000(first, second)).toBeCloseTo(expected, 3);
   });
 
-  it('ist 0 für gleiche Farben und symmetrisch', () => {
+  it('is 0 for equal colors and symmetric', () => {
     expect(deltaE2000([40, 10, -20], [40, 10, -20])).toBe(0);
     const a: Vec3 = [30, 40, 10];
     const b: Vec3 = [70, -20, 60];
     expect(deltaE2000(a, b)).toBeCloseTo(deltaE2000(b, a), 10);
   });
 
-  it('behandelt neutrale Farben ohne Farbton', () => {
+  it('treats neutral colors as having no hue', () => {
     expect(deltaE2000([50, 0, 0], [60, 0, 0])).toBeGreaterThan(0);
   });
 
-  it('stimmt mit colorjs.io für zufällige Farbpaare überein', () => {
+  it('matches colorjs.io for random color pairs', () => {
     const next = sequence(42);
     for (let index = 0; index < 300; index++) {
       const a: Vec3 = [next() * 100, next() * 200 - 100, next() * 200 - 100];
@@ -58,7 +58,7 @@ describe('deltaE2000', () => {
 });
 
 describe('Lab-Umrechnung', () => {
-  it('stimmt für sRGB-Farben mit colorjs.io (Lab, D50) überein', () => {
+  it('matches colorjs.io (Lab, D50) for sRGB colors', () => {
     const next = sequence(7);
     for (let index = 0; index < 100; index++) {
       const code: Vec3 = [next(), next(), next()];
@@ -70,7 +70,7 @@ describe('Lab-Umrechnung', () => {
     }
   });
 
-  it('bildet Weiß auf L = 100 und Schwarz auf L = 0 ab', () => {
+  it('maps white to L = 100 and black to L = 0', () => {
     expect(srgbToLab([1, 1, 1])[0]).toBeCloseTo(100, 2);
     expect(srgbToLab([0, 0, 0])[0]).toBeCloseTo(0, 6);
     const white = srgbToLab([1, 1, 1]);
@@ -78,7 +78,7 @@ describe('Lab-Umrechnung', () => {
     expect(white[2]).toBeCloseTo(0, 1);
   });
 
-  it('ist umkehrbar (sRGB -> Lab -> sRGB), auch im dunklen Bereich', () => {
+  it('is invertible (sRGB -> Lab -> sRGB), also in the dark range', () => {
     const next = sequence(99);
     for (let index = 0; index < 100; index++) {
       const code: Vec3 = [next(), next() * 0.02, next()];
@@ -89,7 +89,7 @@ describe('Lab-Umrechnung', () => {
     }
   });
 
-  it('begrenzt Farben außerhalb von sRGB auf 0..1', () => {
+  it('clamps colors outside sRGB to 0..1', () => {
     const [r, g, b] = labToSrgb([50, 120, 120]);
     for (const value of [r, g, b]) {
       expect(value).toBeGreaterThanOrEqual(0);
@@ -97,14 +97,14 @@ describe('Lab-Umrechnung', () => {
     }
   });
 
-  it('liefert linearen sRGB-Wert ohne Begrenzung', () => {
+  it('returns the linear sRGB value without clamping', () => {
     const [r, g, b] = labToLinearSrgb(srgbToLab([0.5, 0.5, 0.5]));
     expect(r).toBeCloseTo(0.214_04, 3);
     expect(g).toBeCloseTo(0.214_04, 3);
     expect(b).toBeCloseTo(0.214_04, 3);
   });
 
-  it('wandelt XYZ nahe Schwarz über den linearen Ast um', () => {
+  it('converts XYZ near black via the linear branch', () => {
     const lab = xyzD50ToLab(linearSrgbToXyzD50([0.001, 0.001, 0.001]));
     expect(lab[0]).toBeCloseTo(0.903, 1);
   });

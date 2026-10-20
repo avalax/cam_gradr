@@ -1,26 +1,28 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import type { WedgeRow } from './gray-wedge';
 
+const { t } = useI18n();
 const props = defineProps<{ rows: readonly WedgeRow[] }>();
 
-// Soll nur, wenn es einen Referenzsatz gibt.
+// Target only if there is a reference set.
 const hasTarget = computed(() => props.rows.some((row) => row.target !== null));
 const columns = computed(() => [
-  ...(hasTarget.value ? [{ key: 'target', label: 'Soll' } as const] : []),
-  { key: 'camera', label: 'Kamera' } as const,
-  { key: 'corrected', label: 'korr.' } as const,
+  ...(hasTarget.value ? [{ key: 'target', label: t('wedge.target') } as const] : []),
+  { key: 'camera', label: t('wedge.camera') } as const,
+  { key: 'corrected', label: t('wedge.corrected') } as const,
 ]);
 </script>
 
 <template>
-  <!-- Graukeil: die Neutralfelder von hell nach dunkel; ein neutrales Grau muss neutral aussehen. -->
+  <!-- Gray wedge: the neutral patches from light to dark; a neutral gray must look neutral. -->
   <div
     class="grid size-full gap-[3px]"
     :style="{ gridTemplateColumns: `repeat(${String(columns.length)}, minmax(0, 1fr))` }"
     role="img"
-    aria-label="Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur"
+    :aria-label="t('wedge.grayAria')"
     data-testid="gray-wedge"
   >
     <div v-for="column in columns" :key="column.key" class="flex min-h-0 flex-col gap-0.5">

@@ -13,18 +13,18 @@ interface Options {
   frameRate: number;
 }
 
-// Wird im Browser ausgeführt und muss deshalb vollständig in sich geschlossen sein.
+// Runs in the browser and must therefore be completely self-contained.
 function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void {
   const first = scenes[initial];
   if (first === undefined) {
-    throw new Error('Unbekannte Szene.');
+    throw new Error('Unknown scene.');
   }
   const canvas = document.createElement('canvas');
   canvas.width = first.width;
   canvas.height = first.height;
   const context = canvas.getContext('2d');
   if (context === null) {
-    throw new Error('Canvas-Kontext fehlt.');
+    throw new Error('Canvas context is missing.');
   }
   let current: Scene = first;
   const draw = () => {
@@ -36,8 +36,8 @@ function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void 
   };
   let tick = 0;
   draw();
-  // Regelmäßig neu zeichnen und einen Pixel in der Ecke wechseln, damit der Stream laufend
-  // neue Bilder liefert (identischer Inhalt würde keinen neuen Frame erzeugen).
+  // Redraw regularly and change a pixel in the corner so that the stream keeps delivering new
+  // images (identical content would not produce a new frame).
   setInterval(() => {
     draw();
     tick += 1;
@@ -46,12 +46,12 @@ function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void 
     context.fillRect(0, 0, 2, 2);
   }, redrawMs);
 
-  // Steuerung für die Tests: andere Karten vor die Kamera halten.
+  // Control for the tests: hold other cards in front of the camera.
   Object.assign(globalThis, {
     setSyntheticScene: (name: string) => {
       const next = scenes[name];
       if (next === undefined) {
-        throw new Error(`Unbekannte Szene: ${name}`);
+        throw new Error(`Unknown scene: ${name}`);
       }
       current = next;
       draw();
@@ -66,14 +66,14 @@ function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void 
         kind: 'videoinput',
         deviceId: 'synthetic-camera',
         groupId: 'synthetic',
-        label: 'Synthetische Kamera',
+        label: 'Synthetic camera',
         toJSON: () => ({}),
       },
     ]);
 }
 
-// Ersetzt die Kamera der Seite durch einen Canvas-Stream mit den synthetischen Karten.
-// Das funktioniert in Chrome und Firefox gleichermaßen (Firefox kennt keine Video-Datei als Kamera).
+// Replaces the camera of the page with a canvas stream showing the synthetic cards.
+// This works in Chrome and Firefox alike (Firefox cannot use a video file as a camera).
 export async function installSyntheticCamera(page: Page, lighting: LightingName): Promise<void> {
   const scenes = Object.fromEntries(SCENE_NAMES.map((name) => [name, sceneFor(name)]));
   await page.addInitScript(installInPage, {
@@ -84,7 +84,7 @@ export async function installSyntheticCamera(page: Page, lighting: LightingName)
   });
 }
 
-// Stellt die Szene ein, ohne auf das Videobild zu warten (die Kamera kann noch aus sein).
+// Sets the scene without waiting for the video image (the camera may still be off).
 export async function setScene(page: Page, name: SceneName): Promise<void> {
   await page.evaluate((scene) => {
     (globalThis as unknown as { setSyntheticScene: (name: string) => void }).setSyntheticScene(
@@ -93,13 +93,14 @@ export async function setScene(page: Page, name: SceneName): Promise<void> {
   }, name);
 }
 
-// Hält andere Karten vor die Kamera und wartet, bis das neue Bild im Videoelement ankommt.
+// Holds other cards in front of the camera and waits until the new image arrives in the video
+// element.
 export async function showScene(page: Page, name: SceneName): Promise<void> {
   await setScene(page, name);
-  // Prüfpunkt: Mitte des zuletzt gezeichneten Feldes der Szene.
+  // Probe point: center of the last drawn patch of the scene.
   const probe = sceneFor(name).rects.at(-1);
   if (probe === undefined) {
-    throw new Error('Die Szene ist leer.');
+    throw new Error('The scene is empty.');
   }
   await page.waitForFunction(
     ({ x, y, color }) => {

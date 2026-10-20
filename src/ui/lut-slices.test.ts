@@ -18,7 +18,7 @@ const identity: ColorModel = {
 };
 
 describe('lutSlices', () => {
-  it('liefert vier Schnitte mit je cells × cells Farben', () => {
+  it('returns four slices with cells × cells colors each', () => {
     const slices = lutSlices(identity, 4);
     expect(slices).toHaveLength(4);
     for (const slice of slices) {
@@ -26,16 +26,16 @@ describe('lutSlices', () => {
     }
   });
 
-  it('zeigt bei der Identität unten links Schwarz mit dem Blauanteil und oben rechts Gelb', () => {
+  it('shows black with the blue share at bottom left and yellow at top right for the identity', () => {
     const [first] = lutSlices(identity, 4);
-    // Unten links: Rot 0, Grün 0, Blau 0,15 (Anteil 38 von 255).
+    // Bottom left: red 0, green 0, blue 0.15 (share 38 of 255).
     const bottomLeft = first?.[12] ?? '';
     expect(bottomLeft).toMatch(/^rgb\(0, 0, \d+\)$/);
-    // Oben rechts: Rot 1, Grün 1.
+    // Top right: red 1, green 1.
     expect(first?.[3]).toMatch(/^rgb\(255, 255, \d+\)$/);
   });
 
-  it('gibt Korrekturen weiter: ein Rotstich im Modell färbt die Felder', () => {
+  it('passes corrections on: a red cast in the model colors the patches', () => {
     const tinted: ColorModel = {
       ...identity,
       matrix: [
@@ -49,7 +49,7 @@ describe('lutSlices', () => {
 });
 
 describe('cubeSizeText', () => {
-  it('schätzt die Dateigröße der drei Größen', () => {
+  it('estimates the file size of the three sizes', () => {
     expect(cubeSizeText(17)).toBe('ca. 133 KB');
     expect(cubeSizeText(33)).toBe('ca. 970 KB');
     expect(cubeSizeText(65)).toBe('ca. 7,4 MB');

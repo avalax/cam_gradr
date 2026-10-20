@@ -10,7 +10,7 @@ function requireMedia(media: MediaApi | undefined): MediaApi {
   return media;
 }
 
-// Dünner Adapter um die Browser-Kamera-API; die Medien-API ist für Tests austauschbar.
+// Thin adapter around the browser camera API; the media API can be swapped out for tests.
 export function createBrowserCamera(getMedia: () => MediaApi | undefined): CameraApi {
   return {
     async enumerate(): Promise<VideoDevice[]> {

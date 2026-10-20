@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { setLocale } from '../lang';
 import { useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
@@ -31,7 +32,7 @@ function computeModel() {
   useSolveStore().compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
 }
 
-// Zeitplaner für den Zeichenzyklus: Durchläufe lassen sich von Hand auslösen.
+// Scheduler for the draw cycle: runs can be triggered by hand.
 function mockAnimation() {
   const callbacks: (() => void)[] = [];
   vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -68,7 +69,7 @@ describe('PreviewTab', () => {
     vi.restoreAllMocks();
   });
 
-  it('verlangt zuerst eine berechnete Farbkorrektur', () => {
+  it('asks for a computed color correction first', () => {
     mockAnimation();
     mockContexts();
     const wrapper = mount(PreviewTab);
@@ -77,7 +78,7 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="wipe-line"]').exists()).toBe(false);
   });
 
-  it('weist ohne Bildquelle auf Kamera oder Standbild hin', () => {
+  it('points to camera or still image without an image source', () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -86,7 +87,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('Kamera');
   });
 
-  it('nimmt im Livebild ein Standbild auf und schaltet danach die Kamera aus', async () => {
+  it('captures a still image in the live view and then switches the camera off', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -109,7 +110,7 @@ describe('PreviewTab', () => {
     expect(capture).toHaveBeenCalledTimes(1);
     expect(camera.status).toBe('idle');
     expect(camera.still).not.toBeNull();
-    // Es gibt keinen Knopf „Zurück zum Livebild“: Ein neuer Kamerastart zeigt wieder das Livebild.
+    // There is no “Zurück zum Livebild” button: a new camera start shows the live view again.
     expect(wrapper.text()).not.toContain('Zurück zum Livebild');
     expect(take()?.attributes('disabled')).toBeDefined();
     await camera.start();
@@ -117,7 +118,7 @@ describe('PreviewTab', () => {
     expect(camera.still).toBeNull();
   });
 
-  it('lässt die Kamera an, wenn die Aufnahme kein Standbild liefert', async () => {
+  it('keeps the camera on when the capture yields no still image', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -135,7 +136,7 @@ describe('PreviewTab', () => {
     expect(camera.status).toBe('live');
   });
 
-  it('lädt die LUT und zeichnet das Standbild mit der Trennlinie', () => {
+  it('loads the LUT and draws the still image with the divider line', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
@@ -158,7 +159,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 8);
   });
 
-  it('zeichnet bei laufender Kamera das Videobild, sobald es Daten hat', async () => {
+  it('draws the video image while the camera is running as soon as it has data', async () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
@@ -178,7 +179,7 @@ describe('PreviewTab', () => {
     expect(fake.call('texImage2D').mock.calls[0]?.[5]).toBe(video);
   });
 
-  it('zeichnet nichts ohne Quelle', () => {
+  it('draws nothing without a source', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
@@ -187,7 +188,7 @@ describe('PreviewTab', () => {
     expect(fake.call('drawArrays')).not.toHaveBeenCalled();
   });
 
-  it('zeichnet bei unveränderter Größe ohne die Zeichenfläche neu anzulegen', () => {
+  it('redraws at unchanged size without recreating the canvas', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
@@ -198,7 +199,7 @@ describe('PreviewTab', () => {
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(2);
   });
 
-  it('aktualisiert die LUT, wenn sich die Farbkorrektur ändert', async () => {
+  it('updates the LUT when the color correction changes', async () => {
     mockAnimation();
     const fake = mockContexts();
     computeModel();
@@ -212,7 +213,7 @@ describe('PreviewTab', () => {
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
   });
 
-  it('setzt die Trennlinie über den Wischer und hat keinen Regler mehr', async () => {
+  it('sets the divider line via the wipe and no longer has a slider', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -225,7 +226,7 @@ describe('PreviewTab', () => {
     expect(wrapper.text()).not.toContain('Stärke');
   });
 
-  it('zeigt zuerst die Farben: ein Raster der bunten Felder und die größten Abweichungen', () => {
+  it('shows the colors first: a grid of the colored patches and the largest deviations', () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -244,7 +245,7 @@ describe('PreviewTab', () => {
     );
   });
 
-  it('schaltet auf die Graustufen um und wieder zurück auf die Farben', async () => {
+  it('switches to grayscale and back to colors', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -259,7 +260,7 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
   });
 
-  it('zeigt bei den Graustufen den Graukeil, die Änderungen je Tonbereich und das Ergebnis', async () => {
+  it('shows the gray wedge, the changes per tonal range and the result in grayscale', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -279,7 +280,7 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="preview-side-empty"]').exists()).toBe(false);
   });
 
-  it('nennt Tonbereiche neutral, in denen die Korrektur keine Farbe verschiebt', async () => {
+  it('calls tonal ranges neutral where the correction shifts no color', async () => {
     mockAnimation();
     mockContexts();
     const identity = {
@@ -301,7 +302,7 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
   });
 
-  it('sagt ohne Messung, dass für die Ansichten Farbkarten fehlen', async () => {
+  it('says without a measurement that color cards are missing for the views', async () => {
     mockAnimation();
     mockContexts();
     computeModel();
@@ -312,7 +313,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain('Farbkarten');
   });
 
-  it('zeigt ohne Korrektur nur den Hinweis und kein Ergebnis', () => {
+  it('shows only the hint and no result without a correction', () => {
     mockAnimation();
     mockContexts();
     const wrapper = mount(PreviewTab);
@@ -323,7 +324,7 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
   });
 
-  it('bindet einen laufenden Stream an und folgt einem neuen', async () => {
+  it('binds a running stream and follows a new one', async () => {
     mockAnimation();
     mockContexts();
     await useCameraStore().start();
@@ -334,7 +335,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('video').element.srcObject).not.toBeNull();
   });
 
-  it('zeigt an, dass die Grafikkarte zeichnet', async () => {
+  it('indicates that the graphics card is drawing', async () => {
     mockAnimation();
     mockContexts();
     const wrapper = mount(PreviewTab);
@@ -344,7 +345,7 @@ describe('PreviewTab', () => {
     );
   });
 
-  it('weicht ohne WebGL2 auf die Software-Darstellung aus und zeichnet verkleinert', async () => {
+  it('falls back to software rendering without WebGL2 and draws downscaled', async () => {
     const animation = mockAnimation();
     const image = { data: new Uint8ClampedArray(480 * 270 * 4) };
     const context2d = {
@@ -361,7 +362,7 @@ describe('PreviewTab', () => {
     await flushPromises();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe('cpu');
-    // Das Standbild wurde schon beim Einhängen auf die Arbeitsfläche gezeichnet.
+    // The still image was already drawn to the work canvas on mount.
     const before = context2d.putImageData.mock.calls.length;
     animation.runFrame();
     expect(context2d.putImageData).toHaveBeenCalledTimes(before + 1);
@@ -369,7 +370,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('height', 270);
   });
 
-  it('meldet fehlende WebGL2-Unterstützung', async () => {
+  it('reports missing WebGL2 support', async () => {
     mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const wrapper = mount(PreviewTab);
@@ -377,7 +378,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('WebGL2');
   });
 
-  it('meldet Fehler beim Anlegen des Renderers', async () => {
+  it('reports errors when creating the renderer', async () => {
     mockAnimation();
     mockContexts(createFakeGl({ getShaderParameter: () => false }));
     const wrapper = mount(PreviewTab);
@@ -385,7 +386,7 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Shader konnte nicht übersetzt werden');
   });
 
-  it('beendet den Zeichenzyklus und gibt WebGL-Ressourcen frei', () => {
+  it('ends the draw cycle and releases WebGL resources', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     const wrapper = mount(PreviewTab);
@@ -394,12 +395,108 @@ describe('PreviewTab', () => {
     expect(fake.call('deleteProgram')).toHaveBeenCalledTimes(1);
   });
 
-  it('räumt auch ohne Renderer sauber auf', () => {
+  it('cleans up properly even without a renderer', () => {
     mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const wrapper = mount(PreviewTab);
     expect(() => {
       wrapper.unmount();
     }).not.toThrow();
+  });
+});
+
+describe('PreviewTab (English)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    installMediaStubs();
+    installFakeCamera();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows intro, placeholder and view switch in English', async () => {
+    setLocale('en');
+    mockAnimation();
+    mockContexts();
+    const wrapper = mount(PreviewTab);
+    await flushPromises();
+    expect(wrapper.text()).toContain('The preview shows the camera image');
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain(
+      'No color correction yet',
+    );
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain('“Color cards”');
+    expect(wrapper.findAll('button').map((b) => b.text())).toContain('Take still image');
+    expect(wrapper.get('[data-testid="view-colors"]').text()).toBe('Colors');
+    expect(wrapper.get('[data-testid="view-grays"]').text()).toBe('Grays');
+    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain(
+      'No correction yet.',
+    );
+    expect(wrapper.get('[data-testid="preview-renderer"]').text()).toBe(
+      'Rendering: graphics card (WebGL2)',
+    );
+    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain(
+      'No correction yet.',
+    );
+  });
+
+  it('shows placeholder without image and empty side column with model in English', () => {
+    setLocale('en');
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    const wrapper = mount(PreviewTab);
+    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('No image yet');
+    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toBe(
+      'This view needs measured color cards.',
+    );
+  });
+
+  it('shows colors, grayscale, tonal ranges and result in English', async () => {
+    setLocale('en');
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    useColorChartStore().measurements = measurements;
+    const wrapper = mount(PreviewTab);
+    expect(wrapper.get('[data-testid="worst-patches"]').text()).toContain('Largest deviation');
+    expect(wrapper.text()).toContain('Each patch: target, camera, corrected');
+    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    expect(
+      wrapper
+        .get('[data-testid="zone-changes"]')
+        .findAll('dt')
+        .map((term) => term.text()),
+    ).toEqual(['Shadows', 'Midtones', 'Highlights']);
+    expect(wrapper.text()).toContain('Points on the 0–100 scale');
+    expect(wrapper.get('[data-testid="preview-summary"]').text()).toMatch(
+      /^Ø deviation [\d.]+ → [\d.]+$/,
+    );
+  });
+
+  it('names the software rendering and errors in English', async () => {
+    setLocale('en');
+    mockAnimation();
+    const context2d = {
+      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
+      putImageData: vi.fn(),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(((id: string) =>
+      id === 'webgl2' ? null : context2d) as never);
+    const wrapper = mount(PreviewTab);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-renderer"]').text()).toBe(
+      'Rendering: software, downscaled (WebGL2 not available)',
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const failing = mount(PreviewTab);
+    await flushPromises();
+    expect(failing.get('[role="alert"]').text()).toContain(
+      'Neither WebGL2 nor a 2D drawing context',
+    );
   });
 });

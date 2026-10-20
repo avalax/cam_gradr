@@ -27,7 +27,7 @@ describe('CameraToggle', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
   });
 
-  it('schaltet die Kamera an und wieder aus', async () => {
+  it('turns the camera on and off again', async () => {
     const api = installFakeCamera();
     const wrapper = mount(CameraToggle);
     await toggle(wrapper).trigger('click');
@@ -43,7 +43,7 @@ describe('CameraToggle', () => {
     expect(toggle(wrapper).attributes('data-status')).toBe('idle');
   });
 
-  it('zeigt das Starten an', async () => {
+  it('shows that the camera is starting', async () => {
     installFakeCamera();
     const wrapper = mount(CameraToggle);
     const starting = useCameraStore().start();
@@ -54,7 +54,7 @@ describe('CameraToggle', () => {
     await starting;
   });
 
-  it('zeigt Fehler beim Starten und lässt sich dann ausschalten', async () => {
+  it('shows start errors and can then be switched off', async () => {
     installFakeCamera({ open: () => Promise.reject(new Error('x')) });
     const wrapper = mount(CameraToggle);
     await toggle(wrapper).trigger('click');

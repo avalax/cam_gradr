@@ -8,11 +8,11 @@ describe('usePreviewStore', () => {
     setActivePinia(createPinia());
   });
 
-  it('startet mit der Trennlinie in der Mitte', () => {
+  it('starts with the split line in the middle', () => {
     expect(usePreviewStore().split).toBe(50);
   });
 
-  it('begrenzt die Trennlinie auf 0 bis 100 Prozent', () => {
+  it('clamps the split line to 0 to 100 percent', () => {
     const store = usePreviewStore();
     store.setSplit(80);
     expect(store.split).toBe(80);

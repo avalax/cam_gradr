@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
@@ -21,21 +22,24 @@ import type { TabStatus } from './ui/tab-status';
 
 type TabKey = 'gray' | 'color' | 'preview' | 'export';
 
-// Jeder Tab nennt unter seinem Namen kurz sein Ergebnis; Vorschau und Export haben einen festen Text.
-const TABS: readonly { key: TabKey; label: string; hint: string }[] = [
-  { key: 'gray', label: 'Graukarten', hint: '' },
-  { key: 'color', label: 'Farbkarten', hint: '' },
-  { key: 'preview', label: 'Vorschau', hint: 'Original / korrigiert' },
-  { key: 'export', label: 'Export', hint: '.cube, Projekt' },
+// Each tab briefly states its result under its name; preview and export have a fixed text.
+// The texts are only translated when displayed so that a language change reaches them.
+const TABS: readonly { key: TabKey; label: () => string; hint: () => string }[] = [
+  { key: 'gray', label: () => t('app.tabs.gray'), hint: () => '' },
+  { key: 'color', label: () => t('app.tabs.color'), hint: () => '' },
+  { key: 'preview', label: () => t('app.tabs.preview'), hint: () => t('app.hints.preview') },
+  { key: 'export', label: () => t('app.tabs.export'), hint: () => t('app.hints.export') },
 ];
+
+const { t } = useI18n();
 
 const tab = ref<TabKey>('gray');
 const camera = useCameraStore();
 const { exposure } = storeToRefs(useChartStore());
 const { result } = storeToRefs(useSolveStore());
 
-// Status der beiden Messtabs: Er folgt dem Ergebnis (Licht im Normalbereich, Abweichung nach der
-// Korrektur), nicht dem bloßen Bearbeiten.
+// Status of the two measuring tabs: it follows the result (light in the normal range, deviation after
+// the correction), not mere editing.
 const statuses = computed<Partial<Record<TabKey, TabStatus>>>(() => ({
   gray: grayStatus(exposure.value),
   color: colorStatus(result.value?.report ?? null),
@@ -43,25 +47,26 @@ const statuses = computed<Partial<Record<TabKey, TabStatus>>>(() => ({
 const entries = computed(() =>
   TABS.map((entry) => {
     const status = statuses.value[entry.key] ?? null;
-    return { ...entry, status, text: status?.text ?? entry.hint };
+    const hint = entry.hint();
+    return { key: entry.key, label: entry.label(), status, text: status?.text ?? hint };
   }),
 );
 
-// Der mitgelieferte Referenzsatz und die lokal gespeicherten Sätze stehen von Anfang an bereit.
+// The bundled reference set and the locally saved sets are available from the start.
 onMounted(() => {
   void useReferenceStore().load();
 });
 
-// Jeder Tab mit Kamerabild (Grau-, Farbkarten, Vorschau) hat sein eigenes Standbild: Beim Wechsel
-// wird es abgelegt und beim Zurückkommen wieder angezeigt. Der Export zeigt kein Kamerabild.
+// Each tab with a camera image (gray cards, color cards, preview) has its own still image: on switching
+// it is stored and shown again on return. The export shows no camera image.
 watch(tab, (next) => {
   if (next !== 'export' && next !== camera.stillOwner) {
     camera.swapStill(camera.stillOwner, next);
   }
 });
 
-// Der Export soll genauso hoch sein wie die anderen Tabs: Deren Höhe merkt sich die App und setzt sie
-// im Export als Mindesthöhe.
+// The export should be as tall as the other tabs: the app remembers their height and applies it
+// as the minimum height in the export.
 const panel = useTemplateRef<HTMLElement>('panel');
 const knownHeight = ref(0);
 const panelStyle = computed(() =>
@@ -72,7 +77,7 @@ const panelStyle = computed(() =>
 const stopTracking = ref<(() => void) | null>(null);
 onMounted(() => {
   const element = panel.value;
-  /* v8 ignore next 3 -- der Inhaltsbereich existiert, sobald die App eingehängt ist */
+  /* v8 ignore next 3 -- the content area exists as soon as the app is mounted */
   if (element === null) {
     return;
   }
@@ -91,12 +96,12 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="w-full space-y-3 p-3 md:px-6 md:py-4">
-    <!-- Reiter und Inhalt gehören zusammen: Der gewählte Reiter geht in den Rahmen um den Inhalt über. -->
+    <!-- Tab and content belong together: the selected tab merges into the frame around the content. -->
     <div>
       <header class="flex flex-wrap items-end gap-x-3 gap-y-2">
         <h1 class="pb-1.5 text-xl font-semibold">{{ APP_NAME }}</h1>
 
-        <div role="tablist" aria-label="Bereiche" class="ml-2 flex flex-wrap gap-1">
+        <div role="tablist" :aria-label="t('app.tablist')" class="ml-2 flex flex-wrap gap-1">
           <button
             v-for="entry in entries"
             :id="`tab-${entry.key}`"
@@ -155,7 +160,7 @@ onBeforeUnmount(() => {
     </div>
 
     <footer class="text-xs text-slate-500">
-      {{ APP_ID }} · LUT-Generator für die Spyder Checkr Photo.
+      {{ t('app.footer', { id: APP_ID }) }}
     </footer>
   </main>
 </template>

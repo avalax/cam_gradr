@@ -1,0 +1,45 @@
+{
+  "bar": {
+    "stills": "Include still images (the file will then contain camera images)",
+    "save": "Save project",
+    "load": "Load project"
+  },
+  "status": {
+    "close": "Dismiss message"
+  },
+  "notice": {
+    "missingReference": "The reference set “{name}” is not available; import it in the settings to see the report. Preview and export use the saved model."
+  },
+  "errors": {
+    "invalidJson": "The file is not valid JSON",
+    "unknownFormat": "Unknown format, expected \"{format}\"",
+    "triple": "{where}: 3 numbers expected",
+    "pointXY": "{where}: a corner point needs x and y",
+    "unknownCard": "{where}: unknown card {key}",
+    "badCornerList": "{where}: card {key} has an invalid list of corner points",
+    "cardWhere": "{where}, card {key}",
+    "unknownField": "{where}: unknown field {id}",
+    "fieldWhere": "{where}, field {id}",
+    "fieldRange": "{where}, field {id}: values must be between 0 and 1",
+    "chartShape": "{where}: corners and measurements expected",
+    "chartGray": "Gray cards",
+    "chartColor": "Color cards",
+    "curveWhere": "Model, curve {index}",
+    "curveShape": "{where}: xs and ys expected",
+    "curvePoints": "{where}: invalid control points",
+    "modelShape": "Model: three curves and a matrix expected",
+    "matrixRows": "Model: the matrix needs three rows",
+    "matrixWhere": "Model, matrix",
+    "percentRange": "Preview: {name} must be between 0 and 100",
+    "splitName": "wipe slider",
+    "colorReference": "Color cards: reference must be a name or null",
+    "previewMissing": "Preview: settings are missing",
+    "stillWhere": "Still image \"{key}\"",
+    "stillEncoding": "{where}: unknown encoding",
+    "stillSize": "{where}: invalid size",
+    "stillsObject": "Still images: an object is expected",
+    "stillsTab": "Still images: unknown tab \"{key}\"",
+    "frameUnreadable": "A still image in the file cannot be read",
+    "frameWrongSize": "A still image in the file does not have the stated size"
+  }
+}

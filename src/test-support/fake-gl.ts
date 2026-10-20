@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
-// Attrappe für WebGL2: jede Methode ist ein Spion, Konstanten (GROSSBUCHSTABEN) sind Zahlen.
-// Einzelne Rückgabewerte lassen sich über `overrides` ersetzen.
+// Stand-in for WebGL2: every method is a spy, constants (UPPERCASE) are numbers.
+// Individual return values can be replaced via `overrides`.
 type Implementation = (...args: never[]) => unknown;
 
 export function createFakeGl(overrides: Record<string, Implementation> = {}) {
@@ -15,14 +15,14 @@ export function createFakeGl(overrides: Record<string, Implementation> = {}) {
     getUniformLocation: (_program: never, name: string) => ({ name }),
     getShaderParameter: () => true,
     getProgramParameter: () => true,
-    getShaderInfoLog: () => 'Fehler im Shader',
-    getProgramInfoLog: () => 'Fehler beim Linken',
+    getShaderInfoLog: () => 'Shader error',
+    getProgramInfoLog: () => 'Link error',
   };
   const gl = new Proxy<Record<string, unknown>>(
     {},
     {
       get(target, property: string) {
-        // Werte, die ein Test selbst gesetzt hat (z. B. drawingBufferWidth), haben Vorrang.
+        // Values a test has set itself (e.g. drawingBufferWidth) take precedence.
         if (Object.hasOwn(target, property)) {
           return target[property];
         }

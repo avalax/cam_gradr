@@ -1,4 +1,4 @@
-// Meldet jede Änderung der Höhe eines Elements; liefert eine Funktion, die die Beobachtung beendet.
+// Reports every change of an element's height; returns a function that stops observing.
 export function trackHeight(element: HTMLElement, onChange: (height: number) => void): () => void {
   const observer = new ResizeObserver((entries) => {
     const entry = entries[0];

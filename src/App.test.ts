@@ -34,7 +34,7 @@ describe('App', () => {
     vi.unstubAllGlobals();
   });
 
-  it('zeigt Namen, Kennung, den Kameraschalter und zunächst den Tab Graukarten', () => {
+  it('shows name, identifier, the camera toggle and initially the gray cards tab', () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
@@ -44,7 +44,7 @@ describe('App', () => {
     expect(APP_ID).toBe('avalax.cam_gradr');
   });
 
-  it('nennt unter Graukarten und Farbkarten noch kein Ergebnis und zeigt leere Skalen', () => {
+  it('shows no result yet under gray cards and color cards and displays empty scales', () => {
     installFakeCamera();
     const wrapper = mountApp();
     const [gray, color, preview, exportTab] = tabs(wrapper);
@@ -58,7 +58,7 @@ describe('App', () => {
     expect(gray?.attributes('aria-describedby')).toBe('tab-hint-gray');
   });
 
-  it('zeigt das Ergebnis im Tab: Licht passt, aber die Farben haben noch eine hohe Abweichung', async () => {
+  it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     useChartStore().exposure = {
@@ -84,7 +84,7 @@ describe('App', () => {
     expect(gauges[1]?.findAll('[data-filled="true"]')).toHaveLength(2);
   });
 
-  it('gibt dem Export die Höhe der anderen Tabs als Mindesthöhe', async () => {
+  it('gives the export the height of the other tabs as its minimum height', async () => {
     const observers: { fire: (height: number) => void }[] = [];
     class FakeObserver {
       readonly observe = vi.fn();
@@ -107,7 +107,7 @@ describe('App', () => {
     await flushPromises();
     await tabs(wrapper)[3]?.trigger('click');
     expect(panel().attributes('style')).toContain('min-height: 480px');
-    // Im Export gemessene Höhen zählen nicht.
+    // Heights measured in the export do not count.
     observers[0]?.fire(300);
     await flushPromises();
     expect(panel().attributes('style')).toContain('min-height: 480px');
@@ -116,7 +116,7 @@ describe('App', () => {
     wrapper.unmount();
   });
 
-  it('bietet vier Tabs, die alle frei anwählbar sind', () => {
+  it('offers four tabs, all freely selectable', () => {
     installFakeCamera();
     const wrapper = mountApp();
     const all = tabs(wrapper);
@@ -149,7 +149,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
   });
 
-  it('schaltet die Kamera über den Schalter neben den Tabs, ohne den Tab zu wechseln', async () => {
+  it('toggles the camera via the switch next to the tabs without changing the tab', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
     await tabs(wrapper)[2]?.trigger('click');
@@ -163,7 +163,7 @@ describe('App', () => {
     expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
   });
 
-  it('bietet die Kameraeinstellungen im Zahnrad-Menü an', async () => {
+  it('offers the camera settings in the gear menu', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.text()).not.toContain('Auto-Belichtung');
@@ -172,7 +172,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Auflösung');
   });
 
-  it('hält die Kamera beim Wechsel der Tabs am Laufen', async () => {
+  it('keeps the camera running when switching tabs', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
@@ -182,7 +182,7 @@ describe('App', () => {
     expect(useCameraStore().status).toBe('live');
   });
 
-  it('gibt jedem Tab mit Kamerabild sein eigenes Standbild, der Export ändert nichts', async () => {
+  it('gives each tab with a camera image its own still image, the export changes nothing', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     const camera = useCameraStore();
@@ -200,7 +200,7 @@ describe('App', () => {
     expect(camera.still).toBe(gray);
   });
 
-  it('zeigt im Tab Export den Hinweis auf die fehlende Farbkorrektur und springt zu den Farbkarten', async () => {
+  it('shows the missing-color-correction notice in the export tab and jumps to the color cards', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     await tabs(wrapper)[3]?.trigger('click');
@@ -209,7 +209,7 @@ describe('App', () => {
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
   });
 
-  it('bietet Referenzwerte im Zahnrad-Menü und das Projekt im Tab Export an', async () => {
+  it('offers reference values in the gear menu and the project in the export tab', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
@@ -222,21 +222,21 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
   });
 
-  it('lädt beim Start den mitgelieferten Referenzsatz', async () => {
+  it('loads the bundled reference set at startup', async () => {
     installFakeCamera();
     mountApp();
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
   });
 
-  it('zeigt im Tab Vorschau den Hinweis auf die fehlende Farbkorrektur', async () => {
+  it('shows the missing-color-correction notice in the preview tab', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     await tabs(wrapper)[2]?.trigger('click');
     expect(wrapper.text()).toContain('Noch keine Farbkorrektur');
   });
 
-  it('stoppt die Kamera beim Entfernen der App', async () => {
+  it('stops the camera when the app is removed', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();

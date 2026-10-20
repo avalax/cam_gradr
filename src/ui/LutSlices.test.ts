@@ -19,14 +19,14 @@ const model: ColorModel = {
 };
 
 describe('LutSlices', () => {
-  it('zeigt ohne Korrektur vier graue Felder', () => {
+  it('shows four gray fields without a correction', () => {
     const wrapper = mount(LutSlices, { props: { model: null } });
     expect(wrapper.findAll('[data-testid="lut-slice-empty"]')).toHaveLength(4);
     expect(wrapper.find('[data-testid="lut-slice"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="lut-slices"]').attributes('data-ready')).toBe('false');
   });
 
-  it('zeigt mit Korrektur vier Schnitte mit je 64 gefärbten Zellen', () => {
+  it('shows four slices of 64 colored cells each with a correction', () => {
     const wrapper = mount(LutSlices, { props: { model } });
     const slices = wrapper.findAll('[data-testid="lut-slice"]');
     expect(slices).toHaveLength(4);

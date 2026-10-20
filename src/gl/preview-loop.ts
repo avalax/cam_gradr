@@ -1,7 +1,7 @@
 type Schedule = (callback: () => void) => number;
 type Cancel = (handle: number) => void;
 
-// Ruft `frame` zu jedem Bildaufbau auf, bis die zurückgegebene Funktion aufgerufen wird.
+// Calls `frame` on every repaint until the returned function is called.
 export function startPreviewLoop(
   frame: () => void,
   schedule: Schedule = (callback) => requestAnimationFrame(callback),

@@ -1,0 +1,21 @@
+{
+  "tabs": {
+    "gray": "Graukarten",
+    "color": "Farbkarten",
+    "preview": "Vorschau",
+    "export": "Export"
+  },
+  "hints": {
+    "preview": "Original / korrigiert",
+    "export": ".cube, Projekt"
+  },
+  "tablist": "Bereiche",
+  "footer": "{id} · LUT-Generator für die Spyder Checkr Photo.",
+  "status": {
+    "notMeasured": "Noch nicht gemessen",
+    "lightOk": "Licht passt",
+    "checkLight": "Licht prüfen",
+    "notComputed": "Noch nicht berechnet",
+    "meanChange": "Ø {before} → {after}"
+  }
+}

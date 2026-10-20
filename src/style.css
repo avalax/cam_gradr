@@ -1,4 +1,4 @@
 @import 'tailwindcss' source(none);
-/* Nur diese Quellen nach Tailwind-Klassen durchsuchen (nicht Berichte, Testdaten o. Ä.). */
+/* Scan only these sources for Tailwind classes (not reports, test data or the like). */
 @source '../index.html';
 @source './';

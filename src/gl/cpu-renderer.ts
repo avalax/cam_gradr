@@ -1,9 +1,10 @@
 import { sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
+import { t } from '../lang';
 
 import type { LutRenderer, RenderSource } from './lut-renderer';
 
-// Software-Darstellung auf der CPU für Browser ohne WebGL2: kleiner aufgelöst, dafür überall lauffähig.
+// Software rendering on the CPU for browsers without WebGL2: lower resolution, runs anywhere.
 export const CPU_MAX_WIDTH = 480;
 const BYTE_MAX = 255;
 const CHANNELS = 4;
@@ -11,9 +12,7 @@ const CHANNELS = 4;
 function context2d(canvas: HTMLCanvasElement, willReadFrequently: boolean) {
   const context = canvas.getContext('2d', { willReadFrequently });
   if (context === null) {
-    throw new Error(
-      'Weder WebGL2 noch ein 2D-Zeichenkontext sind verfügbar, die Vorschau ist nicht möglich.',
-    );
+    throw new Error(t('preview.errors.noContext'));
   }
   return context;
 }
@@ -22,7 +21,7 @@ function toByte(value: number): number {
   return Math.round(Math.min(Math.max(value, 0), 1) * BYTE_MAX);
 }
 
-// Gleiche Wirkung wie der Shader (LUT, Stärke, Trennlinie), Pixel für Pixel auf der CPU gerechnet.
+// Same effect as the shader (LUT, strength, split line), computed pixel by pixel on the CPU.
 export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
   const output = context2d(canvas, false);
   const scratchCanvas = document.createElement('canvas');
@@ -54,7 +53,7 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
       if (lut !== null) {
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            // Wie im Shader: links der Trennlinie bleibt das Original stehen.
+            // As in the shader: left of the split line the original stays.
             if ((x + 0.5) / width < options.split) {
               continue;
             }

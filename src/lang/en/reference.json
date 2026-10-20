@@ -1,0 +1,33 @@
+{
+  "panel": {
+    "sourceBefore": "The bundled set “{name}” comes from the blog post",
+    "sourceAfter": "and is not a file from Datacolor. Deviations from your own chart are possible. It is always loaded at startup; all sets stay local in the browser.",
+    "activeSet": "Active set",
+    "import": "Import your own file (JSON or CSV)",
+    "delete": "Delete set",
+    "download": "Download set",
+    "saved": "Saved locally in the browser.",
+    "removed": "Set “{name}” deleted locally."
+  },
+  "warnings": {
+    "loadFailed": "Saved references could not be loaded.",
+    "saveFailed": "The set could not be saved locally and only applies to this session.",
+    "removeFailed": "The set could not be deleted locally."
+  },
+  "errors": {
+    "notNumbers": "{where}: Lab values are not numbers",
+    "labRange": "{where}: Lab value outside the valid range",
+    "unknownId": "Unknown patch ID: {id}",
+    "duplicateId": "Duplicate patch ID: {id}",
+    "tooFewPatches": "Too few patches: at least {min} required",
+    "tooFewNeutral": "Too few neutral patches (gray ramps): at least {min} required",
+    "invalidJson": "The file is not valid JSON",
+    "unknownFormat": "Unknown format, expected \"{format}\"",
+    "onlyD50": "Only Lab values with white point D50 are supported",
+    "patchShape": "A patch needs \"id\" and \"lab\"",
+    "patchWhere": "Patch {id}",
+    "emptyFile": "The file is empty",
+    "lineWhere": "Line {line}",
+    "lineShape": "Line {line}: expected id, L, a, b"
+  }
+}

@@ -5,7 +5,7 @@ import type { Corners } from '../chart/types';
 import { guideCorners } from './guide';
 
 describe('guideCorners', () => {
-  it('legt zwei hochkante Rahmen links und rechts mittig ins Bild', () => {
+  it('places two portrait frames left and right, centered in the image', () => {
     const [left, right] = guideCorners({ width: 1280, height: 720 }, 2) as [Corners, Corners];
     const width = left[1].x - left[0].x;
     expect(left[0].y).toBeCloseTo(68.4);
@@ -15,7 +15,7 @@ describe('guideCorners', () => {
     expect(right[0].x + width / 2).toBeCloseTo(896);
   });
 
-  it('liefert Ecken im Uhrzeigersinn ab oben links', () => {
+  it('returns corners clockwise starting at top left', () => {
     const [[a, b, c, d]] = guideCorners({ width: 100, height: 100 }, 2) as [Corners, Corners];
     expect(b.x).toBeGreaterThan(a.x);
     expect(b.y).toBe(a.y);
@@ -23,7 +23,7 @@ describe('guideCorners', () => {
     expect(d.x).toBe(a.x);
   });
 
-  it('stellt eine einzelne Karte links ins Bild', () => {
+  it('places a single card on the left of the image', () => {
     expect(guideCorners({ width: 200, height: 100 }, 1)).toHaveLength(1);
   });
 });

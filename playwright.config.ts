@@ -2,15 +2,16 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 const isCi = Boolean(process.env.CI);
-// Hoch genug, damit das Kamerabild samt Overlay ohne Scrollen klickbar ist.
+// Tall enough that the camera image with its overlay is clickable without scrolling.
 const tallViewport = { viewport: { width: 1280, height: 1100 } };
 
-// Akzeptanztests laufen gegen den Produktions-Build (vite preview) in Chrome und Firefox mit einer synthetischen Kamera.
+// Acceptance tests run against the production build (vite preview) in Chrome and Firefox with a
+// synthetic camera.
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
   fullyParallel: true,
-  // Zwei Browser parallel belasten kleine Rechner und CI-Runner; weniger Worker halten die Tests stabil.
+  // Two browsers in parallel strain small machines and CI runners; fewer workers keep the tests stable.
   workers: isCi ? 2 : 4,
   expect: { timeout: 10_000 },
   forbidOnly: isCi,
@@ -19,6 +20,8 @@ export default defineConfig({
   reporter: isCi ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${String(PORT)}`,
+    // The scenarios check the German texts; English scenarios set the language themselves.
+    locale: 'de-DE',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -29,7 +32,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         ...tallViewport,
         channel: 'chrome',
-        // Software-Rendering (SwiftShader), damit WebGL2 auch ohne Grafikkarte läuft.
+        // Software rendering (SwiftShader) so WebGL2 also runs without a graphics card.
         launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
       },
     },
@@ -38,7 +41,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         ...tallViewport,
-        // WebGL auch ohne unterstützte Grafikkarte zulassen (Software-Rendering).
+        // Allow WebGL even without a supported graphics card (software rendering).
         launchOptions: { firefoxUserPrefs: { 'webgl.force-enabled': true } },
       },
     },

@@ -25,7 +25,7 @@ function node(lut: { size: number; data: Float32Array }, r: number, g: number, b
 }
 
 describe('identityLut', () => {
-  it('hat size³ Einträge in Würfelreihenfolge (R am schnellsten)', () => {
+  it('has size³ entries in cube order (R fastest)', () => {
     const lut = identityLut(3);
     expect(lut.size).toBe(3);
     expect(lut.data).toHaveLength(27 * 3);
@@ -35,9 +35,9 @@ describe('identityLut', () => {
     expect(node(lut, 2, 2, 2)).toEqual([1, 1, 1]);
   });
 
-  it('lehnt ungültige Größen ab', () => {
+  it('rejects invalid sizes', () => {
     for (const size of [1, 0, -3, 2.5, 130, NaN]) {
-      expect(() => identityLut(size)).toThrow('LUT-Größe');
+      expect(() => identityLut(size)).toThrow('The LUT size');
     }
   });
 });
@@ -45,7 +45,7 @@ describe('identityLut', () => {
 describe('buildLut', () => {
   const lut = buildLut(model, 17);
 
-  it('enthält an den Gitterpunkten genau die Werte des Modells', () => {
+  it('contains exactly the model values at the grid points', () => {
     for (const [r, g, b] of [
       [0, 0, 0],
       [16, 16, 16],
@@ -61,14 +61,14 @@ describe('buildLut', () => {
     }
   });
 
-  it('hält alle Werte im Bereich 0 bis 1', () => {
+  it('keeps all values in the range 0 to 1', () => {
     for (const value of lut.data) {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(1);
     }
   });
 
-  it('bildet Schwarz und Weiß annähernd auf sich selbst ab', () => {
+  it('maps black and white approximately to themselves', () => {
     const [br, bg, bb] = node(lut, 0, 0, 0);
     expect(br + bg + bb).toBeLessThan(0.05);
     const [wr, wg, wb] = node(lut, 16, 16, 16);
@@ -77,7 +77,7 @@ describe('buildLut', () => {
     expect(wb).toBeGreaterThan(0.95);
   });
 
-  it('macht bei 33 Stützstellen die Verfälschung der künstlichen Kamera rückgängig', () => {
+  it('undoes the distortion of the artificial camera with 33 grid points', () => {
     const fine = buildLut(model, 33);
     const errors: number[] = [];
     for (const id of dummyIds()) {
@@ -91,7 +91,7 @@ describe('buildLut', () => {
 });
 
 describe('sampleLut', () => {
-  it('liefert bei der Identitäts-LUT den Eingabewert (trilinear exakt)', () => {
+  it('returns the input value for the identity LUT (trilinear exact)', () => {
     const lut = identityLut(5);
     for (const rgb of [
       [0, 0, 0],
@@ -106,12 +106,12 @@ describe('sampleLut', () => {
     }
   });
 
-  it('begrenzt Eingaben außerhalb von 0..1', () => {
+  it('clamps inputs outside 0..1', () => {
     const lut = identityLut(4);
     expect(sampleLut(lut, [-1, 2, 0.5])).toEqual([0, 1, expect.closeTo(0.5, 6)]);
   });
 
-  it('trifft Gitterpunkte exakt, auch am oberen Rand', () => {
+  it('hits grid points exactly, also at the upper edge', () => {
     const lut = buildLut(model, 9);
     const out = sampleLut(lut, [1, 1, 1]);
     const expected = node(lut, 8, 8, 8);
@@ -124,7 +124,7 @@ describe('sampleLut', () => {
     const lut = identityLut(2);
     lut.data.fill(0);
     lut.data[0] = 0;
-    // Nur der Punkt (1,0,0) hat Rot 1: die Mitte der Kante liegt bei 0,5.
+    // Only the point (1,0,0) has red 1: the middle of the edge is at 0.5.
     lut.data[3] = 1;
     expect(sampleLut(lut, [0.5, 0, 0])[0]).toBeCloseTo(0.5, 6);
   });

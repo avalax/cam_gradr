@@ -5,7 +5,7 @@ import { installSyntheticCamera } from './camera-stub';
 import type { LightingName } from './synthetic-cards';
 
 interface Fixtures {
-  // Beleuchtung der synthetischen Kamera; pro Szenario oder Block mit test.use() wählbar.
+  // Lighting of the synthetic camera; selectable per scenario or block with test.use().
   lighting: LightingName;
   app: AppPage;
 }
@@ -14,14 +14,14 @@ export const test = base.extend<Fixtures>({
   lighting: ['ok', { option: true }],
 
   app: async ({ page, lighting }, use) => {
-    // Jeder unbehandelte Fehler der Seite lässt den Test scheitern (kein stilles Weißbild).
+    // Every unhandled error of the page fails the test (no silent white screen).
     const errors: string[] = [];
     page.on('pageerror', (error) => {
       errors.push(error.message);
     });
     await installSyntheticCamera(page, lighting);
     await use(new AppPage(page));
-    expect(errors, 'unbehandelte Fehler in der Seite').toEqual([]);
+    expect(errors, 'unhandled errors in the page').toEqual([]);
   },
 });
 

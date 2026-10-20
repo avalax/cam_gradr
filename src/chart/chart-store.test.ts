@@ -19,7 +19,7 @@ function placeCard(store: ReturnType<typeof useChartStore>, x: number) {
   store.addCorner(point(x, 100));
 }
 
-// 200x100-Bild: Karte 3 links, Karte 4 rechts; Feldhelligkeit pro Karte vorgegeben.
+// 200x100 image: chart 3 left, chart 4 right; patch brightness given per chart.
 function grid(left: number, right: number): PixelGrid {
   const data = new Uint8ClampedArray(200 * 100 * 4);
   for (let y = 0; y < 100; y++) {
@@ -38,7 +38,7 @@ describe('useChartStore', () => {
     setActivePinia(createPinia());
   });
 
-  describe('Suche mit gehaltenem Stand', () => {
+  describe('search with held state', () => {
     function withCards() {
       const store = useChartStore();
       placeCard(store, 0);
@@ -47,7 +47,7 @@ describe('useChartStore', () => {
       return store;
     }
 
-    it('hält beim Beginn der Suche Eckpunkte und Messwerte und leert den sichtbaren Stand', () => {
+    it('holds corners and measurements when the search starts and clears the visible state', () => {
       const store = withCards();
       store.beginSearch();
       expect(store.points).toEqual({});
@@ -57,7 +57,7 @@ describe('useChartStore', () => {
       expect(Object.keys(store.committed().measurements).length).toBeGreaterThan(0);
     });
 
-    it('stellt am Ende der Suche den bisherigen Stand wieder her, wenn nichts Neues entstand', () => {
+    it('restores the previous state at the end of the search if nothing new arose', () => {
       const store = withCards();
       const before = store.committed();
       const exposureBefore = store.exposure;
@@ -69,7 +69,7 @@ describe('useChartStore', () => {
       expect(store.committed().points).toEqual(before.points);
     });
 
-    it('behält neue Eckpunkte und lässt den gehaltenen Stand fallen', () => {
+    it('keeps new corners and drops the held state', () => {
       const store = withCards();
       store.beginSearch();
       store.setCards([
@@ -80,7 +80,7 @@ describe('useChartStore', () => {
       expect(store.points[3]?.[0]).toEqual(point(1, 1));
     });
 
-    it('beginnt keine Suche ohne Eckpunkte und hält bei einem zweiten Beginn den ersten Stand', () => {
+    it('starts no search without corners and keeps the first state on a second start', () => {
       const store = useChartStore();
       store.beginSearch();
       expect(store.committed().points).toEqual({});
@@ -91,7 +91,7 @@ describe('useChartStore', () => {
       expect(Object.keys(filled.points)).toHaveLength(2);
     });
 
-    it('verwirft den gehaltenen Stand mit reset und restore', () => {
+    it('discards the held state with reset and restore', () => {
       const store = withCards();
       store.beginSearch();
       store.reset();
@@ -106,11 +106,11 @@ describe('useChartStore', () => {
     });
   });
 
-  it('lädt das Graulayout mit beiden Karten', () => {
+  it('loads the gray layout with both cards', () => {
     expect(grayLayout.cards.map((card) => card.card)).toEqual([...GRAY_CARD_ORDER]);
   });
 
-  it('verlangt die Eckpunkte in fester Reihenfolge', () => {
+  it('requires the corners in a fixed order', () => {
     const store = useChartStore();
     expect(store.nextSlot).toEqual({ card: 3, index: 0 });
     store.addCorner(point(1, 1));
@@ -122,7 +122,7 @@ describe('useChartStore', () => {
     expect(store.ready).toBe(false);
   });
 
-  it('ist bereit, wenn alle 8 Eckpunkte gesetzt sind, und ignoriert weitere', () => {
+  it('is ready when all 8 corners are set, and ignores further ones', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -134,9 +134,9 @@ describe('useChartStore', () => {
     expect(Object.keys(store.corners)).toEqual(['3', '4']);
   });
 
-  it('ordnet die Eckpunkte unabhängig von der Klickreihenfolge', () => {
+  it('orders the corners regardless of the click order', () => {
     const store = useChartStore();
-    // Klickreihenfolge: oben links, unten links, unten rechts, oben rechts.
+    // Click order: top left, bottom left, bottom right, top right.
     store.addCorner(point(0, 0));
     store.addCorner(point(0, 100));
     store.addCorner(point(100, 100));
@@ -145,13 +145,13 @@ describe('useChartStore', () => {
     expect(store.points[3]?.[1]).toEqual(point(0, 100));
   });
 
-  it('liefert Eckpunkte erst für vollständige Karten', () => {
+  it('returns corners only for complete charts', () => {
     const store = useChartStore();
     store.addCorner(point(1, 1));
     expect(store.corners).toEqual({});
   });
 
-  it('verschiebt vorhandene Eckpunkte und ignoriert ungesetzte', () => {
+  it('moves existing corners and ignores unset ones', () => {
     const store = useChartStore();
     store.addCorner(point(1, 1));
     store.moveCorner(3, 0, point(9, 9));
@@ -162,7 +162,7 @@ describe('useChartStore', () => {
     expect(store.points[4]).toBeUndefined();
   });
 
-  it('verschiebt nur den gewählten Eckpunkt', () => {
+  it('moves only the selected corner', () => {
     const store = useChartStore();
     store.addCorner(point(1, 1));
     store.addCorner(point(2, 2));
@@ -170,7 +170,7 @@ describe('useChartStore', () => {
     expect(store.points[3]).toEqual([point(1, 1), point(7, 7)]);
   });
 
-  it('misst und bewertet die Belichtung', () => {
+  it('measures and rates the exposure', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -179,7 +179,7 @@ describe('useChartStore', () => {
     expect(store.exposure).not.toBeNull();
   });
 
-  it('misst bei den Farbkarten nur die Felder, ohne Raumhelligkeit zu bewerten', () => {
+  it('measures only the patches for the color charts, without rating room brightness', () => {
     const store = useColorChartStore();
     expect(store.nextSlot).toEqual({ card: 1, index: 0 });
     placeCard(store, 0);
@@ -190,13 +190,13 @@ describe('useChartStore', () => {
     expect(store.exposure).toBeNull();
   });
 
-  it('hat ohne vollständige Messung kein Ergebnis', () => {
+  it('has no result without a complete measurement', () => {
     const store = useChartStore();
     store.measure(grid(100, 100));
     expect(store.exposure).toBeNull();
   });
 
-  it('stellt gespeicherte Eckpunkte und Messwerte wieder her und bewertet das Licht neu', () => {
+  it('restores saved corners and measurements and rates the light again', () => {
     const store = useChartStore();
     const measured: Record<string, [number, number, number]> = {
       G18: [0.46, 0.46, 0.46],
@@ -212,7 +212,7 @@ describe('useChartStore', () => {
     expect(store.exposure).toBeNull();
   });
 
-  it('übernimmt bei den Farbkarten Messwerte ohne Helligkeitsbewertung', () => {
+  it('adopts measurements for the color charts without brightness rating', () => {
     const store = useColorChartStore();
     store.restore({
       points: { 1: [point(2, 2)] },
@@ -223,7 +223,7 @@ describe('useChartStore', () => {
     expect(store.exposure).toBeNull();
   });
 
-  it('übernimmt die erkannten Karten von links nach rechts', () => {
+  it('adopts the detected charts from left to right', () => {
     const store = useChartStore();
     const card = (x: number): Corners => [
       point(x, 0),
@@ -240,7 +240,7 @@ describe('useChartStore', () => {
     expect(store.ready).toBe(false);
   });
 
-  it('setzt alles zurück', () => {
+  it('resets everything', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -252,8 +252,8 @@ describe('useChartStore', () => {
     expect(store.ready).toBe(false);
   });
 
-  // Zwei Karten nebeneinander (je 100 Pixel breit); die Streifenfelder laufen von oben nach unten
-  // dunkel→hell (aufrecht) oder hell→dunkel (um 180° gedreht gehalten).
+  // Two charts side by side (100 pixels wide each); the strip patches run from top to bottom
+  // dark→bright (upright) or bright→dark (held rotated by 180°).
   function stripGrid(upright: boolean): PixelGrid {
     const data = new Uint8ClampedArray(200 * 100 * 4);
     for (let y = 0; y < 100; y++) {
@@ -268,7 +268,7 @@ describe('useChartStore', () => {
     return { width: 200, height: 100, data, channels: 4, maxValue: 255 };
   }
 
-  it('lässt aufrecht gehaltene Karten unverändert', () => {
+  it('leaves upright charts unchanged', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -282,7 +282,7 @@ describe('useChartStore', () => {
     );
   });
 
-  it('erkennt um 180° gedrehte Karten und ordnet die Felder neu zu', () => {
+  it('detects charts rotated by 180° and reassigns the patches', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -294,12 +294,13 @@ describe('useChartStore', () => {
     expect(Number(store.measurements['S4-0']?.[0])).toBeLessThan(
       Number(store.measurements['S4-5']?.[0]),
     );
-    // Die linke Karte im Bild ist nun Karte 4 (auf dem Kopf): ihre oben-links-Ecke liegt unten rechts.
+    // The left chart in the image is now chart 4 (upside down): its top-left corner is at the
+    // bottom right.
     expect(store.corners[4]?.[0]).toEqual(point(100, 100));
     expect(store.corners[3]?.[0]).toEqual(point(200, 100));
   });
 
-  it('wechselt mit dem Bild zurück, wenn die Karten wieder aufrecht gehalten werden', () => {
+  it('switches back with the image when the charts are held upright again', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -308,7 +309,7 @@ describe('useChartStore', () => {
     expect(store.rotated).toBe(false);
   });
 
-  it('behält die bisherige Lage, wenn die Messung keine Aussage erlaubt', () => {
+  it('keeps the previous orientation when the measurement allows no conclusion', () => {
     const store = useChartStore();
     placeCard(store, 0);
     placeCard(store, 100);
@@ -317,7 +318,7 @@ describe('useChartStore', () => {
     expect(store.rotated).toBe(true);
   });
 
-  it('dreht die Zuordnung nur, wenn beide Karten gesetzt sind', () => {
+  it('rotates the assignment only when both charts are set', () => {
     const store = useChartStore();
     store.restore({
       points: { 3: [point(0, 0), point(1, 0), point(1, 1), point(0, 1)] },
@@ -327,7 +328,7 @@ describe('useChartStore', () => {
     expect(store.corners[3]).toEqual([point(0, 0), point(1, 0), point(1, 1), point(0, 1)]);
   });
 
-  it('merkt sich die Drehung beim Wiederherstellen und setzt sie beim Zurücksetzen zurück', () => {
+  it('remembers the rotation on restore and resets it on reset', () => {
     const store = useColorChartStore();
     store.restore({ points: {}, measurements: {}, rotated: true });
     expect(store.rotated).toBe(true);
@@ -341,9 +342,9 @@ describe('Farbkarten um 180° gedreht', () => {
     setActivePinia(createPinia());
   });
 
-  // Farbkarten nebeneinander (je 100 Pixel breit): Karte 1 links, Karte 2 rechts, oder um 180° gedreht
-  // (Karte 2 links, Karte 1 rechts, beide auf dem Kopf). Die Grauleiter (Zeilen 1–6 der Spalten D und E)
-  // läuft aufrecht von oben hell nach unten dunkel.
+  // Color charts side by side (100 pixels wide each): chart 1 left, chart 2 right, or rotated by
+  // 180° (chart 2 left, chart 1 right, both upside down). The gray ladder (rows 1–6 of columns D
+  // and E) runs upright from bright at the top to dark at the bottom.
   function colorGrid(rotated: boolean): PixelGrid {
     const data = new Uint8ClampedArray(200 * 100 * 4).fill(255);
     const paint = (x: number, y: number, level: number) => {
@@ -376,7 +377,7 @@ describe('Farbkarten um 180° gedreht', () => {
     }
   }
 
-  it('lässt aufrecht gehaltene Farbkarten unverändert', () => {
+  it('leaves upright color charts unchanged', () => {
     const store = useColorChartStore();
     placeBoth(store);
     store.measure(colorGrid(false));
@@ -386,7 +387,7 @@ describe('Farbkarten um 180° gedreht', () => {
     );
   });
 
-  it('erkennt um 180° gedrehte Farbkarten an der Grauleiter und ordnet die Felder neu zu', () => {
+  it('detects color charts rotated by 180° from the gray ladder and reassigns the patches', () => {
     const store = useColorChartStore();
     placeBoth(store);
     store.measure(colorGrid(true));
@@ -397,7 +398,7 @@ describe('Farbkarten um 180° gedreht', () => {
     expect(Number(store.measurements['1E']?.[0])).toBeGreaterThan(
       Number(store.measurements['6E']?.[0]),
     );
-    // Die Grauleiter liefert wieder den Sollverlauf: Zeile 1 hell (6/7), Zeile 6 dunkel (1/7).
+    // The gray ladder gives the target progression again: row 1 bright (6/7), row 6 dark (1/7).
     expect(Number(store.measurements['1D']?.[0])).toBeCloseTo(6 / 7, 1);
     expect(Number(store.measurements['6E']?.[0])).toBeCloseTo(1 / 7, 1);
   });

@@ -1,14 +1,14 @@
-## Zusammenfassung
+## Summary
 
-<!-- Was ändert sich und warum? Der Titel des Pull Requests ist ein Conventional-Commit-Titel
-(zum Beispiel `feat(ui): ...` oder `fix(camera): ...`), denn er wird beim Squash-Merge zur Commit-Nachricht. -->
+<!-- What changes and why? The pull request title is a Conventional Commit title
+(for example `feat(ui): ...` or `fix(camera): ...`), because it becomes the commit message on squash merge. -->
 
-## Änderungen
+## Changes
 
 -
 
-## Geprüft
+## Checked
 
-- [ ] `npm run verify` ist grün (Lint, Typecheck, Tests, Coverage mindestens 99 %)
-- [ ] `npm run e2e` ist grün, bei Änderungen an der Oberfläche mit neuem oder angepasstem Szenario
-- [ ] Keine Herstellerdaten (Referenzwerte) und keine Bilder im Pull Request
+- [ ] `npm run verify` is green (lint, typecheck, tests, coverage of at least 99%)
+- [ ] `npm run e2e` is green, with a new or adapted scenario for changes to the UI
+- [ ] No manufacturer data (reference values) and no images in the pull request

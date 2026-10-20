@@ -8,7 +8,8 @@ import { cameraCode } from '../../src/test-support/synthetic-camera';
 const WIDTH = 1280;
 const HEIGHT = 720;
 
-// Pixelrechtecke der Kartenpaare im synthetischen Kamerabild (Graukarten 3 und 4, Farbkarten 1 und 2).
+// Pixel rectangles of the card pairs in the synthetic camera image (gray cards 3 and 4, color
+// cards 1 and 2).
 const CARD_PIXELS = {
   1: { x: 100, y: 50, w: 400, h: 600 },
   2: { x: 700, y: 50, w: 400, h: 600 },
@@ -18,7 +19,7 @@ const CARD_PIXELS = {
 
 type CardNumber = keyof typeof CARD_PIXELS;
 
-// Helligkeiten (sRGB-codiert, 0..1) der Felder einer Beleuchtungssituation.
+// Brightness values (sRGB-encoded, 0..1) of the patches of a lighting situation.
 interface Lighting {
   large18: number;
   large50: number;
@@ -32,11 +33,11 @@ const LIGHTINGS = {
   bright: { large18: 0.62, large50: 0.88, stripDark: 0.2, stripLight: 0.97 },
 } as const satisfies Record<string, Lighting>;
 
-// Beleuchtungen der Graukarten; "colors" zeigt stattdessen die Farbkarten (Schritt 2).
+// Lightings of the gray cards; "colors" shows the color cards instead (step 2).
 export type LightingName = keyof typeof LIGHTINGS;
 export type SceneName = LightingName | 'colors';
 
-// Ein gefülltes Rechteck des synthetischen Bildes (Pixel, Farbe 0..255).
+// One filled rectangle of the synthetic image (pixels, color 0..255).
 interface SceneRect {
   x: number;
   y: number;
@@ -83,7 +84,7 @@ function background(): SceneRect {
   return { x: 0, y: 0, w: WIDTH, h: HEIGHT, color: toGray(SURROUND) };
 }
 
-// Beschreibt beide Graukarten mit den Feldern aus dem Layout als Liste gefüllter Rechtecke.
+// Describes both gray cards with the patches from the layout as a list of filled rectangles.
 function grayScene(name: LightingName): Scene {
   const lighting = LIGHTINGS[name];
   const rects: SceneRect[] = [background()];
@@ -105,7 +106,8 @@ function grayScene(name: LightingName): Scene {
   return { width: WIDTH, height: HEIGHT, rects };
 }
 
-// Beide Farbkarten: jedes Feld zeigt, was die künstliche Webcam für den (erfundenen) Referenzwert meldet.
+// Both color cards: each patch shows what the artificial webcam reports for the (made-up)
+// reference value.
 function colorScene(): Scene {
   const rects: SceneRect[] = [background()];
   for (const card of colorLayout.cards) {
@@ -125,7 +127,7 @@ function colorScene(): Scene {
   return { width: WIDTH, height: HEIGHT, rects };
 }
 
-// Mittelpunkt (Pixel im Kamerabild) eines Farbfeldes der synthetischen Farbkarten.
+// Center (pixels in the camera image) of a color patch of the synthetic color cards.
 export function colorPatchCenter(id: string): { x: number; y: number } {
   for (const card of colorLayout.cards) {
     const patch = card.patches.find((entry) => entry.id === id);
@@ -137,7 +139,7 @@ export function colorPatchCenter(id: string): { x: number; y: number } {
       };
     }
   }
-  throw new Error(`Unbekanntes Farbfeld: ${id}`);
+  throw new Error(`Unknown color patch: ${id}`);
 }
 
 export function sceneFor(name: SceneName): Scene {

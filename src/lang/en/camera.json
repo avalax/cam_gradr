@@ -1,0 +1,26 @@
+{
+  "toggle": {
+    "label": "Camera",
+    "starting": "Starting camera …",
+    "stop": "Stop camera",
+    "start": "Start camera"
+  },
+  "controls": {
+    "camera": "Camera",
+    "defaultCamera": "Default camera",
+    "resolution": "Resolution",
+    "actualResolution": "Active resolution: {width} × {height}",
+    "autoHint": "Lock auto exposure and auto white balance in your camera software. Automatic adjustments distort the measurement."
+  },
+  "errors": {
+    "unsupported": "Camera access is not supported. Please use a current browser over HTTPS or localhost.",
+    "permissionDenied": "Access to the camera was denied. Please allow the permission in the browser.",
+    "notFound": "No camera was found.",
+    "inUse": "The camera is already in use by another application or cannot be read.",
+    "unsatisfiable": "The selected camera does not support the requested resolution.",
+    "unknown": "The camera could not be started.",
+    "captureFailed": "Capture failed.",
+    "notReady": "The camera image is not ready yet. Please wait a moment and try again.",
+    "noCanvas": "Canvas context not available."
+  }
+}

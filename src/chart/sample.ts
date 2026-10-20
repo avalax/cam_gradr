@@ -5,7 +5,7 @@ import type { PixelGrid, Rect, Rgb } from './types';
 const DEFAULT_INNER = 0.5;
 const DEFAULT_STEPS = 8;
 
-// Median einer nicht leeren Liste (der Aufrufer stellt das sicher).
+// Median of a non-empty list (the caller guarantees this).
 function median(values: number[]): number {
   const sorted = values.toSorted((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
@@ -17,8 +17,8 @@ function isInside(grid: PixelGrid, x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < grid.width && y < grid.height;
 }
 
-// Misst ein Feld: Median je Kanal über ein Raster im inneren Bereich des Feldes (Ränder/Reflexe
-// werden ausgeschlossen). Ergebnis in 0..1; null, wenn das Feld außerhalb des Bildes liegt.
+// Measures a patch: median per channel over a grid in the inner area of the patch (edges and
+// reflections are excluded). Result in 0..1; null if the patch lies outside the image.
 export function samplePatch(
   grid: PixelGrid,
   homography: Homography,

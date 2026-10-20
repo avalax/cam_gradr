@@ -17,11 +17,11 @@ describe('createIndexedDbStorage', () => {
     storage = createIndexedDbStorage(factory, 'test-db');
   });
 
-  it('ist zu Beginn leer', async () => {
+  it('is empty at the start', async () => {
     expect(await storage.list()).toEqual([]);
   });
 
-  it('speichert und liest Sätze', async () => {
+  it('saves and reads sets', async () => {
     await storage.save(first);
     await storage.save(second);
     const all = await storage.list();
@@ -30,7 +30,7 @@ describe('createIndexedDbStorage', () => {
     expect(all.find((set) => set.name === 'Satz A')).toEqual(first);
   });
 
-  it('überschreibt einen Satz gleichen Namens', async () => {
+  it('overwrites a set of the same name', async () => {
     await storage.save(first);
     await storage.save({ ...first, patches: { '1D': [10, 0, 0] } });
     const all = await storage.list();
@@ -38,7 +38,7 @@ describe('createIndexedDbStorage', () => {
     expect(all[0]?.patches['1D']).toEqual([10, 0, 0]);
   });
 
-  it('löscht Sätze', async () => {
+  it('deletes sets', async () => {
     await storage.save(first);
     await storage.save(second);
     await storage.remove('Satz A');
@@ -46,7 +46,7 @@ describe('createIndexedDbStorage', () => {
     expect(remaining.map((set) => set.name)).toEqual(['Satz B']);
   });
 
-  it('behält Daten über mehrere Zugriffe mit derselben Datenbank', async () => {
+  it('keeps data across several accesses with the same database', async () => {
     await storage.save(first);
     const again = createIndexedDbStorage(factory, 'test-db');
     expect(await again.list()).toEqual([first]);
@@ -58,7 +58,7 @@ describe('createIndexedDbStorage', () => {
     expect(await other.list()).toEqual([]);
   });
 
-  it('meldet Fehler beim Öffnen', async () => {
+  it('reports errors on opening', async () => {
     const broken = {
       open: () => {
         throw new Error('gesperrt');
@@ -67,7 +67,7 @@ describe('createIndexedDbStorage', () => {
     await expect(createIndexedDbStorage(broken, 'x').list()).rejects.toThrow('gesperrt');
   });
 
-  it('meldet Fehler der Anfrage', async () => {
+  it('reports request errors', async () => {
     const failingRequest = new EventTarget() as unknown as IDBOpenDBRequest;
     Object.assign(failingRequest, { error: null });
     const failing = {
@@ -76,10 +76,10 @@ describe('createIndexedDbStorage', () => {
         return failingRequest;
       },
     } as unknown as IDBFactory;
-    await expect(createIndexedDbStorage(failing, 'x').list()).rejects.toThrow('IndexedDB-Fehler');
+    await expect(createIndexedDbStorage(failing, 'x').list()).rejects.toThrow('IndexedDB error');
   });
 
-  it('meldet Fehler der Transaktion', async () => {
+  it('reports transaction errors', async () => {
     const transaction = new EventTarget() as unknown as IDBTransaction;
     Object.assign(transaction, {
       error: null,
@@ -102,7 +102,7 @@ describe('createIndexedDbStorage', () => {
       },
     } as unknown as IDBFactory;
     await expect(createIndexedDbStorage(failing, 'x').save(first)).rejects.toThrow(
-      'IndexedDB-Fehler',
+      'IndexedDB error',
     );
   });
 });

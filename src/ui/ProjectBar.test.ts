@@ -12,7 +12,7 @@ vi.mock('../lut/download', () => ({ downloadFile: download }));
 async function chooseFile(wrapper: ReturnType<typeof mount>, text: string) {
   const input = wrapper.get('[data-testid="project-file"]');
   Object.defineProperty(input.element, 'files', {
-    value: [{ name: 'projekt.json', text: () => Promise.resolve(text) }],
+    value: [{ name: 'project.json', text: () => Promise.resolve(text) }],
     configurable: true,
   });
   await input.trigger('change');
@@ -25,13 +25,13 @@ describe('ProjectBar', () => {
     download.mockReset();
   });
 
-  it('bietet Speichern und Laden an', () => {
+  it('offers saving and loading', () => {
     const wrapper = mount(ProjectBar);
     expect(wrapper.get('[data-testid="project-save"]').text()).toBe('Projekt speichern');
     expect(wrapper.text()).toContain('Projekt laden');
   });
 
-  it('speichert standardmäßig mit Standbildern und ohne, wenn der Haken fehlt', async () => {
+  it('saves with still images by default and without when the checkbox is unchecked', async () => {
     const wrapper = mount(ProjectBar);
     const save = vi.spyOn(useProjectStore(), 'save').mockResolvedValue();
     const box = wrapper.get('[data-testid="project-stills"]');
@@ -43,14 +43,14 @@ describe('ProjectBar', () => {
     expect(save).toHaveBeenLastCalledWith({ withStills: false });
   });
 
-  it('speichert das Projekt', async () => {
+  it('saves the project', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(download).toHaveBeenCalledTimes(1);
     expect(useProjectStore().notice).toBeNull();
   });
 
-  it('lädt die gewählte Datei', async () => {
+  it('loads the selected file', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     const saved = (download.mock.calls[0] as [string, string, string])[1];
@@ -59,13 +59,13 @@ describe('ProjectBar', () => {
     expect(useProjectStore().notice).toBeNull();
   });
 
-  it('meldet eine fehlerhafte Datei im Speicher des Projekts', async () => {
+  it('reports a faulty file in the project storage', async () => {
     const wrapper = mount(ProjectBar);
     await chooseFile(wrapper, '{"format":"x"}');
     expect(useProjectStore().error).toContain('Unbekanntes Format');
   });
 
-  it('macht ohne gewählte Datei nichts', async () => {
+  it('does nothing without a selected file', async () => {
     const wrapper = mount(ProjectBar);
     const input = wrapper.get('[data-testid="project-file"]');
     Object.defineProperty(input.element, 'files', { value: [], configurable: true });

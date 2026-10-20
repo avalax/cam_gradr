@@ -47,7 +47,7 @@ export default tseslint.config(
       complexity: ['error', 10],
       'unicorn/prevent-abbreviations': 'off',
       'unicorn/filename-case': ['error', { cases: { kebabCase: true, pascalCase: true } }],
-      // Viele Fehlalarme bei typisierten Arrays und Indexzugriffen; TypeScript prüft die Typen bereits.
+      // Many false positives with typed arrays and index access; TypeScript already checks the types.
       'security/detect-object-injection': 'off',
       'vuejs-accessibility/label-has-for': ['error', { required: { some: ['nesting', 'id'] } }],
       'unicorn/no-null': 'off',
@@ -55,9 +55,9 @@ export default tseslint.config(
         'error',
         { varsIgnorePattern: '^_', argsIgnorePattern: '^_', ignoreRestSiblings: true },
       ],
-      // Frühe Returns erzeugen unerreichbare Guard-Zweige, die die 99-%-Coverage unnötig belasten.
+      // Early returns create unreachable guard branches that needlessly burden the 99 % coverage.
       'unicorn/prefer-early-return': 'off',
-      // Rein stilistische Regeln, die bei Mathe-/Messcode eher stören.
+      // Purely stylistic rules that tend to get in the way of math/measurement code.
       'unicorn/prefer-continue': 'off',
       'unicorn/prefer-ternary': 'off',
       'unicorn/consistent-boolean-name': 'off',
@@ -81,7 +81,7 @@ export default tseslint.config(
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
   {
-    // Architekturregel: Farbmathe darf nichts aus der UI importieren.
+    // Architecture rule: color math must not import anything from the UI.
     files: ['src/color/**/*.ts'],
     rules: {
       'import-x/no-restricted-paths': [
@@ -99,7 +99,7 @@ export default tseslint.config(
         'error',
         { assertFunctionNames: ['expect', 'expectPoint', 'expectCard', 'rejects'] },
       ],
-      // In Tests sind verschachtelte Aufrufe und lokale Hilfsfunktionen üblich.
+      // Nested calls and local helper functions are common in tests.
       'unicorn/max-nested-calls': 'off',
       'unicorn/consistent-function-scoping': 'off',
     },
@@ -109,7 +109,7 @@ export default tseslint.config(
     files: ['e2e/**/*.ts'],
     rules: {
       ...playwright.configs['flat/recommended'].rules,
-      // Seitenobjekte und Szenarien sind bewusst ausführlich und tief verschachtelt.
+      // Page objects and scenarios are deliberately verbose and deeply nested.
       'unicorn/max-nested-calls': 'off',
       'unicorn/no-top-level-side-effects': 'off',
       'unicorn/prefer-module': 'off',

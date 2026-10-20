@@ -33,7 +33,7 @@ describe('ExportTab', () => {
     download.mockReset();
   });
 
-  it('verlangt zuerst eine Farbkorrektur, zeigt aber, was man bekommt', () => {
+  it('asks for a color correction first, but shows what you get', () => {
     const wrapper = mount(ExportTab);
     expect(wrapper.get('[data-testid="export-no-model"]').text()).toContain(
       'Noch keine Farbkorrektur',
@@ -44,7 +44,7 @@ describe('ExportTab', () => {
     expect(wrapper.get('[data-testid="export-size-17"]').attributes('disabled')).toBeDefined();
   });
 
-  it('zeigt ohne Korrektur graue Schnitte und eine leere Projektliste', () => {
+  it('shows gray slices and an empty project list without a correction', () => {
     const wrapper = mount(ExportTab);
     expect(wrapper.findAll('[data-testid="lut-slice-empty"]')).toHaveLength(4);
     const facts = wrapper.get('[data-testid="project-facts"]');
@@ -53,7 +53,7 @@ describe('ExportTab', () => {
     expect(facts.text()).toContain('Referenz–');
   });
 
-  it('nennt mit Korrektur die Schnitte, die Dateigröße und den Inhalt des Projekts', async () => {
+  it('names the slices, the file size and the project contents with a correction', async () => {
     computeModel();
     useChartStore().setCards([
       [
@@ -81,25 +81,25 @@ describe('ExportTab', () => {
     expect(facts).toContain('Kurven + Matrix');
   });
 
-  it('führt mit dem Link zu den Farbkarten', async () => {
+  it('leads to the color cards via the link', async () => {
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
     expect(wrapper.emitted('goto')).toEqual([['color']]);
   });
 
-  it('bietet das Projekt auch ohne Farbkorrektur an', () => {
+  it('offers the project even without a color correction', () => {
     const wrapper = mount(ExportTab);
     expect(wrapper.get('[data-testid="project-save"]').attributes('disabled')).toBeUndefined();
     expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
   });
 
-  it('lädt ohne Farbkorrektur nichts herunter', () => {
+  it('downloads nothing without a color correction', () => {
     const wrapper = mount(ExportTab);
     (wrapper.vm as unknown as { download: () => void }).download();
     expect(download).not.toHaveBeenCalled();
   });
 
-  it('bietet die Größen 17, 33 und 65 mit 33 als Standard an', () => {
+  it('offers sizes 17, 33 and 65 with 33 as default', () => {
     computeModel();
     const wrapper = mount(ExportTab);
     const radios = wrapper.findAll('[role="radio"]');
@@ -113,7 +113,7 @@ describe('ExportTab', () => {
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
 
-  it('lädt eine gültige .cube-Datei in der gewählten Größe herunter', async () => {
+  it('downloads a valid .cube file in the selected size', async () => {
     computeModel();
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-size-17"]').trigger('click');
@@ -129,17 +129,18 @@ describe('ExportTab', () => {
     expect(parsed.title).toBe('cam_gradr');
   });
 
-  it('schreibt die volle Korrektur in die LUT', async () => {
+  it('writes the full correction into the LUT', async () => {
     computeModel();
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-download"]').trigger('click');
     const lut = parseCube((download.mock.calls[0] as [string, string, string])[1]);
-    // Der Knoten (r = 1/32 der Skala) wird von der Korrektur verändert, er bleibt nicht auf der Identität.
+    // The node (r = 1/32 of the scale) is changed by the correction; it does not stay on the
+    // identity.
     const index = 3 * (1 + 33 * 5 + 33 * 33 * 9);
     expect(lut.lut.data[index]).not.toBeCloseTo(1 / 32, 3);
   });
 
-  it('zeigt nach dem Herunterladen keine Meldung', async () => {
+  it('shows no message after the download', async () => {
     computeModel();
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-download"]').trigger('click');

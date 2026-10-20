@@ -1,6 +1,6 @@
 import type { Lut } from '../lut/lut';
 
-// Liest eine .cube-Datei wieder ein (nur für Tests: Rundreise zur Prüfung des Exports).
+// Reads a .cube file back in (tests only: round trip to verify the export).
 export interface ParsedCube {
   title: string;
   lut: Lut;

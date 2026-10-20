@@ -24,7 +24,7 @@ function clamp(value: number, max: number): number {
   return Math.min(Math.max(value, 0), max);
 }
 
-// Rechnet einen Klickpunkt (Bildschirmkoordinaten) in Bildkoordinaten des Videos um.
+// Converts a click point (screen coordinates) into video image coordinates.
 export function clientToImage(client: Point, box: Box, size: Size): Point {
   return {
     x: clamp(((client.x - box.left) / box.width) * size.width, size.width),
@@ -47,7 +47,7 @@ function polygon(homography: Homography, rect: Rect): string {
     .join(' ');
 }
 
-// Umrisse der Karten und ihrer Felder im Bild, für alle Karten mit gesetzten Eckpunkten.
+// Outlines of the cards and their patches in the image, for all cards with corner points set.
 export function buildShapes(
   layout: ChartLayout,
   corners: Readonly<Record<number, Corners | undefined>>,

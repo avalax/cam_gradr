@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 import { RESOLUTIONS } from '../camera/types';
 
+const { t } = useI18n();
 const store = useCameraStore();
 const { devices, selectedDeviceId, resolution, status, actual } = storeToRefs(store);
 
@@ -27,21 +29,21 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
 <template>
   <section class="space-y-3">
     <label class="flex flex-col gap-1 text-sm">
-      Kamera
+      {{ t('camera.controls.camera') }}
       <select
         class="rounded-md border border-zinc-400 bg-white p-1.5"
         :value="selectedDeviceId ?? ''"
         :disabled="isStarting"
         @change="onDevice"
       >
-        <option value="">Standardkamera</option>
+        <option value="">{{ t('camera.controls.defaultCamera') }}</option>
         <option v-for="device in devices" :key="device.id" :value="device.id">
           {{ device.label }}
         </option>
       </select>
     </label>
     <div class="flex flex-col gap-1 text-sm">
-      <span id="resolution-label">Auflösung</span>
+      <span id="resolution-label">{{ t('camera.controls.resolution') }}</span>
       <div role="radiogroup" aria-labelledby="resolution-label" class="flex flex-wrap gap-1.5">
         <button
           v-for="r in RESOLUTIONS"
@@ -63,7 +65,7 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
         </button>
       </div>
       <p v-if="actual !== null" class="text-xs text-zinc-500">
-        Aktive Auflösung: {{ actual.width }} × {{ actual.height }}
+        {{ t('camera.controls.actualResolution', { width: actual.width, height: actual.height }) }}
       </p>
     </div>
     <p
@@ -75,10 +77,7 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
         class="mt-0.5 grid size-3.5 shrink-0 place-items-center rounded-full border-[1.5px] border-zinc-500 text-[9px] font-bold"
         >i</span
       >
-      <span
-        >Stelle Auto-Belichtung und Auto-Weißabgleich in der Kamera-Software fest. Automatische
-        Anpassungen verfälschen die Messung.</span
-      >
+      <span>{{ t('camera.controls.autoHint') }}</span>
     </p>
   </section>
 </template>

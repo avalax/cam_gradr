@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import type { Measurements } from '../chart/measure';
 import type { ChartLayout } from '../chart/types';
@@ -10,6 +11,8 @@ import { buildStrips } from './color-strips';
 import { byRowThenColumn, deviationSummary } from './gray-wedge';
 import WipeDivider from './WipeDivider.vue';
 
+const { t } = useI18n();
+
 const props = defineProps<{
   layout: ChartLayout;
   measurements: Measurements;
@@ -18,10 +21,10 @@ const props = defineProps<{
   report: FitResult['report'] | null;
 }>();
 
-// Lage des Strichs: links die Farben der Kamera, rechts die korrigierten.
+// Position of the divider: camera colors on the left, corrected ones on the right.
 const split = ref(50);
 
-// Die Karten stehen untereinander, jede mit vier Spalten.
+// The cards are stacked, each with four columns.
 const cards = computed(() =>
   props.layout.cards.map((card) => card.patches.map((patch) => patch.id).toSorted(byRowThenColumn)),
 );
@@ -29,14 +32,14 @@ const cards = computed(() =>
 const strips = computed(() =>
   buildStrips(cards.value.flat(), props.measurements, props.model, props.reference),
 );
-// Ob ein Feld gemessen ist, bestimmt die Kamera-Ebene (nur für die Beschreibung beim Überfahren).
+// Whether a patch is measured is determined by the camera layer (only for the hover description).
 const measuredIds = computed(
   () => new Set(strips.value.camera.filter((swatch) => swatch.measured).map((swatch) => swatch.id)),
 );
 const layers = computed(() =>
   [
-    { key: 'camera', label: 'Farben der Kamera', swatches: strips.value.camera },
-    { key: 'corrected', label: 'Farben nach der Korrektur', swatches: strips.value.corrected },
+    { key: 'camera', label: t('color.wipe.cameraLayer'), swatches: strips.value.camera },
+    { key: 'corrected', label: t('color.wipe.correctedLayer'), swatches: strips.value.corrected },
   ].map((layer) => ({
     ...layer,
     byId: new Map(layer.swatches.map((swatch) => [swatch.id, swatch])),
@@ -44,12 +47,12 @@ const layers = computed(() =>
 );
 
 const summary = computed(() =>
-  props.report === null ? 'Noch keine Korrektur' : deviationSummary(props.report),
+  props.report === null ? t('color.wipe.noCorrection') : deviationSummary(props.report),
 );
 </script>
 
 <template>
-  <!-- Wischer über die Farbkarten: links vom Strich die Farben der Kamera, rechts die korrigierten. -->
+  <!-- Wipe over the color cards: camera colors left of the divider, corrected ones on the right. -->
   <div
     class="relative flex w-44 shrink-0 flex-col self-stretch rounded-lg border border-zinc-500 bg-zinc-50"
     data-testid="color-wipe"
@@ -57,7 +60,7 @@ const summary = computed(() =>
     <p
       class="rounded-t-[7px] border-b-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
     >
-      links Kamera · rechts korrigiert
+      {{ t('color.wipe.caption') }}
     </p>
 
     <div class="relative min-h-64 flex-1 overflow-hidden">
@@ -80,17 +83,17 @@ const summary = computed(() =>
             v-for="id in ids"
             :key="id"
             :style="{ background: layer.byId.get(id)?.css }"
-            :title="`${id}${measuredIds.has(id) ? '' : ' (Standardwert)'}`"
+            :title="measuredIds.has(id) ? id : t('color.wipe.defaultValue', { id })"
             :data-patch="id"
           ></div>
         </div>
       </div>
 
-      <WipeDivider v-model="split" label="Wischer: Farben der Kamera links, korrigierte rechts" />
+      <WipeDivider v-model="split" :label="t('color.wipe.divider')" />
     </div>
 
-    <!-- Die Zusammenfassung ist zugleich der Auslöser: Beim Überfahren oder per Tastaturfokus erscheint
-         das Ergebnis der Farbkorrektur als Popup (wie die Details beim Messfeld der Graukarten). -->
+    <!-- The summary is also the trigger: on hover or keyboard focus the color correction result
+              appears as a popup (like the details on the gray cards' measuring field). -->
     <div
       class="group relative rounded-b-[7px] outline-offset-2 focus-visible:outline"
       :tabindex="report === null ? undefined : 0"

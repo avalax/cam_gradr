@@ -13,7 +13,7 @@ describe('CameraControls', () => {
     setActivePinia(createPinia());
   });
 
-  it('zeigt Hinweis zur Kamera-Automatik und die Auswahl von Kamera und Auflösung', () => {
+  it('shows the camera automation hint and the camera and resolution choice', () => {
     installFakeCamera();
     const wrapper = mount(CameraControls);
     expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
@@ -23,7 +23,7 @@ describe('CameraControls', () => {
     expect(wrapper.get('[data-resolution="640x480"]').attributes('aria-checked')).toBe('false');
   });
 
-  it('sperrt die Auswahl, solange die Kamera startet', async () => {
+  it('locks the selection while the camera is starting', async () => {
     installFakeCamera();
     const wrapper = mount(CameraControls);
     const start = useCameraStore().start();
@@ -36,7 +36,7 @@ describe('CameraControls', () => {
     expect(wrapper.get('select').attributes('disabled')).toBeDefined();
   });
 
-  it('zeigt Geräte und die aktive Auflösung, sobald die Kamera läuft', async () => {
+  it('shows devices and the active resolution once the camera is running', async () => {
     installFakeCamera();
     const wrapper = mount(CameraControls);
     await useCameraStore().start();
@@ -45,7 +45,7 @@ describe('CameraControls', () => {
     expect(wrapper.text()).toContain('Webcam 2');
   });
 
-  it('wechselt Kamera und Auflösung', async () => {
+  it('switches camera and resolution', async () => {
     const api = installFakeCamera();
     const wrapper = mount(CameraControls);
     await useCameraStore().start();

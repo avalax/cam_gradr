@@ -6,11 +6,12 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     include: ['src/**/*.test.ts'],
+    setupFiles: ['src/test-support/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
-      // Eng gefasste Ausschlüsse: nur Einstiegspunkt und reine Typdeklarationen.
+      // Narrowly scoped exclusions: only the entry point and pure type declarations.
       exclude: [
         'src/main.ts',
         'src/**/*.test.ts',

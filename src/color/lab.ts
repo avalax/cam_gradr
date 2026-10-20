@@ -3,7 +3,7 @@ import { linearToSrgb, srgbToLinear } from './srgb';
 export type Vec3 = readonly [number, number, number];
 type Matrix3 = readonly [Vec3, Vec3, Vec3];
 
-// Referenzweißpunkt D50 (wie in CSS Color 4) und D65 jeweils mit Y = 1.
+// Reference white points D50 (as in CSS Color 4) and D65, each with Y = 1.
 const WHITE_D50: Vec3 = [0.3457 / 0.3585, 1, (1 - 0.3457 - 0.3585) / 0.3585];
 
 const SRGB_TO_XYZ_D65: Matrix3 = [
@@ -18,7 +18,7 @@ const XYZ_D65_TO_SRGB: Matrix3 = [
   [0.055_643_4, -0.204_025_9, 1.057_225_2],
 ];
 
-// Bradford-Adaption zwischen den Weißpunkten D65 und D50.
+// Bradford adaptation between the white points D65 and D50.
 const D65_TO_D50: Matrix3 = [
   [1.047_811_2, 0.022_886_6, -0.050_127],
   [0.029_542_4, 0.990_484_4, -0.017_049_1],
@@ -43,12 +43,12 @@ function multiply(matrix: Matrix3, [x, y, z]: Vec3): Vec3 {
   ];
 }
 
-// Linearer sRGB-Wert (D65) -> XYZ mit D50-Weißpunkt.
+// Linear sRGB value (D65) -> XYZ with D50 white point.
 export function linearSrgbToXyzD50(rgb: Vec3): Vec3 {
   return multiply(D65_TO_D50, multiply(SRGB_TO_XYZ_D65, rgb));
 }
 
-// XYZ mit D50-Weißpunkt -> linearer sRGB-Wert (D65), ohne Begrenzung.
+// XYZ with D50 white point -> linear sRGB value (D65), without clamping.
 function xyzD50ToLinearSrgb(xyz: Vec3): Vec3 {
   return multiply(XYZ_D65_TO_SRGB, multiply(D50_TO_D65, xyz));
 }
@@ -77,13 +77,13 @@ export function labToXyzD50([l, a, b]: Vec3): Vec3 {
   return [inverse(fx) * WHITE_D50[0], yr * WHITE_D50[1], inverse(fz) * WHITE_D50[2]];
 }
 
-// sRGB-codierter Wert (0..1) -> CIE Lab (D50).
+// sRGB-encoded value (0..1) -> CIE Lab (D50).
 export function srgbToLab(code: Vec3): Vec3 {
   const [r, g, b] = code;
   return xyzD50ToLab(linearSrgbToXyzD50([srgbToLinear(r), srgbToLinear(g), srgbToLinear(b)]));
 }
 
-// CIE Lab (D50) -> sRGB-codierter Wert, auf 0..1 begrenzt.
+// CIE Lab (D50) -> sRGB-encoded value, clamped to 0..1.
 function toCode(value: number): number {
   return linearToSrgb(Math.min(Math.max(value, 0), 1));
 }
@@ -93,7 +93,7 @@ export function labToSrgb(lab: Vec3): Vec3 {
   return [toCode(r), toCode(g), toCode(b)];
 }
 
-// CIE Lab (D50) -> linearer sRGB-Wert (D65), unbegrenzt.
+// CIE Lab (D50) -> linear sRGB value (D65), unclamped.
 export function labToLinearSrgb(lab: Vec3): Vec3 {
   return xyzD50ToLinearSrgb(labToXyzD50(lab));
 }
@@ -129,7 +129,7 @@ function hueMean(c1: number, c2: number, h1: number, h2: number): number {
   return (h1 + h2 + (h1 + h2 < 360 ? 360 : -360)) / 2;
 }
 
-// Farbabstand CIEDE2000 (Sharma et al., kL = kC = kH = 1).
+// Color difference CIEDE2000 (Sharma et al., kL = kC = kH = 1).
 export function deltaE2000(first: Vec3, second: Vec3): number {
   const [l1, a1, b1] = first;
   const [l2, a2, b2] = second;

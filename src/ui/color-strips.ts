@@ -7,13 +7,13 @@ import type { ColorModel } from '../solve/fit';
 
 import { cssColor } from './color-css';
 
-// Farbe eines Feldes, solange nichts gemessen oder berechnet ist und es auch keinen Referenzwert gibt.
+// Color of a patch while nothing is measured or computed and there is no reference value either.
 export const NEUTRAL_SWATCH = 'rgb(203, 213, 225)';
 
 interface Swatch {
   id: string;
   css: string;
-  // Aus einer Messung (oder Korrektur) oder nur ein Standardwert?
+  // From a measurement (or correction) or just a default value?
   measured: boolean;
 }
 
@@ -22,15 +22,15 @@ export interface Strips {
   corrected: Swatch[];
 }
 
-// Standardfarbe eines Feldes: der Sollwert der Referenz, sonst ein neutrales Grau.
+// Default color of a patch: the reference target value, otherwise a neutral gray.
 function fallback(reference: ReferenceSet | null, id: string): string {
   const lab = reference?.patches[id];
   return lab === undefined ? NEUTRAL_SWATCH : cssColor(labToSrgb(lab));
 }
 
-// Farben der beiden Ebenen in der Reihenfolge der Feld-IDs: links, was die Kamera von der Karte
-// sieht, rechts nach der Korrektur. Wo es keine Messung gibt, steht der Sollwert. Ohne Korrektur
-// (kein Modell) bleibt die rechte Seite gleich der linken, damit der Wischer allein nichts verändert.
+// Colors of the two layers in the order of the patch IDs: on the left what the camera sees of the
+// card, on the right after the correction. Where there is no measurement, the target value is used.
+// Without a correction (no model) the right side stays equal to the left so the wipe alone changes nothing.
 export function buildStrips(
   ids: readonly string[],
   measurements: Measurements,

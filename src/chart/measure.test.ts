@@ -10,7 +10,7 @@ const layout: ChartLayout = {
   ],
 };
 
-// 200x100-Bild: linke Hälfte hell (Karte 3), rechte Hälfte dunkel (Karte 4).
+// 200x100 image: left half bright (chart 3), right half dark (chart 4).
 const grid: PixelGrid = (() => {
   const data = new Uint8ClampedArray(200 * 100 * 4);
   for (let y = 0; y < 100; y++) {
@@ -31,18 +31,18 @@ const cardAt = (x: number): Corners => [
 ];
 
 describe('measureChart', () => {
-  it('misst nur Karten mit gesetzten Eckpunkten', () => {
+  it('measures only charts with set corners', () => {
     const result = measureChart(layout, { 3: cardAt(0) }, grid);
     expect(Object.keys(result)).toEqual(['G50']);
     expect(result.G50?.[0]).toBeCloseTo(200 / 255, 6);
   });
 
-  it('misst beide Karten', () => {
+  it('measures both charts', () => {
     const result = measureChart(layout, { 3: cardAt(0), 4: cardAt(100) }, grid);
     expect(result.G18?.[0]).toBeCloseTo(100 / 255, 6);
   });
 
-  it('lässt Felder außerhalb des Bildes aus', () => {
+  it('skips patches outside the image', () => {
     const result = measureChart(layout, { 3: cardAt(1000) }, grid);
     expect(result).toEqual({});
   });
@@ -59,7 +59,7 @@ describe('exposureInput', () => {
     'S4-5': g(0.9),
   };
 
-  it('wählt dunkelstes und hellstes Streifenfeld beider Karten', () => {
+  it('selects the darkest and brightest strip patch of both charts', () => {
     const result = exposureInput(full);
     expect(result?.stripDark).toEqual(g(0.05));
     expect(result?.stripLight).toEqual(g(0.9));
@@ -67,12 +67,12 @@ describe('exposureInput', () => {
     expect(result?.large50).toEqual(g(0.7));
   });
 
-  it('kommt auch mit nur einer Karte zurecht', () => {
+  it('also copes with just one chart', () => {
     const { 'S4-0': _a, 'S4-5': _b, ...single } = full;
     expect(exposureInput(single)?.stripLight).toEqual(g(0.8));
   });
 
-  it('liefert null, wenn Felder fehlen', () => {
+  it('returns null when patches are missing', () => {
     expect(exposureInput({})).toBeNull();
     const { G18: _g18, ...withoutG18 } = full;
     expect(exposureInput(withoutG18)).toBeNull();

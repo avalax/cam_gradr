@@ -11,7 +11,7 @@ jobs:
   conventional-title:
     runs-on: ubuntu-latest
     steps:
-      # Beim Squash-Merge wird der Titel zur Commit-Nachricht auf main und steuert release-please.
+      # On squash merge the title becomes the commit message on main and drives release-please.
       - uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

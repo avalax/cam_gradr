@@ -1,22 +1,24 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 
+const { t } = useI18n();
 const camera = useCameraStore();
 const { status, errorMessage } = storeToRefs(camera);
 
-// "An" gilt auch während des Startens oder bei einem Fehler: ein Klick schaltet dann aus.
+// "On" also applies while starting or after an error: a click then switches it off.
 const isOn = computed(() => status.value !== 'idle');
 const label = computed(() => {
   if (status.value === 'starting') {
-    return 'Kamera startet …';
+    return t('camera.toggle.starting');
   }
-  return isOn.value ? 'Kamera stoppen' : 'Kamera starten';
+  return t(isOn.value ? 'camera.toggle.stop' : 'camera.toggle.start');
 });
 
-// Grün zum Starten, Gelb während des Startens, Rot zum Stoppen.
+// Green to start, yellow while starting, red to stop.
 const buttonClass = computed(() => {
   if (status.value === 'starting') {
     return 'border-amber-500 bg-amber-400 text-slate-900';
@@ -40,7 +42,7 @@ function toggle(): void {
     <button
       type="button"
       role="switch"
-      aria-label="Kamera"
+      :aria-label="t('camera.toggle.label')"
       class="rounded border px-3 py-1 text-sm"
       :class="buttonClass"
       :aria-checked="isOn"

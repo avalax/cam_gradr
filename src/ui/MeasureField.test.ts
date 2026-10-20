@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import type { ExposureResult } from '../chart/exposure';
+import { setLocale } from '../lang';
 
 import MeasureField from './MeasureField.vue';
 
@@ -16,7 +17,7 @@ const exposure: ExposureResult = {
 };
 
 describe('MeasureField', () => {
-  it('zeigt ohne Messung ein leeres Feld ohne Punkt', () => {
+  it('shows an empty field without a dot when there is no measurement', () => {
     const wrapper = mount(MeasureField, { props: { exposure: null } });
     expect(wrapper.find('[data-testid="measure-marker"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="measure-field"]').attributes('aria-label')).toBe(
@@ -25,7 +26,7 @@ describe('MeasureField', () => {
     expect(wrapper.get('[data-testid="measure-details"]').text()).toBe('Noch keine Messung.');
   });
 
-  it('zeigt im Normalbereich und ohne Messung keine Meldung am Rand', () => {
+  it('shows no edge message in the normal range and without a measurement', () => {
     expect(
       mount(MeasureField, { props: { exposure: null } })
         .find('[data-testid="measure-issue"]')
@@ -45,14 +46,14 @@ describe('MeasureField', () => {
     ).toBe(false);
   });
 
-  it('setzt den Punkt nach Helligkeit (senkrecht) und Kontrast (waagerecht)', () => {
+  it('places the dot by brightness (vertical) and contrast (horizontal)', () => {
     const wrapper = mount(MeasureField, { props: { exposure } });
     const style = wrapper.get('[data-testid="measure-marker"]').attributes('style');
     expect(style).toContain('left: 25%');
     expect(style).toContain('top: 25%');
   });
 
-  it('zeigt Hinweis und Details im Tooltip', () => {
+  it('shows hint and details in the tooltip', () => {
     const wrapper = mount(MeasureField, { props: { exposure } });
     const details = wrapper.get('[data-testid="measure-details"]');
     expect(details.attributes('role')).toBe('tooltip');
@@ -65,7 +66,7 @@ describe('MeasureField', () => {
     );
   });
 
-  it('legt die wichtigste Meldung an den Rand, zu dem die Messung abweicht', () => {
+  it('puts the most important message on the edge the measurement deviates towards', () => {
     const bright = mount(MeasureField, { props: { exposure } }).get(
       '[data-testid="measure-issue"]',
     );
@@ -88,7 +89,7 @@ describe('MeasureField', () => {
     expect(harsh.attributes('data-edge')).toBe('right');
   });
 
-  it('zeigt den Normalbereich in der Mitte des Felds', () => {
+  it('shows the normal range in the middle of the field', () => {
     const wrapper = mount(MeasureField, { props: { exposure } });
     const style = wrapper.get('[data-testid="measure-ok-box"]').attributes('style');
     expect(style).toContain('left: 40%');
@@ -97,7 +98,22 @@ describe('MeasureField', () => {
     expect(style).toContain('height: 20%');
   });
 
-  it('ist per Tastatur fokussierbar', () => {
+  it('shows English texts and follows a language switch', async () => {
+    setLocale('en');
+    const wrapper = mount(MeasureField, { props: { exposure } });
+    expect(wrapper.get('[data-testid="measure-issue"]').text()).toBe('Brightness too high');
+    expect(wrapper.get('[data-testid="measure-details"]').text()).toContain(
+      'Brightness of the gray fields in the image',
+    );
+    expect(wrapper.get('[data-testid="measure-field"]').attributes('aria-label')).toMatch(
+      /^Brightness and contrast: /,
+    );
+    setLocale('de');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('[data-testid="measure-issue"]').text()).toBe('Helligkeit zu hoch');
+  });
+
+  it('is keyboard focusable', () => {
     const wrapper = mount(MeasureField, { props: { exposure: null } });
     expect(wrapper.get('[data-testid="measure-field"]').attributes('tabindex')).toBe('0');
   });

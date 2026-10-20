@@ -1,0 +1,31 @@
+{
+  "intro": "The preview shows the camera image with the calculated color correction. Left of the divider you see the original, right of it the corrected image. You can drag the line in the image or move it with the arrow keys.",
+  "capture": "Take still image",
+  "rendererWebgl": "Rendering: graphics card (WebGL2)",
+  "rendererCpu": "Rendering: software, downscaled (WebGL2 not available)",
+  "noModelTitle": "No color correction yet",
+  "noModelText": "Calculate it first in the “Color cards” tab. Then you will see the camera image before and after here.",
+  "noSourceTitle": "No image yet",
+  "noSourceText": "Turn on the camera above to see the live image or to take a still image.",
+  "divider": "Divider: original on the left, corrected on the right",
+  "viewLabel": "Side column view",
+  "viewColors": "Colors",
+  "viewGrays": "Grays",
+  "emptyNoModel": "No correction yet. Calculate it first in the “Color cards” tab.",
+  "emptyNoCards": "This view needs measured color cards.",
+  "tilesLegend": "Each patch: target, camera, corrected (from left to right).",
+  "worstTitle": "Largest deviation",
+  "neutral": ", neutral",
+  "pointsLegend": "Points on the 0–100 scale: + color gets stronger, − weaker.",
+  "errors": {
+    "createFailed": "WebGL could not create {what}.",
+    "shader": "a shader",
+    "program": "a shader program",
+    "vertexArray": "a vertex array",
+    "imageTexture": "the image texture",
+    "lutTexture": "the LUT texture",
+    "compileFailed": "Shader could not be compiled: {log}",
+    "linkFailed": "Shader program could not be linked: {log}",
+    "noContext": "Neither WebGL2 nor a 2D drawing context is available, so the preview is not possible."
+  }
+}

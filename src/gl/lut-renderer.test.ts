@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { setLocale } from '../lang';
 import { identityLut } from '../lut/lut';
 import { createFakeGl } from '../test-support/fake-gl';
 
@@ -8,7 +9,7 @@ import { FRAGMENT_SHADER, VERTEX_SHADER, createLutRenderer } from './lut-rendere
 const source = { width: 4, height: 2 } as unknown as HTMLCanvasElement;
 
 describe('Shader', () => {
-  it('sind GLSL ES 3.00 und enthalten die benötigten Uniforms', () => {
+  it('are GLSL ES 3.00 and contain the required uniforms', () => {
     expect(VERTEX_SHADER.startsWith('#version 300 es')).toBe(true);
     expect(FRAGMENT_SHADER.startsWith('#version 300 es')).toBe(true);
     for (const name of ['uImage', 'uLut', 'uLutSize', 'uSplit']) {
@@ -18,7 +19,7 @@ describe('Shader', () => {
 });
 
 describe('createLutRenderer', () => {
-  it('übersetzt beide Shader, linkt das Programm und richtet die Texturen ein', () => {
+  it('compiles both shaders, links the program and sets up the textures', () => {
     const { gl, call, constant } = createFakeGl();
     createLutRenderer(gl);
     expect(call('createShader')).toHaveBeenCalledTimes(2);
@@ -34,7 +35,7 @@ describe('createLutRenderer', () => {
     );
   });
 
-  it('lädt die LUT als RGBA-Bytetextur in der Würfelgröße', () => {
+  it('uploads the LUT as an RGBA byte texture at cube size', () => {
     const { gl, call, constant } = createFakeGl();
     const renderer = createLutRenderer(gl);
     const lut = identityLut(2);
@@ -55,18 +56,18 @@ describe('createLutRenderer', () => {
       expect.any(Uint8Array),
     );
     expect(bytes).toHaveLength(2 ** 3 * 4);
-    // Werte außerhalb 0..1 werden begrenzt; der zweite Gitterpunkt (R=1) ist unverändert.
+    // Values outside 0..1 are clamped; the second grid point (R=1) is unchanged.
     expect([...bytes.slice(0, 4)]).toEqual([0, 255, 0, 255]);
     expect([...bytes.slice(4, 8)]).toEqual([255, 0, 0, 255]);
   });
 
-  it('beschreibt sich als WebGL2-Renderer mit unveränderter Ausgabegröße', () => {
+  it('describes itself as a WebGL2 renderer with unchanged output size', () => {
     const renderer = createLutRenderer(createFakeGl().gl);
     expect(renderer.kind).toBe('webgl2');
     expect(renderer.outputSize({ width: 1280, height: 720 })).toEqual({ width: 1280, height: 720 });
   });
 
-  it('zeichnet das Bild mit Trennlinie und LUT-Größe als Uniforms', () => {
+  it('draws the image with split line and LUT size as uniforms', () => {
     const { gl, call, constant } = createFakeGl();
     const renderer = createLutRenderer(gl);
     renderer.setLut(identityLut(9));
@@ -89,20 +90,20 @@ describe('createLutRenderer', () => {
     expect(call('drawArrays')).toHaveBeenCalledWith(constant('TRIANGLES'), 0, 3);
   });
 
-  it('passt den Ausschnitt an die aktuelle Größe der Zeichenfläche an', () => {
+  it('adapts the viewport to the current size of the drawing surface', () => {
     const fake = createFakeGl();
     Object.assign(fake.gl, { drawingBufferWidth: 1280, drawingBufferHeight: 720 });
     createLutRenderer(fake.gl).render(source, { split: 0 });
     expect(fake.call('viewport')).toHaveBeenCalledWith(0, 0, 1280, 720);
   });
 
-  it('kehrt das Bild beim Hochladen um (Video hat y nach unten)', () => {
+  it('flips the image on upload (video has y pointing down)', () => {
     const { gl, call, constant } = createFakeGl();
     createLutRenderer(gl).render(source, { split: 0 });
     expect(call('pixelStorei')).toHaveBeenCalledWith(constant('UNPACK_FLIP_Y_WEBGL'), true);
   });
 
-  it('gibt alle Ressourcen frei', () => {
+  it('releases all resources', () => {
     const { gl, call } = createFakeGl();
     createLutRenderer(gl).dispose();
     expect(call('deleteTexture')).toHaveBeenCalledTimes(2);
@@ -110,21 +111,21 @@ describe('createLutRenderer', () => {
     expect(call('deleteProgram')).toHaveBeenCalledTimes(1);
   });
 
-  it('meldet Fehler beim Übersetzen eines Shaders mit dem Protokoll', () => {
+  it('reports errors when compiling a shader, with the log', () => {
     const { gl, call } = createFakeGl({ getShaderParameter: () => false });
     expect(() => createLutRenderer(gl)).toThrow(
-      'Shader konnte nicht übersetzt werden: Fehler im Shader',
+      'Shader konnte nicht übersetzt werden: Shader error',
     );
     expect(call('deleteShader')).toHaveBeenCalledTimes(1);
   });
 
-  it('meldet Fehler beim Linken', () => {
+  it('reports errors when linking', () => {
     const { gl, call } = createFakeGl({ getProgramParameter: () => false });
-    expect(() => createLutRenderer(gl)).toThrow('gelinkt werden: Fehler beim Linken');
+    expect(() => createLutRenderer(gl)).toThrow('gelinkt werden: Link error');
     expect(call('deleteProgram')).toHaveBeenCalledTimes(1);
   });
 
-  it('behandelt fehlende Protokolle', () => {
+  it('handles missing logs', () => {
     const shader = createFakeGl({ getShaderParameter: () => false, getShaderInfoLog: () => null });
     expect(() => createLutRenderer(shader.gl)).toThrow('übersetzt werden: ');
     const program = createFakeGl({
@@ -134,7 +135,7 @@ describe('createLutRenderer', () => {
     expect(() => createLutRenderer(program.gl)).toThrow('gelinkt werden: ');
   });
 
-  it('meldet fehlende WebGL-Ressourcen', () => {
+  it('reports missing WebGL resources', () => {
     expect(() => createLutRenderer(createFakeGl({ createShader: () => null }).gl)).toThrow(
       'einen Shader',
     );
@@ -146,6 +147,24 @@ describe('createLutRenderer', () => {
     );
     expect(() => createLutRenderer(createFakeGl({ createTexture: () => null }).gl)).toThrow(
       'die Bildtextur',
+    );
+  });
+});
+
+describe('createLutRenderer (English)', () => {
+  it('reports errors in English', () => {
+    setLocale('en');
+    expect(() => createLutRenderer(createFakeGl({ getShaderParameter: () => false }).gl)).toThrow(
+      'Shader could not be compiled: Shader error',
+    );
+    expect(() => createLutRenderer(createFakeGl({ getProgramParameter: () => false }).gl)).toThrow(
+      'Shader program could not be linked: Link error',
+    );
+    expect(() => createLutRenderer(createFakeGl({ createShader: () => null }).gl)).toThrow(
+      'WebGL could not create a shader.',
+    );
+    expect(() => createLutRenderer(createFakeGl({ createTexture: () => null }).gl)).toThrow(
+      'WebGL could not create the image texture.',
     );
   });
 });

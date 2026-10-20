@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-// Einstellung der Live-Vorschau: Lage der Trennlinie (in Prozent der Breite, links Original).
+// Live preview setting: position of the split line (in percent of the width, original left).
 export const usePreviewStore = defineStore('preview', () => {
   const split = ref(50);
 

@@ -12,7 +12,7 @@ describe('clientToImage', () => {
     expect(clientToImage({ x: 300, y: 150 }, box, size)).toEqual({ x: 640, y: 360 });
   });
 
-  it('begrenzt auf den Bildbereich', () => {
+  it('is limited to the image area', () => {
     expect(clientToImage({ x: 0, y: 0 }, box, size)).toEqual({ x: 0, y: 0 });
     expect(clientToImage({ x: 9999, y: 9999 }, box, size)).toEqual({ x: 1280, y: 720 });
   });
@@ -39,7 +39,7 @@ describe('buildShapes', () => {
     { x: 0, y: 100 },
   ];
 
-  it('erzeugt Umrisse für Karte und Felder, nur für Karten mit Eckpunkten', () => {
+  it('creates outlines for card and patches, only for cards with corner points', () => {
     const shapes = buildShapes(layout, { 3: corners });
     expect(shapes.map((shape) => [shape.key, shape.kind])).toEqual([
       ['card-3', 'card'],
@@ -51,7 +51,7 @@ describe('buildShapes', () => {
     expect(shapes[1]?.points).toBe('0.0,0.0 50.0,0.0 50.0,50.0 0.0,50.0');
   });
 
-  it('liefert keine Umrisse ohne Eckpunkte', () => {
+  it('returns no outlines without corner points', () => {
     expect(buildShapes(layout, {})).toEqual([]);
   });
 });

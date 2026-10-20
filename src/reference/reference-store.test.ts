@@ -27,7 +27,7 @@ describe('useReferenceStore', () => {
     setReferenceStorage(storage);
   });
 
-  it('enthält nach dem Laden den mitgelieferten Satz und wählt ihn vor', async () => {
+  it('contains the bundled set after loading and preselects it', async () => {
     const store = useReferenceStore();
     await store.load();
     expect(store.sets.map((set) => set.name)).toEqual([BUNDLED_NAME]);
@@ -37,7 +37,7 @@ describe('useReferenceStore', () => {
     expect(store.sets).toHaveLength(1);
   });
 
-  it('importiert, wählt und speichert einen Satz lokal', async () => {
+  it('imports, selects and saves a set locally', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     expect(store.error).toBeNull();
@@ -46,21 +46,21 @@ describe('useReferenceStore', () => {
     expect(saved.map((set) => set.name)).toEqual(['Satz A']);
   });
 
-  it('meldet, sobald ein Satz lokal gespeichert ist', async () => {
+  it('reports as soon as a set is saved locally', async () => {
     const store = useReferenceStore();
     expect(store.lastSaved).toBeNull();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     expect(store.lastSaved).toBe('Satz A');
   });
 
-  it('meldet kein Speichern, wenn der Speicher ausfällt', async () => {
+  it('reports no saving when the storage fails', async () => {
     setReferenceStorage(failingStorage());
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     expect(store.lastSaved).toBeNull();
   });
 
-  it('meldet, sobald ein Satz lokal gelöscht ist', async () => {
+  it('reports as soon as a set is deleted locally', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     expect(store.lastRemoved).toBeNull();
@@ -68,14 +68,14 @@ describe('useReferenceStore', () => {
     expect(store.lastRemoved).toBe('Satz A');
   });
 
-  it('meldet kein Löschen, wenn der Speicher ausfällt', async () => {
+  it('reports no deletion when the storage fails', async () => {
     setReferenceStorage(failingStorage());
     const store = useReferenceStore();
     await store.remove('Satz A');
     expect(store.lastRemoved).toBeNull();
   });
 
-  it('lädt gespeicherte Sätze zusätzlich zum mitgelieferten und wählt diesen vor', async () => {
+  it('loads saved sets in addition to the bundled one and preselects it', async () => {
     const first = useReferenceStore();
     await first.importFile('a.json', dummyReferenceJson('Satz A'));
     setActivePinia(createPinia());
@@ -87,7 +87,7 @@ describe('useReferenceStore', () => {
     expect(again.sets).toHaveLength(2);
   });
 
-  it('behält eine bereits getroffene Auswahl beim Laden', async () => {
+  it('keeps an already made selection on load', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     await store.importFile('b.json', dummyReferenceJson('Satz B'));
@@ -104,7 +104,7 @@ describe('useReferenceStore', () => {
     expect(store.sets.filter((set) => set.name === 'Satz A')).toHaveLength(1);
   });
 
-  it('meldet fehlerhafte Dateien und behält die bisherigen Sätze', async () => {
+  it('reports faulty files and keeps the previous sets', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     await store.importFile('kaputt.json', '{"format":"x"}');
@@ -114,14 +114,14 @@ describe('useReferenceStore', () => {
     expect(store.error).toBeNull();
   });
 
-  it('meldet unbekannte Fehler allgemein', async () => {
+  it('reports unknown errors generically', async () => {
     const store = useReferenceStore();
-    // Ein Wert, der keine Zeichenkette ist, löst einen TypeError aus der Dateiauswahl aus.
+    // A value that is not a string triggers a TypeError from the file selection.
     await store.importFile('a.json', null as unknown as string);
     expect(store.error).not.toBeNull();
   });
 
-  it('behält importierte Sätze, wenn das Laden erst danach fertig wird', async () => {
+  it('keeps imported sets when loading only finishes afterwards', async () => {
     const slowList = Promise.withResolvers<ReferenceSet[]>();
     setReferenceStorage({
       list: () => slowList.promise,
@@ -143,7 +143,7 @@ describe('useReferenceStore', () => {
     expect(store.selectedName).toBe('Neu');
   });
 
-  it('wählt nur vorhandene Sätze', async () => {
+  it('selects only existing sets', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     store.select('gibt es nicht');
@@ -153,7 +153,7 @@ describe('useReferenceStore', () => {
     expect(store.selected?.name).toBe('Satz A');
   });
 
-  it('löscht Sätze und wählt einen anderen', async () => {
+  it('deletes sets and selects another one', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     await store.importFile('b.json', dummyReferenceJson('Satz B'));
@@ -165,7 +165,7 @@ describe('useReferenceStore', () => {
     expect(await storage.list()).toEqual([]);
   });
 
-  it('arbeitet mit Warnung weiter, wenn der Speicher ausfällt', async () => {
+  it('continues with a warning when the storage fails', async () => {
     setReferenceStorage(failingStorage());
     const store = useReferenceStore();
     await store.load();
@@ -180,13 +180,13 @@ describe('useReferenceStore', () => {
   it('nutzt ohne Austausch den IndexedDB-Speicher des Browsers', async () => {
     setReferenceStorage(null);
     const store = useReferenceStore();
-    // Die Testumgebung hat kein IndexedDB: das Laden schlägt ab und wird gemeldet.
+    // The test environment has no IndexedDB: loading fails and is reported.
     await store.load();
     expect(store.warning).not.toBeNull();
   });
 
   describe('mitgelieferter Satz', () => {
-    it('ist auch ohne funktionierenden Speicher da', async () => {
+    it('is available even without working storage', async () => {
       setReferenceStorage(failingStorage());
       const store = useReferenceStore();
       await store.load();
@@ -194,7 +194,7 @@ describe('useReferenceStore', () => {
       expect(store.selected?.name).toBe(BUNDLED_NAME);
     });
 
-    it('wird von einem eigenen Satz gleichen Namens ersetzt', async () => {
+    it('is replaced by a custom set of the same name', async () => {
       await storage.save({ name: BUNDLED_NAME, patches: { '1A': [50, 0, 0] } });
       const store = useReferenceStore();
       await store.load();
@@ -204,7 +204,7 @@ describe('useReferenceStore', () => {
   });
 
   describe('Download', () => {
-    it('speichert den gewählten Satz als importierbare JSON-Datei', async () => {
+    it('saves the selected set as an importable JSON file', async () => {
       download.mockReset();
       const store = useReferenceStore();
       await store.importFile('a.json', dummyReferenceJson('Satz A'));
@@ -218,7 +218,7 @@ describe('useReferenceStore', () => {
       expect(again.selected?.patches).toEqual(store.selected?.patches);
     });
 
-    it('tut ohne gewählten Satz nichts', () => {
+    it('does nothing without a selected set', () => {
       download.mockReset();
       useReferenceStore().downloadSelected();
       expect(download).not.toHaveBeenCalled();

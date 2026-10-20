@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
+import { setLocale } from '../lang';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../reference/storage';
@@ -26,7 +27,7 @@ const CORNERS = [
   [700, 650],
 ] as const;
 
-// Setzt Eckpunkte und Messwerte so, als wäre ein Standbild der Farbkarten ausgewertet worden.
+// Sets corners and measurements as if a still image of the color cards had been evaluated.
 function prepareMeasurements() {
   const chart = useColorChartStore();
   for (const [x, y] of CORNERS) {
@@ -50,7 +51,7 @@ describe('ColorStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('zeigt den vorgewählten Referenzsatz und rechnet erst nach der Aufnahme', async () => {
+  it('shows the preselected reference set and only computes after the capture', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().load();
     await flushPromises();
@@ -62,12 +63,12 @@ describe('ColorStep', () => {
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('zeigt vor dem Laden der Referenzen keine Angabe dazu', () => {
+  it('shows no reference info before the references are loaded', () => {
     const wrapper = mount(ColorStep);
     expect(wrapper.find('[data-testid="reference-active"]').exists()).toBe(false);
   });
 
-  it('folgt dem gewählten Satz', async () => {
+  it('follows the selected set', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson('Mein Satz'));
     await flushPromises();
@@ -76,7 +77,7 @@ describe('ColorStep', () => {
     );
   });
 
-  it('rechnet ohne ausgewählten Referenzsatz nichts', async () => {
+  it('computes nothing without a selected reference set', async () => {
     mount(ColorStep);
     prepareMeasurements();
     await flushPromises();
@@ -84,20 +85,20 @@ describe('ColorStep', () => {
     expect(useSolveStore().error).toBeNull();
   });
 
-  it('berechnet die Farbkorrektur selbst, sobald Messwerte da sind, und zeigt den Bericht', async () => {
+  it('computes the color correction by itself once measurements exist, and shows the report', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
     prepareMeasurements();
     await flushPromises();
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(true);
-    const before = Number(wrapper.get('[data-testid="mean-before"]').text());
-    const after = Number(wrapper.get('[data-testid="mean-after"]').text());
+    const before = Number(wrapper.get('[data-testid="mean-before"]').text().replace(',', '.'));
+    const after = Number(wrapper.get('[data-testid="mean-after"]').text().replace(',', '.'));
     expect(after).toBeLessThan(before);
     expect(useSolveStore().result).not.toBeNull();
   });
 
-  it('kontrolliert die Korrektur mit den gemessenen Graukarten aus Schritt 1', async () => {
+  it('checks the correction against the measured gray cards from step 1', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     useChartStore().measurements = { G50: cameraCode([76.07, 0, 0]) };
@@ -106,7 +107,7 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="gray-G50"]').text()).toContain('Graukarte 50 %');
   });
 
-  it('zeigt ohne gemessene Graukarten keine Kontrolle', async () => {
+  it('shows no check without measured gray cards', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     prepareMeasurements();
@@ -114,7 +115,7 @@ describe('ColorStep', () => {
     expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
   });
 
-  it('rechnet neu, wenn sich die Messwerte ändern', async () => {
+  it('recomputes when the measurements change', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = prepareMeasurements();
@@ -131,7 +132,7 @@ describe('ColorStep', () => {
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(true);
   });
 
-  it('rechnet neu, wenn ein anderer Referenzsatz gewählt wird', async () => {
+  it('recomputes when a different reference set is selected', async () => {
     mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson('Satz A'));
     prepareMeasurements();
@@ -142,7 +143,7 @@ describe('ColorStep', () => {
     expect(useSolveStore().result).not.toBe(first);
   });
 
-  it('rechnet nicht, solange nicht alle Eckpunkte gesetzt sind', async () => {
+  it('does not compute until all corner points are set', async () => {
     mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = useColorChartStore();
@@ -153,7 +154,7 @@ describe('ColorStep', () => {
     expect(useSolveStore().error).toBeNull();
   });
 
-  it('zeigt den Wischer: Standardfarben ohne Messung, danach Kamera und korrigiert', async () => {
+  it('shows the wipe: default colors without a measurement, then camera and corrected', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     await flushPromises();
@@ -170,7 +171,7 @@ describe('ColorStep', () => {
     );
   });
 
-  it('meldet Fehler der Berechnung', async () => {
+  it('reports calculation errors', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = prepareMeasurements();
@@ -181,9 +182,39 @@ describe('ColorStep', () => {
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('zeigt keine eigenen Kameraoptionen (die liegen im Zahnrad-Menü)', () => {
+  it('shows no camera options of its own (they live in the gear menu)', () => {
     const wrapper = mount(ColorStep);
     expect(wrapper.text()).not.toContain('Aktive Auflösung');
     expect(wrapper.text()).toContain('Die Kamera ist aus');
+  });
+});
+
+describe('ColorStep (English)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    installMediaStubs();
+    installFakeCamera();
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+  });
+
+  it('explains the tab and names the reference set in English', async () => {
+    setLocale('en');
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().load();
+    await flushPromises();
+    expect(wrapper.text()).toContain('This tab calculates the color correction.');
+    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
+      `Reference values: ${BUNDLED_NAME} (48 patches).`,
+    );
+    expect(wrapper.text()).toContain('Hold both color cards steady in the frames');
+  });
+
+  it('shows the report in English', async () => {
+    setLocale('en');
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    prepareMeasurements();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="report"]').text()).toContain('Color correction result');
   });
 });

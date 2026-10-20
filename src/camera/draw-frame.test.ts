@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { drawFrame } from './draw-frame';
 
 describe('drawFrame', () => {
-  it('schreibt RGB-Werte als 8-Bit-Pixel mit vollem Alphakanal', () => {
+  it('writes RGB values as 8-bit pixels with full alpha channel', () => {
     const image = { data: new Uint8ClampedArray(8) } as ImageData;
     const putImageData = vi.fn();
     const createImageData = vi.fn(() => image);
@@ -16,7 +16,7 @@ describe('drawFrame', () => {
     expect(putImageData).toHaveBeenCalledWith(image, 0, 0);
   });
 
-  it('nutzt 0 für fehlende Daten', () => {
+  it('uses 0 for missing data', () => {
     const image = { data: new Uint8ClampedArray(4).fill(9) } as ImageData;
     drawFrame(
       { createImageData: () => image, putImageData: vi.fn() },
