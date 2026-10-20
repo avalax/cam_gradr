@@ -30,6 +30,8 @@ export interface Project {
   color: ChartState & { reference: string | null };
   // The computed correction model; reference values (manufacturer data) are deliberately not saved.
   model: ColorModel | null;
+  // Whether contrast and gamma were corrected too; files without the entry did (true).
+  tone: boolean;
   preview: { split: number };
   // Still images per tab; missing in files that were saved without images.
   stills?: Partial<Record<StillKey, EncodedFrame>>;
@@ -226,6 +228,7 @@ export function parseProject(text: string): Project {
     gray: parseChart(raw.gray, t('project.errors.chartGray'), GRAY_CARDS, GRAY_IDS),
     color: { ...color, reference },
     model: parseModel(raw.model),
+    tone: raw.tone !== false,
     preview: {
       split: parsePercent(raw.preview.split, t('project.errors.splitName')),
     },

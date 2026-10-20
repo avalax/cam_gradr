@@ -448,7 +448,8 @@ describe('GrayStep', () => {
     it('discards a still image that does not match the corners from the live view', async () => {
       let reads = 0;
       await mountAuto(() => (reads++ < 2 ? cards() : movedData));
-      await vi.advanceTimersByTimeAsync(2500);
+      // Two searches (every 500 ms) hit the cards, the third read is the moved still image.
+      await vi.advanceTimersByTimeAsync(1200);
       await flushPromises();
       expect(useCameraStore().still).toBeNull();
       expect(useCameraStore().status).toBe('live');
@@ -458,7 +459,8 @@ describe('GrayStep', () => {
     it('waits until the cards are held steady', async () => {
       let reads = 0;
       await mountAuto(() => (reads++ < 1 ? cards() : movedData));
-      await vi.advanceTimersByTimeAsync(2500);
+      // The first search hits, the second one finds the cards moved: no capture yet.
+      await vi.advanceTimersByTimeAsync(1000);
       expect(useCameraStore().still).toBeNull();
       await vi.advanceTimersByTimeAsync(2000);
       await flushPromises();
@@ -476,7 +478,7 @@ describe('GrayStep', () => {
     it('verlangt zwei Treffer hintereinander', async () => {
       let visible = true;
       await mountAuto(() => (visible ? cards() : empty()));
-      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(500);
       visible = false;
       await vi.advanceTimersByTimeAsync(3000);
       expect(useCameraStore().still).toBeNull();

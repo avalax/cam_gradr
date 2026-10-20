@@ -36,11 +36,11 @@ const props = defineProps<{
 
 // Automation in the live image: how often the cards are searched for, and how many times in a row
 // they must be found before the still image is captured (a shaky image does not count).
-const AUTO_INTERVAL_MS = 1000;
+const AUTO_INTERVAL_MS = 500;
 const AUTO_CONFIRMATIONS = 2;
 // How far (fraction of the image width) the corners may move between two searches: otherwise
 // someone is still moving, and the averaged still image would be blurred.
-const STEADY_SHARE = 0.02;
+const STEADY_SHARE = 0.03;
 
 const { t } = useI18n();
 const camera = useCameraStore();

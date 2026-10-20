@@ -111,9 +111,11 @@ test.describe('Camera switch', () => {
 
   test('The camera keeps running when switching tabs', async ({ app }) => {
     await app.open();
+    // The card tabs search for cards and switch the camera off after a capture, so start it where no search runs.
+    await app.openTab('Vorschau');
     await app.startCamera();
-    await app.openTab('Farbkarten');
     await app.openTab('Export');
+    await app.openTab('Vorschau');
 
     await expect(app.cameraSwitch).toHaveAttribute('data-status', 'live');
   });

@@ -10,6 +10,7 @@ import { buildLut } from '../lut/lut';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
+import CorrectionOptions from './CorrectionOptions.vue';
 import LutSlices from './LutSlices.vue';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
@@ -84,6 +85,7 @@ function download(): void {
         <I18nT keypath="export.lut.description" tag="p" class="text-xs text-zinc-600">
           <template #file><code>.cube</code></template>
         </I18nT>
+        <CorrectionOptions compact />
         <div
           role="radiogroup"
           :aria-label="t('export.lut.sizeLabel')"

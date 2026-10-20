@@ -27,6 +27,7 @@ import {
   zoneChanges,
 } from './gray-wedge';
 import ColorTiles from './ColorTiles.vue';
+import CorrectionOptions from './CorrectionOptions.vue';
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import GrayWedge from './GrayWedge.vue';
 import { attachStream, captureFromVideo } from './video-bindings';
@@ -221,6 +222,7 @@ const splitModel = computed({
           {{ t('preview.capture') }}
         </button>
       </div>
+      <CorrectionOptions />
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
       <p
         v-if="renderer !== null"
@@ -365,7 +367,8 @@ const splitModel = computed({
             <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
               <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
                 <dt class="font-semibold">{{ zone.name }}</dt>
-                <dd>
+                <!-- Room for three lines, so the gray wedge keeps its size when the texts change. -->
+                <dd class="min-h-[3lh]">
                   {{ brightnessText(zone.brighter) }}
                   <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
                   <template v-for="cast in zone.casts" :key="cast.key">

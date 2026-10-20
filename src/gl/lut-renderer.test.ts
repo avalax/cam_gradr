@@ -103,6 +103,22 @@ describe('createLutRenderer', () => {
     expect(call('pixelStorei')).toHaveBeenCalledWith(constant('UNPACK_FLIP_Y_WEBGL'), true);
   });
 
+  it('uploads a new LUT after rendering without the image flip', () => {
+    const { gl, call, constant } = createFakeGl();
+    const renderer = createLutRenderer(gl);
+    renderer.render(source, { split: 0 });
+    renderer.setLut(identityLut(2));
+    const flips = call('pixelStorei').mock.calls.map((arguments_, index) => ({
+      arguments_,
+      order: call('pixelStorei').mock.invocationCallOrder[index] ?? 0,
+    }));
+    const upload = call('texImage3D').mock.invocationCallOrder[0] ?? 0;
+    const last = flips.findLast(
+      (entry) => entry.arguments_[0] === constant('UNPACK_FLIP_Y_WEBGL') && entry.order < upload,
+    );
+    expect(last?.arguments_[1]).toBe(false);
+  });
+
   it('releases all resources', () => {
     const { gl, call } = createFakeGl();
     createLutRenderer(gl).dispose();
