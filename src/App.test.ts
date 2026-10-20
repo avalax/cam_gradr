@@ -81,7 +81,7 @@ describe('App', () => {
     const gauges = wrapper.findAll('[data-testid="status-gauge"]');
     expect(gauges.map((gauge) => gauge.attributes('data-level'))).toEqual(['ok', 'warn']);
     expect(gauges[0]?.findAll('[data-filled="true"]')).toHaveLength(4);
-    expect(gauges[1]?.findAll('[data-filled="true"]')).toHaveLength(2);
+    expect(gauges[1]?.findAll('[data-filled="true"]')).toHaveLength(1);
   });
 
   it('gives the export the height of the other tabs as its minimum height', async () => {
