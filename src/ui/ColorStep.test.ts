@@ -3,6 +3,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
 import { setLocale } from '../lang';
@@ -169,6 +170,19 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="color-wipe-corrected"]').attributes('data-measured')).toBe(
       'true',
     );
+  });
+
+  it('hides the divider while the live image runs and shows it with a still image', async () => {
+    const wrapper = mount(ColorStep);
+    await flushPromises();
+    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(true);
+    const camera = useCameraStore();
+    camera.status = 'live';
+    await flushPromises();
+    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(false);
+    camera.still = { width: 1, height: 1, data: new Float32Array(3) };
+    await flushPromises();
+    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(true);
   });
 
   it('reports calculation errors', async () => {

@@ -6,6 +6,7 @@
   "idle": "Beide Farbkarten ruhig in die Rahmen vor die Kamera halten.",
   "wipe": {
     "caption": "links Kamera · rechts korrigiert",
+    "liveCaption": "Vergleich nach der Aufnahme",
     "cameraLayer": "Farben der Kamera",
     "correctedLayer": "Farben nach der Korrektur",
     "defaultValue": "{id} (Standardwert)",

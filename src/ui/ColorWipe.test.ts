@@ -145,3 +145,19 @@ describe('ColorWipe (English)', () => {
     );
   });
 });
+
+describe('ColorWipe with the live image', () => {
+  it('shows only the camera layer without a divider and says when the comparison comes', () => {
+    const wrapper = mountWipe({ live: true });
+    expect(wrapper.find('[data-testid="color-wipe-camera"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="color-wipe-corrected"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Vergleich nach der Aufnahme');
+  });
+
+  it('shows both layers and the divider otherwise', () => {
+    const wrapper = mountWipe({ live: false });
+    expect(wrapper.find('[data-testid="color-wipe-corrected"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(true);
+  });
+});

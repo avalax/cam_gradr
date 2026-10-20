@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS, colorLayout, grayLayout } from '../chart/layouts';
 import { useReferenceStore } from '../reference/reference-store';
@@ -18,6 +19,9 @@ const chart = useColorChartStore();
 const grayChart = useChartStore();
 const references = useReferenceStore();
 const solve = useSolveStore();
+const { status, still } = storeToRefs(useCameraStore());
+// The live image is shown (no still image of this tab): there is nothing to compare yet.
+const live = computed(() => status.value === 'live' && still.value === null);
 const { ready, measurements } = storeToRefs(chart);
 const { selected } = storeToRefs(references);
 const { result, error: solveError, model } = storeToRefs(solve);
@@ -79,6 +83,7 @@ watch([measurements, selected], () => {
               :model="model"
               :reference="selected"
               :report="result?.report ?? null"
+              :live="live"
             >
               <template #details>
                 <ResultReport v-if="result !== null" :result="result" :gray-check="grayCheck" />

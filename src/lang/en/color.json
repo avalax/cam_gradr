@@ -6,6 +6,7 @@
   "idle": "Hold both color cards steady in the frames in front of the camera.",
   "wipe": {
     "caption": "left camera · right corrected",
+    "liveCaption": "compare after the capture",
     "cameraLayer": "Camera colors",
     "correctedLayer": "Colors after correction",
     "defaultValue": "{id} (default value)",
