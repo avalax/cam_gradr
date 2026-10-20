@@ -162,7 +162,12 @@ describe('ColorStep', () => {
     const camera = wrapper.get('[data-testid="color-wipe-camera"]');
     expect(camera.attributes('data-measured')).toBe('false');
     expect(camera.findAll('[data-patch]')).toHaveLength(48);
-    prepareMeasurements();
+    // The measurement of the (tiny) still image is replaced by prepared measurements afterwards.
+    const chart = prepareMeasurements();
+    const measurements = chart.measurements;
+    useCameraStore().still = { width: 1, height: 1, data: new Float32Array(3) };
+    await flushPromises();
+    chart.measurements = measurements;
     await flushPromises();
     expect(wrapper.get('[data-testid="color-wipe-camera"]').attributes('data-measured')).toBe(
       'true',
@@ -172,10 +177,10 @@ describe('ColorStep', () => {
     );
   });
 
-  it('hides the divider while the live image runs and shows it with a still image', async () => {
+  it('hides the divider without a still image and shows it with one', async () => {
     const wrapper = mount(ColorStep);
     await flushPromises();
-    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(false);
     const camera = useCameraStore();
     camera.status = 'live';
     await flushPromises();

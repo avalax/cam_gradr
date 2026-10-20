@@ -19,9 +19,9 @@ const chart = useColorChartStore();
 const grayChart = useChartStore();
 const references = useReferenceStore();
 const solve = useSolveStore();
-const { status, still } = storeToRefs(useCameraStore());
-// The live image is shown (no still image of this tab): there is nothing to compare yet.
-const live = computed(() => status.value === 'live' && still.value === null);
+const { still } = storeToRefs(useCameraStore());
+// Without a still image of this tab (live image or no image at all) there is nothing to compare yet.
+const live = computed(() => still.value === null);
 const { ready, measurements } = storeToRefs(chart);
 const { selected } = storeToRefs(references);
 const { result, error: solveError, model } = storeToRefs(solve);
