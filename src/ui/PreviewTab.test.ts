@@ -136,6 +136,21 @@ describe('PreviewTab', () => {
     expect(camera.status).toBe('live');
   });
 
+  it('names the original and the corrected side under the image', async () => {
+    mockAnimation();
+    mockContexts();
+    const wrapper = mount(PreviewTab);
+    expect(wrapper.find('[data-testid="preview-legend"]').exists()).toBe(false);
+    computeModel();
+    useCameraStore().still = stillFrame();
+    await wrapper.vm.$nextTick();
+    const legend = wrapper.get('[data-testid="preview-legend"]').text();
+    expect(legend).toContain('Original');
+    expect(legend).toContain('Kamerabild');
+    expect(legend).toContain('Korrigiert');
+    expect(legend).toContain('mit Farbkorrektur');
+  });
+
   it('loads the LUT and draws the still image with the divider line', () => {
     const animation = mockAnimation();
     const fake = mockContexts();

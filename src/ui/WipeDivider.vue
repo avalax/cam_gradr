@@ -76,10 +76,24 @@ function onKey(event: KeyboardEvent): void {
       :style="{ left: `${String(position)}%` }"
       data-testid="wipe-line"
     ></div>
+    <!-- Round handle with a double arrow: it is clear that the line can be pulled sideways. -->
     <div
-      class="pointer-events-none absolute top-1/2 h-8 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-800 bg-zinc-50 shadow"
+      class="pointer-events-none absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-zinc-50 text-zinc-800 shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
       :style="{ left: `${String(position)}%` }"
       data-testid="wipe-grip"
-    ></div>
+    >
+      <svg
+        viewBox="0 0 24 24"
+        class="size-5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" />
+      </svg>
+    </div>
   </div>
 </template>
