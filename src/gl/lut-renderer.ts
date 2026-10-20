@@ -135,6 +135,8 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
       lutSize = lut.size;
       gl.bindTexture(gl.TEXTURE_3D, lutTexture);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      // The image upload in render() turns the flip on; a flipped LUT would swap the green axis.
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       // 8 bits per channel are enough for the output and work everywhere, even with software GL.
       gl.texImage3D(
         gl.TEXTURE_3D,
