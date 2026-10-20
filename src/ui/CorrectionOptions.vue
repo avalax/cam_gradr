@@ -29,11 +29,16 @@ const summary = computed(() =>
 
 <template>
   <fieldset
-    class="rounded border border-zinc-300 bg-zinc-50 p-2 text-xs text-zinc-800"
-    :class="compact ? 'flex flex-wrap items-center gap-x-4 gap-y-1' : 'space-y-2'"
+    class="text-xs text-zinc-800"
+    :class="
+      compact
+        ? 'flex flex-wrap items-center gap-x-4 gap-y-1'
+        : 'space-y-2 rounded border border-zinc-300 bg-zinc-50 p-2'
+    "
     data-testid="correction-options"
   >
-    <legend class="px-1 font-semibold">{{ t('correction.title') }}</legend>
+    <legend :class="compact ? 'sr-only' : 'px-1 font-semibold'">{{ t('correction.title') }}</legend>
+    <span v-if="compact" class="font-semibold" aria-hidden="true">{{ t('correction.title') }}</span>
     <label
       class="flex items-start gap-2 opacity-75"
       :title="compact ? t('correction.baseHint') : undefined"
