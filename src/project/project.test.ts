@@ -35,6 +35,7 @@ function sample(): Project {
     },
     color: { corners: {}, measurements, rotated: false, reference: 'Mein Satz' },
     model,
+    tone: true,
     preview: { split: 25 },
   };
 }
@@ -170,5 +171,15 @@ describe('still images in the project file', () => {
     expect(() => parseProject(withStills({ gray: { ...still, width: 100_000 } }))).toThrow(
       'ungültige Größe',
     );
+  });
+});
+
+describe('parseProject (tone setting)', () => {
+  it('treats a file without the setting as corrected including the tone curve', () => {
+    const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
+    delete raw.tone;
+    expect(parseProject(JSON.stringify(raw)).tone).toBe(true);
+    raw.tone = false;
+    expect(parseProject(JSON.stringify(raw)).tone).toBe(false);
   });
 });

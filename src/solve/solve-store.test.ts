@@ -60,3 +60,43 @@ describe('useSolveStore', () => {
     expect(store.result).toBeNull();
   });
 });
+
+describe('the tone setting', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('recomputes the model with the new setting', () => {
+    const store = useSolveStore();
+    store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
+    expect(store.tone).toBe(true);
+    expect(store.canChangeTone).toBe(true);
+    const withTone = store.model;
+    store.setTone(false);
+    expect(store.tone).toBe(false);
+    expect(store.model).not.toBe(withTone);
+    expect(store.model?.curves[0].xs).toEqual([0, 1]);
+    store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
+    expect(store.model?.curves[0].xs).toEqual([0, 1]);
+  });
+
+  it('only remembers the setting without a calculation', () => {
+    const store = useSolveStore();
+    expect(store.canChangeTone).toBe(false);
+    store.setTone(false);
+    expect(store.tone).toBe(false);
+    expect(store.model).toBeNull();
+  });
+
+  it('cannot change the setting for a model that was loaded', () => {
+    const store = useSolveStore();
+    store.compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
+    const model = store.model;
+    if (model !== null) {
+      store.loadModel(model);
+    }
+    expect(store.canChangeTone).toBe(false);
+    store.reset();
+    expect(store.canChangeTone).toBe(false);
+  });
+});

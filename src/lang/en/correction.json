@@ -1,0 +1,11 @@
+{
+  "title": "What should be corrected?",
+  "base": "Color and gray balance",
+  "baseHint": "Always on. Removes the color cast and brings the colors to the reference.",
+  "tone": "Contrast and gamma",
+  "toneHint": "Adjusts black, white and the mid tones to the reference. Off keeps the tone curve of the camera.",
+  "toneLocked": "Only available after a new calculation, not for a model from a project without chart measurements.",
+  "active": "Active: {parts}",
+  "partsColor": "Color",
+  "partsTone": "Color + contrast and gamma"
+}

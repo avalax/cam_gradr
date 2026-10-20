@@ -1,0 +1,11 @@
+{
+  "title": "Was soll korrigiert werden?",
+  "base": "Farbe und Graubalance",
+  "baseHint": "Immer aktiv. Entfernt den Farbstich und bringt die Farben an die Referenz.",
+  "tone": "Kontrast und Gamma",
+  "toneHint": "Gleicht Schwarz, Weiß und die Mitteltöne an die Referenz an. Ausgeschaltet bleibt die Tonwertkurve der Kamera.",
+  "toneLocked": "Nur nach einer neuen Berechnung möglich, nicht bei einem Modell aus einem Projekt ohne Messwerte der Karten.",
+  "active": "Aktiv: {parts}",
+  "partsColor": "Farbe",
+  "partsTone": "Farbe + Kontrast und Gamma"
+}

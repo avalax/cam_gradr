@@ -27,6 +27,7 @@ import {
   zoneChanges,
 } from './gray-wedge';
 import ColorTiles from './ColorTiles.vue';
+import CorrectionOptions from './CorrectionOptions.vue';
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import GrayWedge from './GrayWedge.vue';
 import { attachStream, captureFromVideo } from './video-bindings';
@@ -221,6 +222,7 @@ const splitModel = computed({
           {{ t('preview.capture') }}
         </button>
       </div>
+      <CorrectionOptions />
       <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
       <p
         v-if="renderer !== null"

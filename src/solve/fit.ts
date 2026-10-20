@@ -55,6 +55,9 @@ export interface FitInput {
   measurements: Readonly<Record<string, Rgb>>;
   reference: ReferenceSet;
   neutralIds: ReadonlySet<string>;
+  // With false only white balance and colors are corrected, not the tone curve (contrast and
+  // gamma); the default is true.
+  tone?: boolean;
 }
 
 const MIN_NEUTRAL = 4;
@@ -165,15 +168,23 @@ function poolNeutrals(neutrals: readonly Sample[]): Block[] {
   return blocks;
 }
 
-// Gain by which the camera is brighter (>1) or darker (<1) than the reference in the mid tones:
-// geometric mean over the blocks of the gray ramp. Scaling the reference by it keeps the exposure
-// of the shot (only color cast and tone curve are corrected, not the brightness).
-function exposureGain(blocks: readonly Block[]): number {
+// Geometric mean, over the mid tones of the gray ramp, of the factor by which the camera level
+// (taken from `level`) lies above the target.
+function midGain(blocks: readonly Block[], level: (block: Block) => number): number {
   const logs = blocks
-    .map((block) => ({ level: blockLevel(block), target: block.target / block.count }))
-    .filter(({ level, target }) => level > 0 && target >= EXPOSURE_FROM && target <= EXPOSURE_TO)
-    .map(({ level, target }) => Math.log(level / target));
+    .map((block) => ({ level: level(block), target: block.target / block.count }))
+    .filter(
+      (entry) => entry.level > 0 && entry.target >= EXPOSURE_FROM && entry.target <= EXPOSURE_TO,
+    )
+    .map((entry) => Math.log(entry.level / entry.target));
   return logs.length === 0 ? 1 : Math.exp(mean(logs));
+}
+
+// Gain by which the camera is brighter (>1) or darker (<1) than the reference in the mid tones.
+// Scaling the reference by it keeps the exposure of the shot (only color cast and tone curve are
+// corrected, not the brightness).
+function exposureGain(blocks: readonly Block[]): number {
+  return midGain(blocks, blockLevel);
 }
 
 // Reference color (Lab) with the exposure gain applied to its linear light.
@@ -301,6 +312,14 @@ function fitMatrix(pairs: readonly Pair[]): readonly [Vec3, Vec3, Vec3] {
   return rows as unknown as readonly [Vec3, Vec3, Vec3];
 }
 
+// Without a tone curve each channel only gets one factor (white balance) that brings its mid tones
+// to the exposure of the shot; a line through the origin leaves contrast and gamma as they are.
+function buildPlainCurve(blocks: readonly Block[], channel: number, gain: number): Curve {
+  const level = (block: Block): number => Number(block.linear[channel]) / block.count;
+  const factor = Math.min(Math.max(gain / midGain(blocks, level), 1 / MAX_GAIN), MAX_GAIN);
+  return { xs: [0, 1], ys: [0, factor] };
+}
+
 const evaluators = new WeakMap<ColorModel, readonly ((x: number) => number)[]>();
 
 function curveFunctions(model: ColorModel): readonly ((x: number) => number)[] {
@@ -372,12 +391,14 @@ export function fitColorModel(input: FitInput): FitResult {
   const blocks = poolNeutrals(neutrals);
   const gain = exposureGain(blocks);
   const curves = [0, 1, 2].map((channel) =>
-    buildCurve(
-      blocks.map((block) => [
-        Number(block.linear[channel]) / block.count,
-        (gain * block.target) / block.count,
-      ]),
-    ),
+    input.tone === false
+      ? buildPlainCurve(blocks, channel, gain)
+      : buildCurve(
+          blocks.map((block) => [
+            Number(block.linear[channel]) / block.count,
+            (gain * block.target) / block.count,
+          ]),
+        ),
   ) as unknown as ColorModel['curves'];
 
   const draft: ColorModel = { curves, matrix: IDENTITY };

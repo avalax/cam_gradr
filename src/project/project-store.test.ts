@@ -175,6 +175,7 @@ describe('useProjectStore', () => {
     expect(project.gray.corners).toEqual({});
     expect(project.model).not.toBeNull();
     expect(project.preview).toEqual({ split: 30 });
+    expect(project.tone).toBe(true);
     expect(Number.isNaN(Date.parse(project.savedAt))).toBe(false);
     expect(useProjectStore().notice).toBeNull();
     expect(text).not.toContain('"lab"');
@@ -280,5 +281,33 @@ describe('useProjectStore', () => {
     await project.load('kaputt');
     await project.load(text);
     expect(project.error).toBeNull();
+  });
+});
+
+describe('the tone setting in the project', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    download.mockReset();
+  });
+
+  it('saves the setting and restores it before the recalculation', async () => {
+    const references = useReferenceStore();
+    await references.importFile('referenz.json', dummyReferenceJson('Mein Satz'));
+    useColorChartStore().restore({ rotated: false, points: {}, measurements: colorMeasurements });
+    const solve = useSolveStore();
+    solve.setTone(false);
+    solve.compute({
+      measurements: colorMeasurements,
+      reference: references.selected ?? { name: '', patches: {} },
+      neutralIds: NEUTRAL_IDS,
+    });
+    await useProjectStore().save();
+    const [, text] = download.mock.calls[0] as [string, string, string];
+    expect(parseProject(text).tone).toBe(false);
+
+    setActivePinia(createPinia());
+    await useProjectStore().load(text);
+    expect(useSolveStore().tone).toBe(false);
+    expect(useSolveStore().model?.curves[0].xs).toEqual([0, 1]);
   });
 });

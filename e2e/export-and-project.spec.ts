@@ -50,6 +50,23 @@ test.describe('Export', () => {
     await expect(app.page.getByRole('status')).toHaveCount(0);
   });
 
+  test('The tone setting from the preview applies to the exported file', async ({ app }) => {
+    await app.computeColorModel();
+    await app.openTab('Export');
+    const full = await app.download(app.page.getByTestId('export-download'));
+
+    await app.openTab('Vorschau');
+    const tone = app.page.getByTestId('correction-tone');
+    await expect(tone).toBeChecked();
+    await tone.uncheck();
+    await app.openTab('Export');
+    await expect(app.page.getByTestId('correction-tone')).not.toBeChecked();
+    const plain = await app.download(app.page.getByTestId('export-download'));
+
+    expect(plain.text).not.toBe(full.text);
+    expect(parseCube(plain.text).lut.size).toBe(33);
+  });
+
   test('The size of the LUT is selectable', async ({ app }) => {
     await app.computeColorModel();
     await app.openTab('Export');
