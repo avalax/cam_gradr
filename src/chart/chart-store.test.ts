@@ -347,9 +347,10 @@ describe('Farbkarten um 180° gedreht', () => {
   // and E) runs upright from bright at the top to dark at the bottom.
   function colorGrid(rotated: boolean): PixelGrid {
     const data = new Uint8ClampedArray(200 * 100 * 4).fill(255);
-    const paint = (x: number, y: number, level: number) => {
+    // Colored fields are red; the gray ladder is neutral.
+    const paint = (x: number, y: number, level: number, colored: boolean) => {
       const value = Math.round(level * 255);
-      data.set([value, value, value, 255], (y * 200 + x) * 4);
+      data.set(colored ? [204, 77, 77, 255] : [value, value, value, 255], (y * 200 + x) * 4);
     };
     for (const card of colorLayout.cards) {
       const slot = (card.card === 1) === rotated ? 1 : 0;
@@ -360,7 +361,7 @@ describe('Farbkarten um 180° gedreht', () => {
         const [left, top] = rotated ? [1 - x - w, 1 - y - h] : [x, y];
         for (let py = Math.round(top * 100); py < Math.round((top + h) * 100); py++) {
           for (let px = Math.round(left * 100); px < Math.round((left + w) * 100); px++) {
-            paint(slot * 100 + px, py, level);
+            paint(slot * 100 + px, py, level, patch.role !== 'neutral');
           }
         }
       }
@@ -376,6 +377,29 @@ describe('Farbkarten um 180° gedreht', () => {
       store.addCorner(point(x, 100));
     }
   }
+
+  it('recognizes color charts as such, upright or rotated, but not gray cards in their place', () => {
+    const color = useColorChartStore();
+    for (const rotated of [false, true]) {
+      placeBoth(color);
+      color.measure(colorGrid(rotated));
+      expect(color.plausible).toBe(true);
+      color.reset();
+    }
+    const gray = useChartStore();
+    placeCard(gray, 0);
+    placeCard(gray, 100);
+    gray.measure(grid(150, 90));
+    expect(gray.plausible).toBe(true);
+    gray.reset();
+    placeCard(gray, 0);
+    placeCard(gray, 100);
+    gray.measure(colorGrid(false));
+    expect(gray.plausible).toBe(false);
+    placeBoth(color);
+    color.measure(grid(150, 90));
+    expect(color.plausible).toBe(false);
+  });
 
   it('leaves upright color charts unchanged', () => {
     const store = useColorChartStore();
