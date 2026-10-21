@@ -166,6 +166,17 @@ describe('detectCards', () => {
     expectCard(detectCards(frame, 1)?.[0], 300, 100, 340, 520);
   });
 
+  it('also finds small charts, held at the distance of the subject (about 17 % of the image height)', () => {
+    const frame = scene((f) => {
+      drawCard(f, 250, 150, 38, 60);
+      drawCard(f, 302, 150, 38, 60);
+    });
+    const cards = detectCards(frame, 2);
+    expect(cards).toHaveLength(2);
+    expectCard(cards?.[0], 250, 150, 38, 60);
+    expectCard(cards?.[1], 302, 150, 38, 60);
+  });
+
   it('returns null when the number of charts is wrong', () => {
     const oneCard = scene((f) => {
       drawCard(f, 90, 70, 170, 260);

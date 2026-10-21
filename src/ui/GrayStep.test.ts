@@ -44,6 +44,20 @@ function twoCardFrame(shift = 0): Frame {
   return frame;
 }
 
+// Two small cards (about 17 % of the image height, measured 16 %), as held at the distance of the subject.
+function smallCardFrame(): Frame {
+  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.6) };
+  for (const x0 of [590, 690]) {
+    for (let y = 300; y < 420; y++) {
+      for (let x = x0; x < x0 + 76; x++) {
+        const inside = x >= x0 + 8 && x < x0 + 68 && y >= 308 && y < 412;
+        frame.data.fill(inside ? 0.8 : 0.08, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
+      }
+    }
+  }
+  return frame;
+}
+
 function toRgba(frame: Frame): Uint8ClampedArray {
   const rgba = new Uint8ClampedArray(frame.width * frame.height * 4).fill(255);
   for (let index = 0; index < frame.width * frame.height; index++) {
@@ -131,7 +145,7 @@ describe('GrayStep', () => {
     setLocale('en');
     const wrapper = mount(GrayStep);
     expect(wrapper.text()).toContain('The camera is off');
-    expect(wrapper.text()).toContain('Hold both gray cards steady in the frames');
+    expect(wrapper.text()).toContain('Hold both gray cards steady where the subject will be');
     expect(wrapper.text()).toContain('This tab sets the room brightness');
     expect(wrapper.text()).toContain('No measurement yet.');
   });
@@ -395,7 +409,7 @@ describe('GrayStep', () => {
     expect(guides[0]?.text()).toContain('left gray card (50%)');
     expect(guides[1]?.text()).toContain('right gray card (18%)');
     expect(wrapper.get('[data-testid="auto-hint"]').text()).toContain(
-      'Hold the cards in the frames',
+      'Hold the cards where the subject will be',
     );
     expect(wrapper.find('[data-testid="rotated-note"]').exists()).toBe(false);
     useChartStore().rotated = true;
@@ -466,6 +480,31 @@ describe('GrayStep', () => {
       await flushPromises();
       expect(useCameraStore().still).not.toBeNull();
       expect(useChartStore().ready).toBe(true);
+    });
+
+    it('shows what the search sees: a hint without cards, the detected cards with their size', async () => {
+      let visible = false;
+      const wrapper = await mountAuto(() => (visible ? cards() : empty()));
+      await vi.advanceTimersByTimeAsync(500);
+      expect(wrapper.get('[data-testid="live-chip"]').text()).toContain('Die Größe ist egal');
+      expect(wrapper.find('[data-testid="live-meter"]').exists()).toBe(false);
+      expect(wrapper.findAll('[data-testid="guide"]')).toHaveLength(2);
+      visible = true;
+      await vi.advanceTimersByTimeAsync(500);
+      expect(wrapper.get('[data-testid="live-chip"]').text()).toContain(
+        'Beide Karten erkannt. Ruhig halten, 1 von 2',
+      );
+      expect(wrapper.get('[data-testid="live-meter"]').text()).toContain('69 %');
+      expect(wrapper.findAll('[data-testid="found-shape"]')).toHaveLength(2);
+      expect(wrapper.findAll('[data-testid="guide"]')).toHaveLength(0);
+    });
+
+    it('warns when the found cards are very small', async () => {
+      const small = toRgba(smallCardFrame());
+      const wrapper = await mountAuto(() => small);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(wrapper.get('[data-testid="live-chip"]').text()).toContain('Karten sehr klein');
+      expect(wrapper.get('[data-testid="live-meter"]').text()).toContain('16 %');
     });
 
     it('keeps waiting while no cards are visible', async () => {

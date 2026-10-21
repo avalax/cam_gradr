@@ -60,7 +60,7 @@ describe('ColorStep', () => {
       `${BUNDLED_NAME} (48 Felder)`,
     );
     expect(wrapper.findAll('button').map((b) => b.text())).not.toContain('Farbkorrektur berechnen');
-    expect(wrapper.text()).toContain('Beide Farbkarten ruhig in die Rahmen');
+    expect(wrapper.text()).toContain('Beide Farbkarten ruhig dorthin halten, wo das Motiv steht');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
@@ -225,7 +225,7 @@ describe('ColorStep (English)', () => {
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       `Reference values: ${BUNDLED_NAME} (48 patches).`,
     );
-    expect(wrapper.text()).toContain('Hold both color cards steady in the frames');
+    expect(wrapper.text()).toContain('Hold both color cards steady where the subject will be');
   });
 
   it('shows the report in English', async () => {

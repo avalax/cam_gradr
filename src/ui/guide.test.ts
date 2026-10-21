@@ -8,11 +8,13 @@ describe('guideCorners', () => {
   it('places two portrait frames left and right, centered in the image', () => {
     const [left, right] = guideCorners({ width: 1280, height: 720 }, 2) as [Corners, Corners];
     const width = left[1].x - left[0].x;
-    expect(left[0].y).toBeCloseTo(68.4);
-    expect(left[2].y).toBeCloseTo(651.6);
-    expect(width).toBeCloseTo(367.4, 0);
-    expect(left[0].x + width / 2).toBeCloseTo(435.2);
-    expect(right[0].x + width / 2).toBeCloseTo(896);
+    expect(left[0].y).toBeCloseTo(208.8);
+    expect(left[2].y).toBeCloseTo(511.2);
+    expect(width).toBeCloseTo(190.5, 0);
+    // Centered as a group: the middle between the card centers is the middle of the image.
+    const middle = (left[0].x + width / 2 + right[0].x + width / 2) / 2;
+    expect(middle).toBeCloseTo(640);
+    expect(right[0].x - left[0].x).toBeCloseTo(width * 1.26);
   });
 
   it('returns corners clockwise starting at top left', () => {
@@ -23,7 +25,8 @@ describe('guideCorners', () => {
     expect(d.x).toBe(a.x);
   });
 
-  it('places a single card on the left of the image', () => {
-    expect(guideCorners({ width: 200, height: 100 }, 1)).toHaveLength(1);
+  it('places a single card in the middle of the image', () => {
+    const [only] = guideCorners({ width: 200, height: 100 }, 1) as [Corners];
+    expect(only[0].x + (only[1].x - only[0].x) / 2).toBeCloseTo(100);
   });
 });

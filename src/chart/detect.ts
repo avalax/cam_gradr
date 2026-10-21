@@ -14,8 +14,9 @@ import type { Corners, Point } from './types';
 const MAX_WIDTH = 320;
 const THRESHOLDS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45] as const;
 // Minimum size of the dark area (fraction of the image); the bright patches inside do not
-// count.
-const MIN_DARK_SHARE = 0.01;
+// count. Small enough for cards held at the distance of the subject (about 12 % of the image
+// height); the aspect ratio and straight edges keep other dark areas out.
+const MIN_DARK_SHARE = 0.003;
 const MIN_ASPECT = 0.45;
 const MAX_ASPECT = 0.85;
 // Only the two end pieces of each side (between 10 % and 30 % of the length from the end) go
