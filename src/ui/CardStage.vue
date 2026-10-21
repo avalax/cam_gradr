@@ -47,16 +47,25 @@ const size = computed(() => still.value ?? actual.value ?? { width: 1280, height
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
 // Guide frame while no corner points have been set yet.
 const noPoints = computed(() => Object.keys(points.value).length === 0);
-// Outlines of the cards the last search recognized in the live image: fewer than expected while
-// only some of them are found, all of them once the search is complete.
+// Cards the last search recognized in the live image: fewer than expected while only some of them
+// are found. One frame is drawn around all of them.
 const outlines = shallowRef<Corners[]>([]);
-const complete = computed(() => outlines.value.length === props.layout.cards.length);
-const outlineShapes = computed(() =>
-  (autoActive.value ? outlines.value : []).map((corners, index) => ({
-    key: String(index),
-    points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
-  })),
-);
+const frameBox = computed(() => {
+  const all = autoActive.value ? outlines.value.flat() : [];
+  if (all.length === 0) {
+    return null;
+  }
+  const pad = size.value.height * 0.02;
+  const left = Math.min(...all.map((p) => p.x)) - pad;
+  const top = Math.min(...all.map((p) => p.y)) - pad;
+  return {
+    x: left,
+    y: top,
+    width: Math.max(...all.map((p) => p.x)) + pad - left,
+    height: Math.max(...all.map((p) => p.y)) + pad - top,
+    rx: pad,
+  };
+});
 // The automation searches the running live image while no corner points have been set yet.
 const autoActive = computed(
   () => isLive.value && videoReady.value && !showStill.value && noPoints.value,
@@ -127,6 +136,7 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
   const frame = still.value;
   /* v8 ignore next 4 -- a capture error is reported by the camera store */
   if (frame === null) {
+    outlines.value = [];
     capturing.value = false;
     return;
   }
@@ -137,6 +147,7 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
   } else {
     camera.clearStill();
   }
+  outlines.value = [];
   capturing.value = false;
 }
 
@@ -152,7 +163,10 @@ function countHits(found: Corners[] | null, width: number): void {
 }
 
 async function autoTick(): Promise<void> {
-  const frame = capturing.value || !autoActive.value ? null : grabVideoFrame(video.value);
+  if (capturing.value) {
+    return;
+  }
+  const frame = autoActive.value ? grabVideoFrame(video.value) : null;
   const seen = frame === null ? [] : detectOutlines(frame, props.layout.cards.length);
   const found = seen.length === props.layout.cards.length ? seen : null;
   countHits(found, Number(frame?.width));
@@ -160,7 +174,6 @@ async function autoTick(): Promise<void> {
   if (found !== null && hits.value >= AUTO_CONFIRMATIONS) {
     hits.value = 0;
     previous.value = null;
-    outlines.value = [];
     await autoCapture(found);
   }
 }
@@ -283,16 +296,21 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
-          <polygon
-            v-for="shape in outlineShapes"
-            :key="shape.key"
-            :points="shape.points"
+          <!-- White and pulsing until the cards are held steady; green and drawing itself during the capture. -->
+          <rect
+            v-if="frameBox !== null"
+            v-bind="frameBox"
             fill="none"
-            stroke="#34d399"
             stroke-width="4"
-            :stroke-dasharray="complete ? undefined : '14 10'"
+            pathLength="1"
             pointer-events="none"
-            data-testid="found-shape"
+            :class="
+              capturing
+                ? 'animate-frame-draw stroke-emerald-400 motion-reduce:animate-none'
+                : 'animate-frame-pulse stroke-white motion-reduce:animate-none'
+            "
+            :stroke-dasharray="capturing ? 1 : undefined"
+            data-testid="found-frame"
           />
           <polygon
             v-for="shape in shapes"

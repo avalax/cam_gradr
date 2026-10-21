@@ -456,22 +456,34 @@ describe('GrayStep', () => {
       expect(useChartStore().ready).toBe(true);
     });
 
-    it('outlines the cards while they are recognized: dashed until both are found', async () => {
+    it('frames the recognized cards: white while searching, green during the capture', async () => {
       const one = toRgba(oneCardFrame());
       let next: Uint8ClampedArray = empty();
-      const wrapper = await mountAuto(() => next);
+      let reads = 0;
+      let duringCapture: string[] = [];
+      const wrapper = await mountAuto(() => {
+        reads++;
+        if (reads === 3) {
+          duringCapture = wrapper.find('[data-testid="found-frame"]').classes();
+        }
+        return next;
+      });
+      const frame = () => wrapper.find('[data-testid="found-frame"]');
       await vi.advanceTimersByTimeAsync(500);
-      expect(wrapper.findAll('[data-testid="found-shape"]')).toHaveLength(0);
+      expect(frame().exists()).toBe(false);
       next = one;
       await vi.advanceTimersByTimeAsync(500);
-      const partial = wrapper.findAll('[data-testid="found-shape"]');
-      expect(partial).toHaveLength(1);
-      expect(partial[0]?.attributes('stroke-dasharray')).toBeDefined();
+      const widthOne = Number(frame().attributes('width'));
+      expect(frame().classes()).toContain('animate-frame-pulse');
       next = cards();
       await vi.advanceTimersByTimeAsync(500);
-      const both = wrapper.findAll('[data-testid="found-shape"]');
-      expect(both).toHaveLength(2);
-      expect(both[0]?.attributes('stroke-dasharray')).toBeUndefined();
+      expect(Number(frame().attributes('width'))).toBeGreaterThan(widthOne);
+      expect(frame().classes()).toContain('animate-frame-pulse');
+      reads = 0;
+      await vi.advanceTimersByTimeAsync(500);
+      await flushPromises();
+      expect(duringCapture).toContain('animate-frame-draw');
+      expect(frame().exists()).toBe(false);
     });
 
     it('keeps waiting while no cards are visible', async () => {

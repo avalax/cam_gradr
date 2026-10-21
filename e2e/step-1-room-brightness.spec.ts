@@ -191,7 +191,7 @@ test.describe('Gray cards: live outlines', () => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await expect(app.page.getByTestId('found-shape')).toHaveCount(0);
+    await expect(app.page.getByTestId('found-frame')).toHaveCount(0);
   });
 });
 
