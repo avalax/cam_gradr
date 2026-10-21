@@ -297,22 +297,29 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
-          <!-- Amber and pulsing until the cards are held steady; green and drawing itself during the capture. -->
-          <rect
-            v-if="frameBox !== null"
-            v-bind="frameBox"
-            fill="none"
-            stroke-width="4"
-            pathLength="1"
-            pointer-events="none"
-            :class="
-              capturing
-                ? 'animate-frame-draw stroke-emerald-400 motion-reduce:animate-none'
-                : 'animate-frame-pulse stroke-amber-400 motion-reduce:animate-none'
-            "
-            :stroke-dasharray="capturing ? 1 : undefined"
-            data-testid="found-frame"
-          />
+          <!-- White with a dark edge (visible on any background), pulsing until the cards are held steady;
+               green and drawing itself during the capture. -->
+          <g v-if="frameBox !== null" fill="none" pointer-events="none">
+            <rect
+              v-bind="frameBox"
+              stroke="#000"
+              stroke-opacity="0.7"
+              stroke-width="7"
+              :class="capturing ? undefined : 'animate-frame-pulse motion-reduce:animate-none'"
+            />
+            <rect
+              v-bind="frameBox"
+              stroke-width="4"
+              pathLength="1"
+              :class="
+                capturing
+                  ? 'animate-frame-draw stroke-emerald-400 motion-reduce:animate-none'
+                  : 'animate-frame-pulse stroke-white motion-reduce:animate-none'
+              "
+              :stroke-dasharray="capturing ? 1 : undefined"
+              data-testid="found-frame"
+            />
+          </g>
           <polygon
             v-for="shape in shapes"
             :key="shape.key"
