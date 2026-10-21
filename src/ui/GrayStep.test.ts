@@ -456,7 +456,7 @@ describe('GrayStep', () => {
       expect(useChartStore().ready).toBe(true);
     });
 
-    it('frames the recognized cards: white while searching, green during the capture', async () => {
+    it('frames the recognized cards: amber while searching, green during the capture', async () => {
       const one = toRgba(oneCardFrame());
       let next: Uint8ClampedArray = empty();
       let reads = 0;
