@@ -31,8 +31,6 @@ const grayCheck = computed(() =>
   model.value === null ? [] : checkGrayCards(model.value, grayChart.measurements, grayLayout),
 );
 
-const cardNames = computed(() => ({ 1: t('color.cardLeft'), 2: t('color.cardRight') }));
-
 function compute(): void {
   if (selected.value !== null) {
     solve.compute({
@@ -70,12 +68,7 @@ watch([measurements, selected], () => {
       </aside>
 
       <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-        <CardStage
-          :store="chart"
-          :layout="colorLayout"
-          :card-names="cardNames"
-          :idle-text="t('color.idle')"
-        >
+        <CardStage :store="chart" :layout="colorLayout" :idle-text="t('color.idle')">
           <template #side>
             <ColorWipe
               :layout="colorLayout"

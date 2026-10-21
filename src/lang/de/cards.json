@@ -15,16 +15,11 @@
     "rotated": "Die Karten sind um 180° gedreht. Die Zuordnung der Felder wurde entsprechend angepasst.",
     "detected": "Die Karten wurden erkannt und das Standbild aufgenommen. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht.",
     "live": {
-      "search": "Karten dorthin halten, wo das Motiv steht. Die Größe ist egal.",
-      "found": "Beide Karten erkannt. Ruhig halten, {hits} von {total}",
-      "small": "Karten sehr klein. Etwas näher halten, wenn es nicht klappt.",
-      "size": "Kartengröße im Bild: {percent} %"
+      "small": "Karten sehr klein. Etwas näher halten, wenn es nicht klappt."
     }
   },
   "gray": {
     "intro": "Dieser Tab stellt die Raumhelligkeit ein. Schalte oben die Kamera ein und halte die beiden Graukarten dorthin, wo das Motiv steht (die Rahmen zeigen nur Lage und Richtung): Die App erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht. Ändere dann das Licht und schalte die Kamera wieder ein, bis der Punkt im Messfeld neben dem Bild im umrahmten Normalbereich steht (Details beim Überfahren des Felds). Gemessen wird nur auf Standbildern; ein Kamerastart beginnt eine neue Suche, und endet die Kamera ohne neues Standbild, kehrt der alte Stand zurück.",
-    "idle": "Beide Graukarten ruhig dorthin halten, wo das Motiv steht, im selben Licht. Die Größe im Bild ist egal.",
-    "left": "linke Graukarte (50 %)",
-    "right": "rechte Graukarte (18 %)"
+    "idle": "Beide Graukarten ruhig dorthin halten, wo das Motiv steht, im selben Licht. Die Größe im Bild ist egal."
   }
 }

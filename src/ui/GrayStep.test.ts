@@ -58,6 +58,15 @@ function smallCardFrame(): Frame {
   return frame;
 }
 
+// Only the left one of the two cards is in the image.
+function oneCardFrame(): Frame {
+  const frame = twoCardFrame();
+  for (let y = 100; y < 600; y++) {
+    frame.data.fill(0.6, (y * 1280 + 760) * 3, (y * 1280 + 1080) * 3);
+  }
+  return frame;
+}
+
 function toRgba(frame: Frame): Uint8ClampedArray {
   const rgba = new Uint8ClampedArray(frame.width * frame.height * 4).fill(255);
   for (let index = 0; index < frame.width * frame.height; index++) {
@@ -394,20 +403,9 @@ describe('GrayStep', () => {
     expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
-  it('shows two labeled frames in the live view where the cards should be held', async () => {
-    const wrapper = await mountLive();
-    const guides = wrapper.findAll('[data-testid="guide"]');
-    expect(guides).toHaveLength(2);
-    expect(guides[0]?.text()).toContain('linke Graukarte (50 %)');
-    expect(guides[1]?.text()).toContain('rechte Graukarte (18 %)');
-  });
-
   it('shows the live view texts in English and the note for rotated cards', async () => {
     setLocale('en');
     const wrapper = await mountLive();
-    const guides = wrapper.findAll('[data-testid="guide"]');
-    expect(guides[0]?.text()).toContain('left gray card (50%)');
-    expect(guides[1]?.text()).toContain('right gray card (18%)');
     expect(wrapper.get('[data-testid="auto-hint"]').text()).toContain(
       'Hold the cards where the subject will be',
     );
@@ -482,21 +480,23 @@ describe('GrayStep', () => {
       expect(useChartStore().ready).toBe(true);
     });
 
-    it('shows what the search sees: a hint without cards, the detected cards with their size', async () => {
-      let visible = false;
-      const wrapper = await mountAuto(() => (visible ? cards() : empty()));
+    it('outlines the cards while they are recognized: dashed until both are found', async () => {
+      const one = toRgba(oneCardFrame());
+      let next: Uint8ClampedArray = empty();
+      const wrapper = await mountAuto(() => next);
       await vi.advanceTimersByTimeAsync(500);
-      expect(wrapper.get('[data-testid="live-chip"]').text()).toContain('Die Größe ist egal');
-      expect(wrapper.find('[data-testid="live-meter"]').exists()).toBe(false);
-      expect(wrapper.findAll('[data-testid="guide"]')).toHaveLength(2);
-      visible = true;
+      expect(wrapper.findAll('[data-testid="found-shape"]')).toHaveLength(0);
+      next = one;
       await vi.advanceTimersByTimeAsync(500);
-      expect(wrapper.get('[data-testid="live-chip"]').text()).toContain(
-        'Beide Karten erkannt. Ruhig halten, 1 von 2',
-      );
-      expect(wrapper.get('[data-testid="live-meter"]').text()).toContain('69 %');
-      expect(wrapper.findAll('[data-testid="found-shape"]')).toHaveLength(2);
-      expect(wrapper.findAll('[data-testid="guide"]')).toHaveLength(0);
+      const partial = wrapper.findAll('[data-testid="found-shape"]');
+      expect(partial).toHaveLength(1);
+      expect(partial[0]?.attributes('stroke-dasharray')).toBeDefined();
+      next = cards();
+      await vi.advanceTimersByTimeAsync(500);
+      const both = wrapper.findAll('[data-testid="found-shape"]');
+      expect(both).toHaveLength(2);
+      expect(both[0]?.attributes('stroke-dasharray')).toBeUndefined();
+      expect(wrapper.find('[data-testid="live-chip"]').exists()).toBe(false);
     });
 
     it('warns when the found cards are very small', async () => {
@@ -504,7 +504,6 @@ describe('GrayStep', () => {
       const wrapper = await mountAuto(() => small);
       await vi.advanceTimersByTimeAsync(500);
       expect(wrapper.get('[data-testid="live-chip"]').text()).toContain('Karten sehr klein');
-      expect(wrapper.get('[data-testid="live-meter"]').text()).toContain('16 %');
     });
 
     it('keeps waiting while no cards are visible', async () => {

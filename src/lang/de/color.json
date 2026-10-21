@@ -1,8 +1,6 @@
 {
   "intro": "Dieser Tab berechnet die Farbkorrektur. Halte die beiden Farbkarten dorthin, wo das Motiv steht (die Rahmen zeigen nur Lage und Richtung): Die App erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht. Die Farbkorrektur wird dann automatisch berechnet und bei jeder Änderung der Eckpunkte neu.",
   "referenceActive": "Referenzwerte: {name} ({count} Felder). Den Satz wechselst oder importierst du im Menü ⚙ oben rechts.",
-  "cardLeft": "linke Farbkarte (Spalten A–D)",
-  "cardRight": "rechte Farbkarte (Spalten E–H)",
   "idle": "Beide Farbkarten ruhig dorthin halten, wo das Motiv steht. Die Größe im Bild ist egal.",
   "wipe": {
     "caption": "links Kamera · rechts korrigiert",

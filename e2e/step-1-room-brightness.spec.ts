@@ -185,14 +185,13 @@ test.describe('Gray cards: automatic capture', () => {
   });
 });
 
-test.describe('Gray cards: guide frames', () => {
-  // The camera shows the cards at once and the app captures within a second, so whether the frames
-  // are visible in the live image is covered by the component tests; here only the end state counts.
-  test('No guide frames and no live hint remain after the capture', async ({ app }) => {
+test.describe('Gray cards: live outlines', () => {
+  // The camera shows the cards at once and the app captures within a second, so the outlines in the
+  // live image are covered by the component tests; here only the end state counts.
+  test('No outlines and no live hint remain after the capture', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
     await app.captureStill();
-    await expect(app.page.getByTestId('guide')).toHaveCount(0);
     await expect(app.page.getByTestId('found-shape')).toHaveCount(0);
     await expect(app.page.getByTestId('live-chip')).toHaveCount(0);
   });

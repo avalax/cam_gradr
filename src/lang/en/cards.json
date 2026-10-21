@@ -15,16 +15,11 @@
     "rotated": "The cards are rotated by 180°. The assignment of the fields was adjusted accordingly.",
     "detected": "The cards were detected and the still image was captured. Check the corner points and drag them into place if needed.",
     "live": {
-      "search": "Hold the cards where the subject will be. The size does not matter.",
-      "found": "Both cards detected. Hold still, {hits} of {total}",
-      "small": "Cards very small. Hold them a bit closer if it does not work.",
-      "size": "Card size in the image: {percent} %"
+      "small": "Cards very small. Hold them a bit closer if it does not work."
     }
   },
   "gray": {
     "intro": "This tab sets the room brightness. Turn the camera on above and hold both gray cards where the subject will be (the frames only show position and direction): the app detects them by itself and captures a still image. Check the corner points and drag them into place if needed. Then change the lighting and turn the camera on again until the dot in the measuring field next to the image is inside the framed normal range (details appear when you hover over the field). Measuring only happens on still images; starting the camera begins a new search, and if the camera ends without a new still image the old state comes back.",
-    "idle": "Hold both gray cards steady where the subject will be, in the same light. The size in the image does not matter.",
-    "left": "left gray card (50%)",
-    "right": "right gray card (18%)"
+    "idle": "Hold both gray cards steady where the subject will be, in the same light. The size in the image does not matter."
   }
 }

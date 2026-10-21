@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Corners } from '../chart/types';
 
-import { cardSizeShare, SIZE_SCALE, SMALL_SHARE, sizeBar } from './live-feedback';
+import { cardSizeShare } from './live-feedback';
 
 const TOP = 10;
 
@@ -22,15 +22,5 @@ describe('cardSizeShare', () => {
 
   it('is zero without cards', () => {
     expect(cardSizeShare([], 600)).toBe(0);
-  });
-});
-
-describe('sizeBar', () => {
-  it('fills the bar relative to the scale and marks the small limit', () => {
-    expect(sizeBar(SIZE_SCALE / 2)).toEqual({ fill: 0.5, mark: SMALL_SHARE / SIZE_SCALE });
-  });
-
-  it('never fills more than the whole bar', () => {
-    expect(sizeBar(SIZE_SCALE * 3).fill).toBe(1);
   });
 });

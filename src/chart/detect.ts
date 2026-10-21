@@ -316,36 +316,61 @@ function selections<T>(items: readonly T[], count: number): T[][] {
   );
 }
 
+// Candidate charts of all thresholds, one per place.
+function candidateCards(gray: Gray): Card[] {
+  const candidates = THRESHOLDS.flatMap((threshold) =>
+    darkAreas(gray, threshold)
+      .map((cells) => cardFrom(cells, gray))
+      .filter((card) => card !== null),
+  );
+  return bestPerPlace(candidates);
+}
+
+// The best matching group of `count` charts (cleanest edges), or undefined.
+function bestGroup(cards: readonly Card[], count: number): Card[] | undefined {
+  return selections(cards, count)
+    .filter((group) => fitTogether(group))
+    .toSorted(
+      (p, q) => p.reduce((sum, c) => sum + c.error, 0) - q.reduce((sum, c) => sum + c.error, 0),
+    )[0];
+}
+
+// Corners of the charts in image pixels, from left to right.
+function cornersOf(cards: readonly Card[], scale: number): Corners[] {
+  return cards
+    .toSorted((p, q) => center(p).x - center(q).x)
+    .map((card) => {
+      const [a, b, c, d] = card.corners;
+      const [p, q, r, s] = [a, b, c, d].map((point) => ({
+        x: (point.x + 0.5) * scale,
+        y: (point.y + 0.5) * scale,
+      }));
+      return sortCorners([p as Point, q as Point, r as Point, s as Point]);
+    });
+}
+
 // Searches for `count` charts in the image and returns their corners from left to right. All
 // thresholds are tried; of the plausible charts the best matching group with the cleanest edges
 // wins (other dark objects such as hair or clothes do not matter). If no such group exists, null
 // is returned and the corners must be set by hand.
 export function detectCards(frame: Frame, count: number): Corners[] | null {
   const gray = toGray(frame);
-  const candidates = THRESHOLDS.flatMap((threshold) =>
-    darkAreas(gray, threshold)
-      .map((cells) => cardFrom(cells, gray))
-      .filter((card) => card !== null),
-  );
-  const groups = selections(bestPerPlace(candidates), count)
-    .filter((cards) => fitTogether(cards))
-    .toSorted(
-      (p, q) => p.reduce((sum, c) => sum + c.error, 0) - q.reduce((sum, c) => sum + c.error, 0),
-    );
-  const best = groups[0];
-  if (best === undefined) {
-    return null;
+  const best = bestGroup(candidateCards(gray), count);
+  return best === undefined ? null : cornersOf(best, gray.scale);
+}
+
+// Like detectCards, but also returns what was found so far: the best matching group of up to
+// `count` charts (fewer while only some of them are recognized, empty if none).
+export function detectOutlines(frame: Frame, count: number): Corners[] {
+  const gray = toGray(frame);
+  const cards = candidateCards(gray);
+  for (let size = count; size > 0; size--) {
+    const best = bestGroup(cards, size);
+    if (best !== undefined) {
+      return cornersOf(best, gray.scale);
+    }
   }
-  return best
-    .toSorted((p, q) => center(p).x - center(q).x)
-    .map((card) => {
-      const [a, b, c, d] = card.corners;
-      const [p, q, r, s] = [a, b, c, d].map((point) => ({
-        x: (point.x + 0.5) * gray.scale,
-        y: (point.y + 0.5) * gray.scale,
-      }));
-      return sortCorners([p as Point, q as Point, r as Point, s as Point]);
-    });
+  return [];
 }
 
 // Checks whether two detections (e.g. from consecutive images) show the same charts at the same

@@ -16,21 +16,18 @@ import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
 import type { Frame } from '../camera/frame';
 import type { ChartStore } from '../chart/chart-store';
-import { detectCards, sameCards } from '../chart/detect';
+import { detectCards, detectOutlines, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import { frameGrid } from './gray-monitor';
-import { guideCorners } from './guide';
-import { cardSizeShare, sizeBar, SMALL_SHARE } from './live-feedback';
+import { cardSizeShare, SMALL_SHARE } from './live-feedback';
 import { buildShapes, clientToImage } from './overlay-geometry';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
 
 const props = defineProps<{
   store: ChartStore;
   layout: ChartLayout;
-  // Names of the cards for the click instruction, e.g. { 3: 'left gray card (50 %)' }.
-  cardNames: Readonly<Record<number, string>>;
   // Hint shown while no still image has been captured yet.
   idleText: string;
 }>();
@@ -62,37 +59,25 @@ const size = computed(() => still.value ?? actual.value ?? { width: 1280, height
 const viewBox = computed(() => `0 0 ${String(size.value.width)} ${String(size.value.height)}`);
 // Guide frame while no corner points have been set yet.
 const noPoints = computed(() => Object.keys(points.value).length === 0);
-// Cards found in the live image by the last search (null: none), and how large they are.
-const liveFound = shallowRef<Corners[] | null>(null);
+// Outlines of the cards the last search recognized in the live image: fewer than expected while
+// only some of them are found, all of them once the search is complete.
+const outlines = shallowRef<Corners[]>([]);
 const liveShare = ref(0);
-// Guide frame only in the live image: with the camera off, the placeholder shows what matters. Once
-// the cards are found, their detected edges take the place of the frames.
-const guides = computed(() =>
-  noPoints.value && isLive.value && liveFound.value === null
-    ? guideCorners(size.value, props.layout.cards.length).map((corners, index) => {
-        const card = Number(props.layout.cards[index]?.card);
-        return {
-          key: String(card),
-          points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
-          label: props.cardNames[card] ?? '',
-          at: corners[0],
-        };
-      })
-    : [],
+const complete = computed(() => outlines.value.length === props.layout.cards.length);
+const outlineShapes = computed(() =>
+  (autoActive.value ? outlines.value : []).map((corners, index) => ({
+    key: String(index),
+    points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
+  })),
+);
+// Cards held very far from the camera are found, but measured less reliably.
+const small = computed(
+  () => autoActive.value && outlines.value.length > 0 && liveShare.value < SMALL_SHARE,
 );
 // The automation searches the running live image while no corner points have been set yet.
 const autoActive = computed(
   () => isLive.value && videoReady.value && !showStill.value && noPoints.value,
 );
-const foundShapes = computed(() =>
-  (autoActive.value ? (liveFound.value ?? []) : []).map((corners, index) => ({
-    key: String(index),
-    points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
-  })),
-);
-const small = computed(() => liveShare.value < SMALL_SHARE);
-const bar = computed(() => sizeBar(liveShare.value));
-const percent = computed(() => String(Math.round(liveShare.value * 100)));
 // Without a camera image and without a still image the picture area only shows the placeholder;
 // saved corner points (for example from a project) are then not drawn over it.
 const showPlaceholder = computed(() => !isLive.value && !showStill.value);
@@ -179,22 +164,28 @@ function isSteady(found: Corners[], width: number): boolean {
   return previous.value !== null && sameCards(found, previous.value, STEADY_SHARE * width);
 }
 
-// Shows what the last search found: the cards and their size in the live image.
-function showLive(found: Corners[] | null, imageHeight: number): void {
-  liveFound.value = found;
-  liveShare.value = found === null ? 0 : cardSizeShare(found, imageHeight);
+// Shows what the last search recognized: the outlines of the cards and how large they are.
+function showLive(found: Corners[], imageHeight: number): void {
+  outlines.value = found;
+  liveShare.value = cardSizeShare(found, imageHeight);
+}
+
+// Counts the consecutive searches that hit the same cards; `found` is null until all cards are there.
+function countHits(found: Corners[] | null, width: number): void {
+  hits.value = found === null ? 0 : isSteady(found, width) ? hits.value + 1 : 1;
+  previous.value = found;
 }
 
 async function autoTick(): Promise<void> {
   const frame = capturing.value || !autoActive.value ? null : grabVideoFrame(video.value);
-  const found = frame === null ? null : detectCards(frame, props.layout.cards.length);
-  hits.value = found === null ? 0 : isSteady(found, Number(frame?.width)) ? hits.value + 1 : 1;
-  previous.value = found;
-  showLive(found, Number(frame?.height));
+  const seen = frame === null ? [] : detectOutlines(frame, props.layout.cards.length);
+  const found = seen.length === props.layout.cards.length ? seen : null;
+  countHits(found, Number(frame?.width));
+  showLive(seen, Number(frame?.height));
   if (found !== null && hits.value >= AUTO_CONFIRMATIONS) {
     hits.value = 0;
     previous.value = null;
-    liveFound.value = null;
+    outlines.value = [];
     await autoCapture(found);
   }
 }
@@ -318,33 +309,14 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
-          <g v-for="guide in guides" :key="guide.key" data-testid="guide" pointer-events="none">
-            <polygon
-              :points="guide.points"
-              fill="none"
-              stroke="#ffffff"
-              stroke-width="3"
-              stroke-dasharray="14 10"
-            />
-            <text
-              :x="guide.at.x + 10"
-              :y="guide.at.y + 30"
-              fill="#ffffff"
-              stroke="#0f172a"
-              stroke-width="4"
-              paint-order="stroke"
-              font-size="24"
-            >
-              {{ guide.label }}
-            </text>
-          </g>
           <polygon
-            v-for="shape in foundShapes"
+            v-for="shape in outlineShapes"
             :key="shape.key"
             :points="shape.points"
             fill="none"
-            :stroke="small ? '#fbbf24' : '#34d399'"
+            stroke="#34d399"
             stroke-width="4"
+            :stroke-dasharray="complete ? undefined : '14 10'"
             pointer-events="none"
             data-testid="found-shape"
           />
@@ -388,40 +360,13 @@ watch(actual, (next, previous) => {
             {{ handle.index + 1 }}
           </text>
         </svg>
-        <!-- Live feedback: size of the found cards, and what the search currently sees. -->
-        <div
-          v-if="autoActive && liveFound !== null"
-          class="pointer-events-none absolute right-3 top-3 w-40 rounded-md bg-black/70 px-2 py-1.5 text-xs text-white"
-          data-testid="live-meter"
-        >
-          {{ t('cards.stage.live.size', { percent }) }}
-          <div class="relative mt-1 h-1.5 overflow-hidden rounded-full bg-white/25">
-            <div
-              class="absolute inset-y-0 left-0"
-              :class="small ? 'bg-amber-400' : 'bg-emerald-400'"
-              :style="{ width: `${String(bar.fill * 100)}%` }"
-            ></div>
-            <div
-              class="absolute inset-y-0 w-0.5 bg-white"
-              :style="{ left: `${String(bar.mark * 100)}%` }"
-            ></div>
-          </div>
-        </div>
+        <!-- Warns only when the found cards are very small. -->
         <p
-          v-if="autoActive"
-          class="pointer-events-none absolute bottom-3 left-1/2 flex max-w-[92%] -translate-x-1/2 items-center gap-2 rounded-full px-3 py-1 text-center text-sm text-white"
-          :class="liveFound !== null && small ? 'bg-amber-900/90' : 'bg-black/70'"
+          v-if="small"
+          class="pointer-events-none absolute bottom-3 left-1/2 max-w-[92%] -translate-x-1/2 rounded-full bg-amber-900/90 px-3 py-1 text-center text-sm text-white"
           data-testid="live-chip"
         >
-          <span
-            class="size-2 shrink-0 rounded-full"
-            :class="liveFound === null ? 'bg-zinc-400' : small ? 'bg-amber-400' : 'bg-emerald-400'"
-          ></span>
-          <template v-if="liveFound === null">{{ t('cards.stage.live.search') }}</template>
-          <template v-else-if="small">{{ t('cards.stage.live.small') }}</template>
-          <template v-else>{{
-            t('cards.stage.live.found', { hits, total: AUTO_CONFIRMATIONS })
-          }}</template>
+          {{ t('cards.stage.live.small') }}
         </p>
         <!-- Toolbar in the image corner: delete corner points and still image. -->
         <div
