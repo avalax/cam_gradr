@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 
+import { looksLike } from './card-kind';
+import type { CardKind } from './card-kind';
 import { sortCorners } from './corner-order';
 import { assessExposure, codeLuma } from './exposure';
 import type { ExposureResult } from './exposure';
@@ -27,6 +29,8 @@ interface ChartStoreOptions {
   // Pairs (darkest, brightest patch) of a chart: they let the app detect whether the charts are
   // held rotated by 180° (the dark patch is then at the bottom instead of the top).
   orientation: readonly (readonly [string, string])[];
+  // Which cards the step expects; other cards are noticed from the colors of their fields.
+  kind: CardKind;
   // Only the gray cards also rate the room brightness.
   assessLighting: boolean;
 }
@@ -62,6 +66,8 @@ function defineChartStore(options: ChartStoreOptions) {
     const points = ref<Record<number, Point[]>>({});
     const measurements = shallowRef<Measurements>({});
     const exposure = shallowRef<ExposureResult | null>(null);
+    // The measured fields fit the expected cards (gray cards, not color cards, or the other way round).
+    const plausible = computed(() => looksLike(options.kind, measurements.value));
     // Charts are rotated by 180° (detected from the measurements).
     const rotated = ref(false);
     // While the camera searches for new charts, the previous state (corners and measurements for
@@ -215,6 +221,7 @@ function defineChartStore(options: ChartStoreOptions) {
       points,
       measurements,
       exposure,
+      plausible,
       rotated,
       nextSlot,
       ready,
@@ -236,6 +243,7 @@ export const useChartStore = defineChartStore({
   id: 'chart',
   layout: grayLayout,
   cardOrder: GRAY_CARD_ORDER,
+  kind: 'neutral',
   orientation: [
     ['S3-0', 'S3-5'],
     ['S4-0', 'S4-5'],
@@ -247,6 +255,7 @@ export const useColorChartStore = defineChartStore({
   id: 'chart-color',
   layout: colorLayout,
   cardOrder: COLOR_CARD_ORDER,
+  kind: 'colorful',
   // Gray ladder of the color charts: bright at the top (row 1), dark at the bottom (row 6).
   orientation: [
     ['6D', '1D'],

@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
@@ -20,6 +29,8 @@ const props = defineProps<{
   layout: ChartLayout;
   // Hint shown while no still image has been captured yet.
   idleText: string;
+  // Message when the cards in the image are not the expected ones (e.g. gray cards in the color step).
+  wrongText: string;
 }>();
 
 // Automation in the live image: how often the cards are searched for, and how many times in a row
@@ -126,6 +137,8 @@ function redetect(): void {
 const hits = ref(0);
 const previous = ref<Corners[] | null>(null);
 const capturing = ref(false);
+// The last capture showed other cards than expected and was discarded.
+const wrong = ref(false);
 
 // Captures the still image, sets the corners (searched once more, more precisely, on the averaged
 // still image) and stops the camera. If the still image does not match the corners from the live
@@ -143,7 +156,15 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
   const found = detectCards(frame, props.layout.cards.length);
   if (found !== null && sameCards(found, fromLive, STEADY_SHARE * frame.width)) {
     props.store.setCards(found);
-    camera.stop();
+    await nextTick();
+    if (props.store.plausible) {
+      wrong.value = false;
+      camera.stop();
+    } else {
+      props.store.reset();
+      camera.clearStill();
+      wrong.value = true;
+    }
   } else {
     camera.clearStill();
   }
@@ -396,6 +417,15 @@ watch(actual, (next, previous) => {
 
     <p v-if="camera.errorMessage !== null && isLive" class="text-sm text-red-700" role="alert">
       {{ camera.errorMessage }}
+    </p>
+
+    <p
+      v-if="wrong && autoActive"
+      class="text-sm text-red-700"
+      role="alert"
+      data-testid="wrong-cards"
+    >
+      {{ wrongText }}
     </p>
 
     <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
