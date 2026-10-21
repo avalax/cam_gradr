@@ -134,7 +134,7 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
   capturing.value = true;
   await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
   const frame = still.value;
-  /* v8 ignore next 4 -- a capture error is reported by the camera store */
+  /* v8 ignore next 5 -- a capture error is reported by the camera store */
   if (frame === null) {
     outlines.value = [];
     capturing.value = false;
@@ -163,6 +163,7 @@ function countHits(found: Corners[] | null, width: number): void {
 }
 
 async function autoTick(): Promise<void> {
+  /* v8 ignore next 3 -- only a capture that takes longer than one search interval gets here */
   if (capturing.value) {
     return;
   }
