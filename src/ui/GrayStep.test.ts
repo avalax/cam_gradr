@@ -44,20 +44,6 @@ function twoCardFrame(shift = 0): Frame {
   return frame;
 }
 
-// Two small cards (about 17 % of the image height, measured 16 %), as held at the distance of the subject.
-function smallCardFrame(): Frame {
-  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.6) };
-  for (const x0 of [590, 690]) {
-    for (let y = 300; y < 420; y++) {
-      for (let x = x0; x < x0 + 76; x++) {
-        const inside = x >= x0 + 8 && x < x0 + 68 && y >= 308 && y < 412;
-        frame.data.fill(inside ? 0.8 : 0.08, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
-      }
-    }
-  }
-  return frame;
-}
-
 // Only the left one of the two cards is in the image.
 function oneCardFrame(): Frame {
   const frame = twoCardFrame();
@@ -403,19 +389,12 @@ describe('GrayStep', () => {
     expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
-  it('shows the live view texts in English and the note for rotated cards', async () => {
+  it('shows the live view text in English', async () => {
     setLocale('en');
     const wrapper = await mountLive();
     expect(wrapper.get('[data-testid="auto-hint"]').text()).toContain(
       'Hold the cards where the subject will be',
     );
-    expect(wrapper.find('[data-testid="rotated-note"]').exists()).toBe(false);
-    useChartStore().rotated = true;
-    await flushPromises();
-    expect(wrapper.get('[data-testid="rotated-note"]').text()).toContain('rotated by 180°');
-    setLocale('de');
-    await flushPromises();
-    expect(wrapper.get('[data-testid="rotated-note"]').text()).toContain('um 180° gedreht');
   });
 
   describe('automatic capture in the live view', { timeout: 30_000 }, () => {
@@ -451,9 +430,6 @@ describe('GrayStep', () => {
       expect(useCameraStore().still).not.toBeNull();
       expect(useCameraStore().status).toBe('idle');
       expect(useChartStore().ready).toBe(true);
-      expect(wrapper.get('[data-testid="detect-message"]').text()).toContain(
-        'Standbild aufgenommen',
-      );
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
     });
 
@@ -496,14 +472,6 @@ describe('GrayStep', () => {
       const both = wrapper.findAll('[data-testid="found-shape"]');
       expect(both).toHaveLength(2);
       expect(both[0]?.attributes('stroke-dasharray')).toBeUndefined();
-      expect(wrapper.find('[data-testid="live-chip"]').exists()).toBe(false);
-    });
-
-    it('warns when the found cards are very small', async () => {
-      const small = toRgba(smallCardFrame());
-      const wrapper = await mountAuto(() => small);
-      await vi.advanceTimersByTimeAsync(500);
-      expect(wrapper.get('[data-testid="live-chip"]').text()).toContain('Karten sehr klein');
     });
 
     it('keeps waiting while no cards are visible', async () => {

@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef,
-  useTemplateRef,
-  watch,
-} from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
@@ -21,7 +12,6 @@ import type { ChartLayout, Corners } from '../chart/types';
 
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import { frameGrid } from './gray-monitor';
-import { cardSizeShare, SMALL_SHARE } from './live-feedback';
 import { buildShapes, clientToImage } from './overlay-geometry';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
 
@@ -43,12 +33,10 @@ const STEADY_SHARE = 0.03;
 const { t } = useI18n();
 const camera = useCameraStore();
 const { stream, actual, status, still } = storeToRefs(camera);
-const { points, corners, rotated } = storeToRefs(props.store);
+const { points, corners } = storeToRefs(props.store);
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
-// Set after an automatic capture; the message is looked up when rendered, so it follows the language.
-const detected = ref(false);
 const dragging = ref<{ card: number; index: number } | null>(null);
 // A capture only makes sense once the video delivers an image.
 const videoReady = ref(false);
@@ -62,17 +50,12 @@ const noPoints = computed(() => Object.keys(points.value).length === 0);
 // Outlines of the cards the last search recognized in the live image: fewer than expected while
 // only some of them are found, all of them once the search is complete.
 const outlines = shallowRef<Corners[]>([]);
-const liveShare = ref(0);
 const complete = computed(() => outlines.value.length === props.layout.cards.length);
 const outlineShapes = computed(() =>
   (autoActive.value ? outlines.value : []).map((corners, index) => ({
     key: String(index),
     points: corners.map((p) => `${String(p.x)},${String(p.y)}`).join(' '),
   })),
-);
-// Cards held very far from the camera are found, but measured less reliably.
-const small = computed(
-  () => autoActive.value && outlines.value.length > 0 && liveShare.value < SMALL_SHARE,
 );
 // The automation searches the running live image while no corner points have been set yet.
 const autoActive = computed(
@@ -151,8 +134,6 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
   if (found !== null && sameCards(found, fromLive, STEADY_SHARE * frame.width)) {
     props.store.setCards(found);
     camera.stop();
-    await nextTick();
-    detected.value = true;
   } else {
     camera.clearStill();
   }
@@ -162,12 +143,6 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
 // Does the search hit the same cards in the same place as last time?
 function isSteady(found: Corners[], width: number): boolean {
   return previous.value !== null && sameCards(found, previous.value, STEADY_SHARE * width);
-}
-
-// Shows what the last search recognized: the outlines of the cards and how large they are.
-function showLive(found: Corners[], imageHeight: number): void {
-  outlines.value = found;
-  liveShare.value = cardSizeShare(found, imageHeight);
 }
 
 // Counts the consecutive searches that hit the same cards; `found` is null until all cards are there.
@@ -181,7 +156,7 @@ async function autoTick(): Promise<void> {
   const seen = frame === null ? [] : detectOutlines(frame, props.layout.cards.length);
   const found = seen.length === props.layout.cards.length ? seen : null;
   countHits(found, Number(frame?.width));
-  showLive(seen, Number(frame?.height));
+  outlines.value = seen;
   if (found !== null && hits.value >= AUTO_CONFIRMATIONS) {
     hits.value = 0;
     previous.value = null;
@@ -212,7 +187,6 @@ watch(stream, (next) => {
 });
 
 watch(still, (next) => {
-  detected.value = false;
   drawStill(next);
 });
 
@@ -360,14 +334,6 @@ watch(actual, (next, previous) => {
             {{ handle.index + 1 }}
           </text>
         </svg>
-        <!-- Warns only when the found cards are very small. -->
-        <p
-          v-if="small"
-          class="pointer-events-none absolute bottom-3 left-1/2 max-w-[92%] -translate-x-1/2 rounded-full bg-amber-900/90 px-3 py-1 text-center text-sm text-white"
-          data-testid="live-chip"
-        >
-          {{ t('cards.stage.live.small') }}
-        </p>
         <!-- Toolbar in the image corner: delete corner points and still image. -->
         <div
           v-if="showStill || !noPoints"
@@ -408,12 +374,6 @@ watch(actual, (next, previous) => {
 
     <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
       {{ t('cards.stage.autoHint') }}
-    </p>
-    <p v-if="rotated" class="text-sm text-slate-700" data-testid="rotated-note">
-      {{ t('cards.stage.rotated') }}
-    </p>
-    <p v-if="detected" class="text-sm text-slate-700" data-testid="detect-message">
-      {{ t('cards.stage.detected') }}
     </p>
   </div>
 </template>
