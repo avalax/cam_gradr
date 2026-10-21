@@ -297,7 +297,7 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
-          <!-- White and pulsing until the cards are held steady; green and drawing itself during the capture. -->
+          <!-- Amber and pulsing until the cards are held steady; green and drawing itself during the capture. -->
           <rect
             v-if="frameBox !== null"
             v-bind="frameBox"
@@ -308,7 +308,7 @@ watch(actual, (next, previous) => {
             :class="
               capturing
                 ? 'animate-frame-draw stroke-emerald-400 motion-reduce:animate-none'
-                : 'animate-frame-pulse stroke-white motion-reduce:animate-none'
+                : 'animate-frame-pulse stroke-amber-400 motion-reduce:animate-none'
             "
             :stroke-dasharray="capturing ? 1 : undefined"
             data-testid="found-frame"
