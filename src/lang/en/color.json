@@ -1,9 +1,7 @@
 {
-  "intro": "This tab calculates the color correction. Hold both color cards in the frames: the app detects them on its own and takes a still image. Check the corner points and drag them into place if needed. The color correction is then calculated automatically, and again whenever the corner points change.",
+  "intro": "This tab calculates the color correction. Hold both color cards where the subject will be (the frames only show position and direction): the app detects them on its own and takes a still image. Check the corner points and drag them into place if needed. The color correction is then calculated automatically, and again whenever the corner points change.",
   "referenceActive": "Reference values: {name} ({count} patches). You can switch or import the set in the ⚙ menu at the top right.",
-  "cardLeft": "left color card (columns A–D)",
-  "cardRight": "right color card (columns E–H)",
-  "idle": "Hold both color cards steady in the frames in front of the camera.",
+  "idle": "Hold both color cards steady where the subject will be. The size in the image does not matter.",
   "wipe": {
     "caption": "left camera · right corrected",
     "liveCaption": "compare after the capture",

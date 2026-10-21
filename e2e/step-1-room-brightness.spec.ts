@@ -177,7 +177,6 @@ test.describe('Gray cards: automatic capture', () => {
     await app.openTab('Graukarten');
     await expect(app.page.getByTestId('auto-hint')).toBeVisible();
 
-    await expect(app.page.getByTestId('detect-message')).toContainText('Standbild aufgenommen');
     await expect(app.page.locator('svg circle')).toHaveCount(8);
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
     await expect(app.button('Eckpunkte löschen')).toBeVisible();
@@ -185,14 +184,14 @@ test.describe('Gray cards: automatic capture', () => {
   });
 });
 
-test.describe('Gray cards: guide frames', () => {
-  test('The live image shows where to hold the cards', async ({ app }) => {
+test.describe('Gray cards: live outlines', () => {
+  // The camera shows the cards at once and the app captures within a second, so the outlines in the
+  // live image are covered by the component tests; here only the end state counts.
+  test('No outlines remain after the capture', async ({ app }) => {
     await app.open();
     await app.startGrayStage();
-    await expect(app.page.getByTestId('guide')).toHaveCount(2);
-
     await app.captureStill();
-    await expect(app.page.getByTestId('guide')).toHaveCount(0);
+    await expect(app.page.getByTestId('found-frame')).toHaveCount(0);
   });
 });
 

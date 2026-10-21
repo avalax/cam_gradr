@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useChartStore } from '../chart/chart-store';
@@ -13,11 +12,6 @@ const chart = useChartStore();
 const { exposure } = storeToRefs(chart);
 
 const { t } = useI18n();
-
-const cardNames = computed(() => ({
-  3: t('cards.gray.left'),
-  4: t('cards.gray.right'),
-}));
 </script>
 
 <template>
@@ -29,12 +23,7 @@ const cardNames = computed(() => ({
     </aside>
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-      <CardStage
-        :store="chart"
-        :layout="grayLayout"
-        :card-names="cardNames"
-        :idle-text="t('cards.gray.idle')"
-      >
+      <CardStage :store="chart" :layout="grayLayout" :idle-text="t('cards.gray.idle')">
         <template #side>
           <MeasureField :exposure="exposure" />
         </template>

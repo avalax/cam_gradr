@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Frame } from '../camera/frame';
 
-import { detectCards, sameCards } from './detect';
+import { detectCards, detectOutlines, sameCards } from './detect';
 import type { Corners, Point } from './types';
 
 const SIZE = { width: 640, height: 360 };
@@ -166,6 +166,17 @@ describe('detectCards', () => {
     expectCard(detectCards(frame, 1)?.[0], 300, 100, 340, 520);
   });
 
+  it('also finds small charts, held at the distance of the subject (about 17 % of the image height)', () => {
+    const frame = scene((f) => {
+      drawCard(f, 250, 150, 38, 60);
+      drawCard(f, 302, 150, 38, 60);
+    });
+    const cards = detectCards(frame, 2);
+    expect(cards).toHaveLength(2);
+    expectCard(cards?.[0], 250, 150, 38, 60);
+    expectCard(cards?.[1], 302, 150, 38, 60);
+  });
+
   it('returns null when the number of charts is wrong', () => {
     const oneCard = scene((f) => {
       drawCard(f, 90, 70, 170, 260);
@@ -254,6 +265,32 @@ describe('detectCards', () => {
       drawCard(f, 300, 200, 300, 120);
     });
     expect(detectCards(frame, 1)).toHaveLength(1);
+  });
+});
+
+describe('detectOutlines', () => {
+  it('returns both charts as soon as both are there, like detectCards', () => {
+    const frame = scene((f) => {
+      drawCard(f, 380, 60, 160, 250);
+      drawCard(f, 90, 70, 170, 260);
+    });
+    expect(detectOutlines(frame, 2)).toEqual(detectCards(frame, 2));
+  });
+
+  it('returns the one chart that is found while the other is missing', () => {
+    const frame = scene((f) => {
+      drawCard(f, 90, 70, 170, 260);
+    });
+    const outlines = detectOutlines(frame, 2);
+    expect(outlines).toHaveLength(1);
+    expectCard(outlines[0], 90, 70, 170, 260);
+  });
+
+  it('returns nothing in an image without charts', () => {
+    const frame = scene(() => {
+      // No charts drawn.
+    });
+    expect(detectOutlines(frame, 2)).toEqual([]);
   });
 });
 

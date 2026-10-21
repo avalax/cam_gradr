@@ -44,6 +44,15 @@ function twoCardFrame(shift = 0): Frame {
   return frame;
 }
 
+// Only the left one of the two cards is in the image.
+function oneCardFrame(): Frame {
+  const frame = twoCardFrame();
+  for (let y = 100; y < 600; y++) {
+    frame.data.fill(0.6, (y * 1280 + 760) * 3, (y * 1280 + 1080) * 3);
+  }
+  return frame;
+}
+
 function toRgba(frame: Frame): Uint8ClampedArray {
   const rgba = new Uint8ClampedArray(frame.width * frame.height * 4).fill(255);
   for (let index = 0; index < frame.width * frame.height; index++) {
@@ -131,7 +140,7 @@ describe('GrayStep', () => {
     setLocale('en');
     const wrapper = mount(GrayStep);
     expect(wrapper.text()).toContain('The camera is off');
-    expect(wrapper.text()).toContain('Hold both gray cards steady in the frames');
+    expect(wrapper.text()).toContain('Hold both gray cards steady where the subject will be');
     expect(wrapper.text()).toContain('This tab sets the room brightness');
     expect(wrapper.text()).toContain('No measurement yet.');
   });
@@ -380,30 +389,12 @@ describe('GrayStep', () => {
     expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
-  it('shows two labeled frames in the live view where the cards should be held', async () => {
-    const wrapper = await mountLive();
-    const guides = wrapper.findAll('[data-testid="guide"]');
-    expect(guides).toHaveLength(2);
-    expect(guides[0]?.text()).toContain('linke Graukarte (50 %)');
-    expect(guides[1]?.text()).toContain('rechte Graukarte (18 %)');
-  });
-
-  it('shows the live view texts in English and the note for rotated cards', async () => {
+  it('shows the live view text in English', async () => {
     setLocale('en');
     const wrapper = await mountLive();
-    const guides = wrapper.findAll('[data-testid="guide"]');
-    expect(guides[0]?.text()).toContain('left gray card (50%)');
-    expect(guides[1]?.text()).toContain('right gray card (18%)');
     expect(wrapper.get('[data-testid="auto-hint"]').text()).toContain(
-      'Hold the cards in the frames',
+      'Hold the cards where the subject will be',
     );
-    expect(wrapper.find('[data-testid="rotated-note"]').exists()).toBe(false);
-    useChartStore().rotated = true;
-    await flushPromises();
-    expect(wrapper.get('[data-testid="rotated-note"]').text()).toContain('rotated by 180°');
-    setLocale('de');
-    await flushPromises();
-    expect(wrapper.get('[data-testid="rotated-note"]').text()).toContain('um 180° gedreht');
   });
 
   describe('automatic capture in the live view', { timeout: 30_000 }, () => {
@@ -439,9 +430,6 @@ describe('GrayStep', () => {
       expect(useCameraStore().still).not.toBeNull();
       expect(useCameraStore().status).toBe('idle');
       expect(useChartStore().ready).toBe(true);
-      expect(wrapper.get('[data-testid="detect-message"]').text()).toContain(
-        'Standbild aufgenommen',
-      );
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
     });
 
@@ -466,6 +454,36 @@ describe('GrayStep', () => {
       await flushPromises();
       expect(useCameraStore().still).not.toBeNull();
       expect(useChartStore().ready).toBe(true);
+    });
+
+    it('frames the recognized cards: white while searching, green during the capture', async () => {
+      const one = toRgba(oneCardFrame());
+      let next: Uint8ClampedArray = empty();
+      let reads = 0;
+      let duringCapture: string[] = [];
+      const wrapper = await mountAuto(() => {
+        reads++;
+        if (reads === 3) {
+          duringCapture = wrapper.find('[data-testid="found-frame"]').classes();
+        }
+        return next;
+      });
+      const frame = () => wrapper.find('[data-testid="found-frame"]');
+      await vi.advanceTimersByTimeAsync(500);
+      expect(frame().exists()).toBe(false);
+      next = one;
+      await vi.advanceTimersByTimeAsync(500);
+      const widthOne = Number(frame().attributes('width'));
+      expect(frame().classes()).toContain('animate-frame-pulse');
+      next = cards();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(Number(frame().attributes('width'))).toBeGreaterThan(widthOne);
+      expect(frame().classes()).toContain('animate-frame-pulse');
+      reads = 0;
+      await vi.advanceTimersByTimeAsync(500);
+      await flushPromises();
+      expect(duringCapture).toContain('animate-frame-draw');
+      expect(frame().exists()).toBe(false);
     });
 
     it('keeps waiting while no cards are visible', async () => {

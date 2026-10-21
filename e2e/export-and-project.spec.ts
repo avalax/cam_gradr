@@ -224,7 +224,7 @@ test.describe('Project', () => {
     await app.openTab('Farbkarten');
 
     await expect(app.page.getByTestId('card-placeholder')).toContainText(
-      'Beide Farbkarten ruhig in die Rahmen',
+      'Beide Farbkarten ruhig dorthin halten',
     );
     await expect(app.page.locator('polygon[data-shape]')).toHaveCount(0);
   });
