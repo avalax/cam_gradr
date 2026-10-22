@@ -319,7 +319,7 @@ watch(actual, (next, previous) => {
           @pointerleave="endDrag"
         >
           <!-- White with a dark edge (visible on any background), pulsing until the cards are held steady;
-               green and drawing itself during the capture. -->
+               during the capture the green line draws itself over the white frame. -->
           <g v-if="frameBox !== null" fill="none" pointer-events="none">
             <rect
               v-bind="frameBox"
@@ -330,14 +330,18 @@ watch(actual, (next, previous) => {
             />
             <rect
               v-bind="frameBox"
+              stroke="#fff"
+              stroke-width="4"
+              :class="capturing ? undefined : 'animate-frame-pulse motion-reduce:animate-none'"
+              :data-testid="capturing ? undefined : 'found-frame'"
+            />
+            <rect
+              v-if="capturing"
+              v-bind="frameBox"
               stroke-width="4"
               pathLength="1"
-              :class="
-                capturing
-                  ? 'animate-frame-draw stroke-emerald-400 motion-reduce:animate-none'
-                  : 'animate-frame-pulse stroke-white motion-reduce:animate-none'
-              "
-              :stroke-dasharray="capturing ? 1 : undefined"
+              stroke-dasharray="1"
+              class="animate-frame-draw stroke-emerald-400 motion-reduce:animate-none"
               data-testid="found-frame"
             />
           </g>
