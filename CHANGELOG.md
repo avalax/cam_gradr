@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.2.0...cam-gradr-v1.3.0) (2026-10-22)
+
+
+### Features
+
+* outline the cards as soon as they are recognized, find smaller cards ([#30](https://github.com/avalax/cam_gradr/issues/30)) ([9312a9c](https://github.com/avalax/cam_gradr/commit/9312a9c05276b4c48b230f7011c298827fcf0b47))
+
+
+### Bug Fixes
+
+* reject wrong cards, white search frame with dark edge, intro texts ([#32](https://github.com/avalax/cam_gradr/issues/32)) ([99a33c7](https://github.com/avalax/cam_gradr/commit/99a33c72cb4372b3d12911255beb93d486a3bb23))
+
 ## [1.2.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.1.0...cam-gradr-v1.2.0) (2026-10-20)
 
 The color correction can leave contrast and gamma alone, the card detection is more reliable and the wipe sliders are easier to read.
