@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
@@ -20,6 +29,8 @@ const props = defineProps<{
   layout: ChartLayout;
   // Hint shown while no still image has been captured yet.
   idleText: string;
+  // Message when the cards in the image are not the expected ones (e.g. gray cards in the color step).
+  wrongText: string;
 }>();
 
 // Automation in the live image: how often the cards are searched for, and how many times in a row
@@ -126,6 +137,8 @@ function redetect(): void {
 const hits = ref(0);
 const previous = ref<Corners[] | null>(null);
 const capturing = ref(false);
+// The last capture showed other cards than expected and was discarded.
+const wrong = ref(false);
 
 // Captures the still image, sets the corners (searched once more, more precisely, on the averaged
 // still image) and stops the camera. If the still image does not match the corners from the live
@@ -143,7 +156,15 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
   const found = detectCards(frame, props.layout.cards.length);
   if (found !== null && sameCards(found, fromLive, STEADY_SHARE * frame.width)) {
     props.store.setCards(found);
-    camera.stop();
+    await nextTick();
+    if (props.store.plausible) {
+      wrong.value = false;
+      camera.stop();
+    } else {
+      props.store.reset();
+      camera.clearStill();
+      wrong.value = true;
+    }
   } else {
     camera.clearStill();
   }
@@ -297,22 +318,33 @@ watch(actual, (next, previous) => {
           @pointerup="endDrag"
           @pointerleave="endDrag"
         >
-          <!-- Amber and pulsing until the cards are held steady; green and drawing itself during the capture. -->
-          <rect
-            v-if="frameBox !== null"
-            v-bind="frameBox"
-            fill="none"
-            stroke-width="4"
-            pathLength="1"
-            pointer-events="none"
-            :class="
-              capturing
-                ? 'animate-frame-draw stroke-emerald-400 motion-reduce:animate-none'
-                : 'animate-frame-pulse stroke-amber-400 motion-reduce:animate-none'
-            "
-            :stroke-dasharray="capturing ? 1 : undefined"
-            data-testid="found-frame"
-          />
+          <!-- White with a dark edge (visible on any background), pulsing until the cards are held steady;
+               during the capture the green line draws itself over the white frame. -->
+          <g v-if="frameBox !== null" fill="none" pointer-events="none">
+            <rect
+              v-bind="frameBox"
+              stroke="#000"
+              stroke-opacity="0.7"
+              stroke-width="7"
+              :class="capturing ? undefined : 'animate-frame-pulse motion-reduce:animate-none'"
+            />
+            <rect
+              v-bind="frameBox"
+              stroke="#fff"
+              stroke-width="4"
+              :class="capturing ? undefined : 'animate-frame-pulse motion-reduce:animate-none'"
+              :data-testid="capturing ? undefined : 'found-frame'"
+            />
+            <rect
+              v-if="capturing"
+              v-bind="frameBox"
+              stroke-width="4"
+              pathLength="1"
+              stroke-dasharray="1"
+              class="animate-frame-draw stroke-emerald-400 motion-reduce:animate-none"
+              data-testid="found-frame"
+            />
+          </g>
           <polygon
             v-for="shape in shapes"
             :key="shape.key"
@@ -389,6 +421,15 @@ watch(actual, (next, previous) => {
 
     <p v-if="camera.errorMessage !== null && isLive" class="text-sm text-red-700" role="alert">
       {{ camera.errorMessage }}
+    </p>
+
+    <p
+      v-if="wrong && autoActive"
+      class="text-sm text-red-700"
+      role="alert"
+      data-testid="wrong-cards"
+    >
+      {{ wrongText }}
     </p>
 
     <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">

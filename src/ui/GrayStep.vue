@@ -23,7 +23,12 @@ const { t } = useI18n();
     </aside>
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-      <CardStage :store="chart" :layout="grayLayout" :idle-text="t('cards.gray.idle')">
+      <CardStage
+        :store="chart"
+        :layout="grayLayout"
+        :idle-text="t('cards.gray.idle')"
+        :wrong-text="t('cards.gray.wrong')"
+      >
         <template #side>
           <MeasureField :exposure="exposure" />
         </template>

@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 
+import { coloredShare, isExpectedKind } from './card-kind';
+import type { CardKind } from './card-kind';
 import { sortCorners } from './corner-order';
 import { assessExposure, codeLuma } from './exposure';
 import type { ExposureResult } from './exposure';
@@ -27,6 +29,8 @@ interface ChartStoreOptions {
   // Pairs (darkest, brightest patch) of a chart: they let the app detect whether the charts are
   // held rotated by 180° (the dark patch is then at the bottom instead of the top).
   orientation: readonly (readonly [string, string])[];
+  // Which cards the step expects; other cards are noticed from the colors of their fields.
+  kind: CardKind;
   // Only the gray cards also rate the room brightness.
   assessLighting: boolean;
 }
@@ -62,6 +66,8 @@ function defineChartStore(options: ChartStoreOptions) {
     const points = ref<Record<number, Point[]>>({});
     const measurements = shallowRef<Measurements>({});
     const exposure = shallowRef<ExposureResult | null>(null);
+    // The cards in the image are of the expected kind (not color cards in the gray step or the other way round).
+    const plausible = ref(true);
     // Charts are rotated by 180° (detected from the measurements).
     const rotated = ref(false);
     // While the camera searches for new charts, the previous state (corners and measurements for
@@ -129,6 +135,7 @@ function defineChartStore(options: ChartStoreOptions) {
       measurements.value = {};
       exposure.value = null;
       rotated.value = false;
+      plausible.value = true;
     }
 
     // Discards the state entirely, including the held one.
@@ -195,7 +202,22 @@ function defineChartStore(options: ChartStoreOptions) {
 
     // Measures in both orientations (upright and rotated by 180°) and takes the one in which the
     // strip patches run from dark to bright; on a tie the previous orientation stays.
+    // Which kind of cards is in the image? Judged by measuring the fields of the color cards at the
+    // corners (color cards are colorful there, gray cards are not), in both orientations.
+    function expectedKind(grid: PixelGrid): boolean {
+      const upright = uprightCorners.value;
+      if (Object.keys(upright).length === 0) {
+        return true;
+      }
+      const [first = -1, second = -1] = options.cardOrder;
+      const share = (found: CornerMap): number =>
+        coloredShare(measureChart(colorLayout, { 1: found[first], 2: found[second] }, grid));
+      const best = Math.max(share(upright), share(turned(upright, options.cardOrder)));
+      return isExpectedKind(options.kind, best);
+    }
+
     function measure(grid: PixelGrid): void {
+      plausible.value = expectedKind(grid);
       const straight = measureChart(options.layout, uprightCorners.value, grid);
       const flipped = measureChart(
         options.layout,
@@ -215,6 +237,7 @@ function defineChartStore(options: ChartStoreOptions) {
       points,
       measurements,
       exposure,
+      plausible,
       rotated,
       nextSlot,
       ready,
@@ -236,6 +259,7 @@ export const useChartStore = defineChartStore({
   id: 'chart',
   layout: grayLayout,
   cardOrder: GRAY_CARD_ORDER,
+  kind: 'neutral',
   orientation: [
     ['S3-0', 'S3-5'],
     ['S4-0', 'S4-5'],
@@ -247,6 +271,7 @@ export const useColorChartStore = defineChartStore({
   id: 'chart-color',
   layout: colorLayout,
   cardOrder: COLOR_CARD_ORDER,
+  kind: 'colorful',
   // Gray ladder of the color charts: bright at the top (row 1), dark at the bottom (row 6).
   orientation: [
     ['6D', '1D'],

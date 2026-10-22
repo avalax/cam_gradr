@@ -1,5 +1,5 @@
 {
-  "intro": "Dieser Tab berechnet die Farbkorrektur. Halte die beiden Farbkarten dorthin, wo das Motiv steht (die Rahmen zeigen nur Lage und Richtung): Die App erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht. Die Farbkorrektur wird dann automatisch berechnet und bei jeder Änderung der Eckpunkte neu.",
+  "intro": "Dieser Tab berechnet die Farbkorrektur. Halte die beiden Farbkarten dorthin, wo das Motiv steht: Die App erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht. Die Farbkorrektur wird dann automatisch berechnet und bei jeder Änderung der Eckpunkte neu.",
   "referenceActive": "Referenzwerte: {name} ({count} Felder). Den Satz wechselst oder importierst du im Menü ⚙ oben rechts.",
   "idle": "Beide Farbkarten ruhig dorthin halten, wo das Motiv steht. Die Größe im Bild ist egal.",
   "wipe": {
@@ -10,5 +10,6 @@
     "defaultValue": "{id} (Standardwert)",
     "divider": "Wischer: Farben der Kamera links, korrigierte rechts",
     "noCorrection": "Noch keine Korrektur"
-  }
+  },
+  "wrong": "Das sind keine Farbkarten. Halte die beiden Farbkarten in die Kamera."
 }

@@ -25,12 +25,13 @@ Everything runs in your browser. There is no backend: images and measurements ne
    The app cannot do this itself, and automatic adjustments falsify the measurement. Then switch on the
    camera at the top right (green "Start camera", red "Stop camera"). You choose the camera and the
    resolution in the gear menu ⚙.
-2. **Gray cards tab: set the light.** Hold both gray cards steady inside the dashed frames. The app finds
+2. **Gray cards tab: set the light.** Hold both gray cards steady where the subject will be. A frame
+   appears around the cards as soon as the app sees them. It finds
    them by itself, takes a still image and switches the camera off. In the measuring field on the right a
    dot shows brightness (vertical) and contrast (horizontal). If it sits in the framed window in the
    middle, the light is right; otherwise the field says what to change (details on hover). Change the
    light or the camera and switch the camera on again until the dot is in the normal range.
-3. **Color cards tab: calculate the correction.** Hold both color cards steady inside the frames. The
+3. **Color cards tab: calculate the correction.** Hold both color cards steady where the subject will be. The
    correction is calculated automatically. The wipe slider on the right shows the colors of your camera on
    the left and the corrected ones on the right (drag the line or use the arrow keys). The label below
    gives the mean deviation before and after; hover it to see the result per color patch.
@@ -78,8 +79,8 @@ The reference values are not in the file, only the name of the selected set.
 **The camera does not start.** Allow camera access in the browser and close other programs that use it.
 Locally it only works over `localhost` or HTTPS.
 
-**The cards are not recognized.** Hold them completely inside the frames, steady and well lit. The app
-searches every second and takes the image as soon as it finds the cards twice in a row in the same place.
+**The cards are not recognized.** Hold them completely in the image, steady and well lit. The app
+searches twice a second and takes the image as soon as it finds the cards twice in a row in the same place.
 
 **The deviation is still high after the correction.** Mostly the shot is the cause: burnt-out or crushed
 patches, uneven light or camera automatics. Check the hints in the result first and capture the cards

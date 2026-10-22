@@ -486,6 +486,23 @@ describe('GrayStep', () => {
       expect(frame().exists()).toBe(false);
     });
 
+    it('rejects colored cards in the gray step and says so', async () => {
+      const colored = twoCardFrame();
+      for (let i = 0; i < colored.data.length; i += 3) {
+        if (Math.abs(Number(colored.data[i]) - 0.8) < 0.001) {
+          colored.data[i + 1] = 0.2;
+          colored.data[i + 2] = 0.2;
+        }
+      }
+      const data = toRgba(colored);
+      const wrapper = await mountAuto(() => data);
+      await vi.advanceTimersByTimeAsync(2500);
+      await flushPromises();
+      expect(useCameraStore().status).toBe('live');
+      expect(useChartStore().ready).toBe(false);
+      expect(wrapper.get('[data-testid="wrong-cards"]').text()).toContain('keine Graukarten');
+    });
+
     it('keeps waiting while no cards are visible', async () => {
       await mountAuto(empty);
       await vi.advanceTimersByTimeAsync(5000);
