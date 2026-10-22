@@ -3,14 +3,17 @@
 ## [1.3.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.2.0...cam-gradr-v1.3.0) (2026-10-22)
 
 
+The cards no longer have to be held close to the lens: hold them where the subject will be, whatever their size in the image.
+
 ### Features
 
-* outline the cards as soon as they are recognized, find smaller cards ([#30](https://github.com/avalax/cam_gradr/issues/30)) ([9312a9c](https://github.com/avalax/cam_gradr/commit/9312a9c05276b4c48b230f7011c298827fcf0b47))
-
+* **cards:** the fixed guide frames are gone. As soon as the app recognizes a card, one frame is drawn around everything found: white with a dark edge and pulsing until the cards are held steady, then a green line draws itself around both while the still image is captured
+* **cards:** cards are found down to about 12 % of the image height (before about 20 %)
 
 ### Bug Fixes
 
-* reject wrong cards, white search frame with dark edge, intro texts ([#32](https://github.com/avalax/cam_gradr/issues/32)) ([99a33c7](https://github.com/avalax/cam_gradr/commit/99a33c72cb4372b3d12911255beb93d486a3bb23))
+* the wrong kind of cards is rejected, for example color cards in the gray cards tab or the other way round, with a message and the search continues
+* the notes about rotated cards, the captured still image and too small cards are gone; the intro texts no longer mention the fixed frames
 
 ## [1.2.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.1.0...cam-gradr-v1.2.0) (2026-10-20)
 
