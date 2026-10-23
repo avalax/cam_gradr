@@ -93,11 +93,13 @@ test.describe('Preview', () => {
     expect(allowed).toContain(await app.previewRenderer());
   });
 
-  test('The preview points out a missing image source', async ({ app }) => {
+  test('The preview shows the image of the color measurement by default', async ({ app }) => {
     await app.computeColorModel();
     await app.openTab('Vorschau');
 
-    await expect(app.page.getByTestId('preview-no-source')).toBeVisible();
+    await expect(app.page.getByTestId('preview-no-source')).toHaveCount(0);
+    await expect(app.page.getByTestId('preview-canvas')).toBeVisible();
+    await expect(app.page.getByTestId('wipe-line')).toBeVisible();
   });
 
   test('Next to the image the colors come first, switchable to the gray wedge and tonal ranges', async ({
