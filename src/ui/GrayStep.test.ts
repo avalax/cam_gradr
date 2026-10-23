@@ -433,6 +433,14 @@ describe('GrayStep', () => {
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
     });
 
+    it('names the image in a band above it: live image, then still image', async () => {
+      const wrapper = await mountAuto(cards);
+      expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Livebild');
+      await vi.advanceTimersByTimeAsync(2500);
+      await flushPromises();
+      expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Standbild');
+    });
+
     it('discards a still image that does not match the corners from the live view', async () => {
       let reads = 0;
       await mountAuto(() => (reads++ < 2 ? cards() : movedData));
