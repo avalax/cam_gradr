@@ -488,10 +488,14 @@ describe('GrayStep', () => {
 
     it('rejects colored cards in the gray step and says so', async () => {
       const colored = twoCardFrame();
+      // Fields in red, green and blue (one hue alone would count as a color cast).
       for (let i = 0; i < colored.data.length; i += 3) {
         if (Math.abs(Number(colored.data[i]) - 0.8) < 0.001) {
-          colored.data[i + 1] = 0.2;
-          colored.data[i + 2] = 0.2;
+          const hue = Math.floor(i / 3 / colored.width / 4) % 3;
+          colored.data.set(
+            hue === 0 ? [0.8, 0.2, 0.2] : hue === 1 ? [0.2, 0.8, 0.2] : [0.2, 0.2, 0.8],
+            i,
+          );
         }
       }
       const data = toRgba(colored);
