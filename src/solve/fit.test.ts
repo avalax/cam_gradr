@@ -129,6 +129,38 @@ describe('fitColorModel', () => {
     expect(result.report.maxBefore).toBe(Math.max(...result.report.patches.map((p) => p.before)));
   });
 
+  it('keeps the shadows and highlights of a contrasty camera: no lifted black, no early clipping', () => {
+    // Neutral ladder of a camera with a strong S curve (shadows crushed, highlights compressed).
+    const brightest: Rgb = [0.919, 0.888, 0.86];
+    const ladder: Record<string, Rgb> = {
+      '1D': [0.89, 0.847, 0.812],
+      '2D': [0.875, 0.832, 0.807],
+      '3D': [0.806, 0.764, 0.737],
+      '4D': [0.673, 0.633, 0.612],
+      '5D': [0.451, 0.411, 0.395],
+      '6D': [0.246, 0.221, 0.208],
+      '1E': brightest,
+      '2E': [0.876, 0.827, 0.801],
+      '3E': [0.791, 0.743, 0.718],
+      '4E': [0.624, 0.576, 0.552],
+      '5E': [0.394, 0.36, 0.339],
+      '6E': [0.096, 0.078, 0.067],
+    };
+    const contrasty = fitColorModel({
+      measurements: { ...measure(reference), ...ladder },
+      reference,
+      neutralIds: NEUTRAL_IDS,
+    });
+    // Shadows are brightened by at most the gain limit (in linear light), not several times over.
+    for (const code of [0.05, 0.1, 0.2]) {
+      const [, green] = applyColorModel(contrasty.model, [code, code, code]);
+      expect(srgbToLinear(green) / srgbToLinear(code)).toBeLessThan(1.7);
+    }
+    // The brightest patch stays below white, so the highlights above it keep their detail.
+    const [red, green, blue] = applyColorModel(contrasty.model, brightest);
+    expect(Math.max(red, green, blue)).toBeLessThan(0.99);
+  });
+
   it('keeps grays gray and white white', () => {
     for (const gray of [0.05, 0.2, 0.4, 0.6, 0.8, 1]) {
       const camera = cameraCode(

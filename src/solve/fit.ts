@@ -77,11 +77,14 @@ const EXPOSURE_TO = 0.6;
 // interpolation through every noisy patch: no steps, no banding, no strong amplification of noise.
 const MAX_DEGREE = 3;
 // Largest brightening or darkening of a tone curve (factor), also beyond the measured range.
-const MAX_GAIN = 4;
+const MAX_GAIN = 1.5;
 // Without the tone correction the curve is a straight line up to this knee (at most this value after
 // the factor), then it bends to white.
 const PLAIN_KNEE = 0.5;
 const PLAIN_KNEE_TOP = 0.9;
+// Targets above the shoulder are compressed softly towards white: the exposure gain would otherwise
+// push the bright gray patches beyond 1, and everything above them would clip.
+const SHOULDER = 0.8;
 const CURVE_POINTS = 48;
 const CURVE_FLOOR = 1e-3;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
@@ -254,6 +257,12 @@ function polynomial(points: readonly (readonly [number, number])[], degree: numb
 // linear: the logarithm of the gain (target / camera) is a polynomial of the logarithm of the
 // camera value. Beyond the measured range the gain stays constant at the edge value, and it is
 // limited so that noise is not amplified without bounds.
+function shoulder(value: number): number {
+  return value <= SHOULDER
+    ? value
+    : SHOULDER + (1 - SHOULDER) * (1 - Math.exp(-(value - SHOULDER) / (1 - SHOULDER)));
+}
+
 function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   const usable = points.filter(([x, y]) => x > CURVE_FLOOR / 10 && y > 0);
   const logs = usable.map(([x, y]): [number, number] => [Math.log(x), Math.log(y / x)]);
@@ -403,7 +412,7 @@ export function fitColorModel(input: FitInput): FitResult {
       : buildCurve(
           blocks.map((block) => [
             Number(block.linear[channel]) / block.count,
-            (gain * block.target) / block.count,
+            shoulder((gain * block.target) / block.count),
           ]),
         ),
   ) as unknown as ColorModel['curves'];
