@@ -73,6 +73,7 @@ watch([measurements, selected], () => {
           :layout="colorLayout"
           :idle-text="t('color.idle')"
           :wrong-text="t('color.wrong')"
+          :wrong-label="t('color.wrongLabel')"
         >
           <template #side>
             <ColorWipe

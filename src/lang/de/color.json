@@ -10,5 +10,6 @@
     "divider": "Wischer: Farben der Kamera links, korrigierte rechts",
     "noCorrection": "Noch keine Korrektur"
   },
-  "wrong": "Das sind keine Farbkarten. Halte die beiden Farbkarten in die Kamera."
+  "wrong": "Das sind keine Farbkarten. Halte die beiden Farbkarten in die Kamera.",
+  "wrongLabel": "Keine Farbkarten"
 }

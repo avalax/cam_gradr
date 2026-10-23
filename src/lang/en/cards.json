@@ -16,6 +16,7 @@
   "gray": {
     "intro": "This tab sets the room brightness. Turn the camera on above and hold both gray cards where the subject will be: the app detects them by itself and captures a still image. Check the corner points and drag them into place if needed. Then change the lighting and turn the camera on again until the dot in the measuring field next to the image is inside the framed normal range (details appear when you hover over the field). Measuring only happens on still images; starting the camera begins a new search, and if the camera ends without a new still image the old state comes back.",
     "idle": "Hold both gray cards steady where the subject will be, in the same light. The size in the image does not matter.",
-    "wrong": "These are not gray cards. Hold both gray cards in front of the camera."
+    "wrong": "These are not gray cards. Hold both gray cards in front of the camera.",
+    "wrongLabel": "Not gray cards"
   }
 }

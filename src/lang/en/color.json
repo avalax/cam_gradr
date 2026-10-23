@@ -10,5 +10,6 @@
     "divider": "Wipe slider: camera colors on the left, corrected on the right",
     "noCorrection": "No correction yet"
   },
-  "wrong": "These are not color cards. Hold both color cards in front of the camera."
+  "wrong": "These are not color cards. Hold both color cards in front of the camera.",
+  "wrongLabel": "Not color cards"
 }
