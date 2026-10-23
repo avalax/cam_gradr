@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.3.0...cam-gradr-v1.4.0) (2026-10-23)
+
+The color correction looks more natural: shadows and highlights keep their detail, saturated colors no longer glare, and the preview starts with the image of your color measurement.
+
+### Features
+
+* the preview shows the image of the color measurement by default, as long as it is available
+
+### Bug Fixes
+
+* **color:** the tone curve no longer lifts the shadows or clips the highlights, and it is smoother, so details in saturated colors such as a red sweater are kept
+* **color:** the color matrix is fine-tuned for the color deviation, and colors outside the sRGB range are desaturated instead of clipped in single channels, so yellows no longer collapse and blues no longer glare
+* **cards:** gray cards are recognized again under a strong color cast of the camera (for example a bluish room)
+
 ## [1.3.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.2.0...cam-gradr-v1.3.0) (2026-10-22)
 
 
