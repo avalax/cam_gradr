@@ -85,6 +85,10 @@ const PLAIN_KNEE_TOP = 0.9;
 // Targets above the shoulder are compressed softly towards white: the exposure gain would otherwise
 // push the bright gray patches beyond 1, and everything above them would clip.
 const SHOULDER = 0.8;
+// Highest saturation (Lab chroma) relative to the camera image that the matrix fine-tuning allows
+// without penalty, and the weight of the penalty above it.
+const SATURATION_LIMIT = 1.25;
+const SATURATION_PENALTY = 1;
 const CURVE_POINTS = 48;
 // Step sizes of the matrix fine-tuning and the maximum number of sweeps per step size.
 const REFINE_STEPS = [0.1, 0.05, 0.02, 0.01, 0.004, 0.0015];
@@ -299,6 +303,7 @@ interface Pair {
   target: Vec3;
   // Reference color (Lab) at the exposure of the shot.
   lab: Vec3;
+  cameraChroma: number;
 }
 
 // Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
@@ -348,22 +353,26 @@ function matrixOf(free: readonly number[]): readonly [Vec3, Vec3, Vec3] {
   return [row(a, b), row(c, d), row(e, f)];
 }
 
-// Patch after the curves (linear) and the color it should have (Lab, at the exposure of the shot).
-interface Goal {
-  corrected: Vec3;
-  lab: Vec3;
+function chromaOf([, a, b]: Vec3): number {
+  return Math.hypot(a, b);
 }
 
-function meanDeviation(free: readonly number[], goals: readonly Goal[]): number {
+// Mean color deviation plus a penalty for colors that come out more saturated than the camera showed
+// them (by more than SATURATION_LIMIT): a matrix that makes blues glare is not a good compromise.
+function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
   const matrix = matrixOf(free);
   return mean(
-    goals.map((goal) => deltaE2000(srgbToLab(mixCode(matrix, goal.corrected)), goal.lab)),
+    goals.map((goal) => {
+      const lab = srgbToLab(mixCode(matrix, goal.corrected));
+      const excess = Math.max(0, chromaOf(lab) - SATURATION_LIMIT * goal.cameraChroma);
+      return deltaE2000(lab, goal.lab) + SATURATION_PENALTY * excess;
+    }),
   );
 }
 
 // Nudges each of the six numbers up and down by `step` and keeps every change that lowers the
 // deviation; returns whether anything improved.
-function nudge(free: number[], step: number, goals: readonly Goal[]): boolean {
+function nudge(free: number[], step: number, goals: readonly Pair[]): boolean {
   let improved = false;
   let best = meanDeviation(free, goals);
   for (let index = 0; index < free.length; index++) {
@@ -386,7 +395,7 @@ function nudge(free: number[], step: number, goals: readonly Goal[]): boolean {
 // improves any more.
 function refineMatrix(
   start: readonly [Vec3, Vec3, Vec3],
-  goals: readonly Goal[],
+  goals: readonly Pair[],
 ): readonly [Vec3, Vec3, Vec3] {
   const free = [start[0][0], start[0][1], start[1][0], start[1][1], start[2][0], start[2][1]];
   for (const step of REFINE_STEPS) {
@@ -397,12 +406,29 @@ function refineMatrix(
   return matrixOf(free);
 }
 
-const evaluators = new WeakMap<ColorModel, readonly ((x: number) => number)[]>();
+const evaluators = new WeakMap<
+  ColorModel,
+  readonly [CurveFunction, CurveFunction, CurveFunction]
+>();
 
-function curveFunctions(model: ColorModel): readonly ((x: number) => number)[] {
+type CurveFunction = (x: number) => number;
+
+// Sends a linear camera color through the three channel curves.
+function curveLinear(
+  [fr, fg, fb]: readonly [CurveFunction, CurveFunction, CurveFunction],
+  [r, g, b]: Vec3,
+): Vec3 {
+  return [fr(r), fg(g), fb(b)];
+}
+
+function curveFunctions(model: ColorModel): readonly [CurveFunction, CurveFunction, CurveFunction] {
   let functions = evaluators.get(model);
   if (functions === undefined) {
-    functions = model.curves.map((curve) => createPchip(curve));
+    functions = model.curves.map((curve) => createPchip(curve)) as unknown as readonly [
+      CurveFunction,
+      CurveFunction,
+      CurveFunction,
+    ];
     evaluators.set(model, functions);
   }
   return functions;
@@ -443,16 +469,8 @@ function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3): Vec3 {
 
 // Applies the model to an sRGB-encoded camera value and returns the corrected value.
 export function applyColorModel(model: ColorModel, code: Vec3): Vec3 {
-  const [fr, fg, fb] = curveFunctions(model) as readonly [
-    (x: number) => number,
-    (x: number) => number,
-    (x: number) => number,
-  ];
-  return mixCode(model.matrix, [
-    fr(srgbToLinear(code[0])),
-    fg(srgbToLinear(code[1])),
-    fb(srgbToLinear(code[2])),
-  ]);
+  const linear: Vec3 = [srgbToLinear(code[0]), srgbToLinear(code[1]), srgbToLinear(code[2])];
+  return mixCode(model.matrix, curveLinear(curveFunctions(model), linear));
 }
 
 function mean(values: readonly number[]): number {
@@ -506,27 +524,14 @@ export function fitColorModel(input: FitInput): FitResult {
   ) as unknown as ColorModel['curves'];
 
   const draft: ColorModel = { curves, matrix: IDENTITY };
-  const functions = curveFunctions(draft) as readonly [
-    (x: number) => number,
-    (x: number) => number,
-    (x: number) => number,
-  ];
+  const functions = curveFunctions(draft);
   const pairs = all.map((sample): Pair => ({
-    corrected: [
-      functions[0](sample.linear[0]),
-      functions[1](sample.linear[1]),
-      functions[2](sample.linear[2]),
-    ],
+    corrected: curveLinear(functions, sample.linear),
     target: [sample.target[0] * gain, sample.target[1] * gain, sample.target[2] * gain],
     lab: scaledLab(sample.reference, gain),
+    cameraChroma: chromaOf(srgbToLab(sample.measured)),
   }));
-  const model: ColorModel = {
-    curves,
-    matrix: refineMatrix(
-      fitMatrix(pairs),
-      pairs.map((pair) => ({ corrected: pair.corrected, lab: pair.lab })),
-    ),
-  };
+  const model: ColorModel = { curves, matrix: refineMatrix(fitMatrix(pairs), pairs) };
 
   const errors = all.map((sample): PatchError => {
     // The deviation is measured against the reference at the exposure of the shot.
