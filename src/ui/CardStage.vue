@@ -22,6 +22,7 @@ import type { ChartLayout, Corners } from '../chart/types';
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import { frameGrid } from './gray-monitor';
 import { buildShapes, clientToImage } from './overlay-geometry';
+import StageLabel from './StageLabel.vue';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
 
 const props = defineProps<{
@@ -288,6 +289,12 @@ watch(actual, (next, previous) => {
         class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
         :style="{ maxWidth: imageMaxWidth }"
       >
+        <StageLabel
+          v-if="isLive || showStill"
+          :still="showStill"
+          class="rounded-t"
+          data-testid="stage-label"
+        />
         <div class="relative">
           <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
           <div
@@ -326,13 +333,13 @@ watch(actual, (next, previous) => {
           <video
             v-show="isLive && !showStill"
             ref="video"
-            class="w-full rounded bg-black"
+            class="w-full rounded-b bg-black"
             :style="{ aspectRatio: size.width / size.height }"
             muted
             playsinline
             @loadeddata="videoReady = true"
           ></video>
-          <canvas v-show="showStill" ref="canvas" class="w-full rounded bg-black"></canvas>
+          <canvas v-show="showStill" ref="canvas" class="w-full rounded-b bg-black"></canvas>
           <!-- The corner points are set by pointer; keyboard-only operation makes no sense here. -->
           <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
           <svg

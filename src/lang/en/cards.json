@@ -1,5 +1,7 @@
 {
   "stage": {
+    "labelLive": "Live image",
+    "labelStill": "Still image",
     "starting": {
       "title": "The camera is starting …",
       "text": "One moment please."
