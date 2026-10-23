@@ -75,7 +75,7 @@ const EXPOSURE_FROM = 0.05;
 const EXPOSURE_TO = 0.6;
 // The tone curve is a smooth polynomial through the gray ramp (in log-log space) instead of an
 // interpolation through every noisy patch: no steps, no banding, no strong amplification of noise.
-const MAX_DEGREE = 3;
+const MAX_DEGREE = 2;
 // Largest brightening or darkening of a tone curve (factor), also beyond the measured range.
 const MAX_GAIN = 1.5;
 // Without the tone correction the curve is a straight line up to this knee (at most this value after
