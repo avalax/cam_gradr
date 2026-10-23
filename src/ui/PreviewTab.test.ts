@@ -151,6 +151,20 @@ describe('PreviewTab', () => {
     expect(legend).toContain('mit Farbkorrektur');
   });
 
+  it('shows the image of the color measurement as long as the preview has none of its own', () => {
+    mockAnimation();
+    mockContexts();
+    computeModel();
+    const camera = useCameraStore();
+    camera.still = stillFrame();
+    camera.swapStill('color', 'preview');
+    expect(camera.still).toBeNull();
+    const wrapper = mount(PreviewTab);
+    expect(wrapper.find('[data-testid="preview-no-source"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-canvas"]').isVisible()).toBe(true);
+    expect(wrapper.find('[data-testid="wipe-line"]').exists()).toBe(true);
+  });
+
   it('loads the LUT and draws the still image with the divider line', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
