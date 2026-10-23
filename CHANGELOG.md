@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.4.0...cam-gradr-v1.5.0) (2026-10-23)
+
+The app has a dark appearance, the two wipes are labeled the same way, and wrong cards are shown on the frame around them.
+
+### Features
+
+* **ui:** new dark appearance. In the gear menu under "Appearance" you choose System (follows your device), Light or Dark; the choice is remembered. A dark screen throws less light onto the cards, so the measurement can be steadier. The image lies on its own surface, the brightness field of the gray cards is much dimmer, and the divider and the frame around the cards keep their colors
+* **ui:** a header above the preview image and above the color cards' wipe names the two sides, "Kamera" and "Korrigiert", with a grey and a green dot. It follows the divider, and at the edge only one side is shown
+* **cards:** the gray cards and color cards tabs have a band above the image ("Livebild" or "Standbild"), so all four tabs are equally high
+* **cards:** wrong cards, for example color cards in the gray cards tab, turn the frame red and show a short label on it instead of a line under the image. The label goes away with the cards, and the wrong cards are not captured again and again
+
 ## [1.4.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.3.0...cam-gradr-v1.4.0) (2026-10-23)
 
 The color correction looks more natural: shadows and highlights keep their detail, saturated colors no longer glare, and the preview starts with the image of your color measurement.
