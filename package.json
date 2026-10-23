@@ -34,7 +34,7 @@
     "vue-i18n": "^11.4.16"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
