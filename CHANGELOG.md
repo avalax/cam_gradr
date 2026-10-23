@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.4.0...cam-gradr-v1.5.0) (2026-10-23)
+
+
+### Features
+
+* a band names the live or still image in the card tabs, all tabs equally high ([#47](https://github.com/avalax/cam_gradr/issues/47)) ([47d8c8b](https://github.com/avalax/cam_gradr/commit/47d8c8b7ccb8b3faf9877019e2abf3434274d563))
+* dark appearance with a switch in the settings ([#44](https://github.com/avalax/cam_gradr/issues/44)) ([fd1b297](https://github.com/avalax/cam_gradr/commit/fd1b29722ef71c1380bc78f8f1ee0c6b53a3a042))
+* name the two sides of both wipes in a shared header with dots ([#42](https://github.com/avalax/cam_gradr/issues/42)) ([3b9d087](https://github.com/avalax/cam_gradr/commit/3b9d0877f994ad20c655b00200b3967e37ed1bce))
+* wrong cards turn the frame red and show a label on it ([#43](https://github.com/avalax/cam_gradr/issues/43)) ([362bcf4](https://github.com/avalax/cam_gradr/commit/362bcf4b8be88a3555ef7f44ba4a0198d5b705a5))
+
 ## [1.4.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.3.0...cam-gradr-v1.4.0) (2026-10-23)
 
 The color correction looks more natural: shadows and highlights keep their detail, saturated colors no longer glare, and the preview starts with the image of your color measurement.
