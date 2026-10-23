@@ -170,7 +170,7 @@ describe('GrayStep', () => {
 
   it('limits the image width so image and buttons fit on one screen', async () => {
     const wrapper = await mountLive();
-    const style = wrapper.get('div.relative.min-w-0').attributes('style');
+    const style = wrapper.get('div.min-w-0.flex-1').attributes('style');
     expect(style).toContain('max-width: calc((100vh - 12rem) * 1.77');
   });
 

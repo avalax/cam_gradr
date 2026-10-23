@@ -12,19 +12,22 @@
 :root {
   --page-bg: #fff;
   --page-fg: #18181b;
+  /* Thickness of the bands above and below the images and color fields. */
+  --band-line: 3px;
 }
 
 [data-theme='dark'] {
   --page-bg: #1c1c1f;
   --page-fg: #e4e4e7;
+  --band-line: 2px;
   --color-zinc-50: #1c1c1f;
-  --color-zinc-100: #27272a;
-  --color-zinc-200: #3f3f46;
-  --color-zinc-300: #52525b;
-  --color-zinc-400: #71717a;
+  --color-zinc-100: #2a2a2d;
+  --color-zinc-200: #3a3a3d;
+  --color-zinc-300: #4a4a4f;
+  --color-zinc-400: #5a5a60;
   --color-zinc-500: #a1a1aa;
   --color-zinc-600: #a1a1aa;
-  --color-zinc-700: #a1a1aa;
+  --color-zinc-700: #8a8a90;
   --color-zinc-800: #e4e4e7;
   --color-zinc-900: #f4f4f5;
 }

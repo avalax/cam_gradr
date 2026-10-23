@@ -19,8 +19,8 @@ const { t } = useI18n();
 
 // The message sits at the edge of the field the measurement deviates towards: dark line with gray label.
 const EDGE_CLASSES: Readonly<Record<Edge, string>> = {
-  top: 'inset-x-0 top-0 border-b-[3px]',
-  bottom: 'inset-x-0 bottom-0 border-t-[3px]',
+  top: 'inset-x-0 top-0 border-b-(length:--band-line)',
+  bottom: 'inset-x-0 bottom-0 border-t-(length:--band-line)',
   left: 'inset-y-0 left-0 border-r-[3px] [writing-mode:vertical-rl] rotate-180',
   right: 'inset-y-0 right-0 border-l-[3px] [writing-mode:vertical-rl]',
 };

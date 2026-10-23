@@ -27,12 +27,15 @@ const right = computed(() => mode(FULL - props.split));
 <template>
   <!-- Names the two sides of a wipe: camera on the left, corrected on the right (grey and green dot). -->
   <div
-    class="relative grid border-b-[3px] border-zinc-700 bg-zinc-200 text-[11px] font-semibold leading-tight text-zinc-800"
+    class="relative grid border-b-(length:--band-line) border-zinc-700 bg-zinc-200 text-[11px] font-semibold leading-tight text-zinc-800"
     :style="{ gridTemplateColumns: `${String(split)}% minmax(0, 1fr)` }"
   >
     <span class="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-1 py-1.5">
       <template v-if="left !== 'none'">
-        <i class="size-2.5 shrink-0 rounded-full bg-zinc-400" aria-hidden="true"></i>
+        <i
+          class="size-2.5 shrink-0 rounded-full bg-zinc-400 dark:bg-zinc-500"
+          aria-hidden="true"
+        ></i>
         <template v-if="left === 'name'">{{ t('preview.labelCamera') }}</template>
       </template>
     </span>
