@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.3.0...cam-gradr-v1.4.0) (2026-10-23)
+
+
+### Features
+
+* the preview shows the image of the color measurement by default ([#39](https://github.com/avalax/cam_gradr/issues/39)) ([50c4b8b](https://github.com/avalax/cam_gradr/commit/50c4b8b0e479bc317a6b7f7375f467af27aa9356))
+
+
+### Bug Fixes
+
+* tone curve no longer lifts the shadows or clips the highlights ([#40](https://github.com/avalax/cam_gradr/issues/40)) ([2de51b8](https://github.com/avalax/cam_gradr/commit/2de51b82b1d51151911ed6706bc65b8eb2f5bf20))
+
 ## [1.3.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.2.0...cam-gradr-v1.3.0) (2026-10-22)
 
 
