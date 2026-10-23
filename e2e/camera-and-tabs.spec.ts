@@ -32,7 +32,7 @@ test.describe('Tabs', () => {
     for (const tab of ['Graukarten', 'Farbkarten', 'Vorschau'] as const) {
       await app.openTab(tab);
       boxes.push(
-        await app.page.locator('.relative.min-w-0.flex-1').first().boundingBox(),
+        await app.page.getByTestId('image-block').first().boundingBox(),
         await app.page.locator('.w-44').first().boundingBox(),
       );
     }

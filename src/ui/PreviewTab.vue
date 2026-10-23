@@ -247,6 +247,7 @@ const splitModel = computed({
       <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3">
         <!-- In the dark appearance the image lies on its own surface with an edge. -->
         <div
+          data-testid="image-block"
           class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
           :style="{ maxWidth: maxWidth }"
         >
