@@ -32,6 +32,7 @@ import { imageMaxWidth as maxWidthFor } from './image-size';
 import GrayWedge from './GrayWedge.vue';
 import { attachStream, captureFromVideo } from './video-bindings';
 import WipeDivider from './WipeDivider.vue';
+import WipeLabels from './WipeLabels.vue';
 
 // LUT sample points in the preview; fine enough for smooth gradients, fast enough to compute.
 const PREVIEW_LUT_SIZE = 33;
@@ -291,17 +292,25 @@ const splitModel = computed({
               {{ t('preview.noSourceText') }}
             </p>
           </div>
-          <canvas
-            v-show="model !== null && hasSource"
-            ref="canvas"
-            class="w-full rounded bg-black"
-            data-testid="preview-canvas"
-          ></canvas>
-          <WipeDivider
+          <!-- Names the two sides above the image, as above the color cards' wipe. -->
+          <WipeLabels
             v-if="model !== null && hasSource"
-            v-model="splitModel"
-            :label="t('preview.divider')"
+            class="rounded-t"
+            data-testid="preview-labels"
           />
+          <div class="relative">
+            <canvas
+              v-show="model !== null && hasSource"
+              ref="canvas"
+              class="w-full rounded-b bg-black"
+              data-testid="preview-canvas"
+            ></canvas>
+            <WipeDivider
+              v-if="model !== null && hasSource"
+              v-model="splitModel"
+              :label="t('preview.divider')"
+            />
+          </div>
         </div>
 
         <div
@@ -399,24 +408,6 @@ const splitModel = computed({
             {{ summary }}
           </p>
         </div>
-
-        <!-- Legend under the image: which side of the divider is the original and which the corrected image. -->
-        <p
-          v-if="model !== null && hasSource"
-          class="col-start-1 row-start-2 mt-1.5 flex justify-between gap-3 text-xs text-zinc-700"
-          data-testid="preview-legend"
-        >
-          <span class="flex items-center gap-1.5">
-            <i class="size-2.5 rounded-full bg-zinc-400" aria-hidden="true"></i>
-            <b class="font-semibold">{{ t('preview.legendOriginal') }}</b>
-            {{ t('preview.legendOriginalHint') }}
-          </span>
-          <span class="flex items-center gap-1.5">
-            <b class="font-semibold">{{ t('preview.legendCorrected') }}</b>
-            {{ t('preview.legendCorrectedHint') }}
-            <i class="size-2.5 rounded-full bg-emerald-700" aria-hidden="true"></i>
-          </span>
-        </p>
       </div>
     </div>
   </section>

@@ -3,7 +3,6 @@
   "referenceActive": "Referenzwerte: {name} ({count} Felder). Den Satz wechselst oder importierst du im Menü ⚙ oben rechts.",
   "idle": "Beide Farbkarten ruhig dorthin halten, wo das Motiv steht. Die Größe im Bild ist egal.",
   "wipe": {
-    "caption": "links Kamera · rechts korrigiert",
     "liveCaption": "Vergleich nach der Aufnahme",
     "cameraLayer": "Farben der Kamera",
     "correctedLayer": "Farben nach der Korrektur",

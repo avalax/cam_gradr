@@ -136,19 +136,17 @@ describe('PreviewTab', () => {
     expect(camera.status).toBe('live');
   });
 
-  it('names the original and the corrected side under the image', async () => {
+  it('names the camera and the corrected side above the image', async () => {
     mockAnimation();
     mockContexts();
     const wrapper = mount(PreviewTab);
-    expect(wrapper.find('[data-testid="preview-legend"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="preview-labels"]').exists()).toBe(false);
     computeModel();
     useCameraStore().still = stillFrame();
     await wrapper.vm.$nextTick();
-    const legend = wrapper.get('[data-testid="preview-legend"]').text();
-    expect(legend).toContain('Original');
-    expect(legend).toContain('Kamerabild');
-    expect(legend).toContain('Korrigiert');
-    expect(legend).toContain('mit Farbkorrektur');
+    const labels = wrapper.get('[data-testid="preview-labels"]').text();
+    expect(labels).toContain('Kamera');
+    expect(labels).toContain('Korrigiert');
   });
 
   it('shows the image of the color measurement as long as the preview has none of its own', () => {

@@ -10,6 +10,7 @@ import type { ColorModel, FitResult } from '../solve/fit';
 import { buildStrips } from './color-strips';
 import { byRowThenColumn, deviationSummary } from './gray-wedge';
 import WipeDivider from './WipeDivider.vue';
+import WipeLabels from './WipeLabels.vue';
 
 const { t } = useI18n();
 
@@ -63,10 +64,12 @@ const summary = computed(() =>
     data-testid="color-wipe"
   >
     <p
+      v-if="live"
       class="rounded-t-[7px] border-b-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
     >
-      {{ t(live ? 'color.wipe.liveCaption' : 'color.wipe.caption') }}
+      {{ t('color.wipe.liveCaption') }}
     </p>
+    <WipeLabels v-else class="rounded-t-[7px]" data-testid="color-wipe-labels" />
 
     <div class="relative min-h-64 flex-1 overflow-hidden">
       <div
