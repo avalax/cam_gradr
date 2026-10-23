@@ -2,13 +2,14 @@
 
 ## [1.5.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.4.0...cam-gradr-v1.5.0) (2026-10-23)
 
+The app has a dark appearance, the two wipes are labeled the same way, and wrong cards are shown on the frame around them.
 
 ### Features
 
-* a band names the live or still image in the card tabs, all tabs equally high ([#47](https://github.com/avalax/cam_gradr/issues/47)) ([47d8c8b](https://github.com/avalax/cam_gradr/commit/47d8c8b7ccb8b3faf9877019e2abf3434274d563))
-* dark appearance with a switch in the settings ([#44](https://github.com/avalax/cam_gradr/issues/44)) ([fd1b297](https://github.com/avalax/cam_gradr/commit/fd1b29722ef71c1380bc78f8f1ee0c6b53a3a042))
-* name the two sides of both wipes in a shared header with dots ([#42](https://github.com/avalax/cam_gradr/issues/42)) ([3b9d087](https://github.com/avalax/cam_gradr/commit/3b9d0877f994ad20c655b00200b3967e37ed1bce))
-* wrong cards turn the frame red and show a label on it ([#43](https://github.com/avalax/cam_gradr/issues/43)) ([362bcf4](https://github.com/avalax/cam_gradr/commit/362bcf4b8be88a3555ef7f44ba4a0198d5b705a5))
+* **ui:** new dark appearance. In the gear menu under "Appearance" you choose System (follows your device), Light or Dark; the choice is remembered. A dark screen throws less light onto the cards, so the measurement can be steadier. The image lies on its own surface, the brightness field of the gray cards is much dimmer, and the divider and the frame around the cards keep their colors
+* **ui:** a header above the preview image and above the color cards' wipe names the two sides, "Kamera" and "Korrigiert", with a grey and a green dot. It follows the divider, and at the edge only one side is shown
+* **cards:** the gray cards and color cards tabs have a band above the image ("Livebild" or "Standbild"), so all four tabs are equally high
+* **cards:** wrong cards, for example color cards in the gray cards tab, turn the frame red and show a short label on it instead of a line under the image. The label goes away with the cards, and the wrong cards are not captured again and again
 
 ## [1.4.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.3.0...cam-gradr-v1.4.0) (2026-10-23)
 
