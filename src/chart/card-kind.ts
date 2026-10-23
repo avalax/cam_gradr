@@ -19,8 +19,8 @@ function median(values: readonly number[]): number {
   const sorted = values.toSorted((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0
-    ? ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2
-    : (sorted[middle] ?? 0);
+    ? (Number(sorted[middle - 1]) + Number(sorted[middle])) / 2
+    : Number(sorted[middle]);
 }
 
 function saturation([r, g, b]: Rgb): number {
@@ -35,7 +35,7 @@ function cast(fields: readonly Rgb[]): Rgb {
     .filter(([r, g, b]) => r + g + b > 0)
     .map(([r, g, b]): Rgb => [r / (r + g + b), g / (r + g + b), b / (r + g + b)]);
   return [0, 1, 2].map((channel) =>
-    shares.length === 0 ? 1 / 3 : median(shares.map((share) => share[channel] ?? 0)),
+    shares.length === 0 ? 1 / 3 : median(shares.map((share) => Number(share[channel]))),
   ) as unknown as Rgb;
 }
 
