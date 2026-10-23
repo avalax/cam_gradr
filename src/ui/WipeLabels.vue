@@ -27,24 +27,30 @@ const right = computed(() => mode(FULL - props.split));
 <template>
   <!-- Names the two sides of a wipe: camera on the left, corrected on the right (grey and green dot). -->
   <div
-    class="relative grid border-b-[3px] border-zinc-700 bg-zinc-200 text-[11px] font-semibold leading-tight text-zinc-800"
+    class="relative grid border-b-(length:--band-line) border-zinc-700 bg-zinc-200 text-[11px] font-semibold leading-tight text-zinc-800"
     :style="{ gridTemplateColumns: `${String(split)}% minmax(0, 1fr)` }"
   >
     <span class="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-1 py-1.5">
       <template v-if="left !== 'none'">
-        <i class="size-2.5 shrink-0 rounded-full bg-zinc-400" aria-hidden="true"></i>
+        <i
+          class="size-2.5 shrink-0 rounded-full bg-zinc-400 dark:bg-zinc-500"
+          aria-hidden="true"
+        ></i>
         <template v-if="left === 'name'">{{ t('preview.labelCamera') }}</template>
       </template>
     </span>
     <span class="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-1 py-1.5">
       <template v-if="right !== 'none'">
         <template v-if="right === 'name'">{{ t('preview.labelCorrected') }}</template>
-        <i class="size-2.5 shrink-0 rounded-full bg-emerald-700" aria-hidden="true"></i>
+        <i
+          class="size-2.5 shrink-0 rounded-full bg-emerald-700 dark:bg-emerald-400"
+          aria-hidden="true"
+        ></i>
       </template>
     </span>
     <!-- The same line as the divider in the image, continued through the header. -->
     <i
-      class="pointer-events-none absolute -bottom-[3px] top-0 w-[3px] -translate-x-1/2 bg-zinc-50 shadow-[0_0_0_1px_#27272a]"
+      class="pointer-events-none absolute -bottom-[3px] top-0 w-[3px] -translate-x-1/2 bg-white shadow-[0_0_0_1px_#27272a]"
       :style="{ left: `${String(split)}%` }"
       aria-hidden="true"
       data-testid="labels-line"

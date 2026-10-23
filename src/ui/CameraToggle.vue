@@ -52,6 +52,8 @@ function toggle(): void {
     >
       {{ label }}
     </button>
-    <p v-if="status === 'error'" class="text-sm text-red-700" role="alert">{{ errorMessage }}</p>
+    <p v-if="status === 'error'" class="text-sm text-red-700 dark:text-red-400" role="alert">
+      {{ errorMessage }}
+    </p>
   </div>
 </template>

@@ -282,184 +282,195 @@ watch(actual, (next, previous) => {
 <template>
   <div class="space-y-4">
     <div class="flex items-stretch gap-3">
-      <div class="relative min-w-0 flex-1" :style="{ maxWidth: imageMaxWidth }">
-        <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
-        <div
-          v-if="showPlaceholder"
-          class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
-          :style="{ aspectRatio: size.width / size.height }"
-          data-testid="card-placeholder"
-        >
-          <svg
-            class="w-28 text-zinc-400"
-            viewBox="0 0 96 60"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-dasharray="5 4"
-            aria-hidden="true"
-          >
-            <rect x="14" y="3" width="30" height="54" rx="4" />
-            <rect x="52" y="3" width="30" height="54" rx="4" />
-          </svg>
-          <p class="max-w-xs text-sm leading-snug">
-            <template v-if="status === 'starting'">
-              <span class="block font-semibold text-zinc-800">{{
-                t('cards.stage.starting.title')
-              }}</span>
-              {{ t('cards.stage.starting.text') }}
-            </template>
-            <template v-else>
-              <span class="block font-semibold text-zinc-800">{{
-                t('cards.stage.off.title')
-              }}</span>
-              {{ t('cards.stage.off.text') }} {{ idleText }}
-            </template>
-          </p>
-        </div>
-        <video
-          v-show="isLive && !showStill"
-          ref="video"
-          class="w-full rounded bg-black"
-          :style="{ aspectRatio: size.width / size.height }"
-          muted
-          playsinline
-          @loadeddata="videoReady = true"
-        ></video>
-        <canvas v-show="showStill" ref="canvas" class="w-full rounded bg-black"></canvas>
-        <!-- The corner points are set by pointer; keyboard-only operation makes no sense here. -->
-        <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-        <svg
-          class="absolute inset-0 h-full w-full touch-none"
-          :viewBox="viewBox"
-          @pointermove="onMove"
-          @pointerup="endDrag"
-          @pointerleave="endDrag"
-        >
-          <!-- White with a dark edge (visible on any background), pulsing until the cards are held steady;
-               during the capture the green line draws itself over the white frame; red when the
-               cards are the wrong kind. -->
-          <g v-if="frameBox !== null" fill="none" pointer-events="none">
-            <rect
-              v-bind="frameBox"
-              stroke="#000"
-              stroke-opacity="0.7"
-              stroke-width="7"
-              :class="
-                capturing || showWrong
-                  ? undefined
-                  : 'animate-frame-pulse motion-reduce:animate-none'
-              "
-            />
-            <rect
-              v-bind="frameBox"
-              :stroke="showWrong ? '#f87171' : '#fff'"
-              stroke-width="4"
-              :class="
-                capturing || showWrong
-                  ? undefined
-                  : 'animate-frame-pulse motion-reduce:animate-none'
-              "
-              :data-testid="capturing ? undefined : 'found-frame'"
-            />
-            <rect
-              v-if="capturing"
-              v-bind="frameBox"
-              stroke-width="4"
-              pathLength="1"
-              stroke-dasharray="1"
-              class="animate-frame-draw stroke-emerald-400 motion-reduce:animate-none"
-              data-testid="found-frame"
-            />
-          </g>
-          <polygon
-            v-for="shape in shapes"
-            :key="shape.key"
-            :points="shape.points"
-            :data-shape="shape.key"
-            fill="none"
-            :stroke="
-              shape.kind === 'card' ? '#22d3ee' : shape.kind === 'large' ? '#facc15' : '#f472b6'
-            "
-            stroke-width="2"
-          />
-          <circle
-            v-for="handle in handles"
-            :key="`${String(handle.card)}-${String(handle.index)}`"
-            :cx="handle.point.x"
-            :cy="handle.point.y"
-            r="8"
-            fill="#22d3ee"
-            stroke="#0f172a"
-            stroke-width="2"
-            class="cursor-move"
-            @pointerdown.stop="dragging = { card: handle.card, index: handle.index }"
-          />
-          <text
-            v-for="handle in handles"
-            :key="`label-${String(handle.card)}-${String(handle.index)}`"
-            :x="handle.point.x + 12"
-            :y="handle.point.y - 12"
-            fill="#ffffff"
-            stroke="#0f172a"
-            stroke-width="4"
-            paint-order="stroke"
-            font-size="22"
-            font-weight="bold"
-            pointer-events="none"
-            data-testid="corner-label"
-          >
-            {{ handle.index + 1 }}
-          </text>
-        </svg>
-        <p
-          v-if="showWrong"
-          class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-red-600 px-2.5 py-0.5 text-[11px] font-semibold text-white"
-          :style="labelStyle"
-          role="alert"
-          data-testid="wrong-cards"
-        >
-          {{ wrongLabel }}<span class="sr-only"> {{ wrongText }}</span>
-        </p>
-        <!-- Toolbar in the image corner: delete corner points and still image. -->
-        <div
-          v-if="showStill || !noPoints"
-          class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
-          role="toolbar"
-          :aria-label="t('cards.stage.toolbar')"
-        >
-          <button
-            type="button"
-            class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
-            :aria-label="t('cards.stage.deleteCorners')"
-            :title="t('cards.stage.deleteCornersTitle')"
-            @click="redetect"
+      <!-- In the dark appearance the image lies on its own surface with an edge. -->
+      <div
+        data-testid="image-block"
+        class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
+        :style="{ maxWidth: imageMaxWidth }"
+      >
+        <div class="relative">
+          <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
+          <div
+            v-if="showPlaceholder"
+            class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+            :style="{ aspectRatio: size.width / size.height }"
+            data-testid="card-placeholder"
           >
             <svg
-              class="size-[18px]"
-              viewBox="0 0 24 24"
+              class="w-28 text-zinc-400"
+              viewBox="0 0 96 60"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              stroke-width="2"
+              stroke-dasharray="5 4"
               aria-hidden="true"
             >
-              <path
-                d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
-              />
+              <rect x="14" y="3" width="30" height="54" rx="4" />
+              <rect x="52" y="3" width="30" height="54" rx="4" />
             </svg>
-          </button>
+            <p class="max-w-xs text-sm leading-snug">
+              <template v-if="status === 'starting'">
+                <span class="block font-semibold text-zinc-800">{{
+                  t('cards.stage.starting.title')
+                }}</span>
+                {{ t('cards.stage.starting.text') }}
+              </template>
+              <template v-else>
+                <span class="block font-semibold text-zinc-800">{{
+                  t('cards.stage.off.title')
+                }}</span>
+                {{ t('cards.stage.off.text') }} {{ idleText }}
+              </template>
+            </p>
+          </div>
+          <video
+            v-show="isLive && !showStill"
+            ref="video"
+            class="w-full rounded bg-black"
+            :style="{ aspectRatio: size.width / size.height }"
+            muted
+            playsinline
+            @loadeddata="videoReady = true"
+          ></video>
+          <canvas v-show="showStill" ref="canvas" class="w-full rounded bg-black"></canvas>
+          <!-- The corner points are set by pointer; keyboard-only operation makes no sense here. -->
+          <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+          <svg
+            class="absolute inset-0 h-full w-full touch-none"
+            :viewBox="viewBox"
+            @pointermove="onMove"
+            @pointerup="endDrag"
+            @pointerleave="endDrag"
+          >
+            <!-- White with a dark edge (visible on any background), pulsing until the cards are held steady;
+               during the capture the green line draws itself over the white frame; red when the
+               cards are the wrong kind. -->
+            <g v-if="frameBox !== null" fill="none" pointer-events="none">
+              <rect
+                v-bind="frameBox"
+                stroke="#000"
+                stroke-opacity="0.7"
+                stroke-width="7"
+                :class="
+                  capturing || showWrong
+                    ? undefined
+                    : 'animate-frame-pulse motion-reduce:animate-none'
+                "
+              />
+              <rect
+                v-bind="frameBox"
+                :stroke="showWrong ? '#f87171' : '#fff'"
+                stroke-width="4"
+                :class="
+                  capturing || showWrong
+                    ? undefined
+                    : 'animate-frame-pulse motion-reduce:animate-none'
+                "
+                :data-testid="capturing ? undefined : 'found-frame'"
+              />
+              <rect
+                v-if="capturing"
+                v-bind="frameBox"
+                stroke-width="4"
+                pathLength="1"
+                stroke-dasharray="1"
+                class="animate-frame-draw stroke-emerald-400 motion-reduce:animate-none"
+                data-testid="found-frame"
+              />
+            </g>
+            <polygon
+              v-for="shape in shapes"
+              :key="shape.key"
+              :points="shape.points"
+              :data-shape="shape.key"
+              fill="none"
+              :stroke="
+                shape.kind === 'card' ? '#22d3ee' : shape.kind === 'large' ? '#facc15' : '#f472b6'
+              "
+              stroke-width="2"
+            />
+            <circle
+              v-for="handle in handles"
+              :key="`${String(handle.card)}-${String(handle.index)}`"
+              :cx="handle.point.x"
+              :cy="handle.point.y"
+              r="8"
+              fill="#22d3ee"
+              stroke="#0f172a"
+              stroke-width="2"
+              class="cursor-move"
+              @pointerdown.stop="dragging = { card: handle.card, index: handle.index }"
+            />
+            <text
+              v-for="handle in handles"
+              :key="`label-${String(handle.card)}-${String(handle.index)}`"
+              :x="handle.point.x + 12"
+              :y="handle.point.y - 12"
+              fill="#ffffff"
+              stroke="#0f172a"
+              stroke-width="4"
+              paint-order="stroke"
+              font-size="22"
+              font-weight="bold"
+              pointer-events="none"
+              data-testid="corner-label"
+            >
+              {{ handle.index + 1 }}
+            </text>
+          </svg>
+          <p
+            v-if="showWrong"
+            class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-red-600 px-2.5 py-0.5 text-[11px] font-semibold text-white"
+            :style="labelStyle"
+            role="alert"
+            data-testid="wrong-cards"
+          >
+            {{ wrongLabel }}<span class="sr-only"> {{ wrongText }}</span>
+          </p>
+          <!-- Toolbar in the image corner: delete corner points and still image. -->
+          <div
+            v-if="showStill || !noPoints"
+            class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
+            role="toolbar"
+            :aria-label="t('cards.stage.toolbar')"
+          >
+            <button
+              type="button"
+              class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
+              :aria-label="t('cards.stage.deleteCorners')"
+              :title="t('cards.stage.deleteCornersTitle')"
+              @click="redetect"
+            >
+              <svg
+                class="size-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
       <slot name="side" />
     </div>
 
-    <p v-if="camera.errorMessage !== null && isLive" class="text-sm text-red-700" role="alert">
+    <p
+      v-if="camera.errorMessage !== null && isLive"
+      class="text-sm text-red-700 dark:text-red-400"
+      role="alert"
+    >
       {{ camera.errorMessage }}
     </p>
 
-    <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
+    <p v-if="autoActive" class="text-sm text-slate-700 dark:text-slate-300" data-testid="auto-hint">
       {{ t('cards.stage.autoHint') }}
     </p>
   </div>

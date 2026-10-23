@@ -215,7 +215,7 @@ const splitModel = computed({
 <template>
   <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
     <aside class="space-y-4 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-      <p class="text-sm text-slate-700">
+      <p class="text-sm text-slate-700 dark:text-slate-300">
         {{ t('preview.intro') }}
       </p>
       <div class="flex flex-wrap gap-2">
@@ -229,10 +229,12 @@ const splitModel = computed({
         </button>
       </div>
       <CorrectionOptions />
-      <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
+      <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
+        {{ error }}
+      </p>
       <p
         v-if="renderer !== null"
-        class="text-xs text-slate-600"
+        class="text-xs text-slate-600 dark:text-slate-400"
         data-testid="preview-renderer"
         :data-renderer="renderer.kind"
       >
@@ -243,74 +245,83 @@ const splitModel = computed({
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
       <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3">
-        <div class="relative min-w-0 flex-1" :style="{ maxWidth: maxWidth }">
-          <!-- The video only serves as an image source and stays invisible. -->
-          <video
-            ref="video"
-            class="hidden"
-            muted
-            playsinline
-            @loadeddata="videoReady = true"
-          ></video>
-          <!-- Placeholder the size of the image while there is nothing to show. -->
-          <div
-            v-if="model === null || !hasSource"
-            class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
-            :style="{ aspectRatio: aspect }"
-            data-testid="preview-placeholder"
-          >
-            <svg
-              class="w-28 text-zinc-400"
-              viewBox="0 0 96 60"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <rect x="2" y="2" width="92" height="56" rx="5" />
-              <path
-                d="M3 56 L3 3 H47 V56 Z"
-                fill="currentColor"
-                fill-opacity="0.25"
-                stroke="none"
-              />
-              <path d="M48 2 V58" stroke-width="3" />
-              <circle cx="48" cy="30" r="5" fill="currentColor" stroke="none" />
-            </svg>
-            <p
-              v-if="model === null"
-              class="max-w-xs text-sm leading-snug"
-              data-testid="preview-no-model"
-            >
-              <span class="block font-semibold text-zinc-800">{{ t('preview.noModelTitle') }}</span>
-              {{ t('preview.noModelText') }}
-            </p>
-            <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
-              <span class="block font-semibold text-zinc-800">{{
-                t('preview.noSourceTitle')
-              }}</span>
-              {{ t('preview.noSourceText') }}
-            </p>
-          </div>
-          <!-- Names the two sides above the image, as above the color cards' wipe. -->
-          <WipeLabels
-            v-if="model !== null && hasSource"
-            :split="splitModel"
-            class="rounded-t"
-            data-testid="preview-labels"
-          />
+        <!-- In the dark appearance the image lies on its own surface with an edge. -->
+        <div
+          data-testid="image-block"
+          class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
+          :style="{ maxWidth: maxWidth }"
+        >
           <div class="relative">
-            <canvas
-              v-show="model !== null && hasSource"
-              ref="canvas"
-              class="w-full rounded-b bg-black"
-              data-testid="preview-canvas"
-            ></canvas>
-            <WipeDivider
+            <!-- The video only serves as an image source and stays invisible. -->
+            <video
+              ref="video"
+              class="hidden"
+              muted
+              playsinline
+              @loadeddata="videoReady = true"
+            ></video>
+            <!-- Placeholder the size of the image while there is nothing to show. -->
+            <div
+              v-if="model === null || !hasSource"
+              class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+              :style="{ aspectRatio: aspect }"
+              data-testid="preview-placeholder"
+            >
+              <svg
+                class="w-28 text-zinc-400"
+                viewBox="0 0 96 60"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <rect x="2" y="2" width="92" height="56" rx="5" />
+                <path
+                  d="M3 56 L3 3 H47 V56 Z"
+                  fill="currentColor"
+                  fill-opacity="0.25"
+                  stroke="none"
+                />
+                <path d="M48 2 V58" stroke-width="3" />
+                <circle cx="48" cy="30" r="5" fill="currentColor" stroke="none" />
+              </svg>
+              <p
+                v-if="model === null"
+                class="max-w-xs text-sm leading-snug"
+                data-testid="preview-no-model"
+              >
+                <span class="block font-semibold text-zinc-800">{{
+                  t('preview.noModelTitle')
+                }}</span>
+                {{ t('preview.noModelText') }}
+              </p>
+              <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
+                <span class="block font-semibold text-zinc-800">{{
+                  t('preview.noSourceTitle')
+                }}</span>
+                {{ t('preview.noSourceText') }}
+              </p>
+            </div>
+            <!-- Names the two sides above the image, as above the color cards' wipe. -->
+            <WipeLabels
               v-if="model !== null && hasSource"
-              v-model="splitModel"
-              :label="t('preview.divider')"
+              :split="splitModel"
+              class="rounded-t"
+              data-testid="preview-labels"
             />
+            <div class="relative">
+              <canvas
+                v-show="model !== null && hasSource"
+                ref="canvas"
+                class="w-full rounded-b bg-black"
+                data-testid="preview-canvas"
+              ></canvas>
+              <WipeDivider
+                v-if="model !== null && hasSource"
+                v-model="splitModel"
+                :label="t('preview.divider')"
+              />
+            </div>
           </div>
         </div>
 
@@ -319,7 +330,7 @@ const splitModel = computed({
           data-testid="preview-side"
         >
           <div
-            class="flex gap-1 border-b-[3px] border-zinc-700 bg-zinc-200 p-1.5"
+            class="flex gap-1 border-b-(length:--band-line) border-zinc-700 bg-zinc-200 p-1.5"
             role="group"
             :aria-label="t('preview.viewLabel')"
           >
@@ -403,7 +414,7 @@ const splitModel = computed({
           </div>
           <p
             v-if="summary !== null"
-            class="border-t-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight"
+            class="border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight"
             data-testid="preview-summary"
           >
             {{ summary }}

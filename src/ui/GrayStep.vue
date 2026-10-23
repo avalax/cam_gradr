@@ -17,7 +17,7 @@ const { t } = useI18n();
 <template>
   <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
     <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-      <p class="text-sm text-slate-700">
+      <p class="text-sm text-slate-700 dark:text-slate-300">
         {{ t('cards.gray.intro') }}
       </p>
     </aside>

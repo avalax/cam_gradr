@@ -65,7 +65,7 @@ const summary = computed(() =>
   >
     <p
       v-if="live"
-      class="rounded-t-[7px] border-b-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
+      class="rounded-t-[7px] border-b-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
     >
       {{ t('color.wipe.liveCaption') }}
     </p>
@@ -108,7 +108,7 @@ const summary = computed(() =>
       data-testid="color-wipe-result"
     >
       <p
-        class="rounded-b-[7px] border-t-[3px] border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
+        class="rounded-b-[7px] border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
         data-testid="color-wipe-summary"
       >
         {{ summary }}

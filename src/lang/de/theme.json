@@ -1,0 +1,10 @@
+{
+  "title": "Darstellung",
+  "label": "Darstellung der App",
+  "options": {
+    "system": "System",
+    "light": "Hell",
+    "dark": "Dunkel"
+  },
+  "hint": "System folgt der Einstellung deines Geräts. Mit dunkler Darstellung strahlt der Bildschirm weniger Licht auf die Karten, das kann die Messung ruhiger machen."
+}

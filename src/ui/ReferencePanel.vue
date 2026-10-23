@@ -26,7 +26,7 @@ function onSelect(event: Event): void {
 
 <template>
   <div class="space-y-2">
-    <p class="text-xs text-slate-600" data-testid="reference-source">
+    <p class="text-xs text-slate-600 dark:text-slate-400" data-testid="reference-source">
       {{ t('reference.panel.sourceBefore', { name: BUNDLED_NAME }) }}
       <a :href="BUNDLED_SOURCE_URL" class="underline" target="_blank" rel="noopener noreferrer"
         >bartneck.de</a
@@ -78,15 +78,23 @@ function onSelect(event: Event): void {
     </div>
     <p
       v-if="selected !== null && lastSaved === selected.name"
-      class="text-xs text-slate-600"
+      class="text-xs text-slate-600 dark:text-slate-400"
       data-testid="reference-saved"
     >
       {{ t('reference.panel.saved') }}
     </p>
-    <p v-if="lastRemoved !== null" class="text-xs text-slate-600" data-testid="reference-removed">
+    <p
+      v-if="lastRemoved !== null"
+      class="text-xs text-slate-600 dark:text-slate-400"
+      data-testid="reference-removed"
+    >
       {{ t('reference.panel.removed', { name: lastRemoved }) }}
     </p>
-    <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
-    <p v-if="warning !== null" class="text-sm text-amber-800" role="status">{{ warning }}</p>
+    <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
+      {{ error }}
+    </p>
+    <p v-if="warning !== null" class="text-sm text-amber-800 dark:text-amber-300" role="status">
+      {{ warning }}
+    </p>
   </div>
 </template>

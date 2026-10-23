@@ -35,14 +35,14 @@ async function onFile(event: Event): Promise<void> {
     <div class="flex flex-wrap items-center gap-2">
       <button
         type="button"
-        class="rounded border border-zinc-800 bg-white px-3 py-1 text-sm"
+        class="rounded border border-zinc-800 bg-white dark:bg-zinc-100 px-3 py-1 text-sm"
         data-testid="project-save"
         @click="save"
       >
         {{ t('project.bar.save') }}
       </button>
       <label
-        class="cursor-pointer rounded border border-zinc-800 bg-white px-3 py-1 text-sm focus-within:outline focus-within:outline-2"
+        class="cursor-pointer rounded border border-zinc-800 bg-white dark:bg-zinc-100 px-3 py-1 text-sm focus-within:outline focus-within:outline-2"
       >
         {{ t('project.bar.load') }}
         <input

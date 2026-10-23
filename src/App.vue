@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
             class="relative flex items-center gap-2 rounded-t-lg border border-b-0 px-3 pb-1.5 pt-1 text-left text-sm leading-tight"
             :class="
               tab === entry.key
-                ? 'z-10 -mb-px border-zinc-800 bg-white text-zinc-900'
+                ? 'z-10 -mb-px border-zinc-800 bg-white dark:bg-zinc-100 text-zinc-900'
                 : 'border-zinc-400 bg-zinc-100 text-zinc-700 hover:bg-zinc-50'
             "
             :aria-label="entry.label"
@@ -140,7 +140,9 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <div class="space-y-3 rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white p-3">
+      <div
+        class="space-y-3 rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white dark:bg-zinc-100 p-3"
+      >
         <ProjectStatus />
 
         <div
@@ -159,7 +161,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <footer class="text-xs text-slate-500">
+    <footer class="text-xs text-slate-500 dark:text-slate-400">
       {{ t('app.footer', { id: APP_ID }) }}
     </footer>
   </main>

@@ -19,15 +19,22 @@ const { t } = useI18n();
 
 // The message sits at the edge of the field the measurement deviates towards: dark line with gray label.
 const EDGE_CLASSES: Readonly<Record<Edge, string>> = {
-  top: 'inset-x-0 top-0 border-b-[3px]',
-  bottom: 'inset-x-0 bottom-0 border-t-[3px]',
-  left: 'inset-y-0 left-0 border-r-[3px] [writing-mode:vertical-rl] rotate-180',
-  right: 'inset-y-0 right-0 border-l-[3px] [writing-mode:vertical-rl]',
+  top: 'inset-x-0 top-0 border-b-(length:--band-line)',
+  bottom: 'inset-x-0 bottom-0 border-t-(length:--band-line)',
+  left: 'inset-y-0 left-0 border-r-(length:--band-line) [writing-mode:vertical-rl] rotate-180',
+  right: 'inset-y-0 right-0 border-l-(length:--band-line) [writing-mode:vertical-rl]',
 };
 
 // Five fine gray levels vertically (light = brightness too high, dark = too low), similar to the
-// zone system of photography.
-const BANDS = ['#fafafa', '#e9e9ec', '#d2d2d7', '#b7b7be', '#9a9aa2'] as const;
+// zone system of photography. In the dark appearance the same steps are much dimmer, so the field
+// does not throw light onto the cards.
+const BANDS = [
+  { light: '#fafafa', dark: '#4f4f55' },
+  { light: '#e9e9ec', dark: '#47474c' },
+  { light: '#d2d2d7', dark: '#3f3f44' },
+  { light: '#b7b7be', dark: '#37373b' },
+  { light: '#9a9aa2', dark: '#2f2f33' },
+] as const;
 // To the left the area gets lighter and flatter, to the right darker and higher in contrast.
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
@@ -64,9 +71,14 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
     >
       <div class="absolute inset-0 overflow-hidden rounded-[inherit]">
         <div class="flex h-full flex-col">
-          <div v-for="band in BANDS" :key="band" class="flex-1" :style="{ background: band }"></div>
+          <div
+            v-for="band in BANDS"
+            :key="band.light"
+            class="flex-1 bg-(--band-light) dark:bg-(--band-dark)"
+            :style="{ '--band-light': band.light, '--band-dark': band.dark }"
+          ></div>
         </div>
-        <div class="absolute inset-0" :style="{ background: CONTRAST_SHADE }"></div>
+        <div class="absolute inset-0 dark:opacity-40" :style="{ background: CONTRAST_SHADE }"></div>
 
         <!-- Normal range: brightness and contrast may deviate this far from the target. -->
         <div
