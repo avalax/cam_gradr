@@ -16,6 +16,7 @@
   "gray": {
     "intro": "Dieser Tab stellt die Raumhelligkeit ein. Schalte oben die Kamera ein und halte die beiden Graukarten dorthin, wo das Motiv steht: Die App erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht. Ändere dann das Licht und schalte die Kamera wieder ein, bis der Punkt im Messfeld neben dem Bild im umrahmten Normalbereich steht (Details beim Überfahren des Felds). Gemessen wird nur auf Standbildern; ein Kamerastart beginnt eine neue Suche, und endet die Kamera ohne neues Standbild, kehrt der alte Stand zurück.",
     "idle": "Beide Graukarten ruhig dorthin halten, wo das Motiv steht, im selben Licht. Die Größe im Bild ist egal.",
-    "wrong": "Das sind keine Graukarten. Halte die beiden Graukarten in die Kamera."
+    "wrong": "Das sind keine Graukarten. Halte die beiden Graukarten in die Kamera.",
+    "wrongLabel": "Keine Graukarten"
   }
 }

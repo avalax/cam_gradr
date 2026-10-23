@@ -507,6 +507,34 @@ describe('GrayStep', () => {
       expect(wrapper.get('[data-testid="wrong-cards"]').text()).toContain('keine Graukarten');
     });
 
+    it('shows the wrong cards as a red frame with a label that goes away with the cards', async () => {
+      const colored = twoCardFrame();
+      for (let i = 0; i < colored.data.length; i += 3) {
+        if (Math.abs(Number(colored.data[i]) - 0.8) < 0.001) {
+          const hue = Math.floor(i / 3 / colored.width / 4) % 3;
+          colored.data.set(
+            hue === 0 ? [0.8, 0.2, 0.2] : hue === 1 ? [0.2, 0.8, 0.2] : [0.2, 0.2, 0.8],
+            i,
+          );
+        }
+      }
+      const data = toRgba(colored);
+      let visible = true;
+      const wrapper = await mountAuto(() => (visible ? data : empty()));
+      await vi.advanceTimersByTimeAsync(3000);
+      await flushPromises();
+      expect(wrapper.get('[data-testid="wrong-cards"]').text()).toContain('Keine Graukarten');
+      expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#f87171');
+      visible = false;
+      await vi.advanceTimersByTimeAsync(1500);
+      await flushPromises();
+      expect(wrapper.find('[data-testid="wrong-cards"]').exists()).toBe(false);
+      visible = true;
+      await vi.advanceTimersByTimeAsync(500);
+      await flushPromises();
+      expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#fff');
+    });
+
     it('keeps waiting while no cards are visible', async () => {
       await mountAuto(empty);
       await vi.advanceTimersByTimeAsync(5000);

@@ -31,6 +31,8 @@ const props = defineProps<{
   idleText: string;
   // Message when the cards in the image are not the expected ones (e.g. gray cards in the color step).
   wrongText: string;
+  // Short form of the message, shown on the frame around the cards.
+  wrongLabel: string;
 }>();
 
 // Automation in the live image: how often the cards are searched for, and how many times in a row
@@ -139,6 +141,18 @@ const previous = ref<Corners[] | null>(null);
 const capturing = ref(false);
 // The last capture showed other cards than expected and was discarded.
 const wrong = ref(false);
+// While these cards stay in the image the frame is red and carries the message; with fresh cards
+// the search starts over with the white frame.
+const showWrong = computed(() => wrong.value && !capturing.value && frameBox.value !== null);
+const labelStyle = computed(() => {
+  const box = frameBox.value;
+  return box === null
+    ? undefined
+    : {
+        left: `${String(((box.x + box.width / 2) / size.value.width) * 100)}%`,
+        top: `${String((box.y / size.value.height) * 100)}%`,
+      };
+});
 
 // Captures the still image, sets the corners (searched once more, more precisely, on the averaged
 // still image) and stops the camera. If the still image does not match the corners from the live
@@ -193,7 +207,11 @@ async function autoTick(): Promise<void> {
   const found = seen.length === props.layout.cards.length ? seen : null;
   countHits(found, Number(frame?.width));
   outlines.value = seen;
-  if (found !== null && hits.value >= AUTO_CONFIRMATIONS) {
+  if (seen.length === 0) {
+    wrong.value = false;
+  }
+  // Wrong cards are not captured again until they have left the image.
+  if (found !== null && !wrong.value && hits.value >= AUTO_CONFIRMATIONS) {
     hits.value = 0;
     previous.value = null;
     await autoCapture(found);
@@ -319,20 +337,29 @@ watch(actual, (next, previous) => {
           @pointerleave="endDrag"
         >
           <!-- White with a dark edge (visible on any background), pulsing until the cards are held steady;
-               during the capture the green line draws itself over the white frame. -->
+               during the capture the green line draws itself over the white frame; red when the
+               cards are the wrong kind. -->
           <g v-if="frameBox !== null" fill="none" pointer-events="none">
             <rect
               v-bind="frameBox"
               stroke="#000"
               stroke-opacity="0.7"
               stroke-width="7"
-              :class="capturing ? undefined : 'animate-frame-pulse motion-reduce:animate-none'"
+              :class="
+                capturing || showWrong
+                  ? undefined
+                  : 'animate-frame-pulse motion-reduce:animate-none'
+              "
             />
             <rect
               v-bind="frameBox"
-              stroke="#fff"
+              :stroke="showWrong ? '#f87171' : '#fff'"
               stroke-width="4"
-              :class="capturing ? undefined : 'animate-frame-pulse motion-reduce:animate-none'"
+              :class="
+                capturing || showWrong
+                  ? undefined
+                  : 'animate-frame-pulse motion-reduce:animate-none'
+              "
               :data-testid="capturing ? undefined : 'found-frame'"
             />
             <rect
@@ -385,6 +412,15 @@ watch(actual, (next, previous) => {
             {{ handle.index + 1 }}
           </text>
         </svg>
+        <p
+          v-if="showWrong"
+          class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-red-600 px-2.5 py-0.5 text-[11px] font-semibold text-white"
+          :style="labelStyle"
+          role="alert"
+          data-testid="wrong-cards"
+        >
+          {{ wrongLabel }}<span class="sr-only"> {{ wrongText }}</span>
+        </p>
         <!-- Toolbar in the image corner: delete corner points and still image. -->
         <div
           v-if="showStill || !noPoints"
@@ -421,15 +457,6 @@ watch(actual, (next, previous) => {
 
     <p v-if="camera.errorMessage !== null && isLive" class="text-sm text-red-700" role="alert">
       {{ camera.errorMessage }}
-    </p>
-
-    <p
-      v-if="wrong && autoActive"
-      class="text-sm text-red-700"
-      role="alert"
-      data-testid="wrong-cards"
-    >
-      {{ wrongText }}
     </p>
 
     <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">

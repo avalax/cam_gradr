@@ -28,6 +28,7 @@ const { t } = useI18n();
         :layout="grayLayout"
         :idle-text="t('cards.gray.idle')"
         :wrong-text="t('cards.gray.wrong')"
+        :wrong-label="t('cards.gray.wrongLabel')"
       >
         <template #side>
           <MeasureField :exposure="exposure" />
