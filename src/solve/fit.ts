@@ -85,9 +85,9 @@ const PLAIN_KNEE_TOP = 0.9;
 // Targets above the shoulder are compressed softly towards white: the exposure gain would otherwise
 // push the bright gray patches beyond 1, and everything above them would clip.
 const SHOULDER = 0.8;
-// Highest saturation (Lab chroma) relative to the camera image that the matrix fine-tuning allows
+// Highest saturation (Lab chroma) relative to the reference that the matrix fine-tuning allows
 // without penalty, and the weight of the penalty above it.
-const SATURATION_LIMIT = 1.25;
+const SATURATION_LIMIT = 1.1;
 const SATURATION_PENALTY = 1;
 const CURVE_POINTS = 48;
 // Step sizes of the matrix fine-tuning and the maximum number of sweeps per step size.
@@ -303,7 +303,6 @@ interface Pair {
   target: Vec3;
   // Reference color (Lab) at the exposure of the shot.
   lab: Vec3;
-  cameraChroma: number;
 }
 
 // Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
@@ -357,14 +356,15 @@ function chromaOf([, a, b]: Vec3): number {
   return Math.hypot(a, b);
 }
 
-// Mean color deviation plus a penalty for colors that come out more saturated than the camera showed
-// them (by more than SATURATION_LIMIT): a matrix that makes blues glare is not a good compromise.
+// Mean color deviation plus a penalty for colors that come out more saturated than the reference
+// (by more than SATURATION_LIMIT): too much saturation looks worse than too little at the same
+// deviation, and a matrix that makes blues glare is not a good compromise.
 function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
   const matrix = matrixOf(free);
   return mean(
     goals.map((goal) => {
       const lab = srgbToLab(mixCode(matrix, goal.corrected));
-      const excess = Math.max(0, chromaOf(lab) - SATURATION_LIMIT * goal.cameraChroma);
+      const excess = Math.max(0, chromaOf(lab) - SATURATION_LIMIT * chromaOf(goal.lab));
       return deltaE2000(lab, goal.lab) + SATURATION_PENALTY * excess;
     }),
   );
@@ -529,7 +529,6 @@ export function fitColorModel(input: FitInput): FitResult {
     corrected: curveLinear(functions, sample.linear),
     target: [sample.target[0] * gain, sample.target[1] * gain, sample.target[2] * gain],
     lab: scaledLab(sample.reference, gain),
-    cameraChroma: chromaOf(srgbToLab(sample.measured)),
   }));
   const model: ColorModel = { curves, matrix: refineMatrix(fitMatrix(pairs), pairs) };
 
