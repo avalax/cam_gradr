@@ -69,7 +69,7 @@ const summary = computed(() =>
     >
       {{ t('color.wipe.liveCaption') }}
     </p>
-    <WipeLabels v-else class="rounded-t-[7px]" data-testid="color-wipe-labels" />
+    <WipeLabels v-else :split="split" class="rounded-t-[7px]" data-testid="color-wipe-labels" />
 
     <div class="relative min-h-64 flex-1 overflow-hidden">
       <div

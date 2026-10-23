@@ -295,6 +295,7 @@ const splitModel = computed({
           <!-- Names the two sides above the image, as above the color cards' wipe. -->
           <WipeLabels
             v-if="model !== null && hasSource"
+            :split="splitModel"
             class="rounded-t"
             data-testid="preview-labels"
           />
