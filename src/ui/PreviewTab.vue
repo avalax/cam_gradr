@@ -87,7 +87,12 @@ const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
 const lut = computed(() => (model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE)));
-const hasSource = computed(() => isLive.value || still.value !== null);
+// Without a still image of its own, the preview shows the image the colors were measured on (as long
+// as the camera is off); a new capture or the live image replaces it.
+const shownStill = computed(
+  () => still.value ?? (isLive.value ? null : (camera.allStills().color ?? null)),
+);
+const hasSource = computed(() => isLive.value || shownStill.value !== null);
 const aspect = ref(16 / 9);
 const maxWidth = computed(() => maxWidthFor(aspect.value));
 
@@ -97,7 +102,7 @@ const stopLoop = shallowRef<(() => void) | null>(null);
 const stillCanvas = document.createElement('canvas');
 
 function drawStill(): void {
-  const frame = still.value;
+  const frame = shownStill.value;
   const context = stillCanvas.getContext('2d');
   if (frame !== null && context) {
     stillCanvas.width = frame.width;
@@ -106,9 +111,9 @@ function drawStill(): void {
   }
 }
 
-// Chooses the image source: this tab's still image, otherwise the live image.
+// Chooses the image source: this tab's still image, otherwise the live image or the image of the color measurement.
 function currentSource(): { image: RenderSource; width: number; height: number } | null {
-  if (still.value !== null && stillCanvas.width > 0) {
+  if (shownStill.value !== null && stillCanvas.width > 0) {
     return { image: stillCanvas, width: stillCanvas.width, height: stillCanvas.height };
   }
   const element = video.value;
@@ -185,7 +190,7 @@ watch(stream, (next) => {
   videoReady.value = false;
   attachStream(video.value, next);
 });
-watch(still, drawStill);
+watch(shownStill, drawStill);
 watch(lut, (next) => {
   if (next !== null) {
     renderer.value?.setLut(next);
