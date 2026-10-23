@@ -1,0 +1,10 @@
+{
+  "title": "Appearance",
+  "label": "Appearance of the app",
+  "options": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "hint": "System follows the setting of your device. With the dark appearance the screen throws less light on the cards, which can make the measurement steadier."
+}

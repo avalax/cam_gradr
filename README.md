@@ -92,6 +92,10 @@ values in the gear menu.
 **Can I change the language?** The app follows the language of your browser (English or German). You can
 change it in the gear menu under "Language"; the choice is remembered in your browser.
 
+**Is there a dark appearance?** Yes. In the gear menu under "Appearance" you choose System (follows
+your device), Light or Dark; the choice is remembered in your browser. A dark screen throws less light
+onto the cards, which can make the measurement steadier.
+
 **Where does my data go?** Only into your browser. Imported reference sets are stored locally in
 IndexedDB, nothing is sent anywhere. A project file with still images contains camera images; only pass
 it on if that is fine.

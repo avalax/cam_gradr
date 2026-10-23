@@ -98,7 +98,11 @@ function download(): void {
             type="button"
             role="radio"
             class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l"
-            :class="size === option ? 'bg-zinc-800 text-zinc-50' : 'bg-white text-zinc-800'"
+            :class="
+              size === option
+                ? 'bg-zinc-800 text-zinc-50'
+                : 'bg-white dark:bg-zinc-100 text-zinc-800'
+            "
             :aria-checked="size === option"
             :disabled="model === null"
             :data-testid="`export-size-${String(option)}`"
@@ -119,11 +123,11 @@ function download(): void {
           </button>
         </p>
         <div
-          class="mt-auto flex flex-wrap items-center gap-3 rounded-lg border border-zinc-300 bg-white p-3"
+          class="mt-auto flex flex-wrap items-center gap-3 rounded-lg border border-zinc-300 bg-white dark:bg-zinc-100 p-3"
         >
           <span
             aria-hidden="true"
-            class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white pb-0.5 text-[8px] font-bold"
+            class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white dark:bg-zinc-100 pb-0.5 text-[8px] font-bold"
             >.cube</span
           >
           <div class="text-sm">

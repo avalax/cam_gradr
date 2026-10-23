@@ -72,13 +72,13 @@ function onKey(event: KeyboardEvent): void {
     @keydown="onKey"
   >
     <div
-      class="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 bg-zinc-50 shadow-[0_0_0_1px_#27272a]"
+      class="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 bg-white shadow-[0_0_0_1px_#27272a]"
       :style="{ left: `${String(position)}%` }"
       data-testid="wipe-line"
     ></div>
     <!-- Round handle with a double arrow: it is clear that the line can be pulled sideways. -->
     <div
-      class="pointer-events-none absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-zinc-50 text-zinc-800 shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
+      class="pointer-events-none absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[#27272a] shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
       :style="{ left: `${String(position)}%` }"
       data-testid="wipe-grip"
     >

@@ -3,6 +3,37 @@
 @source '../index.html';
 @source './';
 
+/* Dark appearance: the page carries data-theme="dark" (see theme-store.ts). The neutral scales are
+   turned around, so every bg-zinc-100 or text-zinc-800 of the components has its dark counterpart
+   without a second class; `dark:` variants only exist where a color must not simply be turned
+   around (white surfaces, error red, the green dot). */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --page-bg: #fff;
+  --page-fg: #18181b;
+}
+
+[data-theme='dark'] {
+  --page-bg: #1c1c1f;
+  --page-fg: #e4e4e7;
+  --color-zinc-50: #1c1c1f;
+  --color-zinc-100: #27272a;
+  --color-zinc-200: #3f3f46;
+  --color-zinc-300: #52525b;
+  --color-zinc-400: #71717a;
+  --color-zinc-500: #a1a1aa;
+  --color-zinc-600: #a1a1aa;
+  --color-zinc-700: #a1a1aa;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-900: #f4f4f5;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--page-fg);
+}
+
 /* Frame around the recognized cards: pulses while still searching, draws itself during the capture. */
 @theme {
   --animate-frame-pulse: frame-pulse 0.9s ease-in-out infinite;

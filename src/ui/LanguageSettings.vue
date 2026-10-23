@@ -35,7 +35,7 @@ const options = computed<{ value: LanguagePreference; label: string }[]>(() => [
         :class="
           preference === option.value
             ? 'border-zinc-800 bg-zinc-800 text-zinc-50'
-            : 'border-zinc-400 bg-white text-zinc-800'
+            : 'border-zinc-400 bg-white dark:bg-zinc-100 text-zinc-800'
         "
         :aria-checked="preference === option.value"
         :lang="option.value === 'auto' ? undefined : option.value"

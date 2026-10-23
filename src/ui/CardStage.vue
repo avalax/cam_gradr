@@ -455,11 +455,15 @@ watch(actual, (next, previous) => {
       <slot name="side" />
     </div>
 
-    <p v-if="camera.errorMessage !== null && isLive" class="text-sm text-red-700" role="alert">
+    <p
+      v-if="camera.errorMessage !== null && isLive"
+      class="text-sm text-red-700 dark:text-red-400"
+      role="alert"
+    >
       {{ camera.errorMessage }}
     </p>
 
-    <p v-if="autoActive" class="text-sm text-slate-700" data-testid="auto-hint">
+    <p v-if="autoActive" class="text-sm text-slate-700 dark:text-slate-300" data-testid="auto-hint">
       {{ t('cards.stage.autoHint') }}
     </p>
   </div>

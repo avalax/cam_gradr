@@ -31,7 +31,7 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
     <label class="flex flex-col gap-1 text-sm">
       {{ t('camera.controls.camera') }}
       <select
-        class="rounded-md border border-zinc-400 bg-white p-1.5"
+        class="rounded-md border border-zinc-400 bg-white dark:bg-zinc-100 p-1.5"
         :value="selectedDeviceId ?? ''"
         :disabled="isStarting"
         @change="onDevice"
@@ -54,7 +54,7 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
           :class="
             keyOf(r) === keyOf(resolution)
               ? 'border-zinc-800 bg-zinc-800 text-zinc-50'
-              : 'border-zinc-400 bg-white text-zinc-800'
+              : 'border-zinc-400 bg-white dark:bg-zinc-100 text-zinc-800'
           "
           :aria-checked="keyOf(r) === keyOf(resolution)"
           :disabled="isStarting"

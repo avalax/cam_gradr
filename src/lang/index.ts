@@ -15,6 +15,7 @@ import enReport from './en/report.json' with { type: 'json' };
 import enWedge from './en/wedge.json' with { type: 'json' };
 import enSolve from './en/solve.json' with { type: 'json' };
 import enCorrection from './en/correction.json' with { type: 'json' };
+import enTheme from './en/theme.json' with { type: 'json' };
 import deApp from './de/app.json' with { type: 'json' };
 import deCamera from './de/camera.json' with { type: 'json' };
 import deSettings from './de/settings.json' with { type: 'json' };
@@ -30,6 +31,7 @@ import deReport from './de/report.json' with { type: 'json' };
 import deWedge from './de/wedge.json' with { type: 'json' };
 import deSolve from './de/solve.json' with { type: 'json' };
 import deCorrection from './de/correction.json' with { type: 'json' };
+import deTheme from './de/theme.json' with { type: 'json' };
 import { DEFAULT_LOCALE, detectLocale } from './locales';
 import type { LanguagePreference, Locale } from './locales';
 import { readPreference } from './preference';
@@ -50,6 +52,7 @@ const en = {
   wedge: enWedge,
   solve: enSolve,
   correction: enCorrection,
+  theme: enTheme,
 };
 
 const de = {
@@ -68,6 +71,7 @@ const de = {
   wedge: deWedge,
   solve: deSolve,
   correction: deCorrection,
+  theme: deTheme,
 };
 
 // `en` is the reference: its keys type every `t('…')` call, and `messages.test.ts` checks that the

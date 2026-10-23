@@ -215,7 +215,7 @@ const splitModel = computed({
 <template>
   <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
     <aside class="space-y-4 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-      <p class="text-sm text-slate-700">
+      <p class="text-sm text-slate-700 dark:text-slate-300">
         {{ t('preview.intro') }}
       </p>
       <div class="flex flex-wrap gap-2">
@@ -229,10 +229,12 @@ const splitModel = computed({
         </button>
       </div>
       <CorrectionOptions />
-      <p v-if="error !== null" class="text-sm text-red-700" role="alert">{{ error }}</p>
+      <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
+        {{ error }}
+      </p>
       <p
         v-if="renderer !== null"
-        class="text-xs text-slate-600"
+        class="text-xs text-slate-600 dark:text-slate-400"
         data-testid="preview-renderer"
         :data-renderer="renderer.kind"
       >

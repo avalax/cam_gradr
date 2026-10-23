@@ -5,13 +5,15 @@ import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useLanguageStore } from '../lang/language-store';
+import { useThemeStore } from '../theme/theme-store';
 import { useReferenceStore } from '../reference/reference-store';
 
 import CameraControls from './CameraControls.vue';
 import LanguageSettings from './LanguageSettings.vue';
 import ReferencePanel from './ReferencePanel.vue';
+import ThemeSettings from './ThemeSettings.vue';
 
-type Section = 'camera' | 'reference' | 'language';
+type Section = 'camera' | 'reference' | 'language' | 'theme';
 
 const { t } = useI18n();
 
@@ -26,6 +28,7 @@ function toggle(next: Section): void {
 const { devices, selectedDeviceId, resolution, actual } = storeToRefs(useCameraStore());
 const { selected } = storeToRefs(useReferenceStore());
 const { summary: languageSummary } = storeToRefs(useLanguageStore());
+const { summary: themeSummary } = storeToRefs(useThemeStore());
 
 const cameraSummary = computed(() => {
   const device = devices.value.find((entry) => entry.id === selectedDeviceId.value);
@@ -76,7 +79,7 @@ onBeforeUnmount(() => {
       v-if="open"
       role="dialog"
       :aria-label="t('settings.title')"
-      class="absolute right-0 top-full z-20 mt-2 max-h-[80vh] w-[min(26rem,calc(100vw-1.5rem))] overflow-auto rounded-lg border border-zinc-400 bg-white shadow-lg"
+      class="absolute right-0 top-full z-20 mt-2 max-h-[80vh] w-[min(26rem,calc(100vw-1.5rem))] overflow-auto rounded-lg border border-zinc-400 bg-white dark:bg-zinc-100 shadow-lg"
       data-testid="settings-panel"
     >
       <section aria-labelledby="camera-heading">
@@ -146,6 +149,29 @@ onBeforeUnmount(() => {
         </h2>
         <div v-if="section === 'language'" id="language-body" class="px-3 pb-3">
           <LanguageSettings />
+        </div>
+      </section>
+      <section class="border-t border-zinc-200" aria-labelledby="theme-heading">
+        <h2 id="theme-heading">
+          <button
+            type="button"
+            class="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+            :aria-expanded="section === 'theme'"
+            aria-controls="theme-body"
+            data-testid="section-theme"
+            @click="toggle('theme')"
+          >
+            <span class="text-sm font-semibold">{{ t('theme.title') }}</span>
+            <small class="ml-auto truncate text-[11px] font-normal text-zinc-500">{{
+              themeSummary
+            }}</small>
+            <span aria-hidden="true" class="text-zinc-500">{{
+              section === 'theme' ? '⌃' : '⌄'
+            }}</span>
+          </button>
+        </h2>
+        <div v-if="section === 'theme'" id="theme-body" class="px-3 pb-3">
+          <ThemeSettings />
         </div>
       </section>
     </div>

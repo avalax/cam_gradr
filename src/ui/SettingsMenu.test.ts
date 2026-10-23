@@ -61,6 +61,23 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
+  it('offers the appearance as a fourth section and shows the choice in the summary', async () => {
+    localStorage.clear();
+    const wrapper = mountAttached();
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    const theme = wrapper.get('[data-testid="section-theme"]');
+    expect(theme.attributes('aria-expanded')).toBe('false');
+    expect(wrapper.find('[data-testid="theme-options"]').exists()).toBe(false);
+
+    await theme.trigger('click');
+    expect(wrapper.get('[data-testid="section-camera"]').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.find('[data-testid="theme-options"]').exists()).toBe(true);
+
+    await wrapper.get('[data-theme-option="dark"]').trigger('click');
+    expect(wrapper.get('[data-testid="section-theme"]').text()).toContain('Dunkel');
+    wrapper.unmount();
+  });
+
   it('offers the language choice as a third section and switches the menu texts immediately', async () => {
     localStorage.clear();
     const wrapper = mountAttached();

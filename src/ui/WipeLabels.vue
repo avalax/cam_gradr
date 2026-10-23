@@ -39,12 +39,15 @@ const right = computed(() => mode(FULL - props.split));
     <span class="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-1 py-1.5">
       <template v-if="right !== 'none'">
         <template v-if="right === 'name'">{{ t('preview.labelCorrected') }}</template>
-        <i class="size-2.5 shrink-0 rounded-full bg-emerald-700" aria-hidden="true"></i>
+        <i
+          class="size-2.5 shrink-0 rounded-full bg-emerald-700 dark:bg-emerald-400"
+          aria-hidden="true"
+        ></i>
       </template>
     </span>
     <!-- The same line as the divider in the image, continued through the header. -->
     <i
-      class="pointer-events-none absolute -bottom-[3px] top-0 w-[3px] -translate-x-1/2 bg-zinc-50 shadow-[0_0_0_1px_#27272a]"
+      class="pointer-events-none absolute -bottom-[3px] top-0 w-[3px] -translate-x-1/2 bg-white shadow-[0_0_0_1px_#27272a]"
       :style="{ left: `${String(split)}%` }"
       aria-hidden="true"
       data-testid="labels-line"
