@@ -347,21 +347,29 @@ describe('Farbkarten um 180° gedreht', () => {
   // and E) runs upright from bright at the top to dark at the bottom.
   function colorGrid(rotated: boolean): PixelGrid {
     const data = new Uint8ClampedArray(200 * 100 * 4).fill(255);
-    // Colored fields are red; the gray ladder is neutral.
-    const paint = (x: number, y: number, level: number, colored: boolean) => {
+    // Colored fields are red, green or blue; the gray ladder is neutral.
+    const hues = [
+      [204, 77, 77, 255],
+      [77, 204, 77, 255],
+      [77, 77, 204, 255],
+    ];
+    const paint = (x: number, y: number, level: number, hue: number | null) => {
       const value = Math.round(level * 255);
-      data.set(colored ? [204, 77, 77, 255] : [value, value, value, 255], (y * 200 + x) * 4);
+      data.set(
+        hue === null ? [value, value, value, 255] : (hues[hue % 3] ?? []),
+        (y * 200 + x) * 4,
+      );
     };
     for (const card of colorLayout.cards) {
       const slot = (card.card === 1) === rotated ? 1 : 0;
-      for (const patch of card.patches) {
+      for (const [index, patch] of card.patches.entries()) {
         const row = Number(patch.id.at(0));
         const level = patch.role === 'neutral' ? (7 - row) / 7 : 0.4;
         const { x, y, w, h } = patch.rect;
         const [left, top] = rotated ? [1 - x - w, 1 - y - h] : [x, y];
         for (let py = Math.round(top * 100); py < Math.round((top + h) * 100); py++) {
           for (let px = Math.round(left * 100); px < Math.round((left + w) * 100); px++) {
-            paint(slot * 100 + px, py, level, patch.role !== 'neutral');
+            paint(slot * 100 + px, py, level, patch.role === 'neutral' ? null : index);
           }
         }
       }
