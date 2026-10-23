@@ -86,6 +86,9 @@ const PLAIN_KNEE_TOP = 0.9;
 // push the bright gray patches beyond 1, and everything above them would clip.
 const SHOULDER = 0.8;
 const CURVE_POINTS = 48;
+// Step sizes of the matrix fine-tuning and the maximum number of sweeps per step size.
+const REFINE_STEPS = [0.1, 0.05, 0.02, 0.01, 0.004, 0.0015];
+const REFINE_SWEEPS = 40;
 const CURVE_FLOOR = 1e-3;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
   [1, 0, 0],
@@ -294,6 +297,8 @@ function buildCurve(points: readonly (readonly [number, number])[]): Curve {
 interface Pair {
   corrected: Vec3;
   target: Vec3;
+  // Reference color (Lab) at the exposure of the shot.
+  lab: Vec3;
 }
 
 // Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
@@ -336,6 +341,62 @@ function buildPlainCurve(blocks: readonly Block[], channel: number, gain: number
   return { xs: [0, knee, 1], ys: [0, factor * knee, 1] };
 }
 
+// Matrix from its six free numbers (the third entry of each row follows from the row sum 1).
+function matrixOf(free: readonly number[]): readonly [Vec3, Vec3, Vec3] {
+  const row = (first: number, second: number): Vec3 => [first, second, 1 - first - second];
+  const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0] = free;
+  return [row(a, b), row(c, d), row(e, f)];
+}
+
+// Patch after the curves (linear) and the color it should have (Lab, at the exposure of the shot).
+interface Goal {
+  corrected: Vec3;
+  lab: Vec3;
+}
+
+function meanDeviation(free: readonly number[], goals: readonly Goal[]): number {
+  const matrix = matrixOf(free);
+  return mean(
+    goals.map((goal) => deltaE2000(srgbToLab(mixCode(matrix, goal.corrected)), goal.lab)),
+  );
+}
+
+// Nudges each of the six numbers up and down by `step` and keeps every change that lowers the
+// deviation; returns whether anything improved.
+function nudge(free: number[], step: number, goals: readonly Goal[]): boolean {
+  let improved = false;
+  let best = meanDeviation(free, goals);
+  for (let index = 0; index < free.length; index++) {
+    for (const direction of [step, -step]) {
+      const trial = free.with(index, Number(free[index]) + direction);
+      const value = meanDeviation(trial, goals);
+      if (value < best) {
+        best = value;
+        free[index] = Number(trial[index]);
+        improved = true;
+      }
+    }
+  }
+  return improved;
+}
+
+// Fine-tunes the matrix so that the mean color deviation (CIEDE2000) is smallest. The least-squares
+// start works on linear light, where a dark channel of a saturated color hardly counts: yellows lose
+// their blue difference, blues become too strong. Pattern search: the step shrinks when nothing
+// improves any more.
+function refineMatrix(
+  start: readonly [Vec3, Vec3, Vec3],
+  goals: readonly Goal[],
+): readonly [Vec3, Vec3, Vec3] {
+  const free = [start[0][0], start[0][1], start[1][0], start[1][1], start[2][0], start[2][1]];
+  for (const step of REFINE_STEPS) {
+    for (let sweep = 0; sweep < REFINE_SWEEPS && nudge(free, step, goals); sweep++) {
+      // keep nudging with the same step as long as it helps
+    }
+  }
+  return matrixOf(free);
+}
+
 const evaluators = new WeakMap<ColorModel, readonly ((x: number) => number)[]>();
 
 function curveFunctions(model: ColorModel): readonly ((x: number) => number)[] {
@@ -351,6 +412,35 @@ function toCode(value: number): number {
   return linearToSrgb(Math.min(Math.max(value, 0), 1));
 }
 
+// Pulls a linear color with negative channels back into the sRGB cube by desaturating it towards the
+// gray of the same luminance: hue and brightness stay, instead of single channels clipping at 0 and a
+// saturated color (a blue light, for example) turning harsh and glaring. Channels above 1 are simply
+// clipped, as a color that bright cannot keep its saturation anyway.
+function intoGamut([r, g, b]: Vec3): Vec3 {
+  const low = Math.min(r, g, b);
+  if (low >= 0) {
+    return [r, g, b];
+  }
+  const luminance = Math.max(0.2126 * r + 0.7152 * g + 0.0722 * b, 0);
+  const factor = luminance / (luminance - low);
+  return [
+    luminance + (r - luminance) * factor,
+    luminance + (g - luminance) * factor,
+    luminance + (b - luminance) * factor,
+  ];
+}
+
+// Mixes the curve outputs (linear) with the matrix and returns the sRGB code.
+function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3): Vec3 {
+  const [a, b, c] = matrix;
+  const [r, g, blue] = intoGamut([
+    a[0] * u[0] + a[1] * u[1] + a[2] * u[2],
+    b[0] * u[0] + b[1] * u[1] + b[2] * u[2],
+    c[0] * u[0] + c[1] * u[1] + c[2] * u[2],
+  ]);
+  return [toCode(r), toCode(g), toCode(blue)];
+}
+
 // Applies the model to an sRGB-encoded camera value and returns the corrected value.
 export function applyColorModel(model: ColorModel, code: Vec3): Vec3 {
   const [fr, fg, fb] = curveFunctions(model) as readonly [
@@ -358,13 +448,11 @@ export function applyColorModel(model: ColorModel, code: Vec3): Vec3 {
     (x: number) => number,
     (x: number) => number,
   ];
-  const u: Vec3 = [fr(srgbToLinear(code[0])), fg(srgbToLinear(code[1])), fb(srgbToLinear(code[2]))];
-  const [a, b, c] = model.matrix;
-  return [
-    toCode(a[0] * u[0] + a[1] * u[1] + a[2] * u[2]),
-    toCode(b[0] * u[0] + b[1] * u[1] + b[2] * u[2]),
-    toCode(c[0] * u[0] + c[1] * u[1] + c[2] * u[2]),
-  ];
+  return mixCode(model.matrix, [
+    fr(srgbToLinear(code[0])),
+    fg(srgbToLinear(code[1])),
+    fb(srgbToLinear(code[2])),
+  ]);
 }
 
 function mean(values: readonly number[]): number {
@@ -430,8 +518,15 @@ export function fitColorModel(input: FitInput): FitResult {
       functions[2](sample.linear[2]),
     ],
     target: [sample.target[0] * gain, sample.target[1] * gain, sample.target[2] * gain],
+    lab: scaledLab(sample.reference, gain),
   }));
-  const model: ColorModel = { curves, matrix: fitMatrix(pairs) };
+  const model: ColorModel = {
+    curves,
+    matrix: refineMatrix(
+      fitMatrix(pairs),
+      pairs.map((pair) => ({ corrected: pair.corrected, lab: pair.lab })),
+    ),
+  };
 
   const errors = all.map((sample): PatchError => {
     // The deviation is measured against the reference at the exposure of the shot.

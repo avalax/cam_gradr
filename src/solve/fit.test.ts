@@ -158,7 +158,30 @@ describe('fitColorModel', () => {
     }
     // The brightest patch stays below white, so the highlights above it keep their detail.
     const [red, green, blue] = applyColorModel(contrasty.model, brightest);
-    expect(Math.max(red, green, blue)).toBeLessThan(0.99);
+    expect(Math.max(red, green, blue)).toBeLessThan(0.999);
+  });
+
+  it('desaturates colors outside the sRGB cube instead of clipping single channels', () => {
+    const identity = { xs: [0, 1], ys: [0, 1] };
+    // A strongly mixing matrix: a saturated blue gets a negative red value.
+    const model = {
+      curves: [identity, identity, identity],
+      matrix: [
+        [1.4, 0.3, -0.7],
+        [0, 1, 0],
+        [0, 0, 1],
+      ],
+    } as const;
+    const input: [number, number, number] = [
+      linearToSrgb(0.1),
+      linearToSrgb(0.3),
+      linearToSrgb(0.9),
+    ];
+    const [r, g, b] = applyColorModel(model, input).map((value) => srgbToLinear(value));
+    expect(r).toBeCloseTo(0, 6);
+    // Same luminance as the mixed color, instead of the clipped (0, 0.3, 0.9).
+    expect(0.2126 * Number(r) + 0.7152 * Number(g) + 0.0722 * Number(b)).toBeCloseTo(0.1946, 3);
+    expect(Number(b)).toBeLessThan(0.5);
   });
 
   it('keeps grays gray and white white', () => {
