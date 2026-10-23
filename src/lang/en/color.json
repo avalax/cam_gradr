@@ -3,7 +3,6 @@
   "referenceActive": "Reference values: {name} ({count} patches). You can switch or import the set in the ⚙ menu at the top right.",
   "idle": "Hold both color cards steady where the subject will be. The size in the image does not matter.",
   "wipe": {
-    "caption": "left camera · right corrected",
     "liveCaption": "compare after the capture",
     "cameraLayer": "Camera colors",
     "correctedLayer": "Colors after correction",

@@ -128,7 +128,7 @@ describe('ColorWipe (English)', () => {
   it('shows label, layers and summary in English', () => {
     setLocale('en');
     const wrapper = mountWipe();
-    expect(wrapper.text()).toContain('left camera · right corrected');
+    expect(wrapper.get('[data-testid="color-wipe-labels"]').text()).toBe('CameraCorrected');
     expect(wrapper.get('[data-testid="color-wipe-camera"]').attributes('aria-label')).toBe(
       'Camera colors',
     );
