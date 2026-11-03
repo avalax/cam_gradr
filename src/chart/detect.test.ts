@@ -268,6 +268,102 @@ describe('detectCards', () => {
   });
 });
 
+// Sharp edges at fractions of a pixel: each pixel is covered by the share of its area that lies in
+// the rectangle (like a camera sensor integrates the light).
+interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function cover(frame: Frame, box: Box, value: number): void {
+  for (let y = Math.floor(box.y); y < Math.ceil(box.y + box.h); y++) {
+    const rows = Math.min(y + 1, box.y + box.h) - Math.max(y, box.y);
+    for (let x = Math.floor(box.x); x < Math.ceil(box.x + box.w); x++) {
+      const share = rows * (Math.min(x + 1, box.x + box.w) - Math.max(x, box.x));
+      const offset = (y * frame.width + x) * 3;
+      const blended = Number(frame.data[offset]) * (1 - share) + value * share;
+      frame.data.set([blended, blended, blended], offset);
+    }
+  }
+}
+
+// A 1280 × 720 image (downscaled by 4 for the search) with two charts at fractional positions.
+const BOXES: readonly Box[] = [
+  { x: 300.3, y: 150.6, w: 240.4, h: 360.7 },
+  { x: 700.8, y: 150.2, w: 240.6, h: 360.3 },
+];
+
+function fineScene(paint: (frame: Frame, box: Box) => void, surround = 0.6): Frame {
+  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(surround) };
+  for (const box of BOXES) {
+    paint(frame, box);
+    cover(frame, { x: box.x + 30, y: box.y + 30, w: box.w - 60, h: box.h - 60 }, 0.8);
+  }
+  return frame;
+}
+
+function expectCorners(cards: Corners[] | null, tolerance: number): void {
+  expect(cards).toHaveLength(2);
+  for (const [index, box] of BOXES.entries()) {
+    const expected = [
+      { x: box.x, y: box.y },
+      { x: box.x + box.w, y: box.y },
+      { x: box.x + box.w, y: box.y + box.h },
+      { x: box.x, y: box.y + box.h },
+    ];
+    for (const [corner, point] of expected.entries()) {
+      expect(Math.abs(Number(cards?.[index]?.[corner]?.x) - point.x)).toBeLessThan(tolerance);
+      expect(Math.abs(Number(cards?.[index]?.[corner]?.y) - point.y)).toBeLessThan(tolerance);
+    }
+  }
+}
+
+describe('detectCards at full resolution', () => {
+  it('finds the edges of the charts to a fraction of a pixel, although it searches downscaled', () => {
+    const frame = fineScene((f, box) => {
+      cover(f, box, 0.05);
+    });
+    expectCorners(detectCards(frame, 2), 0.5);
+  });
+
+  it('takes the edge of the chart, not the gray shadow of the case wall next to it', () => {
+    const frame = fineScene((f, box) => {
+      // A gray band of 9 pixels around the chart, then the light case.
+      cover(f, { x: box.x - 9, y: box.y - 9, w: box.w + 18, h: box.h + 18 }, 0.2);
+      cover(f, box, 0.05);
+    });
+    expectCorners(detectCards(frame, 2), 0.5);
+  });
+
+  it('takes the middle of a slow ramp, as a bright shot blurs the edge', () => {
+    const frame = fineScene((f, box) => {
+      // Twelve rings, each a bit darker, from the case down to the frame.
+      for (let ring = 6; ring > -6; ring--) {
+        const value = 0.6 - (0.55 * (6 - ring)) / 12;
+        cover(
+          f,
+          { x: box.x - ring, y: box.y - ring, w: box.w + 2 * ring, h: box.h + 2 * ring },
+          value,
+        );
+      }
+      cover(f, { x: box.x + 6, y: box.y + 6, w: box.w - 12, h: box.h - 12 }, 0.05);
+    });
+    // Within a ramp of 12 pixels the edge is only known roughly; the foot of the ramp, which the
+    // first step alone would take, lies about 5 pixels inside.
+    expectCorners(detectCards(frame, 2), 2.5);
+  });
+
+  it('keeps the edge of the downscaled search where the surround is hardly brighter', () => {
+    // The surround only slightly brighter than the frame: still found, but not refined.
+    const frame = fineScene((f, box) => {
+      cover(f, box, 0.08);
+    }, 0.12);
+    expectCorners(detectCards(frame, 2), 8);
+  });
+});
+
 describe('detectOutlines', () => {
   it('returns both charts as soon as both are there, like detectCards', () => {
     const frame = scene((f) => {
