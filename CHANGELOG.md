@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.5.1...cam-gradr-v1.6.0) (2026-11-03)
+
+
+### Features
+
+* corner points without numbers ([#59](https://github.com/avalax/cam_gradr/issues/59)) ([1a1c409](https://github.com/avalax/cam_gradr/commit/1a1c4093bae34795414244584bccd895e194bba5))
+* saving suggests the project file loaded or saved last ([#60](https://github.com/avalax/cam_gradr/issues/60)) ([439db0d](https://github.com/avalax/cam_gradr/commit/439db0d44bbdbdded42efbda79edd7bf901842ae))
+
 ## [1.5.1](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.5.0...cam-gradr-v1.5.1) (2026-11-03)
 
 
