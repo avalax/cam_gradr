@@ -406,22 +406,6 @@ watch(actual, (next, previous) => {
               class="cursor-move"
               @pointerdown.stop="dragging = { card: handle.card, index: handle.index }"
             />
-            <text
-              v-for="handle in handles"
-              :key="`label-${String(handle.card)}-${String(handle.index)}`"
-              :x="handle.point.x + 12"
-              :y="handle.point.y - 12"
-              fill="#ffffff"
-              stroke="#0f172a"
-              stroke-width="4"
-              paint-order="stroke"
-              font-size="22"
-              font-weight="bold"
-              pointer-events="none"
-              data-testid="corner-label"
-            >
-              {{ handle.index + 1 }}
-            </text>
           </svg>
           <p
             v-if="showWrong && frameBox !== null"
