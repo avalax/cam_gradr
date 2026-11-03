@@ -19,11 +19,12 @@ export default defineConfig({
         'src/data/**',
         'src/test-support/**',
       ],
+      // Everything is covered; code that no test can reach is dead and is removed instead.
       thresholds: {
-        statements: 99,
-        branches: 99,
-        functions: 99,
-        lines: 99,
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
       },
     },
   },

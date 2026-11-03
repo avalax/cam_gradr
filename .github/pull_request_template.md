@@ -9,6 +9,6 @@
 
 ## Checked
 
-- [ ] `npm run verify` is green (lint, typecheck, tests, coverage of at least 99%)
+- [ ] `npm run verify` is green (lint, typecheck, tests, coverage of 100%)
 - [ ] `npm run e2e` is green, with a new or adapted scenario for changes to the UI
 - [ ] No manufacturer data (reference values) and no images in the pull request

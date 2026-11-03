@@ -51,7 +51,7 @@ A single-page web app (purely client-side, no backend) that captures a Datacolor
 - Target browsers: current Chrome/Edge, Firefox, Safari (WebGL2).
 - Responsive, but primarily desktop. The page and the camera image use the full window width.
 - Testable color math (unit tests with reference values).
-- **Code coverage of at least 99%**, verified continuously (locally, via hook and in the CI), see section 8.
+- **Code coverage of 100%** (statements, branches, functions, lines), verified continuously (locally, via hook and in the CI), see section 8.
 - Automated pipeline on GitHub with changelog and automatic releases, see section 10.
 - **Playwright acceptance tests** for the complete user story, extended incrementally with every milestone and held to the same quality requirements as the app, see section 9.
 - Notes on limitations: 8-bit webcam, automatic functions of the camera, lighting (flicker, mixed light), reflections on the card.
@@ -70,7 +70,7 @@ A single-page web app (purely client-side, no backend) that captures a Datacolor
 | Math                        | **ml-matrix** (least squares / SVD)                                                                                          | small lib for regression                    |
 | Color model                 | own modules (sRGB↔XYZ↔Lab, Bradford, ΔE2000), verified against **colorjs.io** in tests                                       | verifiable                                  |
 | Charts                      | **uPlot** or SVG (tone curve, ΔE bars)                                                                                       | lightweight                                 |
-| Tests                       | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (coverage ≥ 99%)                                            | fits Vite                                   |
+| Tests                       | **Vitest** + `@vitest/coverage-v8`, `@vue/test-utils`, happy-dom (coverage 100%)                                             | fits Vite                                   |
 | Acceptance tests            | **Playwright** (`@playwright/test`, Chromium, synthetic camera via Y4M video), `eslint-plugin-playwright`                    | real browser, whole user story              |
 | Lint/format                 | ESLint 9 (strict, type-aware, Vue, a11y, Unicorn …), Prettier, Stylelint, markdownlint, knip, Husky, lint-staged, commitlint | see section 8                               |
 | CI/CD                       | **GitHub Actions**, release-please, GitHub Pages, Dependabot                                                                 | see section 10                              |
@@ -134,16 +134,16 @@ The shader math is additionally secured by a TypeScript reference implementation
 
 **Reference values and menu:** A gear menu at the top right bundles camera settings and reference values as an accordion (always one section open, when collapsed a short summary on the right such as "Default camera · 1280 × 720"; the resolution is chosen with chips, the note about the camera's automatic functions is a gray info box) (saving and loading the project has been located there since the rework of the Export tab; it closes with Escape, a click outside or the gear). The bundled set (unofficial transcription, source linked) is always loaded at startup and preselected, but cannot be deleted; an own set of the same name takes precedence. The menu also offers file import and `Download set` (JSON `cam_gradr-reference/1`); the Color cards tab shows only the active set. Fetching from an internet address was deliberately not implemented.
 
-## 8. Quality assurance (code coverage ≥ 99%)
+## 8. Quality assurance (code coverage 100%)
 
-- **Vitest** with `@vitest/coverage-v8`; thresholds in `vitest.config.ts`: `statements`, `branches`, `functions`, `lines` each **99%**. Falling below makes the test run fail.
+- **Vitest** with `@vitest/coverage-v8`; thresholds in `vitest.config.ts`: `statements`, `branches`, `functions`, `lines` each **100%** (99% at first, raised once everything was covered). Falling below makes the test run fail. Code that no test can reach is dead and is removed rather than worked around.
 - The coverage is verified continuously during development, not only at the end:
-  - every milestone only counts as done when `npm run test:coverage` holds the 99%,
+  - every milestone only counts as done when `npm run test:coverage` holds the 100%,
   - a local hook (Husky) runs lint, typecheck and coverage check before `git push`,
   - CI (see section 10) checks the same on every push and pull request.
 - Types of tests: unit tests for color math, solver, LUT generation and exporter (reference values, edge cases); component tests with **@vue/test-utils** and **happy-dom**; test images are generated synthetically in the test, no photos are checked into the repo (image files are excluded in `.gitignore`); camera, WebGL and canvas are mocked behind thin adapters so that the logic stays testable.
 - Exclusions from the coverage are narrowly scoped (e.g. the pure entry file `main.ts`, type declarations) and justified in the config; exclusions are not used to reach the threshold.
-- Borderline case WebGL/camera: The adapters stay as thin as possible and are tested with fake objects so that they are included in the 99% measurement. Pure shader source (GLSL) does not count as code; its math is additionally tested as a TypeScript reference implementation that computes the same interpolation.
+- Borderline case WebGL/camera: The adapters stay as thin as possible and are tested with fake objects so that they are included in the 100% measurement. Pure shader source (GLSL) does not count as code; its math is additionally tested as a TypeScript reference implementation that computes the same interpolation.
 - The coverage report (lcov + text) is stored in the CI as an artifact; a badge in the README shows the state.
 
 ### Linting & static analysis (best practices)
@@ -180,14 +180,14 @@ The complete user story is tested end to end in a real browser with **Playwright
 - **Status M5:** `export-and-project.spec.ts` with 9 scenarios (hint without color correction, downloaded `.cube` file corrects the colors, size selection, save project and load it after reloading, project without a reference set, faulty file, project without color correction, preview after loading).
 - **Planned:** at the end, a continuous scenario "from camera start to the LUT file".
 - **Quality requirements as for the app:** same lint rules (ESLint strict plus `eslint-plugin-playwright`), Prettier, strict TypeScript checking (`e2e/` is part of `vue-tsc`), knip, commit conventions and hooks. In the CI, a separate job `acceptance` (required check for `main`) runs with installation of Chrome and Firefox and a report artifact on failures.
-- **Coverage requirement:** The 99% code coverage applies to the unit tests. For the acceptance tests, the sensible equivalent is the **coverage of the user story**: every step and every error case of the story has at least one scenario, and a scenario may only be skipped with justification (`test.fixme`/`skip` are forbidden, `forbidOnly` is active in the CI). A measurable browser code coverage of the E2E runs is not planned.
+- **Coverage requirement:** The 100% code coverage applies to the unit tests. For the acceptance tests, the sensible equivalent is the **coverage of the user story**: every step and every error case of the story has at least one scenario, and a scenario may only be skipped with justification (`test.fixme`/`skip` are forbidden, `forbidOnly` is active in the CI). A measurable browser code coverage of the E2E runs is not planned.
 - **Locally:** `npm run e2e:install` (once, installs Firefox; Google Chrome must be installed locally, the CI installs both), `npm run e2e`; `npm run verify:all` runs unit and acceptance tests together. The pre-push hook runs only `verify`, so that pushes stay fast; the acceptance tests run bindingly in the CI.
 
 ## 10. CI/CD & releases (GitHub)
 
 - **Repository:** GitHub, default branch `main`. The local Git history already exists (plan, layout files); afterwards the user creates the GitHub repo and pushes.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), checked by **commitlint** (locally via Husky and in the CI for pull requests).
-- **CI workflow** (`.github/workflows/ci.yml`, on push and pull request): install (`npm ci`, cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier check → `vue-tsc` typecheck → knip → `npm audit` → Vitest with coverage threshold 99% → production build. In parallel, the job `acceptance` runs with the Playwright acceptance tests (section 9). Node LTS version pinned.
+- **CI workflow** (`.github/workflows/ci.yml`, on push and pull request): install (`npm ci`, cache) → ESLint (`--max-warnings 0`) → Stylelint → markdownlint → actionlint → Prettier check → `vue-tsc` typecheck → knip → `npm audit` → Vitest with coverage threshold 100% → production build. In parallel, the job `acceptance` runs with the Playwright acceptance tests (section 9). Node LTS version pinned.
 - **Changelog & releases:** **release-please** (GitHub Action) reads the Conventional Commits, maintains `CHANGELOG.md` and opens a release PR with a version bump (SemVer). On merge, a Git tag and GitHub release with a changelog entry and an attached build artifact (zip of `dist/`) are created automatically.
   - Note: Pull requests created with the default `GITHUB_TOKEN` do not trigger further workflows. So that the CI also runs on the release PR, release-please needs its own token (personal access token or GitHub App), which the user stores as a repo secret.
 - **Deployment:** After a release, automatic publication on **GitHub Pages** (static build, HTTPS is required for the camera). The deploy job runs in the same workflow as release-please (condition: a release was created), because a release created with the `GITHUB_TOKEN` does not start a separate workflow.
