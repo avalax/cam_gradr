@@ -69,7 +69,7 @@ export function xyzD50ToLab([x, y, z]: Vec3): Vec3 {
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
 }
 
-export function labToXyzD50([l, a, b]: Vec3): Vec3 {
+function labToXyzD50([l, a, b]: Vec3): Vec3 {
   const fy = (l + 16) / 116;
   const fx = fy + a / 500;
   const fz = fy - b / 200;
@@ -96,6 +96,12 @@ export function labToSrgb(lab: Vec3): Vec3 {
 // CIE Lab (D50) -> linear sRGB value (D65), unclamped.
 export function labToLinearSrgb(lab: Vec3): Vec3 {
   return xyzD50ToLinearSrgb(labToXyzD50(lab));
+}
+
+// Lab color with its linear light scaled by `gain` (the same color at a different exposure).
+export function scaleLab(lab: Vec3, gain: number): Vec3 {
+  const [x, y, z] = labToXyzD50(lab);
+  return xyzD50ToLab([x * gain, y * gain, z * gain]);
 }
 
 const DEG = Math.PI / 180;

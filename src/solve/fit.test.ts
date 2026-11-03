@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
-import { labToLinearSrgb, srgbToLab } from '../color/lab';
+import { labToLinearSrgb, labToSrgb, srgbToLab } from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
@@ -256,6 +256,51 @@ describe('fitColorModel', () => {
     expect(Math.abs(corrected[1] - gray[1])).toBeLessThan(0.05);
     // The deviation is measured at the exposure of the shot, so the dark shot is not punished.
     expect(fit.report.meanBefore).toBeLessThan(10);
+    // The report names that exposure: half as bright as the normal shot.
+    expect(fit.report.exposureGain / result.report.exposureGain).toBeCloseTo(0.5, 1);
+  });
+
+  it('leaves a camera that already shows the reference colors almost unchanged, tinted grays too', () => {
+    // The gray ramp of the bundled set is slightly warm. A camera that shows it like that needs no
+    // correction; only patches outside the sRGB gamut (such as 1F) cannot be shown exactly.
+    const real = bundledReference();
+    const exact = Object.fromEntries(
+      Object.entries(real.patches).map(([id, lab]) => [id, labToSrgb(lab)]),
+    );
+    const fit = fitColorModel({ measurements: exact, reference: real, neutralIds: NEUTRAL_IDS });
+    expect(fit.report.neutral?.meanAfter).toBeLessThan(0.5);
+    expect(fit.report.meanAfter).toBeLessThan(0.5);
+    for (const value of applyColorModel(fit.model, [1, 1, 1])) {
+      expect(value).toBeCloseTo(1, 6);
+    }
+  });
+
+  it('keeps a clipped white white although the camera has a color cast', () => {
+    // A camera with a strong blue cast, slightly overexposed: blue clips first in the bright patches.
+    const cast: Vec3 = [0.8, 1, 1.25];
+    const real = bundledReference();
+    const tinted = Object.fromEntries(
+      Object.entries(real.patches).map(([id, lab]) => [
+        id,
+        labToLinearSrgb(lab).map((value, channel) =>
+          linearToSrgb(Math.min(Math.max(value * 1.1 * Number(cast[channel]), 0), 1)),
+        ) as unknown as Rgb,
+      ]),
+    );
+    for (const tone of [true, false]) {
+      const fit = fitColorModel({
+        measurements: tinted,
+        reference: real,
+        neutralIds: NEUTRAL_IDS,
+        tone,
+      });
+      for (const value of applyColorModel(fit.model, [1, 1, 1])) {
+        expect(value).toBeCloseTo(1, 6);
+      }
+      // A bright, saturated color with one dark channel is not pulled towards white.
+      const yellow = applyColorModel(fit.model, [1, 0.95, 0.2]);
+      expect(yellow[2]).toBeLessThan(0.5);
+    }
   });
 
   it('builds smooth tone curves that never raise a value by more than the gain limit', () => {

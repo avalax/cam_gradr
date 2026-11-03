@@ -1,5 +1,5 @@
 import { t } from '../lang';
-import { deltaE2000, labToLinearSrgb, labToXyzD50, srgbToLab, xyzD50ToLab } from '../color/lab';
+import { deltaE2000, labToLinearSrgb, scaleLab, srgbToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Rgb } from '../chart/types';
@@ -43,6 +43,9 @@ interface FitReport {
   color: GroupStats | null;
   // Neutral patches the camera can no longer tell apart (compressed or clipped highlights).
   indistinct: string[];
+  // Factor by which the shot is brighter (>1) or darker (<1) than the reference in the mid tones.
+  // The deviations are measured against the reference at this exposure.
+  exposureGain: number;
 }
 
 export interface FitResult {
@@ -78,6 +81,15 @@ const EXPOSURE_TO = 0.6;
 const MAX_DEGREE = 2;
 // Largest brightening or darkening of a tone curve (factor), also beyond the measured range.
 const MAX_GAIN = 1.5;
+// Camera values whose darkest channel lies above this (sRGB code) are close to clipping in every
+// channel: the corrected color is blended towards white there and reaches it at (1, 1, 1). A clipped
+// white pixel must stay white instead of taking on the white balance as a color. The channel curves
+// alone cannot ensure this, as the channels of a camera clip at different brightnesses.
+const CLIP_KNEE = 0.96;
+// Weak pull of the matrix fine-tuning toward the identity matrix (per squared deviation of its six
+// free numbers, in ΔE2000): when the patches hardly differ, tiny gains would otherwise let the matrix
+// drift into strong channel mixing.
+const REFINE_RIDGE = 0.2;
 // Without the tone correction the curve is a straight line up to this knee (at most this value after
 // the factor), then it bends to white.
 const PLAIN_KNEE = 0.5;
@@ -114,16 +126,15 @@ function samples(input: FitInput): Sample[] {
   for (const [id, lab] of Object.entries(input.reference.patches)) {
     const measured = input.measurements[id];
     if (measured !== undefined) {
-      const isNeutral = input.neutralIds.has(id);
-      const gray = labToXyzD50(lab)[1];
       result.push({
         id,
         measured,
         reference: lab,
         linear: [srgbToLinear(measured[0]), srgbToLinear(measured[1]), srgbToLinear(measured[2])],
-        // Neutral patches target a pure gray of the same lightness.
-        target: isNeutral ? [gray, gray, gray] : labToLinearSrgb(lab),
-        isNeutral,
+        // The neutral patches, too, target their reference color and not a pure gray: the gray ramp
+        // of a card is slightly tinted, and a camera that shows it correctly must stay unchanged.
+        target: labToLinearSrgb(lab),
+        isNeutral: input.neutralIds.has(id),
       });
     }
   }
@@ -133,12 +144,21 @@ function samples(input: FitInput): Sample[] {
 interface Block {
   ids: string[];
   count: number;
+  // Sums over the patches of the block: camera values and targets, both linear, per channel.
   linear: [number, number, number];
-  target: number;
+  target: [number, number, number];
 }
 
 function blockLevel(block: Block): number {
   return (block.linear[0] + block.linear[1] + block.linear[2]) / (3 * block.count);
+}
+
+function targetLevel(block: Block): number {
+  return (block.target[0] + block.target[1] + block.target[2]) / (3 * block.count);
+}
+
+function sumOf(first: Vec3, second: Vec3): [number, number, number] {
+  return [first[0] + second[0], first[1] + second[1], first[2] + second[2]];
 }
 
 // Merges the topmost block with the one below as long as the camera cannot tell them apart.
@@ -149,16 +169,12 @@ function mergeFlatTop(blocks: Block[]): void {
     return;
   }
   const rise = blockLevel(top) - blockLevel(below);
-  const wanted = top.target / top.count - below.target / below.count;
+  const wanted = targetLevel(top) - targetLevel(below);
   if (rise < MIN_RESPONSE_SLOPE * wanted) {
     below.ids.push(...top.ids);
     below.count += top.count;
-    below.target += top.target;
-    below.linear = [
-      below.linear[0] + top.linear[0],
-      below.linear[1] + top.linear[1],
-      below.linear[2] + top.linear[2],
-    ];
+    below.target = sumOf(below.target, top.target);
+    below.linear = sumOf(below.linear, top.linear);
     blocks.pop();
     mergeFlatTop(blocks);
   }
@@ -168,14 +184,15 @@ function mergeFlatTop(blocks: Block[]): void {
 // compressed, or the measured values even drop again). Otherwise the three channels order these
 // patches differently, and the curves produce a color cast. All channels share the same blocks.
 function poolNeutrals(neutrals: readonly Sample[]): Block[] {
-  const sorted = neutrals.toSorted((a, b) => a.target[0] - b.target[0]);
+  const level = (sample: Sample): number => mean(sample.target);
+  const sorted = neutrals.toSorted((a, b) => level(a) - level(b));
   const blocks: Block[] = [];
   for (const sample of sorted) {
     blocks.push({
       ids: [sample.id],
       count: 1,
       linear: [...sample.linear],
-      target: sample.target[0],
+      target: [...sample.target],
     });
     mergeFlatTop(blocks);
   }
@@ -183,13 +200,16 @@ function poolNeutrals(neutrals: readonly Sample[]): Block[] {
 }
 
 // Geometric mean, over the mid tones of the gray ramp, of the factor by which the camera level
-// (taken from `level`) lies above the target.
-function midGain(blocks: readonly Block[], level: (block: Block) => number): number {
+// (taken from `level`) lies above the target (taken from `target`).
+function midGain(
+  blocks: readonly Block[],
+  level: (block: Block) => number,
+  target: (block: Block) => number,
+): number {
   const logs = blocks
-    .map((block) => ({ level: level(block), target: block.target / block.count }))
-    .filter(
-      (entry) => entry.level > 0 && entry.target >= EXPOSURE_FROM && entry.target <= EXPOSURE_TO,
-    )
+    .filter((block) => targetLevel(block) >= EXPOSURE_FROM && targetLevel(block) <= EXPOSURE_TO)
+    .map((block) => ({ level: level(block), target: target(block) }))
+    .filter((entry) => entry.level > 0 && entry.target > 0)
     .map((entry) => Math.log(entry.level / entry.target));
   return logs.length === 0 ? 1 : Math.exp(mean(logs));
 }
@@ -198,13 +218,7 @@ function midGain(blocks: readonly Block[], level: (block: Block) => number): num
 // Scaling the reference by it keeps the exposure of the shot (only color cast and tone curve are
 // corrected, not the brightness).
 function exposureGain(blocks: readonly Block[]): number {
-  return midGain(blocks, blockLevel);
-}
-
-// Reference color (Lab) with the exposure gain applied to its linear light.
-function scaledLab(lab: Vec3, gain: number): Vec3 {
-  const [x, y, z] = labToXyzD50(lab);
-  return xyzD50ToLab([x * gain, y * gain, z * gain]);
+  return midGain(blocks, blockLevel, targetLevel);
 }
 
 // Solves a small symmetric positive definite system given as its augmented matrix (n rows of
@@ -299,6 +313,8 @@ function buildCurve(points: readonly (readonly [number, number])[]): Curve {
 // Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
 // weak regularization toward the identity matrix.
 interface Pair {
+  // Camera value (sRGB-encoded) and its tone curve output (linear).
+  measured: Vec3;
   corrected: Vec3;
   target: Vec3;
   // Reference color (Lab) at the exposure of the shot.
@@ -340,7 +356,8 @@ function fitMatrix(pairs: readonly Pair[]): readonly [Vec3, Vec3, Vec3] {
 // turns every blown-out highlight into a colored one.
 function buildPlainCurve(blocks: readonly Block[], channel: number, gain: number): Curve {
   const level = (block: Block): number => Number(block.linear[channel]) / block.count;
-  const factor = Math.min(Math.max(gain / midGain(blocks, level), 1 / MAX_GAIN), MAX_GAIN);
+  const target = (block: Block): number => Number(block.target[channel]) / block.count;
+  const factor = Math.min(Math.max(gain / midGain(blocks, level, target), 1 / MAX_GAIN), MAX_GAIN);
   const knee = Math.min(PLAIN_KNEE, PLAIN_KNEE_TOP / factor);
   return { xs: [0, knee, 1], ys: [0, factor * knee, 1] };
 }
@@ -356,18 +373,27 @@ function chromaOf([, a, b]: Vec3): number {
   return Math.hypot(a, b);
 }
 
+// Free numbers of the identity matrix (see matrixOf).
+const IDENTITY_FREE = [1, 0, 0, 1, 0, 0] as const;
+
 // Mean color deviation plus a penalty for colors that come out more saturated than the reference
 // (by more than SATURATION_LIMIT): too much saturation looks worse than too little at the same
-// deviation, and a matrix that makes blues glare is not a good compromise.
+// deviation, and a matrix that makes blues glare is not a good compromise. The weak pull toward the
+// identity (REFINE_RIDGE) keeps the matrix calm where the patches do not decide it.
 function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
   const matrix = matrixOf(free);
-  return mean(
+  const deviation = mean(
     goals.map((goal) => {
-      const lab = srgbToLab(mixCode(matrix, goal.corrected));
+      const lab = srgbToLab(towardsWhite(goal.measured, mixCode(matrix, goal.corrected)));
       const excess = Math.max(0, chromaOf(lab) - SATURATION_LIMIT * chromaOf(goal.lab));
       return deltaE2000(lab, goal.lab) + SATURATION_PENALTY * excess;
     }),
   );
+  const pull = free.reduce(
+    (sum, value, index) => sum + (value - Number(IDENTITY_FREE[index])) ** 2,
+    0,
+  );
+  return deviation + REFINE_RIDGE * pull;
 }
 
 // Nudges each of the six numbers up and down by `step` and keeps every change that lowers the
@@ -467,10 +493,24 @@ function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3): Vec3 {
   return [toCode(r), toCode(g), toCode(blue)];
 }
 
+// Blends the corrected value (sRGB code) of a camera value close to clipping in all channels
+// smoothly towards white (see CLIP_KNEE).
+function towardsWhite(code: Vec3, corrected: Vec3): Vec3 {
+  const darkest = Math.min(...code);
+  if (darkest <= CLIP_KNEE) {
+    return corrected;
+  }
+  const t = Math.min((darkest - CLIP_KNEE) / (1 - CLIP_KNEE), 1);
+  const weight = t * t * (3 - 2 * t);
+  const [r, g, b] = corrected;
+  return [r + (1 - r) * weight, g + (1 - g) * weight, b + (1 - b) * weight];
+}
+
 // Applies the model to an sRGB-encoded camera value and returns the corrected value.
 export function applyColorModel(model: ColorModel, code: Vec3): Vec3 {
   const linear: Vec3 = [srgbToLinear(code[0]), srgbToLinear(code[1]), srgbToLinear(code[2])];
-  return mixCode(model.matrix, curveLinear(curveFunctions(model), linear));
+  const mixed = mixCode(model.matrix, curveLinear(curveFunctions(model), linear));
+  return towardsWhite(code, mixed);
 }
 
 function mean(values: readonly number[]): number {
@@ -487,7 +527,11 @@ function groupStats(errors: readonly PatchError[]): GroupStats | null {
       };
 }
 
-function summarize(errors: readonly PatchError[], indistinct: string[]): FitReport {
+function summarize(
+  errors: readonly PatchError[],
+  indistinct: string[],
+  exposureGain: number,
+): FitReport {
   const before = errors.map((error) => error.before);
   const after = errors.map((error) => error.after);
   return {
@@ -499,6 +543,7 @@ function summarize(errors: readonly PatchError[], indistinct: string[]): FitRepo
     neutral: groupStats(errors.filter((error) => error.neutral)),
     color: groupStats(errors.filter((error) => !error.neutral)),
     indistinct,
+    exposureGain,
   };
 }
 
@@ -518,7 +563,7 @@ export function fitColorModel(input: FitInput): FitResult {
       : buildCurve(
           blocks.map((block) => [
             Number(block.linear[channel]) / block.count,
-            shoulder((gain * block.target) / block.count),
+            shoulder((gain * Number(block.target[channel])) / block.count),
           ]),
         ),
   ) as unknown as ColorModel['curves'];
@@ -526,15 +571,16 @@ export function fitColorModel(input: FitInput): FitResult {
   const draft: ColorModel = { curves, matrix: IDENTITY };
   const functions = curveFunctions(draft);
   const pairs = all.map((sample): Pair => ({
+    measured: sample.measured,
     corrected: curveLinear(functions, sample.linear),
     target: [sample.target[0] * gain, sample.target[1] * gain, sample.target[2] * gain],
-    lab: scaledLab(sample.reference, gain),
+    lab: scaleLab(sample.reference, gain),
   }));
   const model: ColorModel = { curves, matrix: refineMatrix(fitMatrix(pairs), pairs) };
 
   const errors = all.map((sample): PatchError => {
     // The deviation is measured against the reference at the exposure of the shot.
-    const reference = scaledLab(sample.reference, gain);
+    const reference = scaleLab(sample.reference, gain);
     return {
       id: sample.id,
       reference,
@@ -545,5 +591,5 @@ export function fitColorModel(input: FitInput): FitResult {
     };
   });
   const indistinct = blocks.filter((block) => block.count > 1).flatMap((block) => block.ids);
-  return { model, report: summarize(errors, indistinct) };
+  return { model, report: summarize(errors, indistinct, gain) };
 }

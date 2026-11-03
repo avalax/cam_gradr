@@ -33,7 +33,7 @@ export interface ExposureInput {
   stripLight: Rgb;
 }
 
-type Verdict = 'too-dark' | 'ok' | 'too-bright' | 'high-contrast';
+type Verdict = 'too-dark' | 'ok' | 'too-bright' | 'high-contrast' | 'low-contrast';
 
 export interface ExposureResult {
   verdict: Verdict;
@@ -77,6 +77,15 @@ function pickVerdict(
   return delta < -tolerance ? 'too-dark' : 'ok';
 }
 
+// With the brightness right, the contrast decides: the shot is only ok within the normal range of
+// both axes of the measuring field.
+function contrastVerdict(verdict: Verdict, contrast: number, tolerance: number): Verdict {
+  if (verdict !== 'ok' || Math.abs(contrast) <= tolerance) {
+    return verdict;
+  }
+  return contrast > 0 ? 'high-contrast' : 'low-contrast';
+}
+
 export function assessExposure(
   input: ExposureInput,
   config: ExposureConfig = DEFAULT_EXPOSURE_CONFIG,
@@ -87,8 +96,9 @@ export function assessExposure(
   const contrast = level50 - level18 - (config.target50 - config.target18);
   const highlightsClipped = Math.max(...input.stripLight) >= config.highlightClip;
   const shadowsCrushed = codeLuma(input.stripDark) <= config.shadowFloor;
+  const verdict = pickVerdict(highlightsClipped, shadowsCrushed, delta, config.tolerance);
   return {
-    verdict: pickVerdict(highlightsClipped, shadowsCrushed, delta, config.tolerance),
+    verdict: contrastVerdict(verdict, contrast, config.contrastTolerance),
     highlightsClipped,
     shadowsCrushed,
     level18,
