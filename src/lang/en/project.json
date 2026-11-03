@@ -40,6 +40,8 @@
     "stillsObject": "Still images: an object is expected",
     "stillsTab": "Still images: unknown tab \"{key}\"",
     "frameUnreadable": "A still image in the file cannot be read",
-    "frameWrongSize": "A still image in the file does not have the stated size"
+    "frameWrongSize": "A still image in the file does not have the stated size",
+    "saveFailed": "The project could not be saved: {reason}",
+    "openFailed": "The project file could not be opened: {reason}"
   }
 }

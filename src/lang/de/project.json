@@ -40,6 +40,8 @@
     "stillsObject": "Standbilder: erwartet wird ein Objekt",
     "stillsTab": "Standbilder: unbekannter Tab \"{key}\"",
     "frameUnreadable": "Ein Standbild in der Datei lässt sich nicht lesen",
-    "frameWrongSize": "Ein Standbild in der Datei hat nicht die angegebene Größe"
+    "frameWrongSize": "Ein Standbild in der Datei hat nicht die angegebene Größe",
+    "saveFailed": "Das Projekt ließ sich nicht speichern: {reason}",
+    "openFailed": "Die Projektdatei ließ sich nicht öffnen: {reason}"
   }
 }

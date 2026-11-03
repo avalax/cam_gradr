@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { fileDialogs } from '../project/project-file';
 import { useProjectStore } from '../project/project-store';
 
 const { t } = useI18n();
@@ -15,11 +16,22 @@ async function save(): Promise<void> {
   await project.save({ withStills: withStills.value });
 }
 
+// Where the browser has the system dialogs (Chrome, Edge), the file is chosen there instead of in
+// the file input: only then can saving return to its folder. The click reaches the input from the
+// label as well as from the keyboard.
+async function choose(event: MouseEvent): Promise<void> {
+  const dialogs = fileDialogs();
+  if (dialogs !== null) {
+    event.preventDefault();
+    await project.open(dialogs);
+  }
+}
+
 async function onFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file !== undefined) {
-    await project.load(await file.text());
+    await project.load(await file.text(), { name: file.name });
   }
   // The same file should be selectable again.
   input.value = '';
@@ -50,6 +62,7 @@ async function onFile(event: Event): Promise<void> {
           accept=".json,application/json"
           class="sr-only"
           data-testid="project-file"
+          @click="choose"
           @change="onFile"
         />
       </label>

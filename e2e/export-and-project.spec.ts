@@ -120,6 +120,35 @@ test.describe('Project', () => {
     await expect(app.page.getByTestId('export-download')).toBeVisible();
   });
 
+  test('Saving after loading suggests the name of the loaded file', async ({ app }) => {
+    await app.computeColorModel();
+    const { text } = await app.saveProject();
+    await app.page.reload();
+    await app.loadProject(text, 'mein-projekt.json');
+    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
+
+    const resaved = await app.saveProject();
+    expect(resaved.fileName).toBe('mein-projekt.json');
+  });
+
+  test('With the file dialogs of Chrome and Edge, saving opens in the folder of the loaded file', async ({
+    app,
+  }) => {
+    await app.useFileDialogs();
+    await app.computeColorModel();
+    const text = await app.saveProjectInDialog();
+    await app.setOpenedText(text);
+
+    await app.page.getByText('Projekt laden').click();
+    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
+    await app.saveProjectInDialog();
+
+    expect(await app.saveDialogs()).toEqual([
+      { suggestedName: 'cam_gradr-project.json', startsInOpened: false, startsIn: false },
+      { suggestedName: 'mein-projekt.json', startsInOpened: true, startsIn: true },
+    ]);
+  });
+
   test('Without the reference set the saved model remains usable', async ({ app }) => {
     await app.computeColorModel();
     const { text } = await app.saveProject();
