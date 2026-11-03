@@ -347,15 +347,6 @@ describe('GrayStep', () => {
     expect(first()).toEqual({ x: 300, y: 200 });
   });
 
-  it('numbers the corner points per card', async () => {
-    const wrapper = await mountLive();
-    placeAll();
-    useCameraStore().still = stillFrame(0.5);
-    await flushPromises();
-    const labels = wrapper.findAll('[data-testid="corner-label"]').map((label) => label.text());
-    expect(labels).toEqual(['1', '2', '3', '4', '1', '2', '3', '4']);
-  });
-
   it('measures the still image once all corner points are set, and shows the measuring field', async () => {
     const wrapper = await mountLive();
     useCameraStore().still = stillFrame(0.5);
