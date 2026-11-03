@@ -10,7 +10,8 @@ import type { Corners, Point } from './types';
 // this, and skew and perspective are preserved). If a side is not straight (blurred image) or
 // the charts do not match each other, nothing counts as detected. Which brightness is "dark"
 // depends on the light, so all thresholds are tried and the cleanest matching group of charts
-// is taken.
+// is taken. In the downscaled image an edge is only known to a pixel there (several pixels of the
+// image), so each side is measured again at full resolution, along profiles across the edge.
 const MAX_WIDTH = 320;
 const THRESHOLDS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45] as const;
 // Minimum size of the dark area (fraction of the image); the bright patches inside do not
@@ -41,6 +42,16 @@ const SAME_PLACE = 0.5;
 const CLEAN_EDGE_ERROR = 0.01;
 const UNCLEAN_RANK = 1e9;
 const LUMA = [0.2126, 0.7152, 0.0722] as const;
+// Refinement at full resolution: the profile reaches this far (in downscaled pixels) to both sides
+// of the coarse edge, the surround must be at least this much brighter than the dark frame, a rise
+// out of the frame counts from this share of the way to the brightest point outside and goes on as
+// long as it climbs at least this share per downscaled pixel, and a side needs this many edge
+// points; otherwise the coarse side is kept.
+const REFINE_REACH = 3;
+const MIN_EDGE_CONTRAST = 0.05;
+const EDGE_STEP = 0.2;
+const RISE_SLOPE = 0.1;
+const MIN_EDGE_POINTS = 8;
 
 interface Gray {
   width: number;
@@ -335,18 +346,135 @@ function bestGroup(cards: readonly Card[], count: number): Card[] | undefined {
     )[0];
 }
 
+// Brightness of a pixel of the full image; positions outside repeat the nearest edge pixel.
+function lumaAt(frame: Frame, x: number, y: number): number {
+  const column = Math.min(Math.max(x, 0), frame.width - 1);
+  const row = Math.min(Math.max(y, 0), frame.height - 1);
+  const offset = (row * frame.width + column) * LUMA.length;
+  return (
+    LUMA[0] * Number(frame.data[offset]) +
+    LUMA[1] * Number(frame.data[offset + 1]) +
+    LUMA[2] * Number(frame.data[offset + 2])
+  );
+}
+
+// Position of the edge in a profile that runs from the surround (index 0) across the coarse edge
+// (the middle) into the chart, in pixels from the first value; null without a clear edge. The frame
+// of the card is the darkest point of the inner half. From there the search runs outward to the
+// first rise out of the frame, follows it as long as it climbs (`rise` is one downscaled pixel) and
+// takes its middle. Only this first rise is the edge of the card: the cards sit in a light case
+// whose inner wall can cast a gray shadow next to the frame (a step with a plateau before the case),
+// a bright shot can blur the edge into a slow ramp, the frame's brightness varies from side to side,
+// and further out a hand or dark clothes can follow.
+function crossing(values: readonly number[], rise: number): number | null {
+  const middle = Math.floor(values.length / 2);
+  const inner = values.slice(middle);
+  const frame = Math.min(...inner);
+  const start = middle + inner.indexOf(frame);
+  const range = Math.max(...values.slice(0, middle + 1)) - frame;
+  if (range < MIN_EDGE_CONTRAST) {
+    return null;
+  }
+  // From the darkest point outward; the brightest point lies in there, so both searches succeed.
+  const outward = values.slice(0, start + 1).toReversed();
+  let top = outward.findIndex((value) => value >= frame + EDGE_STEP * range);
+  // Near the end of the profile the rise is compared with its last value.
+  const ahead = (index: number): number =>
+    Number(outward[Math.min(index + rise, outward.length - 1)]);
+  while (ahead(top) - Number(outward[top]) >= RISE_SLOPE * range) {
+    top += 1;
+  }
+  const level = (frame + Number(outward[top])) / 2;
+  const after = outward.findIndex((value) => value >= level);
+  const before = Number(outward[after - 1]);
+  return start - (after - 1) - (level - before) / (Number(outward[after]) - before);
+}
+
+// One side of a chart in the full image between its coarse end points. Vertical sides (left and
+// right) are measured along rows, the others along columns; `outward` (+1 or -1) points away from
+// the chart.
+interface Side {
+  from: Point;
+  to: Point;
+  vertical: boolean;
+  outward: number;
+}
+
+// The coarse side as a line u = offset + slope · v (u: x for vertical sides, y otherwise).
+function lineThrough(side: Side): Line {
+  const along = (point: Point): number => (side.vertical ? point.y : point.x);
+  const across = (point: Point): number => (side.vertical ? point.x : point.y);
+  const slope = (across(side.to) - across(side.from)) / (along(side.to) - along(side.from));
+  return { offset: across(side.from) - slope * along(side.from), slope, error: 0 };
+}
+
+// Edge point of the side in one row or column (`line`), or null without a clear edge.
+function edgePoint(
+  frame: Frame,
+  side: Side,
+  coarse: Line,
+  line: number,
+  reach: number,
+  rise: number,
+) {
+  // The profile starts in the surround and runs towards the chart.
+  const first = Math.floor(coarse.offset + coarse.slope * (line + 0.5) + side.outward * reach);
+  const values = Array.from({ length: 2 * reach + 1 }, (_, step) => {
+    const pixel = first - side.outward * step;
+    return side.vertical ? lumaAt(frame, pixel, line) : lumaAt(frame, line, pixel);
+  });
+  const found = crossing(values, rise);
+  return found === null ? null : ([line + 0.5, first + 0.5 - side.outward * found] as const);
+}
+
+// The side measured at full resolution; only its end pieces count, as in the coarse search.
+function refineSide(frame: Frame, side: Side, reach: number, rise: number): Line {
+  const coarse = lineThrough(side);
+  const start = side.vertical ? side.from.y : side.from.x;
+  const end = side.vertical ? side.to.y : side.to.x;
+  const points: Sample[] = [];
+  for (let line = Math.ceil(start); line < end; line++) {
+    const share = (line + 0.5 - start) / (end - start);
+    const fromEnd = Math.min(share, 1 - share);
+    const point =
+      fromEnd >= END_FROM && fromEnd <= END_TO
+        ? edgePoint(frame, side, coarse, line, reach, rise)
+        : null;
+    if (point !== null) {
+      points.push(point);
+    }
+  }
+  return points.length >= MIN_EDGE_POINTS ? fitLine(points) : coarse;
+}
+
+// Corners of a chart in the full image: the coarse corners (pixel centers of the downscaled image)
+// refined by measuring each side again at full resolution.
+function refineCard(frame: Frame, card: Card, scale: number): Corners {
+  const [a, b, c, d] = card.corners.map((point) => ({
+    x: (point.x + 0.5) * scale,
+    y: (point.y + 0.5) * scale,
+  })) as unknown as [Point, Point, Point, Point];
+  const reach = REFINE_REACH * scale;
+  // The top of a rise is looked for within one downscaled pixel (blur grows with the resolution).
+  const refine = (from: Point, to: Point, vertical: boolean, outward: number): Line =>
+    refineSide(frame, { from, to, vertical, outward }, reach, scale);
+  const left = refine(a, d, true, -1);
+  const right = refine(b, c, true, 1);
+  const top = refine(a, b, false, -1);
+  const bottom = refine(d, c, false, 1);
+  return sortCorners([
+    cross(left, top),
+    cross(right, top),
+    cross(right, bottom),
+    cross(left, bottom),
+  ]);
+}
+
 // Corners of the charts in image pixels, from left to right.
-function cornersOf(cards: readonly Card[], scale: number): Corners[] {
+function cornersOf(cards: readonly Card[], gray: Gray, frame: Frame): Corners[] {
   return cards
     .toSorted((p, q) => center(p).x - center(q).x)
-    .map((card) => {
-      const [a, b, c, d] = card.corners;
-      const [p, q, r, s] = [a, b, c, d].map((point) => ({
-        x: (point.x + 0.5) * scale,
-        y: (point.y + 0.5) * scale,
-      }));
-      return sortCorners([p as Point, q as Point, r as Point, s as Point]);
-    });
+    .map((card) => refineCard(frame, card, gray.scale));
 }
 
 // Searches for `count` charts in the image and returns their corners from left to right. All
@@ -356,7 +484,7 @@ function cornersOf(cards: readonly Card[], scale: number): Corners[] {
 export function detectCards(frame: Frame, count: number): Corners[] | null {
   const gray = toGray(frame);
   const best = bestGroup(candidateCards(gray), count);
-  return best === undefined ? null : cornersOf(best, gray.scale);
+  return best === undefined ? null : cornersOf(best, gray, frame);
 }
 
 // Like detectCards, but also returns what was found so far: the best matching group of up to
@@ -367,7 +495,7 @@ export function detectOutlines(frame: Frame, count: number): Corners[] {
   for (let size = count; size > 0; size--) {
     const best = bestGroup(cards, size);
     if (best !== undefined) {
-      return cornersOf(best, gray.scale);
+      return cornersOf(best, gray, frame);
     }
   }
   return [];

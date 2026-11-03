@@ -97,7 +97,9 @@ export default tseslint.config(
       ...vitest.configs.recommended.rules,
       'vitest/expect-expect': [
         'error',
-        { assertFunctionNames: ['expect', 'expectPoint', 'expectCard', 'rejects'] },
+        {
+          assertFunctionNames: ['expect', 'expectPoint', 'expectCard', 'expectCorners', 'rejects'],
+        },
       ],
       // Nested calls and local helper functions are common in tests.
       'unicorn/max-nested-calls': 'off',

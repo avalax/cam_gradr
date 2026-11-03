@@ -1,11 +1,11 @@
 {
   "format": "cam_gradr-layout/2",
   "notes": [
-    "Layout derived from photos of the two gray cards of an SCK300 (card 3 left, card 4 right in the opened case). Rectangles are relative to the outer card rectangle (0..1, origin top left) and estimated.",
+    "Layout of the two gray cards of an SCK300 (card 3 left, card 4 right in the opened case). Rectangles are relative to the black card plate (0..1, origin top left): the dark area the app detects, without the light case around it and without the gray shadow of the case wall next to it.",
     "Each gray card has one large gray field and a strip of 6 small fields (index 0 = top = black, 5 = bottom = almost white). Card 3: strip to the right of the large field, card 4: strip on the left.",
     "Large fields: nominal values computed from the reflectance (L* = 116*Y^(1/3) - 16), neutral. No measured values from Datacolor.",
     "Assignment: card 3 (left, lighter) = 50 %, card 4 (right, darker) = 18 %; brightness difference confirmed by the user, no labeling is visible on the cards.",
-    "Card 4 (right) re-measured on a sharp photo: large field x 0.345 / y 0.095 / width 0.57 / height 0.81, strip fields x 0.065 / width 0.185 / height 0.112 with the same row spacing as card 3 (source of the rows: brightness profile along the card)."
+    "Measured on 4 stills of each card pair (two webcams, 1280 x 720, cards at about 35-80 % of the image height, some held rotated by 180 degrees): corners from the detection at full resolution, then the four edges of every field where the color passes the middle between the black plate and the field, and one regular grid fitted through them. The spread between the shots is about 0.5 % of the card size; checked by leaving each shot out of the fit. The strip fields have the same height and row spacing as the color fields."
   ],
   "cards": [
     {
@@ -17,10 +17,10 @@
           "reflectance": 0.5,
           "nominalLab": [76.07, 0, 0],
           "rect": {
-            "x": 0.07,
-            "y": 0.094,
-            "w": 0.58,
-            "h": 0.806
+            "x": 0.067,
+            "y": 0.092,
+            "w": 0.593,
+            "h": 0.817
           }
         },
         {
@@ -28,10 +28,10 @@
           "role": "strip",
           "index": 0,
           "rect": {
-            "x": 0.74,
-            "y": 0.082,
-            "w": 0.19,
-            "h": 0.112
+            "x": 0.753,
+            "y": 0.09,
+            "w": 0.18,
+            "h": 0.109
           }
         },
         {
@@ -39,10 +39,10 @@
           "role": "strip",
           "index": 1,
           "rect": {
-            "x": 0.74,
-            "y": 0.223,
-            "w": 0.19,
-            "h": 0.112
+            "x": 0.753,
+            "y": 0.232,
+            "w": 0.18,
+            "h": 0.109
           }
         },
         {
@@ -50,10 +50,10 @@
           "role": "strip",
           "index": 2,
           "rect": {
-            "x": 0.74,
-            "y": 0.365,
-            "w": 0.19,
-            "h": 0.112
+            "x": 0.753,
+            "y": 0.374,
+            "w": 0.18,
+            "h": 0.109
           }
         },
         {
@@ -61,10 +61,10 @@
           "role": "strip",
           "index": 3,
           "rect": {
-            "x": 0.74,
-            "y": 0.506,
-            "w": 0.19,
-            "h": 0.112
+            "x": 0.753,
+            "y": 0.516,
+            "w": 0.18,
+            "h": 0.109
           }
         },
         {
@@ -72,10 +72,10 @@
           "role": "strip",
           "index": 4,
           "rect": {
-            "x": 0.74,
-            "y": 0.648,
-            "w": 0.19,
-            "h": 0.112
+            "x": 0.753,
+            "y": 0.657,
+            "w": 0.18,
+            "h": 0.109
           }
         },
         {
@@ -83,10 +83,10 @@
           "role": "strip",
           "index": 5,
           "rect": {
-            "x": 0.74,
-            "y": 0.789,
-            "w": 0.19,
-            "h": 0.112
+            "x": 0.753,
+            "y": 0.799,
+            "w": 0.18,
+            "h": 0.109
           }
         }
       ]
@@ -100,10 +100,10 @@
           "reflectance": 0.18,
           "nominalLab": [49.5, 0, 0],
           "rect": {
-            "x": 0.345,
-            "y": 0.095,
-            "w": 0.57,
-            "h": 0.81
+            "x": 0.338,
+            "y": 0.099,
+            "w": 0.582,
+            "h": 0.811
           }
         },
         {
@@ -111,10 +111,10 @@
           "role": "strip",
           "index": 0,
           "rect": {
-            "x": 0.065,
-            "y": 0.082,
-            "w": 0.185,
-            "h": 0.112
+            "x": 0.066,
+            "y": 0.096,
+            "w": 0.176,
+            "h": 0.107
           }
         },
         {
@@ -122,10 +122,10 @@
           "role": "strip",
           "index": 1,
           "rect": {
-            "x": 0.065,
-            "y": 0.223,
-            "w": 0.185,
-            "h": 0.112
+            "x": 0.066,
+            "y": 0.238,
+            "w": 0.176,
+            "h": 0.107
           }
         },
         {
@@ -133,10 +133,10 @@
           "role": "strip",
           "index": 2,
           "rect": {
-            "x": 0.065,
-            "y": 0.365,
-            "w": 0.185,
-            "h": 0.112
+            "x": 0.066,
+            "y": 0.38,
+            "w": 0.176,
+            "h": 0.107
           }
         },
         {
@@ -144,10 +144,10 @@
           "role": "strip",
           "index": 3,
           "rect": {
-            "x": 0.065,
-            "y": 0.506,
-            "w": 0.185,
-            "h": 0.112
+            "x": 0.066,
+            "y": 0.521,
+            "w": 0.176,
+            "h": 0.107
           }
         },
         {
@@ -155,10 +155,10 @@
           "role": "strip",
           "index": 4,
           "rect": {
-            "x": 0.065,
-            "y": 0.648,
-            "w": 0.185,
-            "h": 0.112
+            "x": 0.066,
+            "y": 0.663,
+            "w": 0.176,
+            "h": 0.107
           }
         },
         {
@@ -166,10 +166,10 @@
           "role": "strip",
           "index": 5,
           "rect": {
-            "x": 0.065,
-            "y": 0.789,
-            "w": 0.185,
-            "h": 0.112
+            "x": 0.066,
+            "y": 0.805,
+            "w": 0.176,
+            "h": 0.107
           }
         }
       ]
