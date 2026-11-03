@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { grayLayout, NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
-import { scaleLab } from '../color/lab';
+import { labToLinearSrgb, linearSrgbToXyzD50, xyzD50ToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
@@ -15,9 +15,15 @@ const reference = {
   patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
 };
 
+// The same color at a different exposure (its linear light times `exposure`).
+function exposed(lab: Vec3, exposure: number): Vec3 {
+  const [r, g, b] = labToLinearSrgb(lab);
+  return xyzD50ToLab(linearSrgbToXyzD50([r * exposure, g * exposure, b * exposure]));
+}
+
 // Color cards and gray cards, both shot at the same exposure (1 = as bright as the reference).
 function shots(exposure: number) {
-  const camera = (lab: Vec3): Rgb => cameraCode(scaleLab(lab, exposure));
+  const camera = (lab: Vec3): Rgb => cameraCode(exposed(lab, exposure));
   const measurements = Object.fromEntries(
     dummyIds().map((id): [string, Rgb] => [id, camera(dummyLab(id))]),
   );

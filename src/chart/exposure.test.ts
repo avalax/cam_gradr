@@ -60,6 +60,28 @@ describe('assessExposure', () => {
     expect(result.verdict).toBe('too-bright');
   });
 
+  it('does not count a white strip patch at the target exposure as clipped', () => {
+    // A white (L* 96) at the exposure where the 18 % patch reads 0.46.
+    const result = assessExposure(input({ stripLight: [0.976, 0.949, 0.933] }));
+    expect(result.highlightsClipped).toBe(false);
+    expect(result.verdict).toBe('ok');
+  });
+
+  it('counts a single channel at the top of the range as clipped', () => {
+    expect(assessExposure(input({ stripLight: [1, 0.9, 0.85] })).highlightsClipped).toBe(true);
+  });
+
+  it('does not count a dark strip patch that still carries a signal as crushed', () => {
+    const result = assessExposure(input({ stripDark: [0.035, 0.026, 0.022] }));
+    expect(result.shadowsCrushed).toBe(false);
+    expect(result.verdict).toBe('ok');
+  });
+
+  it('counts a single channel at the bottom of the range as crushed', () => {
+    // Blue no longer carries a signal although the patch as a whole is not black.
+    expect(assessExposure(input({ stripDark: [0.05, 0.04, 0.005] })).shadowsCrushed).toBe(true);
+  });
+
   it('reports crushed shadows as too dark', () => {
     const result = assessExposure(input({ stripDark: grey(0.01) }));
     expect(result.shadowsCrushed).toBe(true);

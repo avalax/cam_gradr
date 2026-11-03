@@ -98,12 +98,6 @@ export function labToLinearSrgb(lab: Vec3): Vec3 {
   return xyzD50ToLinearSrgb(labToXyzD50(lab));
 }
 
-// Lab color with its linear light scaled by `gain` (the same color at a different exposure).
-export function scaleLab(lab: Vec3, gain: number): Vec3 {
-  const [x, y, z] = labToXyzD50(lab);
-  return xyzD50ToLab([x * gain, y * gain, z * gain]);
-}
-
 const DEG = Math.PI / 180;
 
 function hueAngle(b: number, aPrime: number): number {

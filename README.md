@@ -130,6 +130,11 @@ can be selected and deleted in the app.
 - The correction model (curves per channel plus a 3×3 matrix) only partly compensates a strongly
   falsifying webcam; a good shot matters more than a stronger model.
 - Without WebGL2 the preview draws in a reduced software rendering.
+- Two color patches, the cyan 1F and the yellow 3F, lie outside the sRGB color space. The app shows them
+  and measures them against the nearest color that sRGB can show.
+- The LUT is calculated from the camera image as the browser decodes it. If the software or the device
+  that uses the LUT decodes the same camera differently (for example BT.601 instead of BT.709, or limited
+  instead of full range), the LUT does not fit exactly; check the result there.
 
 ## For developers
 

@@ -1,9 +1,9 @@
 import { codeLuma } from '../chart/exposure';
 import type { Measurements } from '../chart/measure';
 import type { ChartLayout } from '../chart/types';
-import { labToSrgb, scaleLab } from '../color/lab';
+import { labToSrgb } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
-import { applyColorModel } from '../solve/fit';
+import { applyColorModel, targetLab } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
 import { t } from '../lang';
 import { formatDecimal, formatSigned } from '../lang/format';
@@ -19,8 +19,8 @@ export interface WedgeRow {
   corrected: string;
 }
 
-// The target is shown at the exposure of the shot (`exposureGain` from the fit report), as the
-// correction keeps that exposure and the deviations are measured against it.
+// The target is shown as the report measures it (targetLab with `exposureGain` from the fit report):
+// at the exposure of the shot, as the correction keeps that exposure, and within the sRGB gamut.
 function patchRow(
   id: string,
   measurements: Measurements,
@@ -35,7 +35,7 @@ function patchRow(
   const lab = reference?.patches[id];
   return {
     id,
-    target: lab === undefined ? null : cssColor(labToSrgb(scaleLab(lab, exposureGain))),
+    target: lab === undefined ? null : cssColor(labToSrgb(targetLab(lab, exposureGain))),
     camera: cssColor(measured),
     corrected: cssColor(applyColorModel(model, measured)),
   };
@@ -148,7 +148,7 @@ interface CastChange {
 
 export interface ZoneChange {
   name: string;
-  // Mittlere Aufhellung (negativ = abgedunkelt) in Punkten.
+  // Mean brightening (negative = darkened) in points.
   brighter: number;
   casts: CastChange[];
 }
@@ -182,7 +182,7 @@ export function signedPoints(value: number): string {
   return formatSigned(Math.round(value));
 }
 
-// "13 heller", "5 dunkler" or "gleich hell" for the mean brightening.
+// "13 brighter", "5 darker" or "same brightness" for the mean brightening.
 export function brightnessText(brighter: number): string {
   const points = Math.abs(Math.round(brighter));
   if (points === 0) {
@@ -195,7 +195,7 @@ export function oneDecimal(value: number): string {
   return formatDecimal(value, 1);
 }
 
-// Mean error before and after the correction as a label, e.g. "Ø Abweichung 18,4 → 8,0".
+// Mean error before and after the correction as a label, e.g. "Ø deviation 18.4 → 8.0".
 export function deviationSummary(report: { meanBefore: number; meanAfter: number }): string {
   return t('wedge.deviationSummary', {
     before: oneDecimal(report.meanBefore),

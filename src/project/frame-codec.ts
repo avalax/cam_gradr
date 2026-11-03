@@ -3,7 +3,8 @@ import { t } from '../lang';
 
 // A still image in the project file: RGB with 8 bits per channel, packed with deflate and written as
 // Base64.
-// This is lossless apart from the rounding to 8 bits (display and measurement work with that anyway).
+// The rounding to 8 bits loses the finer steps of the averaged still, so a measurement after loading
+// (when a corner is moved) can differ slightly from the saved one.
 export const FRAME_ENCODING = 'rgb8-deflate-base64';
 
 export interface EncodedFrame {

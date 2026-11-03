@@ -1,8 +1,8 @@
 import type { Measurements } from '../chart/measure';
 import type { ChartLayout, PatchLayout } from '../chart/types';
-import { deltaE2000, scaleLab, srgbToLab } from '../color/lab';
+import { deltaE2000, srgbToLab } from '../color/lab';
 
-import { applyColorModel } from './fit';
+import { applyColorModel, targetLab } from './fit';
 import type { ColorModel } from './fit';
 
 export interface GrayCheck {
@@ -17,9 +17,9 @@ function check(
   measured: Measurements[string],
   exposureGain: number,
 ) {
-  // Like the color patches, the nominal value is taken at the exposure of the shot: the correction
-  // keeps that exposure, so a slightly brighter or darker shot is not an error.
-  const nominal = scaleLab(patch.nominalLab ?? [0, 0, 0], exposureGain);
+  // Like the color patches, the nominal value is taken as the correction aims at it, at the exposure of
+  // the shot: the correction keeps that exposure, so a slightly brighter or darker shot is no error.
+  const nominal = targetLab(patch.nominalLab ?? [0, 0, 0], exposureGain);
   const corrected = srgbToLab(applyColorModel(model, measured));
   return {
     id: patch.id,

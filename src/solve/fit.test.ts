@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
-import { labToLinearSrgb, labToSrgb, srgbToLab } from '../color/lab';
+import {
+  labToLinearSrgb,
+  labToSrgb,
+  linearSrgbToXyzD50,
+  srgbToLab,
+  xyzD50ToLab,
+} from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
@@ -273,6 +279,42 @@ describe('fitColorModel', () => {
     for (const value of applyColorModel(fit.model, [1, 1, 1])) {
       expect(value).toBeCloseTo(1, 6);
     }
+  });
+
+  it('measures colors outside the sRGB gamut against the nearest color sRGB can show', () => {
+    // The cyan 1F and the yellow 3F of the bundled set lie outside the sRGB gamut.
+    const real = bundledReference();
+    const exact = Object.fromEntries(
+      Object.entries(real.patches).map(([id, lab]) => [id, labToSrgb(lab)]),
+    );
+    const fit = fitColorModel({ measurements: exact, reference: real, neutralIds: NEUTRAL_IDS });
+    for (const id of ['1F', '3F']) {
+      const patch = fit.report.patches.find((entry) => entry.id === id);
+      const linear = labToLinearSrgb(patch?.reference ?? [0, 0, 0]);
+      for (const value of linear) {
+        expect(value).toBeGreaterThanOrEqual(-1e-6);
+      }
+    }
+    // Against the unreachable reference itself 1F would stay at about 5 even here.
+    expect(fit.report.maxAfter).toBeLessThan(3);
+  });
+
+  it('never measures against a target brighter than white, also for a bright shot', () => {
+    // Every color a third brighter than the reference: the bright patches would lie above white.
+    const real = bundledReference();
+    const bright = Object.fromEntries(
+      Object.entries(real.patches).map(([id, lab]) => {
+        const [r, g, b] = labToLinearSrgb(lab);
+        return [id, labToSrgb(xyzD50ToLab(linearSrgbToXyzD50([r * 1.3, g * 1.3, b * 1.3])))];
+      }),
+    );
+    const fit = fitColorModel({ measurements: bright, reference: real, neutralIds: NEUTRAL_IDS });
+    expect(fit.report.exposureGain).toBeGreaterThan(1.2);
+    for (const patch of fit.report.patches) {
+      expect(patch.reference[0]).toBeLessThanOrEqual(100);
+    }
+    const white = fit.report.patches.find((entry) => entry.id === '1E');
+    expect(white?.after).toBeLessThan(2);
   });
 
   it('keeps a clipped white white although the camera has a color cast', () => {
