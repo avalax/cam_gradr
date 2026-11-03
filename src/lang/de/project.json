@@ -30,6 +30,8 @@
     "modelShape": "Modell: erwartet werden drei Kurven und eine Matrix",
     "matrixRows": "Modell: die Matrix braucht drei Zeilen",
     "matrixWhere": "Modell, Matrix",
+    "rootsRows": "Modell: die Wurzelterme brauchen drei Zeilen",
+    "rootsWhere": "Modell, Wurzelterme",
     "percentRange": "Vorschau: {name} muss zwischen 0 und 100 liegen",
     "splitName": "Trennlinie",
     "colorReference": "Farbkarten: reference muss ein Name oder null sein",

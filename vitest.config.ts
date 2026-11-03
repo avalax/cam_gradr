@@ -7,6 +7,9 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['src/**/*.test.ts'],
     setupFiles: ['src/test-support/setup.ts'],
+    // The color calculation takes a few hundred milliseconds with its cross-check, and some tests run
+    // it several times; with all workers busy that can exceed the default of 5 s.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

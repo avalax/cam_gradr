@@ -30,6 +30,8 @@
     "modelShape": "Model: three curves and a matrix expected",
     "matrixRows": "Model: the matrix needs three rows",
     "matrixWhere": "Model, matrix",
+    "rootsRows": "Model: the root terms need three rows",
+    "rootsWhere": "Model, root terms",
     "percentRange": "Preview: {name} must be between 0 and 100",
     "splitName": "wipe slider",
     "colorReference": "Color cards: reference must be a name or null",

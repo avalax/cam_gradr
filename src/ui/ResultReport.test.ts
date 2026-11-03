@@ -66,6 +66,26 @@ describe('ResultReport', () => {
     expect(wrapper.get('[data-testid="indistinct-warning"]').text()).toContain('2E, 2D');
   });
 
+  it('names the mixing of the colors with the result of the cross-check', async () => {
+    const wrapper = mount(ResultReport, { props: { result } });
+    expect(wrapper.get('[data-testid="mixing-note"]').text()).toContain('mit einer 3×3-Matrix');
+    const roots: [number, number, number] = [0, 0, 0];
+    await wrapper.setProps({
+      result: {
+        model: { ...result.model, roots: [roots, roots, roots] },
+        report: { ...result.report, crossCheck: { matrix: 5.25, roots: 4.04 } },
+      },
+    });
+    expect(wrapper.get('[data-testid="mixing-note"]').text()).toContain(
+      'mit Wurzeltermen gemischt',
+    );
+    expect(wrapper.get('[data-testid="mixing-note"]').text()).toContain('4,0 statt 5,3');
+    await wrapper.setProps({
+      result: { ...result, report: { ...result.report, crossCheck: null } },
+    });
+    expect(wrapper.find('[data-testid="mixing-note"]').exists()).toBe(false);
+  });
+
   it('shows no gray card section without check values', () => {
     const wrapper = mount(ResultReport, { props: { result } });
     expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
@@ -111,6 +131,12 @@ describe('ResultReport (English)', () => {
     expect(wrapper.get('[data-testid="gray-G18"]').text()).toBe('Gray card 18 %: 2.0 → 1.0');
     expect(wrapper.get('[data-testid="gray-warning"]').text()).toContain('deviation is large');
     expect(wrapper.get('[data-testid="tile-3A"]').attributes('title')).toContain('3A: ΔE');
+  });
+
+  it('names the mixing of the colors in English', () => {
+    setLocale('en');
+    const wrapper = mount(ResultReport, { props: { result } });
+    expect(wrapper.get('[data-testid="mixing-note"]').text()).toContain('mixed with a 3×3 matrix');
   });
 
   it('warns about compressed highlights in English', () => {

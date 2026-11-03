@@ -90,6 +90,12 @@ searches twice a second and takes the image as soon as it finds the cards twice 
 patches, uneven light or camera automatics. Check the hints in the result first and capture the cards
 again in better light.
 
+**What does "mixed with root terms" in the result mean?** After the tone curves the app mixes the
+color channels with a 3×3 matrix. Some cameras mix their colors in a way the matrix cannot follow; for
+them the app adds root terms. It only does so when they also predict color patches better that the
+calculation has not seen (each patch predicted without it); otherwise the matrix stays alone. The
+result names the choice and both errors.
+
 **Which reference values does the app use?** It ships an unofficial set (see below). You import your own
 values in the gear menu.
 
@@ -131,8 +137,8 @@ can be selected and deleted in the app.
 
 - The patch positions in the layout are measured on stills of one Spyder Checkr Photo (SCK300) with two
   webcams; other batches of the card are not verified.
-- The correction model (curves per channel plus a 3×3 matrix) only partly compensates a strongly
-  falsifying webcam; a good shot matters more than a stronger model.
+- The correction model (curves per channel plus a 3×3 matrix, with root terms where they help) only
+  partly compensates a strongly falsifying webcam; a good shot matters more than a stronger model.
 - Without WebGL2 the preview draws in a reduced software rendering.
 - Two color patches, the cyan 1F and the yellow 3F, lie outside the sRGB color space. The app shows them
   and measures them against the nearest color that sRGB can show.

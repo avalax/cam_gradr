@@ -147,10 +147,19 @@ function parseModel(value: unknown): ColorModel | null {
     throw new TypeError(t('project.errors.matrixRows'));
   }
   const [r1, r2, r3] = value.matrix.map((row) => triple(row, t('project.errors.matrixWhere')));
-  return {
+  const model: ColorModel = {
     curves: [c1, c2, c3] as unknown as ColorModel['curves'],
     matrix: [r1, r2, r3] as unknown as ColorModel['matrix'],
   };
+  // Root terms are optional: the model may use the matrix alone, and older files have none.
+  if (value.roots === undefined) {
+    return model;
+  }
+  if (!Array.isArray(value.roots) || value.roots.length !== 3) {
+    throw new TypeError(t('project.errors.rootsRows'));
+  }
+  const roots = value.roots.map((row) => triple(row, t('project.errors.rootsWhere')));
+  return { ...model, roots: roots as unknown as NonNullable<ColorModel['roots']> };
 }
 
 function parsePercent(value: unknown, name: string): number {

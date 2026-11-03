@@ -6,6 +6,8 @@
   "maxError": "Größter Fehler (ΔE2000)",
   "neutralMean": "Neutralfelder ({count}), Mittel",
   "colorMean": "Farbfelder ({count}), Mittel",
+  "mixingRoots": "Die Farben werden mit Wurzeltermen gemischt, nicht nur mit einer 3×3-Matrix: So trifft die Korrektur auch Farben besser, die sie nicht kennt (mittlerer Fehler der Farbfelder {roots} statt {matrix}, jedes Feld aus einer Berechnung ohne dieses Feld).",
+  "mixingMatrix": "Die Farben werden mit einer 3×3-Matrix gemischt. Wurzelterme würden Farben, die die Korrektur nicht kennt, nicht besser treffen (mittlerer Fehler der Farbfelder {roots} statt {matrix}, jedes Feld aus einer Berechnung ohne dieses Feld).",
   "indistinct": "Die Kamera unterscheidet die hellsten Neutralfelder ({patches}) kaum: Ihre Lichter sind komprimiert oder gekappt. Das lässt sich in der Korrektur nicht ausgleichen. Schalte besser Automatiken der Kamera aus (HDR, Lichtkorrektur, automatische Belichtung) und stelle die Belichtung fest ein.",
   "grayTitle": "Kontrolle mit den Graukarten",
   "grayIntro": "Die großen Felder der Graukarten gehen nicht in die Berechnung ein. Ihre Abweichung vom Nennwert (ΔE2000, vorher → nachher) zeigt unabhängig, ob die Korrektur auch dort stimmt.",

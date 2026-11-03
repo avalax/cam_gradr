@@ -31,6 +31,19 @@ function format(value: number): string {
   return formatDecimal(value, 1);
 }
 
+// How the colors are mixed after the tone curves, and why (see fitColorModel).
+const mixingNote = computed(() => {
+  const check = props.result.report.crossCheck;
+  if (check === null) {
+    return null;
+  }
+  const values = { roots: format(check.roots), matrix: format(check.matrix) };
+  return t(
+    props.result.model.roots === undefined ? 'report.mixingMatrix' : 'report.mixingRoots',
+    values,
+  );
+});
+
 // Per patch: target color, camera value and corrected value as color swatches including the error.
 const tiles = computed(() =>
   props.result.report.patches.map((patch) => ({
@@ -66,6 +79,10 @@ const tiles = computed(() =>
         <dd data-testid="color-after">{{ format(result.report.color.meanAfter) }}</dd>
       </template>
     </dl>
+
+    <p v-if="mixingNote !== null" class="text-xs text-slate-300" data-testid="mixing-note">
+      {{ mixingNote }}
+    </p>
 
     <p
       v-if="result.report.indistinct.length > 0"

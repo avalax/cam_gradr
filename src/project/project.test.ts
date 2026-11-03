@@ -65,6 +65,22 @@ describe('parseProject', () => {
     expect(project.savedAt).toBe('');
   });
 
+  it('keeps the root terms of a model and reads models without them (older files)', () => {
+    const withRoots: Project = {
+      ...sample(),
+      model: {
+        ...model,
+        roots: [
+          [0.1, 0, -0.1],
+          [0, 0.2, 0],
+          [-0.05, 0, 0.3],
+        ],
+      },
+    };
+    expect(parseProject(serializeProject(withRoots))).toEqual(withRoots);
+    expect(parseProject(serializeProject(sample())).model).not.toHaveProperty('roots');
+  });
+
   it('reads older files with strength and ignores it', () => {
     const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
     raw.preview = { strength: 60, split: 25 };
@@ -126,6 +142,17 @@ describe('parseProject', () => {
     rejects((raw) => (raw.model.matrix = [[1, 0, 0]]), 'drei Zeilen');
     rejects((raw) => delete raw.model.matrix, 'drei Zeilen');
     rejects((raw) => (raw.model.matrix[0] = [1, 2]), 'Matrix: erwartet werden 3 Zahlen');
+    rejects((raw) => (raw.model.roots = 'none'), 'Wurzelterme brauchen drei Zeilen');
+    rejects((raw) => (raw.model.roots = [[0, 0, 0]]), 'Wurzelterme brauchen drei Zeilen');
+    rejects(
+      (raw) =>
+        (raw.model.roots = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 'a', 0],
+        ]),
+      'Wurzelterme: erwartet werden 3 Zahlen',
+    );
   });
 
   it('lehnt fehlerhafte Vorschau-Einstellungen ab', () => {

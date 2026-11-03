@@ -41,6 +41,21 @@ function halve([r, g, b]: Rgb): Rgb {
   return [r, g, b].map((value) => linearToSrgb(srgbToLinear(value) / 2)) as unknown as Rgb;
 }
 
+// A camera that mixes its channels beyond a matrix, the way root terms describe it: a saturated color
+// leaks into the other channels more than a matrix allows. Grays pass unchanged.
+function rootCamera(lab: Vec3): Rgb {
+  const [r, g, b] = labToLinearSrgb(lab).map((value) => Math.min(Math.max(value, 0), 1)) as [
+    number,
+    number,
+    number,
+  ];
+  const term = (first: number, second: number): number =>
+    (Math.sqrt(first) - Math.sqrt(second)) ** 2;
+  const [rg, gb, rb] = [term(r, g), term(g, b), term(r, b)];
+  const mixed = [r - 0.25 * rg + 0.15 * rb, g + 0.2 * rg - 0.2 * gb, b + 0.25 * gb - 0.15 * rb];
+  return mixed.map((value) => linearToSrgb(Math.min(Math.max(value, 0), 1))) as unknown as Rgb;
+}
+
 function measure(reference: ReferenceSet): Record<string, Rgb> {
   return Object.fromEntries(
     Object.entries(reference.patches).map(([id, lab]) => [id, cameraCode(lab)]),
@@ -225,6 +240,35 @@ describe('fitColorModel', () => {
       neutralIds: NEUTRAL_IDS,
     });
     expect(fit.report.meanAfter).toBeLessThan(fit.report.meanBefore);
+    // Too few color patches to tell whether root terms would help: the matrix alone.
+    expect(fit.report.crossCheck).toBeNull();
+    expect(fit.model).not.toHaveProperty('roots');
+  });
+
+  it('keeps the matrix alone for a camera that a matrix describes', () => {
+    const check = result.report.crossCheck;
+    expect(result.model).not.toHaveProperty('roots');
+    expect(check?.matrix).toBeLessThan(1);
+    expect(check?.roots).toBeGreaterThan((check?.matrix ?? 0) - 0.1);
+  });
+
+  it('adds root terms for a camera that mixes its channels beyond a matrix', () => {
+    const bundled = bundledReference();
+    const leaky = Object.fromEntries(
+      Object.entries(bundled.patches).map(([id, lab]) => [id, rootCamera(lab)]),
+    );
+    const fit = fitColorModel({ measurements: leaky, reference: bundled, neutralIds: NEUTRAL_IDS });
+    const check = fit.report.crossCheck;
+    expect(fit.model.roots).toHaveLength(3);
+    // The root terms predict colors the fit has not seen clearly better than the matrix alone.
+    expect(check?.roots).toBeLessThan((check?.matrix ?? 0) - 0.5);
+    expect(fit.report.color?.meanAfter).toBeLessThan((fit.report.color?.meanBefore ?? 0) / 3);
+    // Grays stay gray: the root terms vanish on the gray axis.
+    for (const level of [0.1, 0.4, 0.8]) {
+      const [r, g, b] = applyColorModel(fit.model, [level, level, level]);
+      expect(Math.abs(r - g)).toBeLessThan(0.01);
+      expect(Math.abs(g - b)).toBeLessThan(0.01);
+    }
   });
 
   it('ignores patches without a measurement', () => {

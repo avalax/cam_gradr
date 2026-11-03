@@ -6,6 +6,8 @@
   "maxError": "Largest error (ΔE2000)",
   "neutralMean": "Neutral patches ({count}), mean",
   "colorMean": "Color patches ({count}), mean",
+  "mixingRoots": "The colors are mixed with root terms, not only with a 3×3 matrix: this way the correction also matches colors it does not know better (mean error of the color patches {roots} instead of {matrix}, each patch from a calculation without it).",
+  "mixingMatrix": "The colors are mixed with a 3×3 matrix. Root terms would not match colors the correction does not know any better (mean error of the color patches {roots} instead of {matrix}, each patch from a calculation without it).",
   "indistinct": "The camera can hardly tell the brightest neutral patches ({patches}) apart: their highlights are compressed or clipped. The correction cannot compensate for this. Better turn off the camera automatics (HDR, light correction, auto exposure) and set the exposure manually.",
   "grayTitle": "Check with the gray cards",
   "grayIntro": "The large patches of the gray cards are not part of the calculation. Their deviation from the nominal value (ΔE2000, before → after) shows independently whether the correction is also right there.",
