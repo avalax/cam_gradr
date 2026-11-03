@@ -125,11 +125,15 @@ test.describe('Gray cards: room is fine', () => {
     await app.captureStill();
     await app.expectCorners();
 
+    // Without cards in the image the new search keeps running, so its state can be checked; the
+    // synthetic camera would otherwise find the cards again within about a second.
+    await app.chooseCards('empty');
     await app.button('Eckpunkte löschen').click();
     await expect(app.page.locator('svg circle')).toHaveCount(0);
     await expect(app.page.getByTestId('auto-hint')).toBeVisible();
     await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
 
+    await app.chooseCards('ok');
     await app.captureStill();
     await app.expectCorners();
     await app.expectVerdict('im Normalbereich');

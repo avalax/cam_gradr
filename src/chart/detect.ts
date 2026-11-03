@@ -160,9 +160,9 @@ function leastSquares(list: readonly Sample[]): Line {
   const n = list.length;
   const meanV = list.reduce((sum, [v]) => sum + v, 0) / n;
   const meanU = list.reduce((sum, [, u]) => sum + u, 0) / n;
+  // The points lie in at least two different rows or columns (see edgeLines), so spread > 0.
   const spread = list.reduce((sum, [v]) => sum + (v - meanV) ** 2, 0);
-  const slope =
-    spread === 0 ? 0 : list.reduce((sum, [v, u]) => sum + (v - meanV) * (u - meanU), 0) / spread;
+  const slope = list.reduce((sum, [v, u]) => sum + (v - meanV) * (u - meanU), 0) / spread;
   const offset = meanU - slope * meanV;
   const error = Math.sqrt(list.reduce((sum, [v, u]) => sum + (u - offset - slope * v) ** 2, 0) / n);
   return { offset, slope, error };
@@ -201,7 +201,8 @@ function endIndices(extent: readonly number[]): number[] {
   );
 }
 
-// Edge points of the area: left and right per row, top and bottom per column.
+// Edge points of the area: left and right per row, top and bottom per column. Null if a side has
+// fewer than two of them: an area only a few pixels high or wide is no chart.
 function edgeLines(cells: readonly number[], gray: Gray) {
   const { width, height } = gray;
   const left = Array.from({ length: height }, () => Infinity);
@@ -218,6 +219,9 @@ function edgeLines(cells: readonly number[], gray: Gray) {
   }
   const rows = endIndices(left);
   const columns = endIndices(top);
+  if (rows.length < 2 || columns.length < 2) {
+    return null;
+  }
   return {
     left: fitLine(rows.map((y) => [y, Number(left[y])] as const)),
     right: fitLine(rows.map((y) => [y, Number(right[y])] as const)),
@@ -240,6 +244,9 @@ function distance(a: Point, b: Point): number {
 // straight sides.
 function cardFrom(cells: readonly number[], gray: Gray): Card | null {
   const lines = edgeLines(cells, gray);
+  if (lines === null) {
+    return null;
+  }
   const a = cross(lines.left, lines.top);
   const b = cross(lines.right, lines.top);
   const c = cross(lines.right, lines.bottom);

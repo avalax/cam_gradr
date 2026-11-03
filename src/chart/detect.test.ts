@@ -243,6 +243,23 @@ describe('detectCards', () => {
     expect(detectCards(frame, 1)).toHaveLength(1);
   });
 
+  it('takes neither a flat nor a narrow dark line for a chart', () => {
+    // Both are large enough as dark areas, but only a few pixels high or wide.
+    const frame = scene((f) => {
+      for (let y = 100; y < 104; y++) {
+        for (let x = 100; x < 400; x++) {
+          paint(f, x, y, 0.08);
+        }
+      }
+      for (let y = 150; y < 330; y++) {
+        for (let x = 500; x < 504; x++) {
+          paint(f, x, y, 0.08);
+        }
+      }
+    });
+    expect(detectCards(frame, 1)).toBeNull();
+  });
+
   it('finds nothing in a uniform image', () => {
     expect(
       detectCards(

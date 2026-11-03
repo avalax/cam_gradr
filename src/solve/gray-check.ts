@@ -1,6 +1,7 @@
 import type { Measurements } from '../chart/measure';
-import type { ChartLayout, PatchLayout } from '../chart/types';
+import type { ChartLayout, Rgb } from '../chart/types';
 import { deltaE2000, srgbToLab } from '../color/lab';
+import type { Vec3 } from '../color/lab';
 
 import { applyColorModel, targetLab } from './fit';
 import type { ColorModel } from './fit';
@@ -13,16 +14,17 @@ export interface GrayCheck {
 
 function check(
   model: ColorModel,
-  patch: PatchLayout,
-  measured: Measurements[string],
+  id: string,
+  nominalLab: Vec3,
+  measured: Rgb,
   exposureGain: number,
-) {
+): GrayCheck {
   // Like the color patches, the nominal value is taken as the correction aims at it, at the exposure of
   // the shot: the correction keeps that exposure, so a slightly brighter or darker shot is no error.
-  const nominal = targetLab(patch.nominalLab ?? [0, 0, 0], exposureGain);
+  const nominal = targetLab(nominalLab, exposureGain);
   const corrected = srgbToLab(applyColorModel(model, measured));
   return {
-    id: patch.id,
+    id,
     before: deltaE2000(srgbToLab(measured), nominal),
     after: deltaE2000(corrected, nominal),
   };
@@ -38,8 +40,12 @@ export function checkGrayCards(
   layout: ChartLayout,
   exposureGain: number,
 ): GrayCheck[] {
-  const patches = layout.cards.flatMap((card) => card.patches);
-  return patches
-    .filter((patch) => patch.nominalLab !== undefined && measurements[patch.id] !== undefined)
-    .map((patch) => check(model, patch, measurements[patch.id] ?? [0, 0, 0], exposureGain));
+  return layout.cards.flatMap((card) =>
+    card.patches.flatMap((patch) => {
+      const measured = measurements[patch.id];
+      return measured === undefined || patch.nominalLab === undefined
+        ? []
+        : [check(model, patch.id, patch.nominalLab, measured, exposureGain)];
+    }),
+  );
 }
