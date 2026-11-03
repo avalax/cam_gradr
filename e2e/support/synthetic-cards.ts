@@ -35,7 +35,7 @@ const LIGHTINGS = {
 
 // Lightings of the gray cards; "colors" shows the color cards instead (step 2).
 export type LightingName = keyof typeof LIGHTINGS;
-export type SceneName = LightingName | 'colors';
+export type SceneName = LightingName | 'colors' | 'empty';
 
 // One filled rectangle of the synthetic image (pixels, color 0..255).
 interface SceneRect {
@@ -143,7 +143,11 @@ export function colorPatchCenter(id: string): { x: number; y: number } {
 }
 
 export function sceneFor(name: SceneName): Scene {
+  if (name === 'empty') {
+    // No cards in the image: the search finds nothing and keeps running.
+    return { width: WIDTH, height: HEIGHT, rects: [background()] };
+  }
   return name === 'colors' ? colorScene() : grayScene(name);
 }
 
-export const SCENE_NAMES: readonly SceneName[] = ['ok', 'dark', 'bright', 'colors'];
+export const SCENE_NAMES: readonly SceneName[] = ['ok', 'dark', 'bright', 'colors', 'empty'];

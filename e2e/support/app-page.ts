@@ -52,10 +52,18 @@ export class AppPage {
     await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'false');
   }
 
+  // Turns the camera on in a card tab. The app may find the cards, capture and switch the camera off
+  // again within about a second, so either counts: the camera runs, or the corners are already set.
+  async startSearch(): Promise<void> {
+    await this.cameraSwitch.click();
+    const running = this.page.locator('[data-testid="camera-toggle"][aria-checked="true"]');
+    await expect(running.or(this.page.locator('svg circle')).first()).toBeAttached();
+  }
+
   // Turn the camera on and open the "Graukarten" tab; the app detects the cards and captures by
   // itself.
   async startGrayStage(): Promise<void> {
-    await this.startCamera();
+    await this.startSearch();
     await this.openTab('Graukarten');
   }
 
@@ -102,6 +110,12 @@ export class AppPage {
   // Holds other cards in front of the camera (e.g. the color cards after step 1).
   async showCards(scene: SceneName): Promise<void> {
     await showScene(this.page, scene);
+  }
+
+  // Chooses what the camera shows from its next image on, without waiting for it (the camera may be
+  // off).
+  async chooseCards(scene: SceneName): Promise<void> {
+    await setScene(this.page, scene);
   }
 
   // Gray cards complete: camera on, cards are detected and captured, then on to the color cards.
@@ -255,7 +269,7 @@ export class AppPage {
     // the search does not find the old cards.
     await setScene(this.page, 'colors');
     if ((await this.cameraSwitch.getAttribute('aria-checked')) !== 'true') {
-      await this.startCamera();
+      await this.startSearch();
     }
     await this.showCards('colors');
     await this.captureStill();

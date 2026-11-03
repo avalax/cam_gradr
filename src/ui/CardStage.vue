@@ -142,18 +142,16 @@ const previous = ref<Corners[] | null>(null);
 const capturing = ref(false);
 // The last capture showed other cards than expected and was discarded.
 const wrong = ref(false);
-// While these cards stay in the image the frame is red and carries the message; with fresh cards
-// the search starts over with the white frame.
-const showWrong = computed(() => wrong.value && !capturing.value && frameBox.value !== null);
-const labelStyle = computed(() => {
-  const box = frameBox.value;
-  return box === null
-    ? undefined
-    : {
-        left: `${String(((box.x + box.width / 2) / size.value.width) * 100)}%`,
-        top: `${String((box.y / size.value.height) * 100)}%`,
-      };
-});
+// While these cards stay in the image (the frame around them is shown) the frame is red and carries
+// the message; with fresh cards the search starts over with the white frame.
+const showWrong = computed(() => wrong.value && !capturing.value);
+// Position of the message: centered on the top edge of the frame.
+function labelPosition(box: { x: number; y: number; width: number }): Record<string, string> {
+  return {
+    left: `${String(((box.x + box.width / 2) / size.value.width) * 100)}%`,
+    top: `${String((box.y / size.value.height) * 100)}%`,
+  };
+}
 
 // Captures the still image, sets the corners (searched once more, more precisely, on the averaged
 // still image) and stops the camera. If the still image does not match the corners from the live
@@ -426,9 +424,9 @@ watch(actual, (next, previous) => {
             </text>
           </svg>
           <p
-            v-if="showWrong"
+            v-if="showWrong && frameBox !== null"
             class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-red-600 px-2.5 py-0.5 text-[11px] font-semibold text-white"
-            :style="labelStyle"
+            :style="labelPosition(frameBox)"
             role="alert"
             data-testid="wrong-cards"
           >

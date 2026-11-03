@@ -8,6 +8,7 @@ import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS, colorLayout, grayLayout } from '../chart/layouts';
 import { useReferenceStore } from '../reference/reference-store';
 import { checkGrayCards } from '../solve/gray-check';
+import type { FitResult } from '../solve/fit';
 import { useSolveStore } from '../solve/solve-store';
 
 import CardStage from './CardStage.vue';
@@ -26,18 +27,16 @@ const { ready, measurements } = storeToRefs(chart);
 const { selected } = storeToRefs(references);
 const { result, error: solveError, model } = storeToRefs(solve);
 
-// Check against the gray cards from step 1 (only with a calculated correction and measured gray
-// cards), at the exposure of the color shot.
-const grayCheck = computed(() =>
-  result.value === null
-    ? []
-    : checkGrayCards(
-        result.value.model,
-        grayChart.measurements,
-        grayLayout,
-        result.value.report.exposureGain,
-      ),
-);
+// Check against the gray cards from step 1 (for a calculated correction, empty without measured
+// gray cards), at the exposure of the color shot.
+function grayCheck(current: FitResult) {
+  return checkGrayCards(
+    current.model,
+    grayChart.measurements,
+    grayLayout,
+    current.report.exposureGain,
+  );
+}
 
 function compute(): void {
   if (selected.value !== null) {
@@ -97,7 +96,11 @@ watch([measurements, selected], () => {
               :live="live"
             >
               <template #details>
-                <ResultReport v-if="result !== null" :result="result" :gray-check="grayCheck" />
+                <ResultReport
+                  v-if="result !== null"
+                  :result="result"
+                  :gray-check="grayCheck(result)"
+                />
               </template>
             </ColorWipe>
           </template>

@@ -63,7 +63,8 @@ function toBase64(bytes: Bytes): string {
 
 function fromBase64(text: string): Bytes {
   const binary = atob(text);
-  return Uint8Array.from(binary, (character) => character.codePointAt(0) ?? 0);
+  // eslint-disable-next-line unicorn/prefer-code-point -- atob gives one byte per character, which charCodeAt reads; codePointAt would add an undefined case that cannot occur
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
 function toCode(value: number): number {
