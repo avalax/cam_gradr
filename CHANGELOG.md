@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.5.0...cam-gradr-v1.5.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* correct grays colorimetrically, keep clipped white and check at the shot's exposure ([#53](https://github.com/avalax/cam_gradr/issues/53)) ([1fcd5ad](https://github.com/avalax/cam_gradr/commit/1fcd5ad54292da5089899ed7399822f383d405f8))
+* find the card edges at full resolution and measure the layouts on real stills ([#56](https://github.com/avalax/cam_gradr/issues/56)) ([91135d2](https://github.com/avalax/cam_gradr/commit/91135d2b087cd06b5e56c4ef166ff3555e6a58db))
+* measure against the color the correction can show and warn only on real clipping ([#55](https://github.com/avalax/cam_gradr/issues/55)) ([29c3dde](https://github.com/avalax/cam_gradr/commit/29c3ddef1e537f69bd48af8a4b5e0e86dfa8794b))
+
 ## [1.5.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.4.0...cam-gradr-v1.5.0) (2026-10-23)
 
 The app has a dark appearance, the two wipes are labeled the same way, and wrong cards are shown on the frame around them.
