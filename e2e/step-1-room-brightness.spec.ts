@@ -175,7 +175,8 @@ test.describe('Gray cards: automatic capture', () => {
     await app.open();
     await app.startCamera();
     await app.openTab('Graukarten');
-    await expect(app.page.getByTestId('auto-hint')).toBeVisible();
+    // The search hint lasts only until the capture, often less than a second; it is covered by the
+    // component tests. Here the end state counts: still image and corners without a click.
 
     await expect(app.page.locator('svg circle')).toHaveCount(8);
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
