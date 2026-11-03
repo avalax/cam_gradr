@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { labToSrgb } from '../color/lab';
+import { labToSrgb, scaleLab } from '../color/lab';
 import { colorLayout } from '../chart/layouts';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
@@ -41,7 +41,7 @@ const REFERENCE = { name: 'Test', patches: { '1D': [90, 0, 0] as const } };
 
 describe('wedgeRows', () => {
   it('returns no gray wedge without a model', () => {
-    expect(wedgeRows(IDS, { '1D': [0.5, 0.5, 0.5] }, null, REFERENCE)).toEqual([]);
+    expect(wedgeRows(IDS, { '1D': [0.5, 0.5, 0.5] }, null, REFERENCE, 1)).toEqual([]);
   });
 
   it('takes only measured patches and sorts them from light to dark', () => {
@@ -50,20 +50,27 @@ describe('wedgeRows', () => {
       { '1D': [0.2, 0.2, 0.2], '3D': [0.8, 0.8, 0.8] },
       IDENTITY,
       REFERENCE,
+      1,
     );
     expect(rows.map((row) => row.id)).toEqual(['3D', '1D']);
   });
 
   it('gives camera, corrected color and, with a reference, the target', () => {
-    const [row] = wedgeRows(IDS, { '1D': [0.2, 0.2, 0.2] }, RED_LIFT, REFERENCE);
+    const [row] = wedgeRows(IDS, { '1D': [0.2, 0.2, 0.2] }, RED_LIFT, REFERENCE, 1);
     expect(row?.camera).toBe('rgb(51, 51, 51)');
     expect(row?.corrected).toBe(cssColor(applyColorModel(RED_LIFT, [0.2, 0.2, 0.2])));
     expect(row?.corrected).not.toBe(row?.camera);
     expect(row?.target).toBe(cssColor(labToSrgb([90, 0, 0])));
   });
 
+  it('shows the target at the exposure of the shot, like the report', () => {
+    const [row] = wedgeRows(IDS, { '1D': [0.2, 0.2, 0.2] }, IDENTITY, REFERENCE, 0.5);
+    expect(row?.target).toBe(cssColor(labToSrgb(scaleLab([90, 0, 0], 0.5))));
+    expect(row?.target).not.toBe(cssColor(labToSrgb([90, 0, 0])));
+  });
+
   it('omits the target when the patch has no reference value', () => {
-    const rows = wedgeRows(IDS, { '2D': [0.5, 0.5, 0.5] }, IDENTITY, null);
+    const rows = wedgeRows(IDS, { '2D': [0.5, 0.5, 0.5] }, IDENTITY, null, 1);
     expect(rows[0]?.target).toBeNull();
   });
 });
@@ -89,11 +96,11 @@ describe('colorCards', () => {
   );
 
   it('returns nothing without a model', () => {
-    expect(colorCards(colorLayout, NEUTRAL, measured, null, null)).toEqual([]);
+    expect(colorCards(colorLayout, NEUTRAL, measured, null, null, 1)).toEqual([]);
   });
 
   it('returns the colored patches per card in card order and omits neutral patches', () => {
-    const cards = colorCards(colorLayout, NEUTRAL, measured, IDENTITY, null);
+    const cards = colorCards(colorLayout, NEUTRAL, measured, IDENTITY, null, 1);
     expect(cards).toHaveLength(2);
     expect(cards[0]?.slice(0, 4).map((row) => row.id)).toEqual(['1A', '1B', '1C', '2A']);
     expect(cards.flat().some((row) => NEUTRAL.has(row.id))).toBe(false);
@@ -102,7 +109,7 @@ describe('colorCards', () => {
 
   it('omits patches without a measurement and cards without measured colored patches', () => {
     const onlyFirst = { '1A': [0.4, 0.4, 0.4] as const };
-    const cards = colorCards(colorLayout, NEUTRAL, onlyFirst, IDENTITY, null);
+    const cards = colorCards(colorLayout, NEUTRAL, onlyFirst, IDENTITY, null, 1);
     expect(cards).toHaveLength(1);
     expect(cards[0]?.map((row) => row.id)).toEqual(['1A']);
   });

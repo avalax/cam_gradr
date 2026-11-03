@@ -71,6 +71,23 @@ describe('assessExposure', () => {
     expect(result.verdict).toBe('high-contrast');
   });
 
+  it('rates the contrast once the brightness is right, like the measuring field', () => {
+    // Both large patches are as bright as they should be on average, but too far apart or too close.
+    expect(assessExposure(input({ large18: grey(0.41), large50: grey(0.79) })).verdict).toBe(
+      'high-contrast',
+    );
+    expect(assessExposure(input({ large18: grey(0.5), large50: grey(0.7) })).verdict).toBe(
+      'low-contrast',
+    );
+    expect(assessExposure(input({ large18: grey(0.44), large50: grey(0.76) })).verdict).toBe('ok');
+  });
+
+  it('names the brightness first when both brightness and contrast are off', () => {
+    expect(assessExposure(input({ large18: grey(0.5), large50: grey(0.95) })).verdict).toBe(
+      'too-bright',
+    );
+  });
+
   it('uses a passed configuration', () => {
     const strict = { ...DEFAULT_EXPOSURE_CONFIG, tolerance: 0.001 };
     expect(

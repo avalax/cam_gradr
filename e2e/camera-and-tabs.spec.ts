@@ -131,6 +131,9 @@ test.describe('Camera switch', () => {
     await expect(app.page.getByLabel('Auflösung')).toBeVisible();
     await app.closeSettings();
 
+    // The active resolution only shows while the camera runs. The card tabs find the cards, capture
+    // and switch the camera off, so start it where no search runs.
+    await app.openTab('Vorschau');
     await app.startCamera();
     await app.openSettings();
     await expect(app.page.getByText('Aktive Auflösung')).toBeVisible();

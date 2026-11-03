@@ -1,7 +1,7 @@
 import { codeLuma } from '../chart/exposure';
 import type { Measurements } from '../chart/measure';
 import type { ChartLayout } from '../chart/types';
-import { labToSrgb } from '../color/lab';
+import { labToSrgb, scaleLab } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
@@ -19,11 +19,14 @@ export interface WedgeRow {
   corrected: string;
 }
 
+// The target is shown at the exposure of the shot (`exposureGain` from the fit report), as the
+// correction keeps that exposure and the deviations are measured against it.
 function patchRow(
   id: string,
   measurements: Measurements,
   model: ColorModel,
   reference: ReferenceSet | null,
+  exposureGain: number,
 ): WedgeRow | null {
   const measured = measurements[id];
   if (measured === undefined) {
@@ -32,26 +35,27 @@ function patchRow(
   const lab = reference?.patches[id];
   return {
     id,
-    target: lab === undefined ? null : cssColor(labToSrgb(lab)),
+    target: lab === undefined ? null : cssColor(labToSrgb(scaleLab(lab, exposureGain))),
     camera: cssColor(measured),
     corrected: cssColor(applyColorModel(model, measured)),
   };
 }
 
 // The measured neutral patches of the color cards from light to dark (by camera value). Without
-// Korrekturmodell gibt es keinen Graukeil.
+// a correction model there is no gray wedge.
 export function wedgeRows(
   neutralIds: ReadonlySet<string>,
   measurements: Measurements,
   model: ColorModel | null,
   reference: ReferenceSet | null,
+  exposureGain: number,
 ): WedgeRow[] {
   if (model === null) {
     return [];
   }
   const rows: { luma: number; row: WedgeRow }[] = [];
   for (const id of neutralIds) {
-    const row = patchRow(id, measurements, model, reference);
+    const row = patchRow(id, measurements, model, reference, exposureGain);
     const measured = measurements[id];
     if (row !== null && measured !== undefined) {
       rows.push({ luma: codeLuma(measured), row });
@@ -73,6 +77,7 @@ export function colorCards(
   measurements: Measurements,
   model: ColorModel | null,
   reference: ReferenceSet | null,
+  exposureGain: number,
 ): WedgeRow[][] {
   if (model === null) {
     return [];
@@ -83,7 +88,7 @@ export function colorCards(
         .map((patch) => patch.id)
         .filter((id) => !neutralIds.has(id))
         .toSorted(byRowThenColumn)
-        .map((id) => patchRow(id, measurements, model, reference))
+        .map((id) => patchRow(id, measurements, model, reference, exposureGain))
         .filter((row) => row !== null),
     )
     .filter((rows) => rows.length > 0);

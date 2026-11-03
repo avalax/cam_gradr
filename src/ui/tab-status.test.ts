@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { assessExposure } from '../chart/exposure';
 import type { ExposureResult } from '../chart/exposure';
 
 import { colorStatus, grayStatus } from './tab-status';
@@ -31,6 +32,20 @@ describe('grayStatus', () => {
     expect(status.level).toBe('warn');
     expect(status.fill).toBe(2);
     expect(status.text).toBe('Helligkeit zu niedrig');
+  });
+
+  it('is not green while the contrast lies outside the normal range of the measuring field', () => {
+    const grey = (value: number) => [value, value, value] as const;
+    const status = grayStatus(
+      assessExposure({
+        large18: grey(0.41),
+        large50: grey(0.79),
+        stripDark: grey(0.2),
+        stripLight: grey(0.85),
+      }),
+    );
+    expect(status.level).toBe('warn');
+    expect(status.text).toBe('Kontrast zu hoch');
   });
 
   it('also warns when there is no single hint', () => {

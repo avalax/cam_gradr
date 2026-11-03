@@ -26,9 +26,17 @@ const { ready, measurements } = storeToRefs(chart);
 const { selected } = storeToRefs(references);
 const { result, error: solveError, model } = storeToRefs(solve);
 
-// Check against the gray cards from step 1 (only with a correction and measured gray cards).
+// Check against the gray cards from step 1 (only with a calculated correction and measured gray
+// cards), at the exposure of the color shot.
 const grayCheck = computed(() =>
-  model.value === null ? [] : checkGrayCards(model.value, grayChart.measurements, grayLayout),
+  result.value === null
+    ? []
+    : checkGrayCards(
+        result.value.model,
+        grayChart.measurements,
+        grayLayout,
+        result.value.report.exposureGain,
+      ),
 );
 
 function compute(): void {

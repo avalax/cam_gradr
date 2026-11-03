@@ -57,9 +57,19 @@ const viewOptions = computed(() => [
 const view = ref<'colors' | 'grays'>('colors');
 const WORST_COUNT = 3;
 
+// The targets at the exposure of the shot, like in the report (without a report at the reference's).
+const exposureGain = computed(() => result.value?.report.exposureGain ?? 1);
+
 // Color grid from the measured chromatic patches and the patches with the largest residual error.
 const tiles = computed(() =>
-  colorCards(colorLayout, NEUTRAL_IDS, measurements.value, model.value, selected.value),
+  colorCards(
+    colorLayout,
+    NEUTRAL_IDS,
+    measurements.value,
+    model.value,
+    selected.value,
+    exposureGain.value,
+  ),
 );
 const worst = computed(() =>
   result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
@@ -67,7 +77,7 @@ const worst = computed(() =>
 
 // Gray wedge from the measured neutral patches and what the correction changes per tonal range.
 const rows = computed(() =>
-  wedgeRows(NEUTRAL_IDS, measurements.value, model.value, selected.value),
+  wedgeRows(NEUTRAL_IDS, measurements.value, model.value, selected.value, exposureGain.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
 const emptyText = computed(() =>
