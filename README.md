@@ -64,6 +64,10 @@ images of the tabs and their corner points are in the file as well. When you loa
 points come back and the camera is switched off. Without still images no corner points are saved either.
 The reference values are not in the file, only the name of the selected set.
 
+Saving suggests the file you loaded or saved last: in Chrome and Edge the save dialog opens in its folder
+with its name preselected (the browser asks before it overwrites the file), in Firefox the download gets
+its name.
+
 ## Tips for good results
 
 - Hold the cards steady and parallel to the camera; blurred shots are not recognized by the app.

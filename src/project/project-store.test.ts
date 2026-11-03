@@ -1,6 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
@@ -14,10 +14,21 @@ import { dummyIds, dummyLab, dummyReferenceJson } from '../test-support/dummy-re
 import { cameraCode } from '../test-support/synthetic-camera';
 
 import { parseProject } from './project';
+import { fileDialogs } from './project-file';
+import type { FileDialogs } from './project-file';
 import { PROJECT_FILE_NAME, useProjectStore } from './project-store';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
+
+// The fake system dialogs installed by the test (fails the test if they are missing).
+function installedDialogs(): FileDialogs {
+  const dialogs = fileDialogs();
+  if (dialogs === null) {
+    throw new Error('The test did not install the file dialogs.');
+  }
+  return dialogs;
+}
 
 const colorMeasurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
@@ -309,5 +320,103 @@ describe('the tone setting in the project', () => {
     await useProjectStore().load(text);
     expect(useSolveStore().tone).toBe(false);
     expect(useSolveStore().model?.curves[0].xs).toHaveLength(3);
+  });
+});
+
+describe('the project file that saving suggests', () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+
+  // The file "mein-projekt.json" in the system dialogs, readable and writable (Chrome, Edge).
+  function fakeHandle(text = '') {
+    const name = 'mein-projekt.json';
+    const written: string[] = [];
+    const handle = {
+      name,
+      getFile: () => Promise.resolve({ name, text: () => Promise.resolve(text) }),
+      createWritable: () =>
+        Promise.resolve({
+          write: (content: string) => {
+            written.push(content);
+            return Promise.resolve();
+          },
+          close: () => Promise.resolve(),
+        }),
+    } as unknown as FileSystemFileHandle;
+    return { handle, written };
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    download.mockReset();
+  });
+
+  afterEach(() => {
+    delete globals.showOpenFilePicker;
+    delete globals.showSaveFilePicker;
+  });
+
+  it('saves under the name of the loaded file', async () => {
+    const text = await workedState();
+    const project = useProjectStore();
+    await project.load(text, { name: 'mein-projekt.json' });
+    await project.save();
+    expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('mein-projekt.json');
+  });
+
+  it('does not take the name of a faulty file', async () => {
+    const project = useProjectStore();
+    await project.load('{"format":"x"}', { name: 'kaputt.json' });
+    expect(project.file).toBeNull();
+    await project.save();
+    expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe(PROJECT_FILE_NAME);
+  });
+
+  it('opens a file in the system dialog and saves it there again', async () => {
+    const text = await workedState();
+    const opened = fakeHandle(text);
+    const chosen = fakeHandle();
+    const showSaveFilePicker = vi.fn().mockResolvedValue(chosen.handle);
+    Object.assign(globals, {
+      showOpenFilePicker: vi.fn().mockResolvedValue([opened.handle]),
+      showSaveFilePicker,
+    });
+    const project = useProjectStore();
+    await project.open(installedDialogs());
+    expect(project.error).toBeNull();
+    expect(project.file).toEqual({ name: 'mein-projekt.json', handle: opened.handle });
+    await project.save();
+    expect(showSaveFilePicker).toHaveBeenCalledWith(
+      expect.objectContaining({ suggestedName: 'mein-projekt.json', startIn: opened.handle }),
+    );
+    expect(chosen.written).toHaveLength(1);
+    expect(project.file?.handle).toBe(chosen.handle);
+  });
+
+  it('keeps everything as it is when a dialog is cancelled', async () => {
+    const abort = new DOMException('The user aborted a request.', 'AbortError');
+    Object.assign(globals, {
+      showOpenFilePicker: vi.fn().mockRejectedValue(abort),
+      showSaveFilePicker: vi.fn().mockRejectedValue(abort),
+    });
+    const project = useProjectStore();
+    await project.open(installedDialogs());
+    await project.save();
+    expect(project.file).toBeNull();
+    expect(project.error).toBeNull();
+  });
+
+  it('reports a file that cannot be opened or saved', async () => {
+    Object.assign(globals, {
+      showOpenFilePicker: vi
+        .fn()
+        .mockRejectedValue(new DOMException('No access', 'NotAllowedError')),
+      showSaveFilePicker: vi.fn().mockRejectedValue(new Error('Disk full')),
+    });
+    const project = useProjectStore();
+    await project.open(installedDialogs());
+    expect(project.error).toBe('Die Projektdatei ließ sich nicht öffnen: No access');
+    await project.save();
+    expect(project.error).toBe('Das Projekt ließ sich nicht speichern: Disk full');
   });
 });

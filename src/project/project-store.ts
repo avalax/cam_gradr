@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
 import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import { t } from '../lang';
-import { downloadFile } from '../lut/download';
 import { usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
 import { decodeFrame, encodeFrame } from './frame-codec';
+import { openProjectFile, saveProjectFile } from './project-file';
+import type { FileDialogs, ProjectFile } from './project-file';
 import { PROJECT_FORMAT, parseProject, serializeProject } from './project';
 import type { Project } from './project';
 
@@ -118,6 +119,8 @@ export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 export const useProjectStore = defineStore('project', () => {
   const error = ref<string | null>(null);
   const notice = ref<string | null>(null);
+  // The file that was loaded or saved last: saving suggests it again.
+  const file = shallowRef<ProjectFile | null>(null);
 
   // Saves the working state; with `withStills` the tabs' still images are included in the file.
   async function save(options?: { withStills: boolean }): Promise<void> {
@@ -132,11 +135,19 @@ export const useProjectStore = defineStore('project', () => {
       }
       project.stills = stills;
     }
-    downloadFile(PROJECT_FILE_NAME, serializeProject(project), 'application/json');
+    try {
+      const saved = await saveProjectFile(serializeProject(project), file.value, PROJECT_FILE_NAME);
+      if (saved !== null) {
+        file.value = saved;
+      }
+    } catch (error_) {
+      error.value = t('project.errors.saveFailed', { reason: (error_ as Error).message });
+    }
   }
 
-  // Applies a project file; with a faulty file the previous state is kept.
-  async function load(text: string): Promise<void> {
+  // Applies a project file; with a faulty file the previous state is kept. `source` is the file it
+  // came from, which saving suggests afterwards.
+  async function load(text: string, source?: ProjectFile): Promise<void> {
     notice.value = null;
     let read: { project: Project; stills: Stills | null };
     try {
@@ -146,6 +157,9 @@ export const useProjectStore = defineStore('project', () => {
       return;
     }
     error.value = null;
+    if (source !== undefined) {
+      file.value = source;
+    }
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
@@ -154,11 +168,23 @@ export const useProjectStore = defineStore('project', () => {
       missing === null ? null : t('project.notice.missingReference', { name: missing });
   }
 
+  // Lets the user choose a project file in the system dialog and loads it.
+  async function open(dialogs: FileDialogs): Promise<void> {
+    try {
+      const picked = await openProjectFile(dialogs);
+      if (picked !== null) {
+        await load(picked.text, picked.file);
+      }
+    } catch (error_) {
+      error.value = t('project.errors.openFailed', { reason: (error_ as Error).message });
+    }
+  }
+
   // Dismisses the message.
   function dismiss(): void {
     error.value = null;
     notice.value = null;
   }
 
-  return { error, notice, save, load, dismiss };
+  return { error, notice, file, save, load, open, dismiss };
 });

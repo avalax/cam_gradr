@@ -9,6 +9,24 @@ import { setScene, showScene } from './camera-stub';
 import type { SceneName } from './synthetic-cards';
 
 // Page object of the app: wraps operating and reading the interface for the acceptance tests.
+// What the save dialog stand-in was asked to preselect (see AppPage.useFileDialogs).
+interface SaveDialog {
+  suggestedName: string;
+  startsInOpened: boolean;
+  startsIn: boolean;
+}
+
+interface FileDialogStandIns {
+  setOpenedText: (text: string) => void;
+  takeSaved: () => string | null;
+  saveDialogs: () => SaveDialog[];
+}
+
+// The page's global object with the controls of the file dialog stand-ins.
+interface WithStandIns {
+  fileDialogStandIns: FileDialogStandIns;
+}
+
 export class AppPage {
   readonly overlay: Locator;
   readonly scale: Locator;
@@ -150,10 +168,10 @@ export class AppPage {
   }
 
   // Loads a project file via the Export tab.
-  async loadProject(text: string): Promise<void> {
+  async loadProject(text: string, name = 'project.json'): Promise<void> {
     await this.openTab('Export');
     await this.page.getByTestId('project-file').setInputFiles({
-      name: 'project.json',
+      name,
       mimeType: 'application/json',
       buffer: Buffer.from(text),
     });
@@ -244,6 +262,83 @@ export class AppPage {
 
   // Saves the project via the Export tab and returns the file name and content. By default the
   // still images are included in the file; `withStills: false` unticks the checkbox.
+  // Stand-ins for the system file dialogs of Chrome and Edge (call before open()). The open dialog
+  // returns the file "mein-projekt.json" with the text set by setOpenedText(); the save dialog keeps
+  // the written text and records what it was asked to preselect.
+  async useFileDialogs(): Promise<void> {
+    await this.page.addInitScript(() => {
+      let openedText = '';
+      let saved: string | null = null;
+      const asked: SaveDialog[] = [];
+      const file = (name: string, read: () => string) => ({
+        kind: 'file',
+        name,
+        getFile: () => Promise.resolve(new File([read()], name, { type: 'application/json' })),
+        createWritable: () => {
+          const parts: string[] = [];
+          return Promise.resolve({
+            write: (part: string) => {
+              parts.push(part);
+              return Promise.resolve();
+            },
+            close: () => {
+              saved = parts.join('');
+              return Promise.resolve();
+            },
+          });
+        },
+      });
+      const opened = file('mein-projekt.json', () => openedText);
+      const standIns: FileDialogStandIns = {
+        setOpenedText: (text) => {
+          openedText = text;
+        },
+        takeSaved: () => {
+          const text = saved;
+          saved = null;
+          return text;
+        },
+        saveDialogs: () => asked,
+      };
+      Object.assign(globalThis, {
+        showOpenFilePicker: () => Promise.resolve([opened]),
+        showSaveFilePicker: (options: { suggestedName: string; startIn?: unknown }) => {
+          asked.push({
+            suggestedName: options.suggestedName,
+            startsInOpened: options.startIn === opened,
+            startsIn: options.startIn !== undefined,
+          });
+          return Promise.resolve(file(options.suggestedName, () => ''));
+        },
+        fileDialogStandIns: standIns,
+      });
+    });
+  }
+
+  // The text the open dialog stand-in returns for "mein-projekt.json".
+  async setOpenedText(text: string): Promise<void> {
+    await this.page.evaluate((value) => {
+      (globalThis as unknown as WithStandIns).fileDialogStandIns.setOpenedText(value);
+    }, text);
+  }
+
+  // Saves with the save dialog stand-in and returns the written text.
+  async saveProjectInDialog(): Promise<string> {
+    await this.openTab('Export');
+    await this.page.getByTestId('project-save').click();
+    const saved = await this.page.waitForFunction(() =>
+      (globalThis as unknown as WithStandIns).fileDialogStandIns.takeSaved(),
+    );
+    return (await saved.jsonValue()) ?? '';
+  }
+
+  // What the save dialog stand-in was asked to preselect, in the order of the saves.
+  async saveDialogs(): Promise<SaveDialog[]> {
+    return this.page.evaluate(() =>
+      (globalThis as unknown as WithStandIns).fileDialogStandIns.saveDialogs(),
+    );
+  }
+
   async saveProject(
     options: { withStills?: boolean } = {},
   ): Promise<{ fileName: string; text: string }> {
