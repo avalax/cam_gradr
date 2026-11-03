@@ -8,9 +8,11 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request cancels its outdated run. Runs on main always finish, so that every
+# merged commit gets its result (and the badge does not show a cancelled run as failing).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
