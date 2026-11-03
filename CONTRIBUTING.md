@@ -37,7 +37,7 @@ The `main` branch is protected: changes get in **only through pull requests**, a
 ## Running the checks locally
 
 ```bash
-npm run verify      # lint, typecheck, knip, unit tests with coverage (at least 99%)
+npm run verify      # lint, typecheck, knip, unit tests with coverage (100%)
 npm run verify:all  # additionally the Playwright acceptance tests (Chrome and Firefox)
 ```
 
@@ -45,7 +45,7 @@ The `pre-push` hook runs `npm run verify` and prevents direct pushes to `main`.
 
 ## Quality requirements
 
-- New logic needs unit tests; the coverage threshold of 99% applies to all metrics.
+- New logic needs unit tests; the coverage threshold of 100% applies to all metrics.
 - New UI behavior needs an acceptance scenario in `e2e/`.
 - Lint and type checking run without warnings.
 - The reference values of the cards (manufacturer data) never belong in the repo. Test data is made up.
@@ -53,8 +53,8 @@ The `pre-push` hook runs `npm run verify` and prevents direct pushes to `main`.
 
 ## Quality assurance in detail
 
-- **Tests:** Vitest with at least **99% coverage** (statements, branches, functions, lines). If the
-  coverage drops below that, the run fails.
+- **Tests:** Vitest with **100% coverage** (statements, branches, functions, lines). If the coverage
+  drops below that, the run fails. Code that no test can reach is dead and is removed instead.
 - **Acceptance tests:** Playwright checks the complete user story in Chrome and Firefox with a
   synthetic camera (see `e2e/`). They run in the CI as their own job `acceptance`.
 - **Linting:** ESLint (strict, type-aware, Vue, accessibility), Prettier, Stylelint, markdownlint and
