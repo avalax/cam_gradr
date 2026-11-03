@@ -3,9 +3,12 @@ import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Rgb } from './types';
 
 export interface ExposureConfig {
-  // From this channel value (0..1) the brightest strip patch counts as clipped.
+  // From this value (0..1) of one of its channels the brightest strip patch counts as clipped: the
+  // top of the range, a little below 1 because the still is averaged. The strip patch is about as
+  // bright as a white; at the target exposure it reads about 0.95, which is fine.
   highlightClip: number;
-  // Up to this brightness value (0..1) the darkest strip patch counts as crushed.
+  // Up to this value (0..1) of one of its channels the darkest strip patch counts as crushed: the
+  // bottom of the range, where the channel no longer carries a signal.
   shadowFloor: number;
   // Target brightness (sRGB-encoded, 0..1) of the large patches: 18 % reflectance ≈ 0.46,
   // 50 % ≈ 0.74.
@@ -18,8 +21,8 @@ export interface ExposureConfig {
 }
 
 export const DEFAULT_EXPOSURE_CONFIG: ExposureConfig = {
-  highlightClip: 0.95,
-  shadowFloor: 0.03,
+  highlightClip: 0.99,
+  shadowFloor: 0.01,
   target18: 0.46,
   target50: 0.74,
   tolerance: 0.06,
@@ -95,7 +98,7 @@ export function assessExposure(
   const delta = (level18 - config.target18 + (level50 - config.target50)) / 2;
   const contrast = level50 - level18 - (config.target50 - config.target18);
   const highlightsClipped = Math.max(...input.stripLight) >= config.highlightClip;
-  const shadowsCrushed = codeLuma(input.stripDark) <= config.shadowFloor;
+  const shadowsCrushed = Math.min(...input.stripDark) <= config.shadowFloor;
   const verdict = pickVerdict(highlightsClipped, shadowsCrushed, delta, config.tolerance);
   return {
     verdict: contrastVerdict(verdict, contrast, config.contrastTolerance),

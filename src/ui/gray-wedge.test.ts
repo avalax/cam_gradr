@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { labToSrgb, scaleLab } from '../color/lab';
+import { labToSrgb } from '../color/lab';
 import { colorLayout } from '../chart/layouts';
-import { applyColorModel } from '../solve/fit';
+import { applyColorModel, targetLab } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
 import { setLocale } from '../lang';
 
@@ -65,7 +65,7 @@ describe('wedgeRows', () => {
 
   it('shows the target at the exposure of the shot, like the report', () => {
     const [row] = wedgeRows(IDS, { '1D': [0.2, 0.2, 0.2] }, IDENTITY, REFERENCE, 0.5);
-    expect(row?.target).toBe(cssColor(labToSrgb(scaleLab([90, 0, 0], 0.5))));
+    expect(row?.target).toBe(cssColor(labToSrgb(targetLab([90, 0, 0], 0.5))));
     expect(row?.target).not.toBe(cssColor(labToSrgb([90, 0, 0])));
   });
 

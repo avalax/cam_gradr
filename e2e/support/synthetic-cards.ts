@@ -30,7 +30,7 @@ interface Lighting {
 const LIGHTINGS = {
   ok: { large18: 0.46, large50: 0.74, stripDark: 0.12, stripLight: 0.85 },
   dark: { large18: 0.3, large50: 0.58, stripDark: 0.05, stripLight: 0.6 },
-  bright: { large18: 0.62, large50: 0.88, stripDark: 0.2, stripLight: 0.97 },
+  bright: { large18: 0.62, large50: 0.88, stripDark: 0.2, stripLight: 1 },
 } as const satisfies Record<string, Lighting>;
 
 // Lightings of the gray cards; "colors" shows the color cards instead (step 2).

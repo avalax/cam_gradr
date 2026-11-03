@@ -1,5 +1,11 @@
 import { t } from '../lang';
-import { deltaE2000, labToLinearSrgb, scaleLab, srgbToLab } from '../color/lab';
+import {
+  deltaE2000,
+  labToLinearSrgb,
+  linearSrgbToXyzD50,
+  srgbToLab,
+  xyzD50ToLab,
+} from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Rgb } from '../chart/types';
@@ -17,7 +23,7 @@ export interface ColorModel {
 
 interface PatchError {
   id: string;
-  // Target color (Lab, D50) and measured camera value (sRGB-encoded) of the patch.
+  // Target color (Lab, D50, see targetLab) and measured camera value (sRGB-encoded) of the patch.
   reference: Vec3;
   measured: Rgb;
   before: number;
@@ -274,16 +280,17 @@ function polynomial(points: readonly (readonly [number, number])[], degree: numb
   };
 }
 
-// Tone curve of a channel from the (camera value, target value) pairs of the gray ramp, both
-// linear: the logarithm of the gain (target / camera) is a polynomial of the logarithm of the
-// camera value. Beyond the measured range the gain stays constant at the edge value, and it is
-// limited so that noise is not amplified without bounds.
+// Compresses a linear target value softly towards white above the shoulder (see SHOULDER).
 function shoulder(value: number): number {
   return value <= SHOULDER
     ? value
     : SHOULDER + (1 - SHOULDER) * (1 - Math.exp(-(value - SHOULDER) / (1 - SHOULDER)));
 }
 
+// Tone curve of a channel from the (camera value, target value) pairs of the gray ramp, both
+// linear: the logarithm of the gain (target / camera) is a polynomial of the logarithm of the
+// camera value. Beyond the measured range the gain stays constant at the edge value, and it is
+// limited so that noise is not amplified without bounds.
 function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   const usable = points.filter(([x, y]) => x > CURVE_FLOOR / 10 && y > 0);
   const logs = usable.map(([x, y]): [number, number] => [Math.log(x), Math.log(y / x)]);
@@ -482,6 +489,26 @@ function intoGamut([r, g, b]: Vec3): Vec3 {
   ];
 }
 
+// The color the correction aims at for a reference color (Lab, D50), linear: at the exposure of the
+// shot (`exposureGain`), compressed softly above the shoulder like the tone curves do, and pulled into
+// the sRGB gamut like the output. That is the best the correction can show: colors outside the gamut
+// (such as the cyan 1F) or brighter than white cannot be reached, and measuring against them would
+// count an unavoidable error and pull the matrix towards it.
+function targetLinear(lab: Vec3, exposureGain: number): Vec3 {
+  const [r, g, b] = labToLinearSrgb(lab);
+  return intoGamut([
+    shoulder(r * exposureGain),
+    shoulder(g * exposureGain),
+    shoulder(b * exposureGain),
+  ]);
+}
+
+// The same target as Lab (D50). The report, the check with the gray cards and the preview show and
+// measure against it.
+export function targetLab(lab: Vec3, exposureGain: number): Vec3 {
+  return xyzD50ToLab(linearSrgbToXyzD50(targetLinear(lab, exposureGain)));
+}
+
 // Mixes the curve outputs (linear) with the matrix and returns the sRGB code.
 function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3): Vec3 {
   const [a, b, c] = matrix;
@@ -573,14 +600,14 @@ export function fitColorModel(input: FitInput): FitResult {
   const pairs = all.map((sample): Pair => ({
     measured: sample.measured,
     corrected: curveLinear(functions, sample.linear),
-    target: [sample.target[0] * gain, sample.target[1] * gain, sample.target[2] * gain],
-    lab: scaleLab(sample.reference, gain),
+    target: targetLinear(sample.reference, gain),
+    lab: targetLab(sample.reference, gain),
   }));
   const model: ColorModel = { curves, matrix: refineMatrix(fitMatrix(pairs), pairs) };
 
   const errors = all.map((sample): PatchError => {
-    // The deviation is measured against the reference at the exposure of the shot.
-    const reference = scaleLab(sample.reference, gain);
+    // The deviation is measured against the color the correction can show at best.
+    const reference = targetLab(sample.reference, gain);
     return {
       id: sample.id,
       reference,
