@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.6.0...cam-gradr-v1.7.0) (2026-11-04)
+
+
+### Features
+
+* always correct contrast and gamma ([#65](https://github.com/avalax/cam_gradr/issues/65)) ([ad9be58](https://github.com/avalax/cam_gradr/commit/ad9be58d8c214e392c39d44681b7aa8093ba105a))
+* never cut off different colors at the same value ([#68](https://github.com/avalax/cam_gradr/issues/68)) ([98e500c](https://github.com/avalax/cam_gradr/commit/98e500cdecccd3db196c2935de783d282bc27fc1))
+
 ## [1.6.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.5.1...cam-gradr-v1.6.0) (2026-11-03)
 
 
