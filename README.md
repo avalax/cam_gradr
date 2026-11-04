@@ -1,174 +1,111 @@
 # cam_gradr
 
-[![CI](https://github.com/avalax/cam_gradr/actions/workflows/ci.yml/badge.svg)](https://github.com/avalax/cam_gradr/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-**LUT generator for the Datacolor Spyder Checkr Photo.** You hold the cards in front of your webcam, the
-app helps you set the room brightness and calculates a 3D LUT from it that corrects the color rendition
-of the webcam. You download the LUT as a `.cube` file, for example for a camera monitor or video
-software.
+**Correct the colors of your webcam with the Datacolor Spyder Checkr Photo.** Hold the cards in front of
+the camera: the app helps you set the light, measures the colors and calculates a 3D LUT that corrects
+them. You download the LUT as a `.cube` file for a camera monitor or video software.
 
 **Open the app: <https://avalax.github.io/cam_gradr/>**
 
-Everything runs in your browser. There is no backend: images and measurements never leave your computer.
+Everything runs in your browser. Images and measurements never leave your computer.
 
 ## What you need
 
-- a webcam and the **Datacolor Spyder Checkr Photo** (the two pairs of cards with the gray patches and
-  the 48 color patches)
-- a current browser (Chrome or Firefox); the camera only works over HTTPS, and the page above meets that
-- even light on the cards, without reflections and without shadows
+- a webcam and the **Datacolor Spyder Checkr Photo** (two gray cards and two color cards with 48 patches)
+- a current Chrome, Edge or Firefox
+- even light on the cards, without reflections and shadows
 
-## How to proceed
+## How it works
 
-1. **Prepare the camera.** Lock auto exposure and auto white balance of the camera in its own software.
-   The app cannot do this itself, and automatic adjustments falsify the measurement. Then switch on the
-   camera at the top right (green "Start camera", red "Stop camera"). You choose the camera and the
-   resolution in the gear menu ⚙.
-2. **Gray cards tab: set the light.** Hold both gray cards steady where the subject will be. A frame
-   appears around the cards as soon as the app sees them. It finds
-   them by itself, takes a still image and switches the camera off. In the measuring field on the right a
-   dot shows brightness (vertical) and contrast (horizontal). If it sits in the framed window in the
-   middle, the light is right; otherwise the field says what to change (details on hover). Change the
-   light or the camera and switch the camera on again until the dot is in the normal range.
-3. **Color cards tab: calculate the correction.** Hold both color cards steady where the subject will be. The
-   correction is calculated automatically. The wipe slider on the right shows the colors of your camera on
-   the left and the corrected ones on the right (drag the line or use the arrow keys). The label below
-   gives the mean deviation before and after; hover it to see the result per color patch.
-4. **Preview tab: check the result.** Your camera image with the correction: the original on the left, the
-   corrected image on the right. The side column shows every color patch as target, camera and corrected
-   and names the patches with the largest remaining deviation; a switch changes to the grays. With
-   "Capture still" you check the correction on a steady image.
-5. **Export tab: download the LUT.** Choose the size (17³, 33³ or 65³) and download the `.cube` file.
-   Which size your device accepts is in its manual; larger LUTs are more accurate, but some devices only
-   take 17³ or 33³. The correction is always applied in full.
+1. **Prepare the camera.** Lock auto exposure and auto white balance in the camera's own software; the
+   app cannot do that, and automatic adjustments falsify the measurement. Choose the camera and the
+   resolution in the gear menu ⚙ (1280 × 720 is a good start) and switch the camera on at the top right.
+2. **Gray cards: set the light.** Hold both gray cards steady where the subject will be. The app finds
+   them, takes a still image and switches the camera off. A dot in the measuring field next to the image
+   shows brightness (vertical) and contrast (horizontal). Change the light or the camera and start the
+   camera again until the dot sits in the framed window in the middle; hover the field for details.
+3. **Color cards: calculate the correction.** Without changing the light or the camera, hold both color
+   cards in the same place. The correction is calculated by itself. A wipe slider compares the camera
+   colors with the corrected ones, and the label below gives the mean deviation before and after (hover
+   it for each patch).
+4. **Preview: check the result.** The camera image with the original on the left and the corrected image
+   on the right. The side column shows each patch as target, camera and corrected and names the largest
+   deviations. "Take still image" checks the correction on a steady image.
+5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
+   more accurate, but some devices only accept 17³ or 33³ (see their manual).
 
-You can open the four tabs freely at any time. Below each tab name is a short result, and for the gray
-cards and color cards a small gauge of four bars: empty = nothing yet, green = good (light in the normal
-range, or mean deviation after the correction of at most 2), yellow = hint.
+You can switch between the tabs at any time. Below each name is a short result with four bars: green
+means good (light in the normal range, or a mean deviation of at most 2 after the correction), yellow
+means check the hint.
 
-### Search again and adjust corner points
+**Corner points:** You can drag them on the still image. The trash icon in the corner of the image
+deletes them and starts a new search. Starting the camera searches again too; if it stops without a new
+still image, the old one comes back. Cards held upside down are recognized.
 
-- The trash icon in the corner of the image ("Delete corner points") discards the still image and the
-  corner points, and the search starts over.
-- Starting the camera also starts a new search; if the camera ends without a new still image, the old
-  image and its corner points come back. Measuring only ever happens on still images.
-- You can drag the corner points on the still image. The cards may also be held rotated by 180°; the app
-  recognizes that from the stripe patches.
+**Projects:** In the Export tab, "Save project" and "Load project" keep your work as a JSON file, with
+the still images if "Include still images" stays checked. Saving suggests the file you loaded last. The
+file holds only the name of the reference set, not its values.
 
-### Save and load a project
+## Tips
 
-In the Export tab, **Save project** and **Load project** save your work as a JSON file (measurements,
-correction model, preview settings). With the checkbox "Include still images" (on by default) the still
-images of the tabs and their corner points are in the file as well. When you load it, images and corner
-points come back and the camera is switched off. Without still images no corner points are saved either.
-The reference values are not in the file, only the name of the selected set.
+- Hold the cards steady, completely in the image and parallel to the camera. Blurred shots are not
+  recognized.
+- Light both cards evenly. Light from the side and reflections falsify the colors.
+- The brightest gray patches must not burn out and the darkest must not sink into black. Fix the
+  brightness first, then the contrast.
+- After the gray cards, change neither the light nor the camera settings.
+- The dark appearance (⚙ → Appearance) throws less light from the screen onto the cards.
 
-Saving suggests the file you loaded or saved last: in Chrome and Edge the save dialog opens in its folder
-with its name preselected (the browser asks before it overwrites the file), in Firefox the download gets
-its name.
+## Questions
 
-## Tips for good results
+**The camera does not start.** Allow camera access in the browser and close other programs that use the
+camera.
 
-- Hold the cards steady and parallel to the camera; blurred shots are not recognized by the app.
-- Light both pairs of cards equally. A lamp from the side or reflections on the cards falsify the colors.
-- The brightest gray patches must not burn out and the darkest must not sink into black. If the measuring
-  field says "Brightness too high" or "too low", change the brightness first, the contrast second.
-- After the gray cards, change neither the light nor the camera settings before you capture the color
-  cards.
-- The preset resolution of 1280 × 720 is a good start.
+**The cards are not recognized.** Hold them completely in the image, steady and well lit. The app takes
+the still image as soon as it finds the cards twice in a row in the same place.
 
-## Frequently asked questions
+**The deviation stays high.** Usually the shot is the cause: burnt-out or black patches, uneven light or
+camera automatics. Read the hints in the result and capture the cards again.
 
-**The camera does not start.** Allow camera access in the browser and close other programs that use it.
-Locally it only works over `localhost` or HTTPS.
+**Can I change the language?** The app follows your browser (English or German). You can change it in
+⚙ → Language.
 
-**The cards are not recognized.** Hold them completely in the image, steady and well lit. The app
-searches twice a second and takes the image as soon as it finds the cards twice in a row in the same place.
+**Where does my data go?** Nowhere. Imported reference sets stay in your browser. A project file with
+still images contains camera images; only pass it on if that is fine.
 
-**The deviation is still high after the correction.** Mostly the shot is the cause: burnt-out or crushed
-patches, uneven light or camera automatics. Check the hints in the result first and capture the cards
-again in better light.
+## Reference values
 
-**Which reference values does the app use?** It ships an unofficial set (see below). You import your own
-values in the gear menu.
-
-**Can I change the language?** The app follows the language of your browser (English or German). You can
-change it in the gear menu under "Language"; the choice is remembered in your browser.
-
-**Is there a dark appearance?** Yes. In the gear menu under "Appearance" you choose System (follows
-your device), Light or Dark; the choice is remembered in your browser. A dark screen throws less light
-onto the cards, which can make the measurement steadier.
-
-**Where does my data go?** Only into your browser. Imported reference sets are stored locally in
-IndexedDB, nothing is sent anywhere. A project file with still images contains camera images; only pass
-it on if that is fine.
-
-## Reference values of the cards
-
-The app ships a reference set with the Lab values of the 48 color patches. It is **not a manufacturer
-file**: Datacolor does not publish the values in machine-readable form. The set is an unofficial
-transcription from the blog post
+The app ships the Lab values of the 48 color patches. They are **not from Datacolor**, who does not
+publish them in machine-readable form, but an unofficial transcription from the blog post
 [Patch color definitions for Datacolor SpyderCheckr 48](https://www.bartneck.de/2017/10/24/patch-color-definitions-for-datacolor-spydercheckr-48/)
-(bartneck.de). The post itself mentions typos for some patches, they are corrected in the file. Whether
-the values match your card exactly (batch, aging) is not proven.
+(bartneck.de), with the typos the post mentions corrected. Whether they match your card exactly (batch,
+aging) is not proven.
 
-In the gear menu ⚙ under "Reference values" you switch the set or import your own file. With
-**Download set** you save the active set as a JSON file that can be imported again.
-
-Supported formats (Lab values with white point D50, per patch ID such as `1A` to `6H`; digit = row,
-letter = column, card 1 = columns A–D, card 2 = columns E–H):
+In ⚙ → Reference values you switch the set, import your own file or download the active set. A file
+holds Lab values (white point D50) per patch ID `1A` to `6H` (digit = row, letter = column; card 1 =
+columns A–D, card 2 = E–H), at least 12 patches with at least 4 neutral ones (columns D and E):
 
 - **JSON:** `{ "format": "cam_gradr-reference/1", "name": "My set", "illuminant": "D50",
 "patches": [{ "id": "1A", "lab": [L, a, b] }, …] }`
-- **CSV:** columns `id; L; a; b` (separator semicolon, tab or comma, optional header line, with
-  semicolon also a decimal comma).
-
-At least 12 patches are required, at least 4 of them neutral (gray ramps, columns D and E). Stored sets
-can be selected and deleted in the app.
+- **CSV:** columns `id; L; a; b` (separated by semicolon, tab or comma, optional header line; with
+  semicolons also a decimal comma)
 
 ## Known limits
 
-- The patch positions in the layout are measured on stills of one Spyder Checkr Photo (SCK300) with two
-  webcams and checked with a third; other batches of the card are not verified.
-- The correction model (curves per channel plus a 3×3 matrix) only partly compensates a strongly
-  falsifying webcam; a good shot matters more than a stronger model.
-- Without WebGL2 the preview draws in a reduced software rendering.
-- Two color patches, the cyan 1F and the yellow 3F, lie outside the sRGB color space. The app shows them
-  and measures them against the nearest color that sRGB can show.
-- The correction never cuts off different colors at the same value. Where it would push the most
-  saturated colors of the camera beyond the sRGB color space or bright tones above white, it shortens
-  that outer part in proportion instead. Colors right at the edge of sRGB, such as the cyan 1F, can
-  therefore come out a little less saturated than the reference.
-- The LUT is calculated from the camera image as the browser decodes it. If the software or the device
-  that uses the LUT decodes the same camera differently (for example BT.601 instead of BT.709, or limited
-  instead of full range), the LUT does not fit exactly; check the result there.
-
-## For developers
-
-Node.js 22 is required (see `.nvmrc`).
-
-```bash
-npm ci               # install dependencies
-npm run dev          # start the development server
-npm run build        # production build
-npm run verify       # all checks (lint, typecheck, knip, tests with coverage)
-npm run e2e:install  # once: install Firefox for the acceptance tests (Chrome must be present)
-npm run e2e          # Playwright acceptance tests (builds the app and starts it)
-npm run verify:all   # verify and e2e together
-```
-
-### Translations
-
-All texts live in `src/lang/<language>/<area>.json`, separate from the code; English (`src/lang/en`) is the
-reference. To add a language, copy the `en` folder, translate the files, and register the language in
-`src/lang/locales.ts` and `src/lang/index.ts`. The tests check that every language has the same keys and
-placeholders as English.
-
-Workflow, quality requirements, technology and releases are in [CONTRIBUTING.md](CONTRIBUTING.md), the
-plan and decisions in [PLAN.md](PLAN.md), the changes in [CHANGELOG.md](CHANGELOG.md).
+- The correction (a tone curve per channel and a 3×3 matrix) only partly makes up for a webcam that
+  distorts colors strongly. A good shot matters more.
+- The LUT works in sRGB / Rec.709, the color space of webcams and HDMI video. The cyan 1F and the yellow
+  3F lie outside it; the app measures them against the nearest color sRGB can show.
+- The correction never cuts colors off. Where it would push the most saturated colors out of sRGB or
+  bright tones above white, it compresses them in proportion, so colors right at the edge of sRGB come
+  out slightly less saturated than the reference.
+- The LUT is calculated from the image as the browser decodes it. If the device that applies the LUT
+  decodes the signal differently (BT.601 instead of BT.709, limited instead of full range), the LUT does
+  not fit exactly; check the result there.
+- The patch positions are measured on one SCK300 card with three webcams; other batches are not
+  verified.
+- Without WebGL2 the preview uses a slower, downscaled rendering.
 
 ## License
 
-[MIT](LICENSE). The license applies to the source code. The bundled reference set comes from a foreign,
-unofficial source (see above) and is not covered by this license.
+[MIT](LICENSE) for the source code. The bundled reference set comes from an unofficial third-party source
+and is not covered by it.
