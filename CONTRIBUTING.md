@@ -11,7 +11,7 @@ Node.js 22 is required (see `.nvmrc`).
 npm ci               # install dependencies
 npm run dev          # development server
 npm run build        # production build
-npm run verify       # lint, typecheck, knip, unit tests with coverage
+npm run verify       # lint (code, CSS, Markdown), format, typecheck, knip, unit tests with coverage
 npm run e2e:install  # once: Firefox for the acceptance tests (Chrome must be installed)
 npm run e2e          # Playwright acceptance tests (builds and starts the app)
 npm run verify:all   # verify and e2e together
@@ -19,8 +19,8 @@ npm run verify:all   # verify and e2e together
 
 ## Workflow
 
-`main` is protected: changes get in only through pull requests, and the checks `verify` and
-`acceptance` (one job per browser) must be green.
+`main` is protected: changes get in only through pull requests. The ruleset requires the checks
+`verify` and `analyze` (CodeQL); the two `acceptance` jobs (one per browser) must be green as well.
 
 1. Create a branch from the current `main`, for example `git switch -c feat/short-description`.
 2. Commit with [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`,
