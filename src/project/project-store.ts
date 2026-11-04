@@ -54,7 +54,6 @@ async function applyCorrection(project: Project): Promise<string | null> {
   const references = useReferenceStore();
   await references.load();
   const solve = useSolveStore();
-  solve.setTone(project.tone);
   const name = project.color.reference;
   if (name !== null) {
     references.select(name);
@@ -108,7 +107,6 @@ function snapshot(withCorners: boolean): Project {
       reference: useReferenceStore().selectedName,
     },
     model: useSolveStore().model,
-    tone: useSolveStore().tone,
     preview: { split: preview.split },
   };
 }

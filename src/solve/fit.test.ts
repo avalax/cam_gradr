@@ -329,20 +329,13 @@ describe('fitColorModel', () => {
         ) as unknown as Rgb,
       ]),
     );
-    for (const tone of [true, false]) {
-      const fit = fitColorModel({
-        measurements: tinted,
-        reference: real,
-        neutralIds: NEUTRAL_IDS,
-        tone,
-      });
-      for (const value of applyColorModel(fit.model, [1, 1, 1])) {
-        expect(value).toBeCloseTo(1, 6);
-      }
-      // A bright, saturated color with one dark channel is not pulled towards white.
-      const yellow = applyColorModel(fit.model, [1, 0.95, 0.2]);
-      expect(yellow[2]).toBeLessThan(0.5);
+    const fit = fitColorModel({ measurements: tinted, reference: real, neutralIds: NEUTRAL_IDS });
+    for (const value of applyColorModel(fit.model, [1, 1, 1])) {
+      expect(value).toBeCloseTo(1, 6);
     }
+    // A bright, saturated color with one dark channel is not pulled towards white.
+    const yellow = applyColorModel(fit.model, [1, 0.95, 0.2]);
+    expect(yellow[2]).toBeLessThan(0.5);
   });
 
   it('builds smooth tone curves that never raise a value by more than the gain limit', () => {
@@ -396,50 +389,6 @@ describe('fitColorModel', () => {
       neutralIds: NEUTRAL_IDS,
     });
     expect(fit.report.patches).toHaveLength(12);
-  });
-
-  it('keeps the tone curve of the camera without the tone correction', () => {
-    // A camera that is darker and has a different gamma: only a factor per channel is applied.
-    const odd = Object.fromEntries(
-      Object.entries(measurements).map(([id, code]) => [id, halve(code)]),
-    );
-    const plain = fitColorModel({
-      measurements: odd,
-      reference,
-      neutralIds: NEUTRAL_IDS,
-      tone: false,
-    });
-    for (const curve of plain.model.curves) {
-      expect(curve.xs).toHaveLength(3);
-      expect(curve.ys[0]).toBe(0);
-    }
-    // White stays white, so blown-out highlights do not get a color.
-    for (const value of applyColorModel(plain.model, [1, 1, 1])) {
-      expect(value).toBeCloseTo(1, 3);
-    }
-    // Below the knee the curve is a straight line, so dark and mid tones keep their ratio.
-    const [red] = plain.model.curves;
-    const dark = applyColorModel(plain.model, [0.2, 0.2, 0.2]);
-    const mid = applyColorModel(plain.model, [0.4, 0.4, 0.4]);
-    expect(red.ys[1]).toBeGreaterThan(0);
-    expect(mid[1]).toBeGreaterThan(dark[1]);
-    expect(plain.report.meanAfter).toBeLessThan(plain.report.meanBefore);
-  });
-
-  it('limits the white balance factor without the tone correction', () => {
-    const black = Object.fromEntries(
-      Object.keys(measurements).map((id) => [id, [0.001, 0.001, 0.001]]),
-    );
-    const plain = fitColorModel({
-      measurements: black as unknown as Record<string, Rgb>,
-      reference,
-      neutralIds: NEUTRAL_IDS,
-      tone: false,
-    });
-    for (const curve of plain.model.curves) {
-      expect(Number(curve.ys[1])).toBeLessThanOrEqual(4);
-      expect(Number(curve.ys[1])).toBeGreaterThanOrEqual(0.25);
-    }
   });
 
   it('throws with too few patches or neutral patches', () => {
