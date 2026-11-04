@@ -27,9 +27,11 @@ Everything runs in your browser. Images and measurements never leave your comput
    cards in the same place. The correction is calculated by itself. A wipe slider compares the camera
    colors with the corrected ones, and the label below gives the mean deviation before and after (hover
    it for each patch).
-4. **Preview: check the result.** The camera image with the original on the left and the corrected image
-   on the right. The side column shows each patch as target, camera and corrected and names the largest
-   deviations. "Take still image" checks the correction on a steady image.
+4. **Preview: check the result.** The camera image with the original left and the corrected image right
+   of a divider that you drag or move with the arrow keys; with the camera off it shows the still image
+   of the color cards. The side column shows each colored patch as target, camera and corrected and
+   names the largest deviations; switched to the grays it shows the gray ramp and how shadows, midtones
+   and highlights change. "Take still image" checks the correction on a steady image.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual).
 

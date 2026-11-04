@@ -46,8 +46,8 @@ async function pump(stream: CompressionStream | DecompressionStream, bytes: Byte
     await writer.write(bytes);
     await writer.close();
   })();
-  // Both sides are awaited together: with corrupt data both fail, and no rejection
-  // bleibt unbehandelt.
+  // Both sides are awaited together: with corrupt data both fail, and no rejection is left
+  // unhandled.
   const [, output] = await Promise.all([writing, collect(stream.readable.getReader())]);
   return output;
 }
