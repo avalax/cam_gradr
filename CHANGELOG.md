@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.8.0...cam-gradr-v1.9.0) (2026-11-04)
+
+
+### Features
+
+* **ui:** show the version of the app ([#82](https://github.com/avalax/cam_gradr/issues/82)) ([40f5acc](https://github.com/avalax/cam_gradr/commit/40f5accb01b016cd534bf5fff635863b76396fe7))
+
 ## [1.8.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.7.1...cam-gradr-v1.8.0) (2026-11-04)
 
 
