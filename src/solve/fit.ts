@@ -64,9 +64,6 @@ export interface FitInput {
   measurements: Readonly<Record<string, Rgb>>;
   reference: ReferenceSet;
   neutralIds: ReadonlySet<string>;
-  // With false only white balance and colors are corrected, not the tone curve (contrast and
-  // gamma); the default is true.
-  tone?: boolean;
 }
 
 const MIN_NEUTRAL = 4;
@@ -96,10 +93,6 @@ const CLIP_KNEE = 0.96;
 // free numbers, in ΔE2000): when the patches hardly differ, tiny gains would otherwise let the matrix
 // drift into strong channel mixing.
 const REFINE_RIDGE = 0.2;
-// Without the tone correction the curve is a straight line up to this knee (at most this value after
-// the factor), then it bends to white.
-const PLAIN_KNEE = 0.5;
-const PLAIN_KNEE_TOP = 0.9;
 // Targets above the shoulder are compressed softly towards white: the exposure gain would otherwise
 // push the bright gray patches beyond 1, and everything above them would clip.
 const SHOULDER = 0.8;
@@ -205,26 +198,17 @@ function poolNeutrals(neutrals: readonly Sample[]): Block[] {
   return blocks;
 }
 
-// Geometric mean, over the mid tones of the gray ramp, of the factor by which the camera level
-// (taken from `level`) lies above the target (taken from `target`).
-function midGain(
-  blocks: readonly Block[],
-  level: (block: Block) => number,
-  target: (block: Block) => number,
-): number {
+// Gain by which the camera is brighter (>1) or darker (<1) than the reference in the mid tones: the
+// geometric mean, over the mid tones of the gray ramp, of the factor by which the camera level lies
+// above the target. Scaling the reference by it keeps the exposure of the shot (only color cast and
+// tone curve are corrected, not the brightness).
+function exposureGain(blocks: readonly Block[]): number {
   const logs = blocks
     .filter((block) => targetLevel(block) >= EXPOSURE_FROM && targetLevel(block) <= EXPOSURE_TO)
-    .map((block) => ({ level: level(block), target: target(block) }))
+    .map((block) => ({ level: blockLevel(block), target: targetLevel(block) }))
     .filter((entry) => entry.level > 0 && entry.target > 0)
     .map((entry) => Math.log(entry.level / entry.target));
   return logs.length === 0 ? 1 : Math.exp(mean(logs));
-}
-
-// Gain by which the camera is brighter (>1) or darker (<1) than the reference in the mid tones.
-// Scaling the reference by it keeps the exposure of the shot (only color cast and tone curve are
-// corrected, not the brightness).
-function exposureGain(blocks: readonly Block[]): number {
-  return midGain(blocks, blockLevel, targetLevel);
 }
 
 // Solves a small symmetric positive definite system given as its augmented matrix (n rows of
@@ -355,18 +339,6 @@ function fitMatrix(pairs: readonly Pair[]): readonly [Vec3, Vec3, Vec3] {
     return [m1, m2, 1 - m1 - m2];
   });
   return rows as unknown as readonly [Vec3, Vec3, Vec3];
-}
-
-// Without a tone curve each channel gets one factor (white balance) that brings its mid tones to
-// the exposure of the shot, so contrast and gamma stay as they are. Only above the knee the curve
-// bends so that it ends at white: a clipped white pixel must stay white, otherwise a factor below 1
-// turns every blown-out highlight into a colored one.
-function buildPlainCurve(blocks: readonly Block[], channel: number, gain: number): Curve {
-  const level = (block: Block): number => Number(block.linear[channel]) / block.count;
-  const target = (block: Block): number => Number(block.target[channel]) / block.count;
-  const factor = Math.min(Math.max(gain / midGain(blocks, level, target), 1 / MAX_GAIN), MAX_GAIN);
-  const knee = Math.min(PLAIN_KNEE, PLAIN_KNEE_TOP / factor);
-  return { xs: [0, knee, 1], ys: [0, factor * knee, 1] };
 }
 
 // Matrix from its six free numbers (the third entry of each row follows from the row sum 1).
@@ -585,14 +557,12 @@ export function fitColorModel(input: FitInput): FitResult {
   const blocks = poolNeutrals(neutrals);
   const gain = exposureGain(blocks);
   const curves = [0, 1, 2].map((channel) =>
-    input.tone === false
-      ? buildPlainCurve(blocks, channel, gain)
-      : buildCurve(
-          blocks.map((block) => [
-            Number(block.linear[channel]) / block.count,
-            shoulder((gain * Number(block.target[channel])) / block.count),
-          ]),
-        ),
+    buildCurve(
+      blocks.map((block) => [
+        Number(block.linear[channel]) / block.count,
+        shoulder((gain * Number(block.target[channel])) / block.count),
+      ]),
+    ),
   ) as unknown as ColorModel['curves'];
 
   const draft: ColorModel = { curves, matrix: IDENTITY };
