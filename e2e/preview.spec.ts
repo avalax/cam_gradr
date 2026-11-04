@@ -14,7 +14,7 @@ const TOLERANCE = 7;
 // Image center: to the left of it (x < 640) the original is shown with the divider at 50 %, to
 // the right the corrected image.
 const LEFT_PATCH = '6A';
-const RIGHT_PATCH = '1F';
+const RIGHT_PATCH = '5H';
 
 function codes(code: readonly number[]): number[] {
   return code.map((value) => Math.round(value * 255));
