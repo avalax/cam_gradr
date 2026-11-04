@@ -130,6 +130,69 @@ describe('fitColorModel', () => {
     expect(result.report.meanAfter).toBeLessThan(result.report.meanBefore / 4);
   });
 
+  describe('hue table', () => {
+    const luminance = (code: Vec3) => {
+      const [r, g, b] = code.map((value) => srgbToLinear(value));
+      return 0.2126 * Number(r) + 0.7152 * Number(g) + 0.0722 * Number(b);
+    };
+    const withoutTable = { curves: result.model.curves, matrix: result.model.matrix };
+
+    it('changes nothing the matrix already gets right', () => {
+      const table = result.model.hue ?? [];
+      expect(table).toHaveLength(10);
+      expect(Math.max(...table.map((value) => Math.abs(value)))).toBeLessThan(0.05);
+    });
+
+    it('corrects a hue-dependent error that no matrix can undo', () => {
+      // A camera that turns reds towards yellow and makes blues more saturated, the other hues less.
+      const skewed = Object.fromEntries(
+        Object.entries(reference.patches).map(([id, [l, a, b]]) => {
+          const hue = Math.atan2(b, a);
+          const turn = ((15 * Math.PI) / 180) * Math.cos(hue);
+          const chroma = Math.hypot(a, b) * (1 + 0.2 * Math.sin(hue));
+          return [
+            id,
+            cameraCode([l, chroma * Math.cos(hue + turn), chroma * Math.sin(hue + turn)]),
+          ];
+        }),
+      );
+      const fit = fitColorModel({ measurements: skewed, reference, neutralIds: NEUTRAL_IDS });
+      const matrixOnly = { curves: fit.model.curves, matrix: fit.model.matrix };
+      const colorError = (model: typeof matrixOnly) => {
+        const errors = fit.report.patches
+          .filter((patch) => !patch.neutral)
+          .map((patch) =>
+            distance(srgbToLab(applyColorModel(model, patch.measured)), patch.reference),
+          );
+        return errors.reduce((sum, value) => sum + value, 0) / errors.length;
+      };
+      expect(colorError(fit.model)).toBeLessThan(0.8 * colorError(matrixOnly));
+    });
+
+    it('keeps grays and the brightness of every color', () => {
+      const table = Array.from({ length: 10 }, (_, index) => (index % 3) * 0.1 - 0.05);
+      const turned = { ...withoutTable, hue: table };
+      for (const code of [
+        [0.5, 0.5, 0.5],
+        [0, 0, 0],
+        [0.6, 0.3, 0.2],
+        [0.2, 0.5, 0.4],
+        [0.3, 0.3, 0.6],
+      ] as const) {
+        expect(luminance(applyColorModel(turned, code))).toBeCloseTo(
+          luminance(applyColorModel(withoutTable, code)),
+          3,
+        );
+      }
+      // Grays of the scene stay gray: they have no chroma that the table could turn or scale.
+      for (const gray of [0.1, 0.4, 0.8]) {
+        const [r, g, b] = applyColorModel(turned, cameraCode(srgbToLab([gray, gray, gray])));
+        expect(Math.abs(r - g)).toBeLessThan(0.02);
+        expect(Math.abs(g - b)).toBeLessThan(0.02);
+      }
+    });
+  });
+
   it('reports every patch with its error before and after', () => {
     expect(result.report.patches).toHaveLength(48);
     const patch = result.report.patches.find((entry) => entry.id === '3A');
