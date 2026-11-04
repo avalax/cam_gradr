@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.1](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.7.0...cam-gradr-v1.7.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **preview:** draw an unchanged still image only once ([#71](https://github.com/avalax/cam_gradr/issues/71)) ([a58e5c1](https://github.com/avalax/cam_gradr/commit/a58e5c175c5e1b827ffad6d86de52e25901c27f0))
+* **solve:** let the matrix keep more of the saturation ([#72](https://github.com/avalax/cam_gradr/issues/72)) ([bba9662](https://github.com/avalax/cam_gradr/commit/bba9662447dc5c7be693cd1c95f662a93c28fc47))
+
 ## [1.7.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.6.0...cam-gradr-v1.7.0) (2026-11-04)
 
 
