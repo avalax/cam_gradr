@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { version } from '../../package.json';
 
-import { APP_VERSION, appVersion } from './app-info';
+import { APP_VERSION, appVersion } from './app-version';
 
 describe('appVersion', () => {
   it('is the version of the package', () => {

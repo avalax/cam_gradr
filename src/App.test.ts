@@ -10,7 +10,8 @@ import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
-import { APP_ID, APP_NAME, APP_VERSION } from './ui/app-info';
+import { APP_ID, APP_NAME } from './ui/app-info';
+import { APP_VERSION } from './ui/app-version';
 
 function mountApp() {
   const pinia = createPinia();

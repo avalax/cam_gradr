@@ -1,4 +1,5 @@
-import { APP_NAME, APP_VERSION } from '../ui/app-info';
+import { APP_NAME } from '../ui/app-info';
+import { APP_VERSION } from '../ui/app-version';
 
 import type { Lut } from './lut';
 

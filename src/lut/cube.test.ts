@@ -6,7 +6,7 @@ import { fitColorModel } from '../solve/fit';
 import { parseCube } from '../test-support/cube-parse';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
-import { APP_VERSION } from '../ui/app-info';
+import { APP_VERSION } from '../ui/app-version';
 
 import { formatCube } from './cube';
 import { buildLut, identityLut } from './lut';
