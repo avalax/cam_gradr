@@ -1,0 +1,90 @@
+name: PR preview
+
+# Builds every pull request for GitHub Pages under pr-preview/pr-<number>/ and removes the build
+# when the pull request is closed. The builds are kept on the branch pr-previews; the Pages workflow
+# publishes them next to the app.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    # Pull requests from forks and Dependabot get no write access, and the release pull request
+    # needs no preview.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' &&
+      !startsWith(github.head_ref, 'release-please--')
+    runs-on: ubuntu-latest
+    env:
+      DIR: pr-preview/pr-${{ github.event.number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event.action != 'closed'
+      - uses: actions/setup-node@v7
+        if: github.event.action != 'closed'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        if: github.event.action != 'closed'
+      - run: npm run build
+        if: github.event.action != 'closed'
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/${{ env.DIR }}/
+      - name: Store the build on the branch pr-previews
+        env:
+          ACTION: ${{ github.event.action }}
+        run: |
+          # The branch holds one commit with all previews, so that it does not grow with every push.
+          # A push that lost the race against another pull request starts again from the new state.
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          build="$PWD/dist"
+          git init -q "$RUNNER_TEMP/store"
+          cd "$RUNNER_TEMP/store"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            rm -rf -- *
+            lease=''
+            # The first preview finds no branch yet.
+            if git fetch -q --depth 1 "$remote" pr-previews 2> /dev/null; then
+              lease=$(git rev-parse FETCH_HEAD)
+              git read-tree -u --reset FETCH_HEAD
+            fi
+            rm -rf "$DIR"
+            if [ "$ACTION" != closed ]; then
+              mkdir -p "$DIR"
+              cp -r "$build/." "$DIR"
+            fi
+            git add -A
+            if [ -n "$lease" ] && [ "$(git write-tree)" = "$(git rev-parse "$lease^{tree}")" ]; then
+              exit 0
+            fi
+            commit=$(git commit-tree "$(git write-tree)" -m "Previews of the open pull requests")
+            if git push -q --force-with-lease="pr-previews:$lease" "$remote" "$commit:refs/heads/pr-previews"; then
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          exit 1
+      - name: Link the preview in the pull request
+        if: github.event.action != 'closed'
+        run: |
+          marker='<!-- pr-preview -->'
+          url="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/$DIR/"
+          if ! gh api --paginate "repos/$GITHUB_REPOSITORY/issues/${{ github.event.number }}/comments" \
+            --jq '.[].body' | grep -qF "$marker"; then
+            gh pr comment ${{ github.event.number }} --repo "$GITHUB_REPOSITORY" --body "$marker
+          Preview of this pull request: $url
+          It follows every push a few minutes later and is removed when the pull request is closed."
+          fi
