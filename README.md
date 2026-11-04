@@ -130,7 +130,7 @@ can be selected and deleted in the app.
 ## Known limits
 
 - The patch positions in the layout are measured on stills of one Spyder Checkr Photo (SCK300) with two
-  webcams; other batches of the card are not verified.
+  webcams and checked with a third; other batches of the card are not verified.
 - The correction model (curves per channel plus a 3×3 matrix) only partly compensates a strongly
   falsifying webcam; a good shot matters more than a stronger model.
 - Without WebGL2 the preview draws in a reduced software rendering.
