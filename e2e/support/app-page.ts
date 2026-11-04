@@ -9,31 +9,14 @@ import { setScene, showScene } from './camera-stub';
 import type { SceneName } from './synthetic-cards';
 
 // Page object of the app: wraps operating and reading the interface for the acceptance tests.
-// What the save dialog stand-in was asked to preselect (see AppPage.useFileDialogs).
-interface SaveDialog {
-  suggestedName: string;
-  startsInOpened: boolean;
-  startsIn: boolean;
-}
-
-interface FileDialogStandIns {
-  setOpenedText: (text: string) => void;
-  takeSaved: () => string | null;
-  saveDialogs: () => SaveDialog[];
-}
-
-// The page's global object with the controls of the file dialog stand-ins.
-interface WithStandIns {
-  fileDialogStandIns: FileDialogStandIns;
-}
-
 export class AppPage {
-  readonly overlay: Locator;
+  // The camera or still image of a card tab, without the band above it.
+  readonly image: Locator;
   readonly scale: Locator;
   readonly details: Locator;
 
   constructor(readonly page: Page) {
-    this.overlay = page.locator('svg.absolute');
+    this.image = page.getByTestId('stage-image');
     this.scale = page.getByTestId('measure-field');
     this.details = page.getByTestId('measure-details');
   }
@@ -151,7 +134,7 @@ export class AppPage {
   // calculation.
   async computeColorModel(): Promise<void> {
     await this.completeStepOne();
-    await this.importReference('reference.json', dummyReferenceJson());
+    await this.importReference(dummyReferenceJson());
     await expect(this.page.getByTestId('reference-saved')).toBeVisible();
     await this.closeSettings();
     await this.captureColorCards();
@@ -260,99 +243,19 @@ export class AppPage {
     await expect(this.page.getByTestId('settings-panel')).toBeHidden();
   }
 
-  // Saves the project via the Export tab and returns the file name and content. By default the
-  // still images are included in the file; `withStills: false` unticks the checkbox.
-  // Stand-ins for the system file dialogs of Chrome and Edge (call before open()). The open dialog
-  // returns the file "mein-projekt.json" with the text set by setOpenedText(); the save dialog keeps
-  // the written text and records what it was asked to preselect.
-  async useFileDialogs(): Promise<void> {
-    await this.page.addInitScript(() => {
-      let openedText = '';
-      let saved: string | null = null;
-      const asked: SaveDialog[] = [];
-      const file = (name: string, read: () => string) => ({
-        kind: 'file',
-        name,
-        getFile: () => Promise.resolve(new File([read()], name, { type: 'application/json' })),
-        createWritable: () => {
-          const parts: string[] = [];
-          return Promise.resolve({
-            write: (part: string) => {
-              parts.push(part);
-              return Promise.resolve();
-            },
-            close: () => {
-              saved = parts.join('');
-              return Promise.resolve();
-            },
-          });
-        },
-      });
-      const opened = file('mein-projekt.json', () => openedText);
-      const standIns: FileDialogStandIns = {
-        setOpenedText: (text) => {
-          openedText = text;
-        },
-        takeSaved: () => {
-          const text = saved;
-          saved = null;
-          return text;
-        },
-        saveDialogs: () => asked,
-      };
-      Object.assign(globalThis, {
-        showOpenFilePicker: () => Promise.resolve([opened]),
-        showSaveFilePicker: (options: { suggestedName: string; startIn?: unknown }) => {
-          asked.push({
-            suggestedName: options.suggestedName,
-            startsInOpened: options.startIn === opened,
-            startsIn: options.startIn !== undefined,
-          });
-          return Promise.resolve(file(options.suggestedName, () => ''));
-        },
-        fileDialogStandIns: standIns,
-      });
-    });
-  }
-
-  // The text the open dialog stand-in returns for "mein-projekt.json".
-  async setOpenedText(text: string): Promise<void> {
-    await this.page.evaluate((value) => {
-      (globalThis as unknown as WithStandIns).fileDialogStandIns.setOpenedText(value);
-    }, text);
-  }
-
-  // Saves with the save dialog stand-in and returns the written text.
-  async saveProjectInDialog(): Promise<string> {
+  // Saves the project with its still images (the default) via the Export tab and returns the file
+  // name and content.
+  async saveProject(): Promise<{ fileName: string; text: string }> {
     await this.openTab('Export');
-    await this.page.getByTestId('project-save').click();
-    const saved = await this.page.waitForFunction(() =>
-      (globalThis as unknown as WithStandIns).fileDialogStandIns.takeSaved(),
-    );
-    return (await saved.jsonValue()) ?? '';
-  }
-
-  // What the save dialog stand-in was asked to preselect, in the order of the saves.
-  async saveDialogs(): Promise<SaveDialog[]> {
-    return this.page.evaluate(() =>
-      (globalThis as unknown as WithStandIns).fileDialogStandIns.saveDialogs(),
-    );
-  }
-
-  async saveProject(
-    options: { withStills?: boolean } = {},
-  ): Promise<{ fileName: string; text: string }> {
-    await this.openTab('Export');
-    await this.page.getByTestId('project-stills').setChecked(options.withStills !== false);
     return this.download(this.page.getByTestId('project-save'));
   }
 
-  // Imports a reference file via the file field in the gear menu (the menu stays open).
-  async importReference(fileName: string, content: string): Promise<void> {
+  // Imports a reference file (JSON) via the file field in the gear menu (the menu stays open).
+  async importReference(content: string): Promise<void> {
     await this.openSettings('reference');
     await this.page.getByTestId('reference-file').setInputFiles({
-      name: fileName,
-      mimeType: fileName.endsWith('.json') ? 'application/json' : 'text/csv',
+      name: 'reference.json',
+      mimeType: 'application/json',
       buffer: Buffer.from(content),
     });
   }
@@ -369,15 +272,6 @@ export class AppPage {
     await this.showCards('colors');
     await this.captureStill();
     await this.expectCorners();
-  }
-
-  // Bounding box of a patch outline (e.g. 'G18', 'S4-0') in screen coordinates.
-  async shapeBox(key: string): Promise<{ x: number; y: number; width: number; height: number }> {
-    const box = await this.page.locator(`polygon[data-shape="${key}"]`).boundingBox();
-    if (box === null) {
-      throw new Error(`Outline ${key} is not visible.`);
-    }
-    return box;
   }
 
   // Waits until the app has set the corner points of both cards (eight in total).

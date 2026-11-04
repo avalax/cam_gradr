@@ -19,23 +19,12 @@ const CARD_PIXELS = {
 
 type CardNumber = keyof typeof CARD_PIXELS;
 
-// Brightness values (sRGB-encoded, 0..1) of the patches of a lighting situation.
-interface Lighting {
-  large18: number;
-  large50: number;
-  stripDark: number;
-  stripLight: number;
-}
+// Brightness values (sRGB-encoded, 0..1) of the gray patches in a well lit room. Too dark and too
+// bright rooms are covered by the unit tests of the rating.
+const LIGHTING = { large18: 0.46, large50: 0.74, stripDark: 0.12, stripLight: 0.85 };
 
-const LIGHTINGS = {
-  ok: { large18: 0.46, large50: 0.74, stripDark: 0.12, stripLight: 0.85 },
-  dark: { large18: 0.3, large50: 0.58, stripDark: 0.05, stripLight: 0.6 },
-  bright: { large18: 0.62, large50: 0.88, stripDark: 0.2, stripLight: 1 },
-} as const satisfies Record<string, Lighting>;
-
-// Lightings of the gray cards; "colors" shows the color cards instead (step 2).
-export type LightingName = keyof typeof LIGHTINGS;
-export type SceneName = LightingName | 'colors' | 'empty';
+// The gray cards, the color cards (step 2) or no cards at all.
+export type SceneName = 'gray' | 'colors' | 'empty';
 
 // One filled rectangle of the synthetic image (pixels, color 0..255).
 interface SceneRect {
@@ -71,13 +60,13 @@ function toGray(value: number): [number, number, number] {
   return [code, code, code];
 }
 
-function stripValue(lighting: Lighting, id: string): number {
+function stripValue(id: string): number {
   const index = Number(id.slice(id.indexOf('-') + 1));
-  return lighting.stripDark + ((lighting.stripLight - lighting.stripDark) * index) / 5;
+  return LIGHTING.stripDark + ((LIGHTING.stripLight - LIGHTING.stripDark) * index) / 5;
 }
 
-function largeValue(lighting: Lighting, id: string): number {
-  return id === 'G18' ? lighting.large18 : lighting.large50;
+function largeValue(id: string): number {
+  return id === 'G18' ? LIGHTING.large18 : LIGHTING.large50;
 }
 
 function background(): SceneRect {
@@ -85,15 +74,13 @@ function background(): SceneRect {
 }
 
 // Describes both gray cards with the patches from the layout as a list of filled rectangles.
-function grayScene(name: LightingName): Scene {
-  const lighting = LIGHTINGS[name];
+function grayScene(): Scene {
   const rects: SceneRect[] = [background()];
   for (const card of grayLayout.cards) {
     const pixels = CARD_PIXELS[card.card as CardNumber];
     rects.push({ ...pixels, color: toGray(CARD_SURFACE) });
     for (const patch of card.patches) {
-      const value =
-        patch.role === 'large' ? largeValue(lighting, patch.id) : stripValue(lighting, patch.id);
+      const value = patch.role === 'large' ? largeValue(patch.id) : stripValue(patch.id);
       rects.push({
         x: pixels.x + patch.rect.x * pixels.w,
         y: pixels.y + patch.rect.y * pixels.h,
@@ -147,7 +134,7 @@ export function sceneFor(name: SceneName): Scene {
     // No cards in the image: the search finds nothing and keeps running.
     return { width: WIDTH, height: HEIGHT, rects: [background()] };
   }
-  return name === 'colors' ? colorScene() : grayScene(name);
+  return name === 'colors' ? colorScene() : grayScene();
 }
 
-export const SCENE_NAMES: readonly SceneName[] = ['ok', 'dark', 'bright', 'colors', 'empty'];
+export const SCENE_NAMES: readonly SceneName[] = ['gray', 'colors', 'empty'];

@@ -152,6 +152,9 @@ describe('SettingsMenu', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await wrapper.vm.$nextTick();
     expect(panel(wrapper).exists()).toBe(false);
+    expect(wrapper.get('[data-testid="settings-button"]').attributes('aria-expanded')).toBe(
+      'false',
+    );
     wrapper.unmount();
   });
 
