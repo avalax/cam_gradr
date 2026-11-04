@@ -147,10 +147,10 @@ function parseGerman(text: string): number {
   return Number(text.replace(',', '.'));
 }
 
-// Painted color of patch 1F in one of the two layers of the wipe (0..255).
+// Painted color of patch 5H in one of the two layers of the wipe (0..255).
 async function swatch(page: Page, layer: 'camera' | 'corrected'): Promise<number[]> {
   const color = await page
-    .locator(`[data-testid="color-wipe-${layer}"] [data-patch="1F"]`)
+    .locator(`[data-testid="color-wipe-${layer}"] [data-patch="5H"]`)
     .evaluate((element) => getComputedStyle(element).backgroundColor);
   return (color.match(/\d+/g) ?? []).map(Number);
 }
@@ -177,7 +177,7 @@ test.describe('Color cards: wipe', () => {
       'data-measured',
       'true',
     );
-    const expected = labToSrgb(dummyLab('1F')).map((value) => Math.round(value * 255));
+    const expected = labToSrgb(dummyLab('5H')).map((value) => Math.round(value * 255));
     const corrected = await swatch(app.page, 'corrected');
     const camera = await swatch(app.page, 'camera');
     for (const [index, value] of expected.entries()) {
