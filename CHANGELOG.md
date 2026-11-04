@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.7.1...cam-gradr-v1.8.0) (2026-11-04)
+
+
+### Features
+
+* **solve:** fine-tune each hue after the matrix ([#78](https://github.com/avalax/cam_gradr/issues/78)) ([368becf](https://github.com/avalax/cam_gradr/commit/368becf8cb1f92c985d44d872c884c717d07a5c6))
+
 ## [1.7.1](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.7.0...cam-gradr-v1.7.1) (2026-11-04)
 
 
