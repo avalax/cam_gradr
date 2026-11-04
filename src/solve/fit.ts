@@ -96,6 +96,9 @@ const REFINE_RIDGE = 0.2;
 // Targets above the shoulder are compressed softly towards white: the exposure gain would otherwise
 // push the bright gray patches beyond 1, and everything above them would clip.
 const SHOULDER = 0.8;
+// The correction never clips: a mixed color is compressed softly towards the edge of the sRGB cube
+// from this share of the way from gray to the edge on, and never reaches it (see intoGamut).
+const GAMUT_KNEE = 0.8;
 // Highest saturation (Lab chroma) relative to the reference that the matrix fine-tuning allows
 // without penalty, and the weight of the penalty above it.
 const SATURATION_LIMIT = 1.1;
@@ -274,7 +277,8 @@ function shoulder(value: number): number {
 // Tone curve of a channel from the (camera value, target value) pairs of the gray ramp, both
 // linear: the logarithm of the gain (target / camera) is a polynomial of the logarithm of the
 // camera value. Beyond the measured range the gain stays constant at the edge value, and it is
-// limited so that noise is not amplified without bounds.
+// limited so that noise is not amplified without bounds. The output is compressed softly above the
+// shoulder, so no camera value below white reaches 1: the curve never clips the highlights.
 function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   const usable = points.filter(([x, y]) => x > CURVE_FLOOR / 10 && y > 0);
   const logs = usable.map(([x, y]): [number, number] => [Math.log(x), Math.log(y / x)]);
@@ -296,7 +300,7 @@ function buildCurve(points: readonly (readonly [number, number])[]): Curve {
     // The curve never falls.
     previous = Math.max(x * Math.exp(at(u)), previous);
     xs.push(x);
-    ys.push(previous);
+    ys.push(shoulder(previous));
   }
   return { xs, ys };
 }
@@ -443,21 +447,29 @@ function toCode(value: number): number {
   return linearToSrgb(Math.min(Math.max(value, 0), 1));
 }
 
-// Pulls a linear color with negative channels back into the sRGB cube by desaturating it towards the
-// gray of the same luminance: hue and brightness stay, instead of single channels clipping at 0 and a
-// saturated color (a blue light, for example) turning harsh and glaring. Channels above 1 are simply
-// clipped, as a color that bright cannot keep its saturation anyway.
+// Keeps a linear color inside the sRGB cube without clipping it: seen from the gray of the same
+// luminance, `reach` says how far the color lies towards the edge of the cube (1 = on the edge, more =
+// beyond it). Up to GAMUT_KNEE the color stays as it is; beyond, it is desaturated towards that gray
+// so that it approaches the edge without ever reaching it. Hue and brightness stay, and saturated
+// areas keep their texture instead of a channel ending flat at 0 or 1.
 function intoGamut([r, g, b]: Vec3): Vec3 {
-  const low = Math.min(r, g, b);
-  if (low >= 0) {
+  // The luminance itself stays just inside black and white.
+  const luminance = Math.min(Math.max(0.2126 * r + 0.7152 * g + 0.0722 * b, 1e-9), 1 - 1e-9);
+  const reach = Math.max(
+    ...[r, g, b].map((value) =>
+      value < luminance ? (luminance - value) / luminance : (value - luminance) / (1 - luminance),
+    ),
+  );
+  if (reach <= GAMUT_KNEE) {
     return [r, g, b];
   }
-  const luminance = Math.max(0.2126 * r + 0.7152 * g + 0.0722 * b, 0);
-  const factor = luminance / (luminance - low);
+  // A rational roll-off with slope 1 at the knee: far beyond the edge the colors still keep apart.
+  const beyond = (reach - GAMUT_KNEE) / (1 - GAMUT_KNEE);
+  const scale = (GAMUT_KNEE + (1 - GAMUT_KNEE) * (beyond / (1 + beyond))) / reach;
   return [
-    luminance + (r - luminance) * factor,
-    luminance + (g - luminance) * factor,
-    luminance + (b - luminance) * factor,
+    luminance + (r - luminance) * scale,
+    luminance + (g - luminance) * scale,
+    luminance + (b - luminance) * scale,
   ];
 }
 
@@ -560,7 +572,7 @@ export function fitColorModel(input: FitInput): FitResult {
     buildCurve(
       blocks.map((block) => [
         Number(block.linear[channel]) / block.count,
-        shoulder((gain * Number(block.target[channel])) / block.count),
+        (gain * Number(block.target[channel])) / block.count,
       ]),
     ),
   ) as unknown as ColorModel['curves'];

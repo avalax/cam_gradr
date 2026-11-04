@@ -167,7 +167,7 @@ describe('fitColorModel', () => {
     expect(Math.max(red, green, blue)).toBeLessThan(0.999);
   });
 
-  it('desaturates colors outside the sRGB cube instead of clipping single channels', () => {
+  it('desaturates colors outside the sRGB cube softly instead of clipping single channels', () => {
     const identity = { xs: [0, 1], ys: [0, 1] };
     // A strongly mixing matrix: a saturated blue gets a negative red value.
     const model = {
@@ -184,10 +184,52 @@ describe('fitColorModel', () => {
       linearToSrgb(0.9),
     ];
     const [r, g, b] = applyColorModel(model, input).map((value) => srgbToLinear(value));
-    expect(r).toBeCloseTo(0, 6);
+    // Close to the edge of the cube, but not on it: no channel is clipped at 0.
+    expect(Number(r)).toBeGreaterThan(0);
+    expect(Number(r)).toBeLessThan(0.01);
     // Same luminance as the mixed color, instead of the clipped (0, 0.3, 0.9).
     expect(0.2126 * Number(r) + 0.7152 * Number(g) + 0.0722 * Number(b)).toBeCloseTo(0.1946, 3);
     expect(Number(b)).toBeLessThan(0.5);
+  });
+
+  it('never clips: every camera color apart from black and white stays inside the color space', () => {
+    // A washed-out, slightly bright camera: the correction has to saturate strongly, which pushes the
+    // most saturated camera colors beyond sRGB, and to brighten the highlights.
+    const real = bundledReference();
+    const washed = Object.fromEntries(
+      Object.entries(real.patches).map(([id, lab]) => {
+        const linear = labToLinearSrgb(lab).map((value) => Math.min(Math.max(value, 0), 1));
+        const gray =
+          0.2126 * Number(linear[0]) + 0.7152 * Number(linear[1]) + 0.0722 * Number(linear[2]);
+        return [
+          id,
+          linear.map((value) => linearToSrgb(0.9 * (0.6 * value + 0.4 * gray))) as unknown as Rgb,
+        ];
+      }),
+    );
+    const strong = fitColorModel({
+      measurements: washed,
+      reference: real,
+      neutralIds: NEUTRAL_IDS,
+    });
+    expect(strong.model.matrix.flat().some((value) => value < 0)).toBe(true);
+    const steps = 16;
+    for (const model of [result.model, strong.model]) {
+      const clipped: string[] = [];
+      for (let r = 0; r <= steps; r++) {
+        for (let g = 0; g <= steps; g++) {
+          for (let b = 0; b <= steps; b++) {
+            const black = r + g + b === 0;
+            const white = r + g + b === 3 * steps;
+            const out = applyColorModel(model, [r / steps, g / steps, b / steps]);
+            if (!black && !white && out.some((value) => value <= 0 || value >= 1)) {
+              clipped.push(`${String(r)},${String(g)},${String(b)}`);
+            }
+          }
+        }
+      }
+      expect(clipped).toEqual([]);
+    }
   });
 
   it('keeps grays gray and white white', () => {

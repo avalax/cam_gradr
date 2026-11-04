@@ -12,7 +12,7 @@ import { colorPatchCenter } from './support/synthetic-cards';
 // The browser locale is de-DE by default, so the assertions check the German interface.
 
 const TOLERANCE = 7 / 255;
-const SAMPLE_PATCHES = ['6A', '1F', '3C', '5H'];
+const SAMPLE_PATCHES = ['6A', '3A', '3C', '5H'];
 
 test.describe('Export', () => {
   test('Without a color correction the tab shows a hint', async ({ app }) => {
@@ -250,7 +250,7 @@ test.describe('Project', () => {
     await app.openPreviewWithImage();
     await app.showCards('colors');
 
-    const patch = '1F';
+    const patch = '5H';
     const { x, y } = colorPatchCenter(patch);
     const expected = labToSrgb(dummyLab(patch)).map((value) => Math.round(value * 255));
     await app.expectPreviewColor(x, y, expected, 7);

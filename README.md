@@ -136,6 +136,9 @@ can be selected and deleted in the app.
 - Without WebGL2 the preview draws in a reduced software rendering.
 - Two color patches, the cyan 1F and the yellow 3F, lie outside the sRGB color space. The app shows them
   and measures them against the nearest color that sRGB can show.
+- The correction never clips: colors near and beyond the edge of the sRGB color space are desaturated
+  softly instead of cut off. The most saturated colors therefore come out slightly less saturated than
+  the camera shows them.
 - The LUT is calculated from the camera image as the browser decodes it. If the software or the device
   that uses the LUT decodes the same camera differently (for example BT.601 instead of BT.709, or limited
   instead of full range), the LUT does not fit exactly; check the result there.
