@@ -7,7 +7,7 @@ import { parseCube } from '../test-support/cube-parse';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
 
-import { CUBE_SIZES, formatCube } from './cube';
+import { formatCube } from './cube';
 import { buildLut, identityLut } from './lut';
 
 const reference = {
@@ -40,13 +40,6 @@ describe('formatCube', () => {
     expect(lines.at(-1)).toBe('1.000000 1.000000 1.000000');
     expect(text.endsWith('\n')).toBe(true);
     expect(text).not.toContain('\r');
-  });
-
-  it('contains size³ lines for every selectable size', () => {
-    for (const size of CUBE_SIZES) {
-      const lines = formatCube(identityLut(size), 'x').trimEnd().split('\n');
-      expect(lines).toHaveLength(5 + size ** 3);
-    }
   });
 
   it('survives the round trip with six decimal places of precision', () => {

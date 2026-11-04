@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -127,23 +128,8 @@ describe('ExportTab', () => {
     expect(parsed.lut.size).toBe(17);
     expect(parsed.lut.data).toHaveLength(17 ** 3 * 3);
     expect(parsed.title).toBe('cam_gradr');
-  });
-
-  it('writes the full correction into the LUT', async () => {
-    computeModel();
-    const wrapper = mount(ExportTab);
-    await wrapper.get('[data-testid="export-download"]').trigger('click');
-    const lut = parseCube((download.mock.calls[0] as [string, string, string])[1]);
-    // The node (r = 1/32 of the scale) is changed by the correction; it does not stay on the
+    // The file holds the full correction: the node (r = 1/16 of the scale) does not stay on the
     // identity.
-    const index = 3 * (1 + 33 * 5 + 33 * 33 * 9);
-    expect(lut.lut.data[index]).not.toBeCloseTo(1 / 32, 3);
-  });
-
-  it('shows no message after the download', async () => {
-    computeModel();
-    const wrapper = mount(ExportTab);
-    await wrapper.get('[data-testid="export-download"]').trigger('click');
-    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+    expect(parsed.lut.data[3 * (1 + 17 * 2 + 17 * 17 * 4)]).not.toBeCloseTo(1 / 16, 3);
   });
 });

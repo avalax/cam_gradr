@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -163,15 +164,6 @@ describe('App', () => {
     expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
   });
 
-  it('offers the camera settings in the gear menu', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    expect(wrapper.text()).not.toContain('Auto-Belichtung');
-    await wrapper.get('[data-testid="settings-button"]').trigger('click');
-    expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
-    expect(wrapper.text()).toContain('Auflösung');
-  });
-
   it('keeps the camera running when switching tabs', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();
@@ -209,11 +201,13 @@ describe('App', () => {
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
   });
 
-  it('offers reference values in the gear menu and the project in the export tab', async () => {
+  it('offers camera and reference values in the gear menu and the project in the export tab', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    // The gear menu opens with the camera settings.
+    expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
     await wrapper.get('[data-testid="section-reference"]').trigger('click');
     expect(wrapper.find('[data-testid="reference-select"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
@@ -227,13 +221,6 @@ describe('App', () => {
     mountApp();
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
-  });
-
-  it('shows the missing-color-correction notice in the preview tab', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    await tabs(wrapper)[2]?.trigger('click');
-    expect(wrapper.text()).toContain('Noch keine Farbkorrektur');
   });
 
   it('stops the camera when the app is removed', async () => {

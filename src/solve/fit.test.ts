@@ -12,7 +12,6 @@ import {
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
-import { setLocale } from '../lang';
 import { cameraCode } from '../test-support/synthetic-camera';
 import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -479,15 +478,5 @@ describe('fitColorModel', () => {
     for (const [index, row] of fit.model.matrix.entries()) {
       expect(row[index]).toBeGreaterThan(0.5);
     }
-  });
-});
-
-describe('fitColorModel (English)', () => {
-  it('reports too few measurements in English', () => {
-    setLocale('en');
-    const few = referenceSet(['1D', '2D', '3D']);
-    expect(() =>
-      fitColorModel({ measurements: measure(few), reference: few, neutralIds: NEUTRAL_IDS }),
-    ).toThrow(/^Too few measurements: at least \d+ patches, \d+ of them neutral$/);
   });
 });

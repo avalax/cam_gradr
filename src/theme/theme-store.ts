@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 
 import { t } from '../lang';
 
-import { readThemePreference, writeThemePreference } from './preference';
+import { themePreference } from './preference';
 import { resolveTheme } from './theme';
 import type { Theme, ThemePreference } from './theme';
 
@@ -12,7 +12,7 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
 // The appearance of the settings: "system" follows the device, otherwise the choice counts. The
 // choice is saved in the browser; the page gets `data-theme="light"` or `"dark"` at once.
 export const useThemeStore = defineStore('theme', () => {
-  const preference = ref<ThemePreference>(readThemePreference());
+  const preference = ref<ThemePreference>(themePreference.read());
   const prefersDark = ref(false);
   const theme = computed<Theme>(() => resolveTheme(preference.value, prefersDark.value));
 
@@ -26,7 +26,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   function choose(next: ThemePreference): void {
     preference.value = next;
-    writeThemePreference(next);
+    themePreference.write(next);
     render();
   }
 

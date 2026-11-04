@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
 import { LANGUAGE_NAMES } from './locales';
-import { readPreference, writePreference } from './preference';
+import { languagePreference } from './preference';
 
 import { i18n, resolveLocale, setLocale, t } from './index';
 import type { LanguagePreference } from './index';
@@ -10,7 +10,7 @@ import type { LanguagePreference } from './index';
 // The language choice of the settings: "auto" follows the browser, otherwise the chosen language counts.
 // The choice is saved in the browser and applied to the whole app at once.
 export const useLanguageStore = defineStore('language', () => {
-  const preference = ref<LanguagePreference>(readPreference());
+  const preference = ref<LanguagePreference>(languagePreference.read());
   const locale = computed(() => i18n.global.locale.value);
 
   // Short text for the closed settings section, e.g. "English (automatic)".
@@ -22,7 +22,7 @@ export const useLanguageStore = defineStore('language', () => {
 
   function choose(next: LanguagePreference): void {
     preference.value = next;
-    writePreference(next);
+    languagePreference.write(next);
     setLocale(resolveLocale(next));
   }
 

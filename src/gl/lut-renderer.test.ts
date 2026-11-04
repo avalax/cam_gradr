@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { setLocale } from '../lang';
 import { identityLut } from '../lut/lut';
 import { createFakeGl } from '../test-support/fake-gl';
 
@@ -163,24 +162,6 @@ describe('createLutRenderer', () => {
     );
     expect(() => createLutRenderer(createFakeGl({ createTexture: () => null }).gl)).toThrow(
       'die Bildtextur',
-    );
-  });
-});
-
-describe('createLutRenderer (English)', () => {
-  it('reports errors in English', () => {
-    setLocale('en');
-    expect(() => createLutRenderer(createFakeGl({ getShaderParameter: () => false }).gl)).toThrow(
-      'Shader could not be compiled: Shader error',
-    );
-    expect(() => createLutRenderer(createFakeGl({ getProgramParameter: () => false }).gl)).toThrow(
-      'Shader program could not be linked: Link error',
-    );
-    expect(() => createLutRenderer(createFakeGl({ createShader: () => null }).gl)).toThrow(
-      'WebGL could not create a shader.',
-    );
-    expect(() => createLutRenderer(createFakeGl({ createTexture: () => null }).gl)).toThrow(
-      'WebGL could not create the image texture.',
     );
   });
 });

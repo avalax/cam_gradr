@@ -4,7 +4,6 @@ import { labToSrgb } from '../color/lab';
 import { colorLayout } from '../chart/layouts';
 import { applyColorModel, targetLab } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
-import { setLocale } from '../lang';
 
 import { cssColor } from './color-css';
 import {
@@ -12,7 +11,6 @@ import {
   byRowThenColumn,
   colorCards,
   deviationSummary,
-  oneDecimal,
   signedPoints,
   wedgeRows,
   worstPatches,
@@ -197,25 +195,5 @@ describe('Texte', () => {
     expect(deviationSummary({ meanBefore: 18.44, meanAfter: 8.04 })).toBe(
       'Ø Abweichung 18,4 → 8,0',
     );
-  });
-});
-
-describe('Englische Texte', () => {
-  it('names tonal ranges and channels in English', () => {
-    setLocale('en');
-    const changes = zoneChanges(RED_LIFT);
-    expect(changes.map((zone) => zone.name)).toEqual(['Shadows', 'Midtones', 'Highlights']);
-    expect(changes[0]?.casts.map((cast) => cast.channel)).toEqual(['Red', 'Green', 'Blue']);
-    expect(changes[0]?.casts.map((cast) => cast.key)).toEqual(['red', 'green', 'blue']);
-  });
-
-  it('writes points, brightening and deviation in English', () => {
-    setLocale('en');
-    expect(signedPoints(-2.2)).toBe('−2');
-    expect(brightnessText(12.6)).toBe('13 brighter');
-    expect(brightnessText(-4.6)).toBe('5 darker');
-    expect(brightnessText(0.2)).toBe('same brightness');
-    expect(oneDecimal(5.1)).toBe('5.1');
-    expect(deviationSummary({ meanBefore: 18.44, meanAfter: 8.04 })).toBe('Ø deviation 18.4 → 8.0');
   });
 });

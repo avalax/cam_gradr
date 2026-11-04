@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
@@ -6,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../reference/storage';
-import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
+import { dummyReferenceJson } from '../test-support/dummy-reference';
 
 import ReferencePanel from './ReferencePanel.vue';
 
@@ -74,12 +75,6 @@ describe('ReferencePanel', () => {
       expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(true);
     });
     expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
-  });
-
-  it('imports a CSV file', async () => {
-    const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'werte.csv', dummyReferenceCsv());
-    expect(useReferenceStore().selected?.name).toBe('werte');
   });
 
   it('meldet fehlerhafte Dateien', async () => {

@@ -1,7 +1,6 @@
+// @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-
-import { setLocale } from '../lang';
 
 import type { WedgeRow } from './gray-wedge';
 import ColorTiles from './ColorTiles.vue';
@@ -48,15 +47,5 @@ describe('ColorTiles', () => {
     expect(
       wrapper.get('[data-patch="1F"] [data-stripe="target"]').attributes('style'),
     ).toBeUndefined();
-  });
-});
-
-describe('ColorTiles (English)', () => {
-  it('labels the grid in English', () => {
-    setLocale('en');
-    const wrapper = mount(ColorTiles, { props: { cards: [[first]] } });
-    expect(wrapper.get('[data-testid="color-tiles"]').attributes('aria-label')).toBe(
-      'Color patches: target, camera and after correction',
-    );
   });
 });

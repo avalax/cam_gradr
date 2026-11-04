@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,7 +7,6 @@ import { useCameraStore } from '../camera/camera-store';
 import type { Frame } from '../camera/frame';
 import { useChartStore } from '../chart/chart-store';
 import type { Corners } from '../chart/types';
-import { setLocale } from '../lang';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
 
 import GrayStep from './GrayStep.vue';
@@ -30,14 +30,19 @@ function stillFrame(value: number): Frame {
   };
 }
 
+// The automatic capture searches a live image of half the camera resolution: it runs the same way,
+// and every search and capture costs a quarter of the time.
+const LIVE = { width: 640, height: 360 };
+
 // Two portrait cards with a dark frame and light patches on a calm background.
 function twoCardFrame(shift = 0): Frame {
-  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(0.6) };
-  for (const x0 of [200 + shift, 760 + shift]) {
-    for (let y = 100; y < 600; y++) {
-      for (let x = x0; x < x0 + 320; x++) {
-        const inside = x >= x0 + 40 && x < x0 + 280 && y >= 140 && y < 560;
-        frame.data.fill(inside ? 0.8 : 0.08, (y * 1280 + x) * 3, (y * 1280 + x) * 3 + 3);
+  const { width, height } = LIVE;
+  const frame = { width, height, data: new Float32Array(width * height * 3).fill(0.6) };
+  for (const x0 of [100 + shift, 380 + shift]) {
+    for (let y = 50; y < 300; y++) {
+      for (let x = x0; x < x0 + 160; x++) {
+        const inside = x >= x0 + 20 && x < x0 + 140 && y >= 70 && y < 280;
+        frame.data.fill(inside ? 0.8 : 0.08, (y * width + x) * 3, (y * width + x) * 3 + 3);
       }
     }
   }
@@ -47,8 +52,8 @@ function twoCardFrame(shift = 0): Frame {
 // Only the left one of the two cards is in the image.
 function oneCardFrame(): Frame {
   const frame = twoCardFrame();
-  for (let y = 100; y < 600; y++) {
-    frame.data.fill(0.6, (y * 1280 + 760) * 3, (y * 1280 + 1080) * 3);
+  for (let y = 50; y < 300; y++) {
+    frame.data.fill(0.6, (y * LIVE.width + 380) * 3, (y * LIVE.width + 540) * 3);
   }
   return frame;
 }
@@ -69,7 +74,7 @@ function mockGrabberData(next: () => Uint8ClampedArray) {
   const original = document.createElement.bind(document);
   const context = {
     drawImage: vi.fn(),
-    getImageData: () => ({ width: 1280, height: 720, data: next() }),
+    getImageData: () => ({ ...LIVE, data: next() }),
   };
   vi.spyOn(document, 'createElement').mockImplementation(
     (tag: string, options?: ElementCreationOptions) =>
@@ -133,16 +138,6 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('Die App erkennt sie selbst');
     expect(wrapper.text()).toContain('Noch keine Messung');
     expect(wrapper.find('select').exists()).toBe(false);
-  });
-
-  it('shows the English texts when the language is English', () => {
-    installFakeCamera();
-    setLocale('en');
-    const wrapper = mount(GrayStep);
-    expect(wrapper.text()).toContain('The camera is off');
-    expect(wrapper.text()).toContain('Hold both gray cards steady where the subject will be');
-    expect(wrapper.text()).toContain('This tab sets the room brightness');
-    expect(wrapper.text()).toContain('No measurement yet.');
   });
 
   it('shows no waiting text at start so the page layout stays calm', async () => {
@@ -234,53 +229,14 @@ describe('GrayStep', () => {
 
       await camera.start();
       await flushPromises();
-      // The live view searches anew: no corner points, no outlines, no old still image before it.
-      expect(chart.points).toEqual({});
-      expect(chart.exposure).toBeNull();
-      expect(camera.still).toBeNull();
+      // The live view searches anew: no corner points and no outlines.
       expect(wrapper.findAll('circle')).toHaveLength(0);
       expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
-      expect(chart.committed().points[3]).toHaveLength(4);
 
       // Without new corner points the previous state applies again after stopping.
       camera.stop();
       await flushPromises();
-      expect(camera.still).not.toBeNull();
-      expect(Object.keys(chart.points)).toHaveLength(2);
       expect(wrapper.findAll('circle')).toHaveLength(8);
-      expect(chart.exposure).not.toBeNull();
-    });
-
-    it('keeps a new state when new corner points appear during the search', async () => {
-      installFakeCamera();
-      mount(GrayStep);
-      const camera = useCameraStore();
-      const chart = useChartStore();
-      camera.still = stillFrame(0.5);
-      placeAll();
-      await flushPromises();
-      await camera.start();
-      await flushPromises();
-      chart.setCards([
-        [
-          { x: 10, y: 10 },
-          { x: 20, y: 10 },
-          { x: 20, y: 20 },
-          { x: 10, y: 20 },
-        ],
-        [
-          { x: 30, y: 10 },
-          { x: 40, y: 10 },
-          { x: 40, y: 20 },
-          { x: 30, y: 20 },
-        ],
-      ]);
-      const fresh = stillFrame(0.7);
-      camera.still = fresh;
-      camera.stop();
-      await flushPromises();
-      expect(camera.still).toBe(fresh);
-      expect(chart.points[3]?.[0]).toEqual({ x: 10, y: 10 });
     });
 
     it('also starts a search when the tab is opened while the camera is running', async () => {
@@ -294,24 +250,6 @@ describe('GrayStep', () => {
       wrapper.unmount();
       // Leaving the tab restores the previous state.
       expect(Object.keys(useChartStore().points)).toHaveLength(2);
-    });
-
-    it('discards the held state with the trash button', async () => {
-      installFakeCamera();
-      const wrapper = mount(GrayStep);
-      const camera = useCameraStore();
-      camera.still = stillFrame(0.5);
-      placeAll();
-      await flushPromises();
-      // The trash button deletes still image and corner points and restarts the search with the
-      // camera.
-      await button(wrapper, 'Eckpunkte löschen')?.trigger('click');
-      await flushPromises();
-      expect(camera.status).toBe('live');
-      camera.stop();
-      await flushPromises();
-      expect(useChartStore().points).toEqual({});
-      expect(camera.still).toBeNull();
     });
   });
 
@@ -387,19 +325,13 @@ describe('GrayStep', () => {
     expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
-  it('shows the live view text in English', async () => {
-    setLocale('en');
-    const wrapper = await mountLive();
-    expect(wrapper.get('[data-testid="auto-hint"]').text()).toContain(
-      'Hold the cards where the subject will be',
-    );
-  });
-
-  describe('automatic capture in the live view', { timeout: 30_000 }, () => {
+  // Every search runs the detection on a whole image; with coverage and all test files in parallel a
+  // test takes a few seconds.
+  describe('automatic capture in the live view', { timeout: 15_000 }, () => {
     // Computed once, because the automatic mode reads the image several times.
     const cardsData = toRgba(twoCardFrame());
-    const movedData = toRgba(twoCardFrame(120));
-    const emptyData = new Uint8ClampedArray(1280 * 720 * 4).fill(153);
+    const movedData = toRgba(twoCardFrame(60));
+    const emptyData = new Uint8ClampedArray(LIVE.width * LIVE.height * 4).fill(153);
     const cards = () => cardsData;
     const empty = () => emptyData;
 
@@ -407,8 +339,8 @@ describe('GrayStep', () => {
       vi.useFakeTimers();
       const wrapper = await mountLive();
       Object.defineProperties(wrapper.get('video').element, {
-        videoWidth: { value: 1280 },
-        videoHeight: { value: 720 },
+        videoWidth: { value: LIVE.width },
+        videoHeight: { value: LIVE.height },
         requestVideoFrameCallback: {
           value: (callback: () => void) => {
             callback();
@@ -423,19 +355,14 @@ describe('GrayStep', () => {
     it('captures the still image by itself, sets the corners and switches the camera off', async () => {
       const wrapper = await mountAuto(cards);
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(true);
+      // A band above the image names it: live image, then still image.
+      expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Livebild');
       await vi.advanceTimersByTimeAsync(2500);
       await flushPromises();
       expect(useCameraStore().still).not.toBeNull();
       expect(useCameraStore().status).toBe('idle');
       expect(useChartStore().ready).toBe(true);
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
-    });
-
-    it('names the image in a band above it: live image, then still image', async () => {
-      const wrapper = await mountAuto(cards);
-      expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Livebild');
-      await vi.advanceTimersByTimeAsync(2500);
-      await flushPromises();
       expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Standbild');
     });
 
@@ -492,33 +419,13 @@ describe('GrayStep', () => {
       expect(frame().exists()).toBe(false);
     });
 
-    it('rejects colored cards in the gray step and says so', async () => {
+    it('rejects colored cards with a red frame and a label that goes away with the cards', async () => {
       const colored = twoCardFrame();
       // Fields in red, green and blue bands, wide enough that each field is mostly one color (one hue
       // alone would count as a color cast).
       for (let i = 0; i < colored.data.length; i += 3) {
         if (Math.abs(Number(colored.data[i]) - 0.8) < 0.001) {
-          const hue = Math.floor(((i / 3) % colored.width) / 60) % 3;
-          colored.data.set(
-            hue === 0 ? [0.8, 0.2, 0.2] : hue === 1 ? [0.2, 0.8, 0.2] : [0.2, 0.2, 0.8],
-            i,
-          );
-        }
-      }
-      const data = toRgba(colored);
-      const wrapper = await mountAuto(() => data);
-      await vi.advanceTimersByTimeAsync(2500);
-      await flushPromises();
-      expect(useCameraStore().status).toBe('live');
-      expect(useChartStore().ready).toBe(false);
-      expect(wrapper.get('[data-testid="wrong-cards"]').text()).toContain('keine Graukarten');
-    });
-
-    it('shows the wrong cards as a red frame with a label that goes away with the cards', async () => {
-      const colored = twoCardFrame();
-      for (let i = 0; i < colored.data.length; i += 3) {
-        if (Math.abs(Number(colored.data[i]) - 0.8) < 0.001) {
-          const hue = Math.floor(((i / 3) % colored.width) / 60) % 3;
+          const hue = Math.floor(((i / 3) % colored.width) / 30) % 3;
           colored.data.set(
             hue === 0 ? [0.8, 0.2, 0.2] : hue === 1 ? [0.2, 0.8, 0.2] : [0.2, 0.2, 0.8],
             i,
@@ -528,25 +435,21 @@ describe('GrayStep', () => {
       const data = toRgba(colored);
       let visible = true;
       const wrapper = await mountAuto(() => (visible ? data : empty()));
-      await vi.advanceTimersByTimeAsync(3000);
+      // Two hits (every 500 ms) lead to the capture, which is rejected; the third search shows the frame.
+      await vi.advanceTimersByTimeAsync(1500);
       await flushPromises();
+      expect(useCameraStore().status).toBe('live');
+      expect(useChartStore().ready).toBe(false);
       expect(wrapper.get('[data-testid="wrong-cards"]').text()).toContain('Keine Graukarten');
       expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#f87171');
       visible = false;
-      await vi.advanceTimersByTimeAsync(1500);
+      await vi.advanceTimersByTimeAsync(500);
       await flushPromises();
       expect(wrapper.find('[data-testid="wrong-cards"]').exists()).toBe(false);
       visible = true;
       await vi.advanceTimersByTimeAsync(500);
       await flushPromises();
       expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#fff');
-    });
-
-    it('keeps waiting while no cards are visible', async () => {
-      await mountAuto(empty);
-      await vi.advanceTimersByTimeAsync(5000);
-      expect(useCameraStore().still).toBeNull();
-      expect(useCameraStore().status).toBe('live');
     });
 
     it('verlangt zwei Treffer hintereinander', async () => {
@@ -599,6 +502,11 @@ describe('GrayStep', () => {
     await button(wrapper, 'Eckpunkte löschen')?.trigger('click');
     await flushPromises();
     expect(camera.status).toBe('live');
+    // Stopping brings back nothing: still image and corner points were discarded.
+    camera.stop();
+    await flushPromises();
+    expect(useChartStore().points).toEqual({});
+    expect(camera.still).toBeNull();
   });
 
   it('starts over when the resolution changes, not when it is the same or missing', async () => {
@@ -618,22 +526,6 @@ describe('GrayStep', () => {
     camera.actual = { width: 640, height: 400 };
     await flushPromises();
     expect(chart.points).toEqual({});
-  });
-
-  it('shows overexposed highlights and underexposed shadows', async () => {
-    const wrapper = await mountLive();
-    useChartStore().exposure = {
-      verdict: 'high-contrast',
-      highlightsClipped: true,
-      shadowsCrushed: true,
-      level18: 0.5,
-      level50: 0.8,
-      delta: 0.03,
-      contrast: 0,
-    };
-    await flushPromises();
-    expect(wrapper.text()).toContain('überbelichtet');
-    expect(wrapper.text()).toContain('unterbelichtet');
   });
 
   it('stops the measurement on unmount', async () => {

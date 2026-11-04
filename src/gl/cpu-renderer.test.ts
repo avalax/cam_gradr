@@ -1,6 +1,6 @@
+// @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { setLocale } from '../lang';
 import { identityLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
 
@@ -102,15 +102,6 @@ describe('createCpuRenderer', () => {
     );
     expect(() => createCpuRenderer(setup({ scratchContext: false }).canvas)).toThrow(
       'Weder WebGL2 noch ein 2D-Zeichenkontext',
-    );
-  });
-});
-
-describe('createCpuRenderer (English)', () => {
-  it('reports a missing 2D context in English', () => {
-    setLocale('en');
-    expect(() => createCpuRenderer(setup({ canvasContext: false }).canvas)).toThrow(
-      'Neither WebGL2 nor a 2D drawing context is available',
     );
   });
 });

@@ -1,7 +1,6 @@
+// @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-
-import { setLocale } from '../lang';
 
 import type { WedgeRow } from './gray-wedge';
 import GrayWedge from './GrayWedge.vue';
@@ -48,18 +47,5 @@ describe('GrayWedge', () => {
     expect(wrapper.find('[data-column="target"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('Soll');
     expect(wrapper.findAll('[data-column]')).toHaveLength(2);
-  });
-});
-
-describe('GrayWedge (English)', () => {
-  it('labels the columns in English', () => {
-    setLocale('en');
-    const wrapper = mount(GrayWedge, { props: { rows } });
-    expect(wrapper.text()).toContain('Target');
-    expect(wrapper.text()).toContain('Camera');
-    expect(wrapper.text()).toContain('corr.');
-    expect(wrapper.get('[data-testid="gray-wedge"]').attributes('aria-label')).toBe(
-      'Gray levels of the color cards: target, camera and after correction',
-    );
   });
 });

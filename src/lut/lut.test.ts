@@ -62,10 +62,9 @@ describe('buildLut', () => {
   });
 
   it('keeps all values in the range 0 to 1', () => {
-    for (const value of lut.data) {
-      expect(value).toBeGreaterThanOrEqual(0);
-      expect(value).toBeLessThanOrEqual(1);
-    }
+    const values = [...lut.data];
+    expect(Math.min(...values)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...values)).toBeLessThanOrEqual(1);
   });
 
   it('maps black and white approximately to themselves', () => {
