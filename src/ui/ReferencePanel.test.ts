@@ -77,7 +77,7 @@ describe('ReferencePanel', () => {
     expect(wrapper.get('[data-testid="reference-saved"]').text()).toContain('gespeichert');
   });
 
-  it('meldet fehlerhafte Dateien', async () => {
+  it('reports faulty files and keeps the selection', async () => {
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'kaputt.json', '{"format":"x"}');
     expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');

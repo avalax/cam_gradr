@@ -47,7 +47,7 @@ function rejects(change: (raw: Record<string, any>) => void, message: string | R
 }
 
 describe('parseProject', () => {
-  it('liest, was serializeProject schreibt (Rundreise)', () => {
+  it('reads what serializeProject writes (round trip)', () => {
     const text = serializeProject(sample());
     expect(text.endsWith('\n')).toBe(true);
     expect(parseProject(text)).toEqual(sample());
@@ -72,7 +72,7 @@ describe('parseProject', () => {
     expect(serializeProject(project)).not.toContain('strength');
   });
 
-  it('speichert keine Referenzwerte, nur deren Namen', () => {
+  it('saves no reference values, only their name', () => {
     const text = serializeProject(sample());
     expect(text).toContain('"reference": "Mein Satz"');
     expect(text).not.toContain('"lab"');
@@ -87,7 +87,7 @@ describe('parseProject', () => {
     rejects((raw) => (raw.format = 'anderes/1'), 'Unbekanntes Format');
   });
 
-  it('lehnt fehlerhafte Kartenabschnitte ab', () => {
+  it('rejects faulty chart sections', () => {
     rejects((raw) => delete raw.gray, 'Graukarten: erwartet werden');
     rejects((raw) => (raw.color.measurements = 5), 'Farbkarten: erwartet werden');
     rejects((raw) => (raw.gray.corners = { 1: [] }), 'unbekannte Karte 1');
@@ -127,7 +127,7 @@ describe('parseProject', () => {
     rejects((raw) => (raw.model.matrix[0] = [1, 2]), 'Matrix: erwartet werden 3 Zahlen');
   });
 
-  it('lehnt fehlerhafte Vorschau-Einstellungen ab', () => {
+  it('rejects faulty preview settings', () => {
     rejects((raw) => delete raw.preview, 'Einstellungen fehlen');
     rejects((raw) => (raw.preview.split = -1), 'Trennlinie muss zwischen 0 und 100');
     rejects((raw) => (raw.preview.split = 'x'), 'Trennlinie muss zwischen 0 und 100');
@@ -145,7 +145,7 @@ describe('still images in the project file', () => {
     expect(parseProject(serializeProject(sample())).stills).toBeUndefined();
   });
 
-  it('liest Standbilder je Tab', () => {
+  it('reads the still images per tab', () => {
     const project = parseProject(withStills({ gray: still, preview: still }));
     expect(Object.keys(project.stills ?? {})).toEqual(['gray', 'preview']);
     expect(project.stills?.gray).toEqual(still);

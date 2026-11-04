@@ -96,7 +96,7 @@ describe('useReferenceStore', () => {
     expect(store.selectedName).toBe('Satz A');
   });
 
-  it('ersetzt einen Satz gleichen Namens', async () => {
+  it('replaces a set of the same name', async () => {
     const store = useReferenceStore();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     await store.importFile('a.csv', dummyReferenceCsv());
@@ -177,7 +177,7 @@ describe('useReferenceStore', () => {
     expect(store.warning).toContain('gelöscht');
   });
 
-  it('nutzt ohne Austausch den IndexedDB-Speicher des Browsers', async () => {
+  it('uses the IndexedDB storage of the browser unless replaced', async () => {
     setReferenceStorage(null);
     const store = useReferenceStore();
     // The test environment has no IndexedDB: loading fails and is reported.

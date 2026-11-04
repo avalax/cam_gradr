@@ -17,7 +17,7 @@ describe('CameraToggle', () => {
     setActivePinia(createPinia());
   });
 
-  it('startet ausgeschaltet', () => {
+  it('starts switched off', () => {
     installFakeCamera();
     const wrapper = mount(CameraToggle);
     expect(toggle(wrapper).text()).toBe('Kamera starten');

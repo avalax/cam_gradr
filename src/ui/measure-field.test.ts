@@ -50,7 +50,7 @@ describe('okBox', () => {
 });
 
 describe('detailRows', () => {
-  it('liefert alle Einzelwerte lesbar', () => {
+  it('returns all single values readably', () => {
     expect(detailRows(exposure)).toEqual([
       { label: '18 %-Karte', value: '46 % (Soll 46 %)' },
       { label: '50 %-Karte', value: '74 % (Soll 74 %)' },
@@ -71,7 +71,7 @@ describe('detailRows', () => {
 describe('fieldHint', () => {
   const fine = { ...exposure, shadowsCrushed: false, delta: 0 };
 
-  it('nennt fehlende Messung', () => {
+  it('names a missing measurement', () => {
     expect(fieldHint(null)).toBe('Noch keine Messung.');
   });
 

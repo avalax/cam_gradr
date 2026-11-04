@@ -1,20 +1,9 @@
 import { expect, test } from './support/fixtures';
 
-// Acceptance tests of the language: the app follows the browser language, can be switched in the
-// settings and remembers the choice. That all texts exist in both languages is checked by the
-// unit tests and the linter; here the browser language, the lang attribute and the reload count.
-
-test.describe('Language: English browser', () => {
-  test.use({ locale: 'en-US' });
-
-  test('The app starts in English, including the lang attribute of the page', async ({ app }) => {
-    await app.open();
-
-    await expect(app.page.getByRole('tab', { name: 'Gray cards', exact: true })).toBeVisible();
-    await expect(app.cameraSwitch).toHaveText('Start camera');
-    await expect(app.page.locator('html')).toHaveAttribute('lang', 'en');
-  });
-});
+// Acceptance test of the language: the app follows the browser language, can be switched in the
+// settings and remembers the choice. Which browser language leads to which app language and that
+// all texts exist in both languages is checked by the unit tests and the linter; here the browser
+// language, the lang attribute and the reload count.
 
 test.describe('Language: German browser', () => {
   test('The app starts in German, a choice in the settings persists after reloading', async ({

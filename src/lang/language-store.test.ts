@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLanguageStore } from './language-store';
 
@@ -32,10 +32,16 @@ describe('useLanguageStore', () => {
 
   it('follows the browser language for “auto”', () => {
     const store = useLanguageStore();
-    store.choose('de');
-    store.choose('auto');
-    expect(store.preference).toBe('auto');
-    expect(['en', 'de']).toContain(store.locale);
+    vi.stubGlobal('navigator', { languages: ['fr-FR'] });
+    try {
+      store.choose('de');
+      store.choose('auto');
+      expect(store.preference).toBe('auto');
+      // No supported language in the browser: English.
+      expect(store.locale).toBe('en');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('summarizes the choice for the collapsed section', () => {

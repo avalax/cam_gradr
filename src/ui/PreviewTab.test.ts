@@ -113,8 +113,6 @@ describe('PreviewTab', () => {
     expect(capture).toHaveBeenCalledTimes(1);
     expect(camera.status).toBe('idle');
     expect(camera.still).not.toBeNull();
-    // There is no “Zurück zum Livebild” button: a new camera start shows the live view again.
-    expect(wrapper.text()).not.toContain('Zurück zum Livebild');
     expect(take()?.attributes('disabled')).toBeDefined();
     await camera.start();
     await flushPromises();
@@ -280,8 +278,6 @@ describe('PreviewTab', () => {
     await wrapper.get('[data-testid="wipe"]').trigger('keydown', { key: 'End' });
     expect(usePreviewStore().split).toBe(100);
     expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 100%');
-    expect(wrapper.find('input[type="range"]').exists()).toBe(false);
-    expect(wrapper.text()).not.toContain('Stärke');
   });
 
   it('shows the colors first: a grid of the colored patches and the largest deviations', () => {

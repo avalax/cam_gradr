@@ -119,7 +119,7 @@ describe('sampleLut', () => {
     }
   });
 
-  it('interpoliert zwischen Gitterpunkten', () => {
+  it('interpolates between grid points', () => {
     const lut = identityLut(2);
     lut.data.fill(0);
     lut.data[0] = 0;

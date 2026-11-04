@@ -21,7 +21,7 @@ describe('sRGB transfer function', () => {
     }
   });
 
-  it('liefert bekannte Referenzwerte', () => {
+  it('returns known reference values', () => {
     expect(srgbToLinear(0.5)).toBeCloseTo(0.214_041, 5);
   });
 });

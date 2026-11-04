@@ -59,7 +59,7 @@ describe('createCpuRenderer', () => {
     });
   });
 
-  it('applies LUT and full strength to all pixels', () => {
+  it('applies the LUT to all pixels', () => {
     const { canvas, scratch, scratchCanvas, output, image } = setup();
     const renderer = createCpuRenderer(canvas);
     renderer.setLut(invertedLut());

@@ -51,8 +51,8 @@ test.describe('Export and project', () => {
     await app.page.reload();
     await app.openPreviewWithImage();
     await app.loadProject(text, 'mein-projekt.json');
-    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
 
     // The stills come back with their corner points; a new search hides them, and without a new
     // capture they return.

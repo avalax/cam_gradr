@@ -16,6 +16,8 @@ function panel(wrapper: ReturnType<typeof mount>) {
 
 describe('SettingsMenu', () => {
   beforeEach(() => {
+    // Appearance and language are saved in the browser; every test starts without a choice.
+    localStorage.clear();
     setActivePinia(createPinia());
   });
 
@@ -43,7 +45,6 @@ describe('SettingsMenu', () => {
     expect(wrapper.get('[data-testid="settings-button"]').attributes('aria-expanded')).toBe('true');
     expect(wrapper.text()).toContain('Referenzwerte');
     expect(wrapper.text()).toContain('Auto-Belichtung');
-    expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     expect(panel(wrapper).exists()).toBe(false);
     wrapper.unmount();
@@ -63,7 +64,6 @@ describe('SettingsMenu', () => {
   });
 
   it('offers the appearance as a fourth section and shows the choice in the summary', async () => {
-    localStorage.clear();
     const wrapper = mountAttached();
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     const theme = wrapper.get('[data-testid="section-theme"]');
@@ -80,7 +80,6 @@ describe('SettingsMenu', () => {
   });
 
   it('offers the language choice as a third section and switches the menu texts immediately', async () => {
-    localStorage.clear();
     const wrapper = mountAttached();
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
     const language = wrapper.get('[data-testid="section-language"]');

@@ -21,29 +21,26 @@ const result = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS 
 
 describe('ResultReport', () => {
   it('shows mean and largest error before and after, also per kind of patch', () => {
-    const wrapper = mount(ResultReport, { props: { result } });
-    expect(wrapper.get('[data-testid="mean-before"]').text()).toBe(
-      result.report.meanBefore.toFixed(1).replace('.', ','),
-    );
-    expect(wrapper.get('[data-testid="mean-after"]').text()).toBe(
-      result.report.meanAfter.toFixed(1).replace('.', ','),
-    );
-    expect(wrapper.get('[data-testid="max-before"]').text()).toBe(
-      result.report.maxBefore.toFixed(1).replace('.', ','),
-    );
-    expect(wrapper.get('[data-testid="max-after"]').text()).toBe(
-      result.report.maxAfter.toFixed(1).replace('.', ','),
-    );
-    // Separately for neutral and color patches.
-    expect(wrapper.get('[data-testid="neutral-after"]').text()).toBe(
-      result.report.neutral?.meanAfter.toFixed(1).replace('.', ','),
-    );
-    expect(wrapper.get('[data-testid="color-before"]').text()).toBe(
-      result.report.color?.meanBefore.toFixed(1).replace('.', ','),
-    );
+    const report = {
+      ...result.report,
+      meanBefore: 12.34,
+      meanAfter: 1.06,
+      maxBefore: 30.17,
+      maxAfter: 4.94,
+      neutral: { count: 12, meanBefore: 8.2, meanAfter: 0.71 },
+      color: { count: 36, meanBefore: 13.66, meanAfter: 1.2 },
+    };
+    const wrapper = mount(ResultReport, { props: { result: { ...result, report } } });
+    const text = (id: string) => wrapper.get(`[data-testid="${id}"]`).text();
+    expect(text('mean-before')).toBe('12,3');
+    expect(text('mean-after')).toBe('1,1');
+    expect(text('max-before')).toBe('30,2');
+    expect(text('max-after')).toBe('4,9');
+    expect(text('neutral-after')).toBe('0,7');
+    expect(text('color-before')).toBe('13,7');
   });
 
-  it('shows three color patches with the error per patch', () => {
+  it('shows every patch with three swatches and its error', () => {
     const wrapper = mount(ResultReport, { props: { result } });
     expect(wrapper.findAll('li')).toHaveLength(48);
     const tile = wrapper.get('[data-testid="tile-3A"]');

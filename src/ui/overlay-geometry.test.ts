@@ -9,7 +9,7 @@ describe('clientToImage', () => {
   const box = { left: 100, top: 50, width: 400, height: 200 };
   const size = { width: 1280, height: 720 };
 
-  it('rechnet Bildschirm- in Bildkoordinaten um', () => {
+  it('converts screen into image coordinates', () => {
     expect(clientToImage({ x: 300, y: 150 }, box, size)).toEqual({ x: 640, y: 360 });
   });
 

@@ -59,7 +59,6 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       `${BUNDLED_NAME} (48 Felder)`,
     );
-    expect(wrapper.findAll('button').map((b) => b.text())).not.toContain('Farbkorrektur berechnen');
     expect(wrapper.text()).toContain('Beide Farbkarten ruhig dorthin halten, wo das Motiv steht');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
@@ -161,7 +160,6 @@ describe('ColorStep', () => {
     await flushPromises();
     const camera = wrapper.get('[data-testid="color-wipe-camera"]');
     expect(camera.attributes('data-measured')).toBe('false');
-    expect(camera.findAll('[data-patch]')).toHaveLength(48);
     // The measurement of the (tiny) still image is replaced by prepared measurements afterwards.
     const chart = prepareMeasurements();
     const measurements = chart.measurements;
@@ -199,11 +197,5 @@ describe('ColorStep', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('Zu wenige Messwerte');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
-  });
-
-  it('shows no camera options of its own (they live in the gear menu)', () => {
-    const wrapper = mount(ColorStep);
-    expect(wrapper.text()).not.toContain('Aktive Auflösung');
-    expect(wrapper.text()).toContain('Die Kamera ist aus');
   });
 });

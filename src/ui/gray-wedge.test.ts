@@ -169,7 +169,7 @@ describe('zoneChanges', () => {
     expect(red(mids)).toBeGreaterThan(red(lights));
   });
 
-  it('ignoriert Verschiebungen unter 1,5 Punkten', () => {
+  it('ignores shifts below 1.5 points', () => {
     const faint: ColorModel = {
       ...IDENTITY,
       curves: [{ xs: [0, 1], ys: [0.0005, 1] }, IDENTITY.curves[1], IDENTITY.curves[2]],
@@ -178,7 +178,7 @@ describe('zoneChanges', () => {
   });
 });
 
-describe('Texte', () => {
+describe('texts', () => {
   it('writes points with a sign', () => {
     expect(signedPoints(3.4)).toBe('+3');
     expect(signedPoints(-2.2)).toBe('−2');

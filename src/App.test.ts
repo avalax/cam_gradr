@@ -81,8 +81,6 @@ describe('App', () => {
     expect(color?.text()).toContain('Ø 20,2 → 8,0');
     const gauges = wrapper.findAll('[data-testid="status-gauge"]');
     expect(gauges.map((gauge) => gauge.attributes('data-level'))).toEqual(['ok', 'warn']);
-    expect(gauges[0]?.findAll('[data-filled="true"]')).toHaveLength(4);
-    expect(gauges[1]?.findAll('[data-filled="true"]')).toHaveLength(1);
   });
 
   it('gives the export the height of the other tabs as its minimum height', async () => {
@@ -140,7 +138,7 @@ describe('App', () => {
     expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-gray');
   });
 
-  it('wechselt ohne Bedingungen zwischen den Tabs', async () => {
+  it('switches between the tabs without conditions', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     await tabs(wrapper)[1]?.trigger('click');

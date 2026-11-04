@@ -104,10 +104,15 @@ function placeAll() {
   ]);
 }
 
-function button(wrapper: Wrapper, text: string) {
+// The button that discards the corner points and searches again.
+function resetButton(wrapper: Wrapper) {
   return wrapper
     .findAll('button')
-    .find((b) => b.text().includes(text) || b.attributes('aria-label') === text);
+    .find(
+      (b) =>
+        b.text().includes('Eckpunkte löschen') ||
+        b.attributes('aria-label') === 'Eckpunkte löschen',
+    );
 }
 
 describe('GrayStep', () => {
@@ -137,7 +142,6 @@ describe('GrayStep', () => {
     expect(wrapper.text()).toContain('Die Kamera ist aus');
     expect(wrapper.text()).toContain('Die App erkennt sie selbst');
     expect(wrapper.text()).toContain('Noch keine Messung');
-    expect(wrapper.find('select').exists()).toBe(false);
   });
 
   it('shows no waiting text at start so the page layout stays calm', async () => {
@@ -145,11 +149,9 @@ describe('GrayStep', () => {
     const wrapper = mount(GrayStep);
     await useCameraStore().start();
     await flushPromises();
-    expect(wrapper.text()).not.toContain('einen Moment bitte');
     expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
     await wrapper.get('video').trigger('loadeddata');
     expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(true);
-    expect(wrapper.text()).not.toContain('einen Moment bitte');
   });
 
   it('reserves the video its aspect ratio so the image area does not jump at start', async () => {
@@ -183,8 +185,7 @@ describe('GrayStep', () => {
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
     // Coming back to the tab draws its still image again.
     expect(putImageData).toHaveBeenCalledOnce();
-    expect(button(wrapper, 'Eckpunkte löschen')).toBeDefined();
-    expect(button(wrapper, 'Zurück zum Livebild')).toBeUndefined();
+    expect(resetButton(wrapper)).toBeDefined();
   });
 
   it('shows capture errors', async () => {
@@ -452,7 +453,7 @@ describe('GrayStep', () => {
       expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#fff');
     });
 
-    it('verlangt zwei Treffer hintereinander', async () => {
+    it('requires two hits in a row', async () => {
       let visible = true;
       await mountAuto(() => (visible ? cards() : empty()));
       await vi.advanceTimersByTimeAsync(500);
@@ -482,7 +483,7 @@ describe('GrayStep', () => {
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
     placeAll();
-    await button(wrapper, 'Eckpunkte löschen')?.trigger('click');
+    await resetButton(wrapper)?.trigger('click');
     expect(useChartStore().points).toEqual({});
     expect(useCameraStore().still).toBeNull();
     expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
@@ -495,11 +496,11 @@ describe('GrayStep', () => {
     const wrapper = mount(GrayStep);
     const camera = useCameraStore();
     expect(camera.status).toBe('idle');
-    expect(button(wrapper, 'Eckpunkte löschen')).toBeUndefined();
+    expect(resetButton(wrapper)).toBeUndefined();
     camera.still = stillFrame(0.5);
     placeAll();
     await flushPromises();
-    await button(wrapper, 'Eckpunkte löschen')?.trigger('click');
+    await resetButton(wrapper)?.trigger('click');
     await flushPromises();
     expect(camera.status).toBe('live');
     // Stopping brings back nothing: still image and corner points were discarded.

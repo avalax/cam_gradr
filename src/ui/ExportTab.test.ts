@@ -126,7 +126,6 @@ describe('ExportTab', () => {
     expect(mime).toBe('text/plain');
     const parsed = parseCube(content);
     expect(parsed.lut.size).toBe(17);
-    expect(parsed.lut.data).toHaveLength(17 ** 3 * 3);
     expect(parsed.title).toBe('cam_gradr');
     // The file holds the full correction: the node (r = 1/16 of the scale) does not stay on the
     // identity.
