@@ -20,7 +20,7 @@ npm run verify:all   # verify and e2e together
 ## Workflow
 
 `main` is protected: changes get in only through pull requests, and the checks `verify` and
-`acceptance` must be green.
+`acceptance` (one job per browser) must be green.
 
 1. Create a branch from the current `main`, for example `git switch -c feat/short-description`.
 2. Commit with [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`,
