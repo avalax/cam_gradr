@@ -31,9 +31,8 @@ describe('lutSlices', () => {
     // Bottom left: red 0, green 0, blue 0.15 (share 38 of 255).
     const bottomLeft = first?.[12] ?? '';
     expect(bottomLeft).toMatch(/^rgb\(0, 0, \d+\)$/);
-    // Top right: red and green close to 1 (the correction keeps saturated colors just inside the
-    // edge of the color space instead of clipping them).
-    expect(first?.[3]).toMatch(/^rgb\(25\d, 25\d, \d+\)$/);
+    // Top right: red 1, green 1.
+    expect(first?.[3]).toMatch(/^rgb\(255, 255, \d+\)$/);
   });
 
   it('passes corrections on: a red cast in the model colors the patches', () => {

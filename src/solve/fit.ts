@@ -96,9 +96,16 @@ const REFINE_RIDGE = 0.2;
 // Targets above the shoulder are compressed softly towards white: the exposure gain would otherwise
 // push the bright gray patches beyond 1, and everything above them would clip.
 const SHOULDER = 0.8;
-// The correction never clips: a mixed color is compressed softly towards the edge of the sRGB cube
-// from this share of the way from gray to the edge on, and never reaches it (see intoGamut).
+// Mixed colors are never cut off at the edge of the sRGB cube: where the most saturated camera color
+// of a direction would land beyond it, the part of that direction beyond this share of the way from
+// gray to the edge is shortened in proportion (see withinGamut).
 const GAMUT_KNEE = 0.8;
+// Each camera primary keeps at least this share of its luminance in sRGB, and the weight of the
+// penalty below it: a matrix that turns a pure camera blue darker than black leaves no room to show
+// different blues apart.
+const MIN_PRIMARY_LUMINANCE = 0.5;
+const PRIMARY_PENALTY = 1000;
+const LUMINANCE: Vec3 = [0.2126, 0.7152, 0.0722];
 // Highest saturation (Lab chroma) relative to the reference that the matrix fine-tuning allows
 // without penalty, and the weight of the penalty above it.
 const SATURATION_LIMIT = 1.1;
@@ -274,11 +281,19 @@ function shoulder(value: number): number {
     : SHOULDER + (1 - SHOULDER) * (1 - Math.exp(-(value - SHOULDER) / (1 - SHOULDER)));
 }
 
+// Shortens the part of `value` above `knee` by one factor so that `top`, the largest value that can
+// occur, lands exactly on 1: values keep their order and their proportions, none is cut off. Nothing
+// changes when `top` already fits.
+function belowOne(value: number, knee: number, top: number): number {
+  return value <= knee || top <= 1 ? value : knee + ((value - knee) * (1 - knee)) / (top - knee);
+}
+
 // Tone curve of a channel from the (camera value, target value) pairs of the gray ramp, both
 // linear: the logarithm of the gain (target / camera) is a polynomial of the logarithm of the
 // camera value. Beyond the measured range the gain stays constant at the edge value, and it is
-// limited so that noise is not amplified without bounds. The output is compressed softly above the
-// shoulder, so no camera value below white reaches 1: the curve never clips the highlights.
+// limited so that noise is not amplified without bounds. Where the camera's white would end above 1,
+// the curve above the shoulder is shortened in proportion so that it ends exactly at 1: bright tones
+// are not cut off.
 function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   const usable = points.filter(([x, y]) => x > CURVE_FLOOR / 10 && y > 0);
   const logs = usable.map(([x, y]): [number, number] => [Math.log(x), Math.log(y / x)]);
@@ -300,9 +315,9 @@ function buildCurve(points: readonly (readonly [number, number])[]): Curve {
     // The curve never falls.
     previous = Math.max(x * Math.exp(at(u)), previous);
     xs.push(x);
-    ys.push(shoulder(previous));
+    ys.push(previous);
   }
-  return { xs, ys };
+  return { xs, ys: ys.map((y) => belowOne(y, SHOULDER, previous)) };
 }
 
 // Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
@@ -359,10 +374,24 @@ function chromaOf([, a, b]: Vec3): number {
 // Free numbers of the identity matrix (see matrixOf).
 const IDENTITY_FREE = [1, 0, 0, 1, 0, 0] as const;
 
+// How far the luminance of the camera primaries falls short of MIN_PRIMARY_LUMINANCE (squared, summed).
+function primaryShortfall(matrix: readonly [Vec3, Vec3, Vec3]): number {
+  let sum = 0;
+  for (const column of [0, 1, 2] as const) {
+    const luminance =
+      LUMINANCE[0] * matrix[0][column] +
+      LUMINANCE[1] * matrix[1][column] +
+      LUMINANCE[2] * matrix[2][column];
+    sum += Math.max(0, MIN_PRIMARY_LUMINANCE * LUMINANCE[column] - luminance) ** 2;
+  }
+  return sum;
+}
+
 // Mean color deviation plus a penalty for colors that come out more saturated than the reference
 // (by more than SATURATION_LIMIT): too much saturation looks worse than too little at the same
 // deviation, and a matrix that makes blues glare is not a good compromise. The weak pull toward the
-// identity (REFINE_RIDGE) keeps the matrix calm where the patches do not decide it.
+// identity (REFINE_RIDGE) keeps the matrix calm where the patches do not decide it, and camera
+// primaries that would come out too dark are penalized (see MIN_PRIMARY_LUMINANCE).
 function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
   const matrix = matrixOf(free);
   const deviation = mean(
@@ -376,7 +405,7 @@ function meanDeviation(free: readonly number[], goals: readonly Pair[]): number 
     (sum, value, index) => sum + (value - Number(IDENTITY_FREE[index])) ** 2,
     0,
   );
-  return deviation + REFINE_RIDGE * pull;
+  return deviation + REFINE_RIDGE * pull + PRIMARY_PENALTY * primaryShortfall(matrix);
 }
 
 // Nudges each of the six numbers up and down by `step` and keeps every change that lowers the
@@ -447,35 +476,55 @@ function toCode(value: number): number {
   return linearToSrgb(Math.min(Math.max(value, 0), 1));
 }
 
-// Keeps a linear color inside the sRGB cube without clipping it: seen from the gray of the same
-// luminance, `reach` says how far the color lies towards the edge of the cube (1 = on the edge, more =
-// beyond it). Up to GAMUT_KNEE the color stays as it is; beyond, it is desaturated towards that gray
-// so that it approaches the edge without ever reaching it. Hue and brightness stay, and saturated
-// areas keep their texture instead of a channel ending flat at 0 or 1.
-function intoGamut([r, g, b]: Vec3): Vec3 {
-  // The luminance itself stays just inside black and white.
-  const luminance = Math.min(Math.max(0.2126 * r + 0.7152 * g + 0.0722 * b, 1e-9), 1 - 1e-9);
-  const reach = Math.max(
-    ...[r, g, b].map((value) =>
-      value < luminance ? (luminance - value) / luminance : (value - luminance) / (1 - luminance),
-    ),
-  );
+function luminanceOf([r, g, b]: Vec3): number {
+  return LUMINANCE[0] * r + LUMINANCE[1] * g + LUMINANCE[2] * b;
+}
+
+// How far a linear color lies from the gray of luminance `y` towards the edge of the sRGB cube: 0 is
+// that gray, 1 the edge, more lies beyond it.
+function reachOf(color: Vec3, y: number): number {
+  return Math.max(...color.map((value) => (value < y ? (y - value) / y : (value - y) / (1 - y))));
+}
+
+// Keeps a mixed color inside the sRGB cube without cutting anything off. The camera colors on the way
+// from the camera gray of the same luminance through the curve output `u` on to full saturation (a
+// channel at 0) all end up on one ray of mixed colors from that gray, stretched in proportion by the
+// matrix. Where the end of the ray would lie beyond the edge of the sRGB cube, the part beyond
+// GAMUT_KNEE is shortened by one factor so that the end lands exactly on the edge: colors keep their
+// order and their proportions, only a fully saturated camera color can reach the edge, and directions
+// that fit stay as they are. Hue and brightness stay.
+function withinGamut(u: Vec3, mixed: Vec3): Vec3 {
+  const y = Math.min(Math.max(luminanceOf(mixed), 1e-9), 1 - 1e-9);
+  const reach = reachOf(mixed, y);
   if (reach <= GAMUT_KNEE) {
+    return mixed;
+  }
+  // How much further the camera ray goes beyond `u` until a channel reaches 0.
+  const further = Math.min(...u.map((value) => (value < y ? y / (y - value) : Infinity)));
+  const scale = belowOne(reach, GAMUT_KNEE, reach * further) / reach;
+  return [y + (mixed[0] - y) * scale, y + (mixed[1] - y) * scale, y + (mixed[2] - y) * scale];
+}
+
+// Pulls a linear target color with negative channels into the sRGB cube by desaturating it towards
+// the gray of the same luminance, onto the edge: the nearest color sRGB can show, with hue and
+// brightness kept. Channels above 1 do not occur, as the targets are compressed below white.
+function intoGamut([r, g, b]: Vec3): Vec3 {
+  const low = Math.min(r, g, b);
+  if (low >= 0) {
     return [r, g, b];
   }
-  // A rational roll-off with slope 1 at the knee: far beyond the edge the colors still keep apart.
-  const beyond = (reach - GAMUT_KNEE) / (1 - GAMUT_KNEE);
-  const scale = (GAMUT_KNEE + (1 - GAMUT_KNEE) * (beyond / (1 + beyond))) / reach;
+  const luminance = Math.max(0.2126 * r + 0.7152 * g + 0.0722 * b, 0);
+  const factor = luminance / (luminance - low);
   return [
-    luminance + (r - luminance) * scale,
-    luminance + (g - luminance) * scale,
-    luminance + (b - luminance) * scale,
+    luminance + (r - luminance) * factor,
+    luminance + (g - luminance) * factor,
+    luminance + (b - luminance) * factor,
   ];
 }
 
 // The color the correction aims at for a reference color (Lab, D50), linear: at the exposure of the
 // shot (`exposureGain`), compressed softly above the shoulder like the tone curves do, and pulled into
-// the sRGB gamut like the output. That is the best the correction can show: colors outside the gamut
+// the sRGB gamut. That is the best the correction can show: colors outside the gamut
 // (such as the cyan 1F) or brighter than white cannot be reached, and measuring against them would
 // count an unavoidable error and pull the matrix towards it.
 function targetLinear(lab: Vec3, exposureGain: number): Vec3 {
@@ -493,14 +542,16 @@ export function targetLab(lab: Vec3, exposureGain: number): Vec3 {
   return xyzD50ToLab(linearSrgbToXyzD50(targetLinear(lab, exposureGain)));
 }
 
-// Mixes the curve outputs (linear) with the matrix and returns the sRGB code.
+// Mixes the curve outputs (linear) with the matrix, keeps the result inside the sRGB cube (see
+// withinGamut) and returns the sRGB code.
 function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3): Vec3 {
   const [a, b, c] = matrix;
-  const [r, g, blue] = intoGamut([
+  const mixed: Vec3 = [
     a[0] * u[0] + a[1] * u[1] + a[2] * u[2],
     b[0] * u[0] + b[1] * u[1] + b[2] * u[2],
     c[0] * u[0] + c[1] * u[1] + c[2] * u[2],
-  ]);
+  ];
+  const [r, g, blue] = withinGamut(u, mixed);
   return [toCode(r), toCode(g), toCode(blue)];
 }
 
@@ -572,7 +623,7 @@ export function fitColorModel(input: FitInput): FitResult {
     buildCurve(
       blocks.map((block) => [
         Number(block.linear[channel]) / block.count,
-        (gain * Number(block.target[channel])) / block.count,
+        shoulder((gain * Number(block.target[channel])) / block.count),
       ]),
     ),
   ) as unknown as ColorModel['curves'];

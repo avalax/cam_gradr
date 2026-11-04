@@ -41,6 +41,10 @@ function halve([r, g, b]: Rgb): Rgb {
   return [r, g, b].map((value) => linearToSrgb(srgbToLinear(value) / 2)) as unknown as Rgb;
 }
 
+function distance(first: Vec3, second: Vec3): number {
+  return Math.hypot(first[0] - second[0], first[1] - second[1], first[2] - second[2]);
+}
+
 function measure(reference: ReferenceSet): Record<string, Rgb> {
   return Object.fromEntries(
     Object.entries(reference.patches).map(([id, lab]) => [id, cameraCode(lab)]),
@@ -167,7 +171,7 @@ describe('fitColorModel', () => {
     expect(Math.max(red, green, blue)).toBeLessThan(0.999);
   });
 
-  it('desaturates colors outside the sRGB cube softly instead of clipping single channels', () => {
+  it('desaturates colors outside the sRGB cube in proportion instead of clipping single channels', () => {
     const identity = { xs: [0, 1], ys: [0, 1] };
     // A strongly mixing matrix: a saturated blue gets a negative red value.
     const model = {
@@ -184,17 +188,18 @@ describe('fitColorModel', () => {
       linearToSrgb(0.9),
     ];
     const [r, g, b] = applyColorModel(model, input).map((value) => srgbToLinear(value));
-    // Close to the edge of the cube, but not on it: no channel is clipped at 0.
+    // Close to the edge of the cube, but not on it: only the most saturated camera blue lands there.
     expect(Number(r)).toBeGreaterThan(0);
-    expect(Number(r)).toBeLessThan(0.01);
+    expect(Number(r)).toBeLessThan(0.05);
     // Same luminance as the mixed color, instead of the clipped (0, 0.3, 0.9).
     expect(0.2126 * Number(r) + 0.7152 * Number(g) + 0.0722 * Number(b)).toBeCloseTo(0.1946, 3);
     expect(Number(b)).toBeLessThan(0.5);
   });
 
-  it('never clips: every camera color apart from black and white stays inside the color space', () => {
-    // A washed-out, slightly bright camera: the correction has to saturate strongly, which pushes the
-    // most saturated camera colors beyond sRGB, and to brighten the highlights.
+  it('keeps different camera colors apart instead of cutting them off at 0 or 1', () => {
+    // A washed-out, slightly dark camera: the correction has to saturate strongly, which would push the
+    // most saturated camera colors beyond sRGB, and to brighten, which would lift the highlights above
+    // white.
     const real = bundledReference();
     const washed = Object.fromEntries(
       Object.entries(real.patches).map(([id, lab]) => {
@@ -203,7 +208,7 @@ describe('fitColorModel', () => {
           0.2126 * Number(linear[0]) + 0.7152 * Number(linear[1]) + 0.0722 * Number(linear[2]);
         return [
           id,
-          linear.map((value) => linearToSrgb(0.9 * (0.6 * value + 0.4 * gray))) as unknown as Rgb,
+          linear.map((value) => linearToSrgb(0.85 * (0.6 * value + 0.4 * gray))) as unknown as Rgb,
         ];
       }),
     );
@@ -213,22 +218,40 @@ describe('fitColorModel', () => {
       neutralIds: NEUTRAL_IDS,
     });
     expect(strong.model.matrix.flat().some((value) => value < 0)).toBe(true);
-    const steps = 16;
+    const corners: Vec3[] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+      [1, 1, 0],
+      [0, 1, 1],
+      [1, 0, 1],
+    ];
     for (const model of [result.model, strong.model]) {
-      const clipped: string[] = [];
-      for (let r = 0; r <= steps; r++) {
-        for (let g = 0; g <= steps; g++) {
-          for (let b = 0; b <= steps; b++) {
-            const black = r + g + b === 0;
-            const white = r + g + b === 3 * steps;
-            const out = applyColorModel(model, [r / steps, g / steps, b / steps]);
-            if (!black && !white && out.some((value) => value <= 0 || value >= 1)) {
-              clipped.push(`${String(r)},${String(g)},${String(b)}`);
-            }
+      // From each saturated camera color towards gray: neighbors stay apart, and only the camera's
+      // most saturated color itself may land on the edge.
+      for (const corner of corners) {
+        for (const level of [0.5, 1]) {
+          const ramp = Array.from({ length: 9 }, (_, step) =>
+            applyColorModel(
+              model,
+              corner.map((channel) => level * (channel === 1 ? 1 : step / 32)) as unknown as Vec3,
+            ),
+          );
+          for (const [step, color] of ramp.entries()) {
+            expect(distance(color, ramp[step - 1] ?? [-1, -1, -1])).toBeGreaterThan(1e-4);
+            expect(step === 0 || color.every((value) => value > 0 && value < 1)).toBe(true);
           }
         }
       }
-      expect(clipped).toEqual([]);
+      // The bright grays rise towards white without a flat top.
+      const grays = Array.from({ length: 11 }, (_, step) => {
+        const level = 0.8 + step * 0.018;
+        return Math.min(...applyColorModel(model, [level, level, level]));
+      });
+      for (const [step, value] of grays.entries()) {
+        expect(value).toBeGreaterThan(grays[step - 1] ?? 0);
+        expect(value).toBeLessThan(1);
+      }
     }
   });
 
