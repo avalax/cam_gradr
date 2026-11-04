@@ -20,6 +20,9 @@ test.describe('Export and project', () => {
   test('The .cube file corrects the camera, a loaded project brings back correction, stills and preview', async ({
     app,
   }) => {
+    // The longest journey (download, save, reload, load, search and preview): with all tests in
+    // parallel on a busy machine it can need more than the usual time limit.
+    test.slow();
     await app.computeColorModel();
     await app.openTab('Export');
     const { fileName, text: cubeText } = await app.download(

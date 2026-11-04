@@ -69,6 +69,9 @@ camera automatics. Read the hints in the result and capture the cards again.
 **Can I change the language?** The app follows your browser (English or German). You can change it in
 ⚙ → Language.
 
+**Which version do I have?** The line at the bottom of the page names it, and so does the first line of
+every `.cube` file. A preview of a pull request adds its number.
+
 **Where does my data go?** Nowhere. Imported reference sets stay in your browser. A project file with
 still images contains camera images; only pass it on if that is fine.
 

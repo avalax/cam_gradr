@@ -61,7 +61,7 @@ Measured on twelve stills of the local projects (three cameras: Lenovo, Sony, De
 
 - **LUT** (`src/lut`): the model evaluated on an N³ grid of sRGB code values, red fastest, values 0..1. The correction always applies in full; an early strength slider was dropped.
 - **Preview** (`src/gl`): a 33³ LUT as an 8-bit RGBA 3D texture (runs everywhere, also with software GL), sampled trilinearly by a lean WebGL2 fragment shader in real time. `sampleLut` computes the same interpolation in TypeScript for the tests. Without WebGL2 the LUT is applied on the CPU, downscaled to at most 480 pixels width, and the tab says so.
-- **Export:** `cam_gradr-<size>.cube` with `TITLE`, `LUT_3D_SIZE`, `DOMAIN_MIN` and `DOMAIN_MAX`, decimal point and `\n` regardless of system settings. The tests read the file back and check it against the model. Other formats (`.3dl`, Hald PNG) are not planned.
+- **Export:** `cam_gradr-<size>.cube` with a comment naming the app version, `TITLE`, `LUT_3D_SIZE`, `DOMAIN_MIN` and `DOMAIN_MAX`, decimal point and `\n` regardless of system settings. The tests read the file back and check it against the model. Other formats (`.3dl`, Hald PNG) are not planned.
 
 ## 7. Projects and reference sets
 
@@ -100,6 +100,7 @@ Stack: Vue 3 (`<script setup>`), Pinia, TypeScript (strict), Vite, Tailwind CSS,
 - **Reference values:** The bundled set is an unofficial transcription from a blog post (bartneck.de), named as such in the UI, the README and the file; no manufacturer data is shipped. Tests use made-up references; the bundled set is only checked for validity. Own shots and files live in `local-data/` (ignored).
 - **Device:** The app only writes the LUT file; it is copied to the monitor by hand, without any device integration. Which size the monitor accepts is tested by the user.
 - **Camera automatics:** only a warning. The user locks auto exposure and auto white balance in the camera software; the app sets no constraints.
+- **Version:** `APP_VERSION` in `src/ui/app-version.ts` takes the version from `package.json`, which release-please raises; only that field ends up in the bundle. The footer and the first line of the `.cube` file show it, and a preview of a pull request adds its number, as it contains unreleased changes.
 - **Color space:** sRGB / Rec.709 for input and output. The LH7H applies the LUT to an SDR HDMI signal in Rec.709, so a wider output space (P3, Rec.2020) would only help if the whole chain carried it.
 - **License:** MIT, Copyright (c) 2026 Avalax, for the source code; the bundled reference set is not covered.
 - **Application identifier:** `avalax.cam_gradr` (`APP_ID` in `src/ui/app-info.ts`), shown in the app and the prefix of storage keys and project files.

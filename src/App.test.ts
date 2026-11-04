@@ -11,6 +11,7 @@ import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
 import { APP_ID, APP_NAME } from './ui/app-info';
+import { APP_VERSION } from './ui/app-version';
 
 function mountApp() {
   const pinia = createPinia();
@@ -42,6 +43,7 @@ describe('App', () => {
     expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera starten');
     expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
     expect(wrapper.get('footer').text()).toContain(APP_ID);
+    expect(wrapper.get('footer').text()).toContain(`Version ${APP_VERSION}`);
     expect(APP_ID).toBe('avalax.cam_gradr');
   });
 
