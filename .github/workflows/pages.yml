@@ -40,7 +40,14 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      # The installed packages of the CI, kept per lockfile of the release (see ci.yml).
+      - uses: actions/cache@v6
+        id: modules
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
