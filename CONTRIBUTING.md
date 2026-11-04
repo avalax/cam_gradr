@@ -27,7 +27,11 @@ npm run verify:all   # verify and e2e together
    `fix:`, `docs:`, `test:`, `chore:` …), lines at most 100 characters. Husky runs the hooks:
    `pre-commit` lints and formats the changed files, `commit-msg` checks the message, `pre-push` runs
    `npm run verify` and blocks pushes to `main`.
-3. Push the branch and open a pull request against `main`; the template lists what to check.
+3. Push the branch and open a pull request against `main`; the template lists what to check. A
+   comment links its preview on GitHub Pages (`https://avalax.github.io/cam_gradr/pr-preview/pr-<number>/`),
+   so the change can be tried with a real camera. The preview follows every push a few minutes later
+   and is removed when the pull request is closed. It shares the browser storage (reference sets,
+   language, appearance) with the app.
 4. Merge with **Squash and merge**. The pull request title becomes the commit on `main` and drives the
    changelog and the version, so it must be a Conventional Commit title such as
    `feat(ui): new brightness scale` (the `pr-title` workflow checks it). A merge commit is allowed in
@@ -58,4 +62,4 @@ placeholders as English.
 [release-please](https://github.com/googleapis/release-please) reads the commits on `main`, maintains
 `CHANGELOG.md` and keeps a release pull request open. It uses the secret `RELEASE_PLEASE_TOKEN`, so that
 the CI also runs on that pull request. Merging it creates the tag and the GitHub release with the build as
-a zip, and publishes the app on GitHub Pages.
+a zip; the Pages workflow then publishes the new version on GitHub Pages.
