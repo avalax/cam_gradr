@@ -1,82 +1,61 @@
-# Contributing and workflow
+# Contributing
 
-The `main` branch is protected: changes get in **only through pull requests**, and both CI checks
-`verify` and `acceptance` must be green.
+How to work on cam_gradr. How the app works inside and why it was built that way is in
+[PLAN.md](PLAN.md); the changes are in [CHANGELOG.md](CHANGELOG.md).
 
-## Workflow for a change
+## Setup
 
-1. Get the latest state and create a branch, for example:
-
-   ```bash
-   git switch main
-   git pull
-   git switch -c feat/short-description
-   ```
-
-2. Make your changes and commit them. Commit messages follow
-   [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `docs:`,
-   `test:`, `chore:` …); the lines of the message are at most 100 characters long. The hooks check
-   format, lint and tests.
-3. Push the branch and open a pull request against `main`:
-
-   ```bash
-   git push -u origin feat/short-description
-   ```
-
-   GitHub prints a link in the output for creating the pull request.
-
-4. Wait until the CI is green (`verify` and `acceptance`).
-5. Merge with **"Squash and merge"**. The **title of the pull request** becomes the commit message
-   on `main` and controls changelog and version (release-please). It must therefore be a valid
-   Conventional Commit title, for example `feat(ui): new brightness scale`; the `pr-title` workflow
-   checks this. A normal merge commit is allowed in justified cases, for example when several commits
-   should each have their own entry in the changelog. It does create an additional entry there, though
-   (the merge commit carries the title of the pull request in addition to the commits of the
-   branch); that is why squash is the normal case.
-
-## Running the checks locally
+Node.js 22 is required (see `.nvmrc`).
 
 ```bash
-npm run verify      # lint, typecheck, knip, unit tests with coverage (100%)
-npm run verify:all  # additionally the Playwright acceptance tests (Chrome and Firefox)
+npm ci               # install dependencies
+npm run dev          # development server
+npm run build        # production build
+npm run verify       # lint, typecheck, knip, unit tests with coverage
+npm run e2e:install  # once: Firefox for the acceptance tests (Chrome must be installed)
+npm run e2e          # Playwright acceptance tests (builds and starts the app)
+npm run verify:all   # verify and e2e together
 ```
 
-The `pre-push` hook runs `npm run verify` and prevents direct pushes to `main`.
+## Workflow
 
-## Quality requirements
+`main` is protected: changes get in only through pull requests, and the checks `verify` and
+`acceptance` must be green.
 
-- New logic needs unit tests; the coverage threshold of 100% applies to all metrics.
-- New UI behavior needs an acceptance scenario in `e2e/`.
-- Lint and type checking run without warnings.
-- The reference values of the cards (manufacturer data) never belong in the repo. Test data is made up.
-- Image files are not checked in.
+1. Create a branch from the current `main`, for example `git switch -c feat/short-description`.
+2. Commit with [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`,
+   `fix:`, `docs:`, `test:`, `chore:` …), lines at most 100 characters. Husky runs the hooks:
+   `pre-commit` lints and formats the changed files, `commit-msg` checks the message, `pre-push` runs
+   `npm run verify` and blocks pushes to `main`.
+3. Push the branch and open a pull request against `main`; the template lists what to check.
+4. Merge with **Squash and merge**. The pull request title becomes the commit on `main` and drives the
+   changelog and the version, so it must be a Conventional Commit title such as
+   `feat(ui): new brightness scale` (the `pr-title` workflow checks it). A merge commit is allowed in
+   justified cases, but it adds an extra changelog entry.
 
-## Quality assurance in detail
+## Rules
 
-- **Tests:** Vitest with **100% coverage** (statements, branches, functions, lines). If the coverage
-  drops below that, the run fails. Code that no test can reach is dead and is removed instead.
-- **Acceptance tests:** Playwright checks the complete user story in Chrome and Firefox with a
-  synthetic camera (see `e2e/`). They run in the CI as their own job `acceptance`.
-- **Linting:** ESLint (strict, type-aware, Vue, accessibility), Prettier, Stylelint, markdownlint and
-  knip. Warnings count as errors.
-- **Git hooks (Husky):** `pre-commit` checks the changed files, `commit-msg` checks the format of the
-  commit message, `pre-push` runs `npm run verify`.
-- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), for example
-  `feat: ...` or `fix: ...`.
+- **Coverage of 100 %** for statements, branches, functions and lines; below that the run fails. Code
+  that no test can reach is removed, not excluded.
+- New UI behavior gets a scenario in `e2e/`. The acceptance tests run in Chrome and Firefox against the
+  production build with a synthetic camera; `test.only`, `skip` and `fixme` are not allowed.
+- Lint and typecheck without warnings: ESLint (strict and type-aware, Vue, accessibility), Prettier,
+  Stylelint, markdownlint and knip.
+- No manufacturer reference values and no image files in the repo; test data is made up. Own shots and
+  project files belong in `local-data/`, which is ignored.
+- User-visible texts never live in components or modules but in `src/lang/<language>/<area>.json`
+  (English is the reference), used through `t()` or `useI18n()`. Error messages meant only for
+  developers stay in English.
 
-## Technology
+## Translations
 
-Vue 3, Pinia, TypeScript (strict), Vite and Tailwind CSS. The color math and the card evaluation
-(homography, patch measurement, brightness assessment) live as pure, tested modules in `src/color` and
-`src/chart`. The browser camera is wrapped behind a thin adapter in `src/camera`. The plan and the
-decisions are in [PLAN.md](PLAN.md).
-
-User-visible texts never belong in components or modules: add them to `src/lang/en/<area>.json` and
-`src/lang/de/<area>.json` and use `t()` / `useI18n()`. Error messages meant only for developers stay in
-English and are not translated.
+To add a language, copy `src/lang/en`, translate the files and register the language in
+`src/lang/locales.ts` and `src/lang/index.ts`. The tests check that every language has the same keys and
+placeholders as English.
 
 ## Releases
 
-Releases happen automatically: [release-please](https://github.com/googleapis/release-please) reads
-the Conventional Commits, maintains `CHANGELOG.md` and opens a release pull request. Merging it creates
-the tag and the GitHub release with a build artifact, and the app is published on GitHub Pages.
+[release-please](https://github.com/googleapis/release-please) reads the commits on `main`, maintains
+`CHANGELOG.md` and keeps a release pull request open. It uses the secret `RELEASE_PLEASE_TOKEN`, so that
+the CI also runs on that pull request. Merging it creates the tag and the GitHub release with the build as
+a zip, and publishes the app on GitHub Pages.
