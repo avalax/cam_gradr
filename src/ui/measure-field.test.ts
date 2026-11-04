@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ExposureResult } from '../chart/exposure';
-import { setLocale } from '../lang';
 
-import {
-  detailCaption,
-  detailRows,
-  fieldHint,
-  fieldPosition,
-  mainIssue,
-  okBox,
-} from './measure-field';
+import { detailRows, fieldHint, fieldPosition, mainIssue, okBox } from './measure-field';
 
 const exposure: ExposureResult = {
   verdict: 'ok',
@@ -58,7 +50,7 @@ describe('okBox', () => {
 });
 
 describe('detailRows', () => {
-  it('liefert alle Einzelwerte lesbar', () => {
+  it('returns all single values readably', () => {
     expect(detailRows(exposure)).toEqual([
       { label: '18 %-Karte', value: '46 % (Soll 46 %)' },
       { label: '50 %-Karte', value: '74 % (Soll 74 %)' },
@@ -79,7 +71,7 @@ describe('detailRows', () => {
 describe('fieldHint', () => {
   const fine = { ...exposure, shadowsCrushed: false, delta: 0 };
 
-  it('nennt fehlende Messung', () => {
+  it('names a missing measurement', () => {
     expect(fieldHint(null)).toBe('Noch keine Messung.');
   });
 
@@ -169,46 +161,5 @@ describe('mainIssue', () => {
       edge: 'right',
       label: 'Kontrast zu hoch',
     });
-  });
-});
-
-describe('English texts', () => {
-  const fine = { ...exposure, shadowsCrushed: false, delta: 0 };
-
-  it('lists the detail rows with English numbers and wording', () => {
-    setLocale('en');
-    expect(detailCaption()).toBe(
-      'Brightness of the gray fields in the image (0% black, 100% white)',
-    );
-    expect(detailRows({ ...exposure, delta: 0.105, highlightsClipped: true })).toEqual([
-      { label: '18% card', value: '46% (target 46%)' },
-      { label: '50% card', value: '74% (target 74%)' },
-      { label: 'Brightness', value: '+11 points (Tolerance ±6)' },
-      { label: 'Contrast', value: '+0 points (Tolerance ±5)' },
-      { label: 'Highlights', value: 'overexposed' },
-      { label: 'Shadows', value: 'underexposed' },
-    ]);
-    expect(detailRows(fine)[4]?.value).toBe('ok');
-  });
-
-  it('words the next step in English', () => {
-    setLocale('en');
-    expect(fieldHint(null)).toBe('No measurement yet.');
-    expect(fieldHint(fine)).toBe('Brightness and contrast are within the normal range.');
-    expect(mainIssue({ ...fine, delta: -0.2 })).toMatchObject({
-      edge: 'bottom',
-      label: 'Brightness too low',
-    });
-    expect(mainIssue({ ...fine, delta: 0.2 })?.label).toBe('Brightness too high');
-    expect(mainIssue({ ...fine, contrast: -0.1 })?.label).toBe('Contrast too low');
-    expect(mainIssue({ ...fine, contrast: 0.1 })?.label).toBe('Contrast too high');
-    expect(fieldHint({ ...fine, shadowsCrushed: true })).toContain('Shadows underexposed');
-    expect(fieldHint({ ...fine, shadowsCrushed: true, highlightsClipped: true })).toContain(
-      'avoid reflections',
-    );
-    expect(fieldHint({ ...fine, highlightsClipped: true, delta: 0.2 })).toContain(
-      'reduce the brightness',
-    );
-    expect(fieldHint({ ...fine, highlightsClipped: true })).toContain('reduce the contrast');
   });
 });

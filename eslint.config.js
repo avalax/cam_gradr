@@ -81,6 +81,44 @@ export default tseslint.config(
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
   {
+    // User-visible texts live in src/lang/ and are used through t(): no bare text in templates, and
+    // no German in the string literals of the code (messages for developers are English).
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/test-support/**'],
+    rules: {
+      'vue/no-bare-strings-in-template': [
+        'error',
+        {
+          allowlist: [
+            // Punctuation and symbols such as ×, ✕, ⚙ and ·, file extensions, the host of a link
+            // and the "i" of the info icon.
+            String.raw`/^[\p{P}\p{S}]+$/u`,
+            String.raw`/^\.\w+$/`,
+            String.raw`/^[\w-]+(\.[\w-]+)+$/`,
+            'i',
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/[äöüÄÖÜß]/]',
+          message: 'User-visible texts belong in src/lang/ and are used through t().',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/[äöüÄÖÜß]/]',
+          message: 'User-visible texts belong in src/lang/ and are used through t().',
+        },
+        {
+          // Outside a function the text would be fixed once and not follow a language switch.
+          selector: 'CallExpression[callee.name="t"]:not(:function CallExpression)',
+          message:
+            'Translate inside a function or computed, so that the text follows the language.',
+        },
+      ],
+    },
+  },
+  {
     // Architecture rule: color math must not import anything from the UI.
     files: ['src/color/**/*.ts'],
     rules: {

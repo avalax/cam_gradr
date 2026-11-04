@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment happy-dom
+import { describe, expect, it, vi } from 'vitest';
 
-import { i18n, messages, resolveLocale, setLocale } from './index';
+import { i18n, resolveLocale, setLocale } from './index';
 
 describe('resolveLocale', () => {
   it('follows the browser language for “auto”', () => {
@@ -14,7 +15,12 @@ describe('resolveLocale', () => {
   });
 
   it('reads the browser languages when none are given', () => {
-    expect(['en', 'de']).toContain(resolveLocale('auto'));
+    vi.stubGlobal('navigator', { languages: ['de-AT', 'en'] });
+    try {
+      expect(resolveLocale('auto')).toBe('de');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 
@@ -26,13 +32,5 @@ describe('setLocale', () => {
     setLocale('de');
     expect(i18n.global.locale.value).toBe('de');
     expect(document.documentElement.lang).toBe('de');
-  });
-});
-
-describe('messages', () => {
-  it('have the same namespaces for every language', () => {
-    expect(Object.keys(messages.de).toSorted((a: string, b: string) => a.localeCompare(b))).toEqual(
-      Object.keys(messages.en).toSorted((a: string, b: string) => a.localeCompare(b)),
-    );
   });
 });

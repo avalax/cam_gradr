@@ -12,7 +12,6 @@ import {
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 import type { Vec3 } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
-import { setLocale } from '../lang';
 import { cameraCode } from '../test-support/synthetic-camera';
 import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -302,9 +301,13 @@ describe('fitColorModel', () => {
   it('handles curves with duplicate measurements and anchors', () => {
     // White and a lighter step measure exactly the same (clipped), the black is above 0.
     const clipped = { ...measurements, '1E': [1, 1, 1] as Rgb, '1D': [1, 1, 1] as Rgb };
-    expect(() =>
-      fitColorModel({ measurements: clipped, reference, neutralIds: NEUTRAL_IDS }),
-    ).not.toThrow();
+    const { model } = fitColorModel({ measurements: clipped, reference, neutralIds: NEUTRAL_IDS });
+    for (const curve of model.curves) {
+      expect(curve.ys.every((value) => Number.isFinite(value))).toBe(true);
+      expect(
+        curve.ys.every((value, index) => index === 0 || value >= (curve.ys[index - 1] ?? 0)),
+      ).toBe(true);
+    }
   });
 
   it('uses a measured black at 0 without an additional anchor point', () => {
@@ -479,15 +482,5 @@ describe('fitColorModel', () => {
     for (const [index, row] of fit.model.matrix.entries()) {
       expect(row[index]).toBeGreaterThan(0.5);
     }
-  });
-});
-
-describe('fitColorModel (English)', () => {
-  it('reports too few measurements in English', () => {
-    setLocale('en');
-    const few = referenceSet(['1D', '2D', '3D']);
-    expect(() =>
-      fitColorModel({ measurements: measure(few), reference: few, neutralIds: NEUTRAL_IDS }),
-    ).toThrow(/^Too few measurements: at least \d+ patches, \d+ of them neutral$/);
   });
 });

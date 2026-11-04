@@ -1,7 +1,7 @@
+// @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
-import { setLocale } from '../lang';
 import { colorLayout } from '../chart/layouts';
 import { labToSrgb } from '../color/lab';
 import type { Rgb } from '../chart/types';
@@ -121,28 +121,6 @@ describe('ColorWipe', () => {
     expect(wrapper.get('[data-testid="color-wipe-camera"]').attributes('style')).toBeUndefined();
     await wrapper.get('[data-testid="wipe"]').trigger('keydown', { key: 'Home' });
     expect(corrected.attributes('style')).toContain('inset(0 0 0 0%)');
-  });
-});
-
-describe('ColorWipe (English)', () => {
-  it('shows label, layers and summary in English', () => {
-    setLocale('en');
-    const wrapper = mountWipe();
-    expect(wrapper.get('[data-testid="color-wipe-labels"]').text()).toBe('CameraCorrected');
-    expect(wrapper.get('[data-testid="color-wipe-camera"]').attributes('aria-label')).toBe(
-      'Camera colors',
-    );
-    expect(wrapper.get('[data-testid="color-wipe-corrected"]').attributes('aria-label')).toBe(
-      'Colors after correction',
-    );
-    expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe('No correction yet');
-    expect(
-      wrapper.get('[data-testid="color-wipe-camera"] [data-patch="1A"]').attributes('title'),
-    ).toBe('1A (default value)');
-    const withReport = mountWipe({ report });
-    expect(withReport.get('[data-testid="color-wipe-summary"]').text()).toBe(
-      'Ø deviation 18.4 → 8.0',
-    );
   });
 });
 

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -16,7 +17,7 @@ describe('CameraToggle', () => {
     setActivePinia(createPinia());
   });
 
-  it('startet ausgeschaltet', () => {
+  it('starts switched off', () => {
     installFakeCamera();
     const wrapper = mount(CameraToggle);
     expect(toggle(wrapper).text()).toBe('Kamera starten');

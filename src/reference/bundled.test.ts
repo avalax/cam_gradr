@@ -17,7 +17,7 @@ describe('mitgelieferter Referenzsatz', () => {
     );
   });
 
-  it('nennt den Blogbeitrag als Quelle', () => {
+  it('names the blog post as the source', () => {
     expect(BUNDLED_SOURCE_URL).toBe(
       'https://www.bartneck.de/2017/10/24/patch-color-definitions-for-datacolor-spydercheckr-48/',
     );

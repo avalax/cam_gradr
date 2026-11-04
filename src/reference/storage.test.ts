@@ -52,7 +52,7 @@ describe('createIndexedDbStorage', () => {
     expect(await again.list()).toEqual([first]);
   });
 
-  it('trennt verschiedene Datenbanknamen', async () => {
+  it('keeps different database names apart', async () => {
     await storage.save(first);
     const other = createIndexedDbStorage(factory, 'andere-db');
     expect(await other.list()).toEqual([]);

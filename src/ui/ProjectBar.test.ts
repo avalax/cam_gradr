@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -102,8 +103,8 @@ describe('ProjectBar', () => {
     const wrapper = mount(ProjectBar);
     const input = wrapper.get('[data-testid="project-file"]');
     Object.defineProperty(input.element, 'files', { value: [], configurable: true });
+    const load = vi.spyOn(useProjectStore(), 'load');
     await input.trigger('change');
-    expect(wrapper.emitted('done')).toBeUndefined();
-    expect(useProjectStore().notice).toBeNull();
+    expect(load).not.toHaveBeenCalled();
   });
 });

@@ -17,14 +17,16 @@ const TOLERANCE = 7 / 255;
 const SAMPLE_PATCHES = ['6A', '3A', '3C', '5H'];
 
 test.describe('Export and project', () => {
-  test('The downloaded .cube file corrects the colors of the camera', async ({ app }) => {
+  test('The .cube file corrects the camera, a loaded project brings back correction, stills and preview', async ({
+    app,
+  }) => {
     await app.computeColorModel();
     await app.openTab('Export');
-
-    const { fileName, text } = await app.download(app.page.getByTestId('export-download'));
-
+    const { fileName, text: cubeText } = await app.download(
+      app.page.getByTestId('export-download'),
+    );
     expect(fileName).toBe('cam_gradr-33.cube');
-    const cube = parseCube(text);
+    const cube = parseCube(cubeText);
     // The file undoes the distortion of the camera: camera value in, target value out.
     for (const id of SAMPLE_PATCHES) {
       const lab = dummyLab(id);
@@ -34,12 +36,7 @@ test.describe('Export and project', () => {
         expect(Math.abs((corrected[index] ?? 0) - value)).toBeLessThanOrEqual(TOLERANCE);
       }
     }
-  });
 
-  test('A loaded project brings back correction, stills and preview after reloading', async ({
-    app,
-  }) => {
-    await app.computeColorModel();
     await app.openPreviewWithImage();
     // Set the divider to 30 % with the keyboard (Home, then Shift + Arrow Right three times).
     await app.page.getByTestId('wipe').focus();
@@ -54,8 +51,8 @@ test.describe('Export and project', () => {
     await app.page.reload();
     await app.openPreviewWithImage();
     await app.loadProject(text, 'mein-projekt.json');
-    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
     await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
+    await expect(app.page.getByTestId('project-message')).toHaveCount(0);
 
     // The stills come back with their corner points; a new search hides them, and without a new
     // capture they return.

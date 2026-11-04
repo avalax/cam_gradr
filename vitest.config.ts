@@ -4,7 +4,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [vue()],
   test: {
-    environment: 'happy-dom',
+    // Without a DOM by default: test files that need one start with `// @vitest-environment happy-dom`.
+    environment: 'node',
     include: ['src/**/*.test.ts'],
     setupFiles: ['src/test-support/setup.ts'],
     coverage: {

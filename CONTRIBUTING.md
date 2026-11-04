@@ -48,13 +48,17 @@ npm run verify:all   # verify and e2e together
   a unit test covers, and new UI behavior extends an existing journey instead of starting a new one.
   The acceptance tests run in Chrome and Firefox against the production build with a synthetic
   camera; `test.only`, `skip` and `fixme` are not allowed.
+- Unit tests run without a DOM. A test file that mounts components or needs `document` starts with
+  `// @vitest-environment happy-dom`.
+- Where a mistake can be caught statically, a lint rule replaces tests that look for it case by case.
 - Lint and typecheck without warnings: ESLint (strict and type-aware, Vue, accessibility), Prettier,
   Stylelint, markdownlint and knip.
 - No manufacturer reference values and no image files in the repo; test data is made up. Own shots and
   project files belong in `local-data/`, which is ignored.
 - User-visible texts never live in components or modules but in `src/lang/<language>/<area>.json`
   (English is the reference), used through `t()` or `useI18n()`. Error messages meant only for
-  developers stay in English.
+  developers stay in English. ESLint reports bare text in templates, German in string literals and
+  `t()` outside a function, where the text would not follow a language switch.
 
 ## Translations
 

@@ -32,7 +32,7 @@ import deSolve from './de/solve.json' with { type: 'json' };
 import deTheme from './de/theme.json' with { type: 'json' };
 import { DEFAULT_LOCALE, detectLocale } from './locales';
 import type { LanguagePreference, Locale } from './locales';
-import { readPreference } from './preference';
+import { languagePreference } from './preference';
 
 const en = {
   app: enApp,
@@ -91,7 +91,7 @@ export function resolveLocale(
 
 export const i18n = createI18n({
   legacy: false,
-  locale: resolveLocale(readPreference()),
+  locale: resolveLocale(languagePreference.read()),
   fallbackLocale: DEFAULT_LOCALE,
   messages: { en, de },
 });

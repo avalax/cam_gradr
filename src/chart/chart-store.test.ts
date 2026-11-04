@@ -337,7 +337,7 @@ describe('useChartStore', () => {
   });
 });
 
-describe('Farbkarten um 180° gedreht', () => {
+describe('color charts rotated by 180°', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });

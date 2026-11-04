@@ -274,6 +274,20 @@ export class AppPage {
     await this.expectCorners();
   }
 
+  // Drags an element with the mouse by the given distance in screen pixels.
+  async dragBy(element: Locator, dx: number, dy: number): Promise<void> {
+    const box = await element.boundingBox();
+    if (box === null) {
+      throw new Error('The element to drag is not visible.');
+    }
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await this.page.mouse.move(x, y);
+    await this.page.mouse.down();
+    await this.page.mouse.move(x + dx, y + dy, { steps: 5 });
+    await this.page.mouse.up();
+  }
+
   // Waits until the app has set the corner points of both cards (eight in total).
   async expectCorners(): Promise<void> {
     await expect(this.page.locator('svg circle')).toHaveCount(8);

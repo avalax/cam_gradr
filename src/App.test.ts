@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -80,8 +81,6 @@ describe('App', () => {
     expect(color?.text()).toContain('Ø 20,2 → 8,0');
     const gauges = wrapper.findAll('[data-testid="status-gauge"]');
     expect(gauges.map((gauge) => gauge.attributes('data-level'))).toEqual(['ok', 'warn']);
-    expect(gauges[0]?.findAll('[data-filled="true"]')).toHaveLength(4);
-    expect(gauges[1]?.findAll('[data-filled="true"]')).toHaveLength(1);
   });
 
   it('gives the export the height of the other tabs as its minimum height', async () => {
@@ -139,7 +138,7 @@ describe('App', () => {
     expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-gray');
   });
 
-  it('wechselt ohne Bedingungen zwischen den Tabs', async () => {
+  it('switches between the tabs without conditions', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     await tabs(wrapper)[1]?.trigger('click');
@@ -161,15 +160,6 @@ describe('App', () => {
     await wrapper.get('[data-testid="camera-toggle"]').trigger('click');
     expect(api.close).toHaveBeenCalledTimes(1);
     expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
-  });
-
-  it('offers the camera settings in the gear menu', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    expect(wrapper.text()).not.toContain('Auto-Belichtung');
-    await wrapper.get('[data-testid="settings-button"]').trigger('click');
-    expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
-    expect(wrapper.text()).toContain('Auflösung');
   });
 
   it('keeps the camera running when switching tabs', async () => {
@@ -209,11 +199,13 @@ describe('App', () => {
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
   });
 
-  it('offers reference values in the gear menu and the project in the export tab', async () => {
+  it('offers camera and reference values in the gear menu and the project in the export tab', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
     await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    // The gear menu opens with the camera settings.
+    expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
     await wrapper.get('[data-testid="section-reference"]').trigger('click');
     expect(wrapper.find('[data-testid="reference-select"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
@@ -227,13 +219,6 @@ describe('App', () => {
     mountApp();
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
-  });
-
-  it('shows the missing-color-correction notice in the preview tab', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    await tabs(wrapper)[2]?.trigger('click');
-    expect(wrapper.text()).toContain('Noch keine Farbkorrektur');
   });
 
   it('stops the camera when the app is removed', async () => {

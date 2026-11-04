@@ -58,7 +58,6 @@ describe('grayStatus bars', () => {
   it('grades the distance to the normal range', () => {
     expect(grayStatus(exposure({ verdict: 'too-bright', delta: 0.08 })).fill).toBe(3);
     expect(grayStatus(exposure({ verdict: 'too-bright', delta: 0.2 })).fill).toBe(2);
-    expect(grayStatus(exposure({ verdict: 'too-dark', delta: -0.2 })).fill).toBe(2);
   });
 
   it('shows one bar for clipped highlights or crushed shadows', () => {

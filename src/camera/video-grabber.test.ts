@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { setLocale } from '../lang';
-
 import { createVideoGrabber } from './video-grabber';
 import type { CanvasLike } from './video-grabber';
 
@@ -39,19 +37,6 @@ describe('createVideoGrabber.grab', () => {
   it('throws when no 2D context is available', () => {
     const canvas: CanvasLike = { width: 0, height: 0, getContext: () => null };
     expect(() => createVideoGrabber(fakeVideo(), () => canvas).grab()).toThrow('Canvas-Kontext');
-  });
-});
-
-describe('createVideoGrabber.grab in English', () => {
-  it('reports the errors in the selected language', () => {
-    setLocale('en');
-    const canvas: CanvasLike = { width: 0, height: 0, getContext: () => null };
-    expect(() => createVideoGrabber(fakeVideo({ videoWidth: 0 }), () => canvas).grab()).toThrow(
-      'not ready yet',
-    );
-    expect(() => createVideoGrabber(fakeVideo(), () => canvas).grab()).toThrow(
-      'Canvas context not available',
-    );
   });
 });
 

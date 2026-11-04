@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
@@ -6,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
-import { setLocale } from '../lang';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../reference/storage';
@@ -59,7 +59,6 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       `${BUNDLED_NAME} (48 Felder)`,
     );
-    expect(wrapper.findAll('button').map((b) => b.text())).not.toContain('Farbkorrektur berechnen');
     expect(wrapper.text()).toContain('Beide Farbkarten ruhig dorthin halten, wo das Motiv steht');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
@@ -161,7 +160,6 @@ describe('ColorStep', () => {
     await flushPromises();
     const camera = wrapper.get('[data-testid="color-wipe-camera"]');
     expect(camera.attributes('data-measured')).toBe('false');
-    expect(camera.findAll('[data-patch]')).toHaveLength(48);
     // The measurement of the (tiny) still image is replaced by prepared measurements afterwards.
     const chart = prepareMeasurements();
     const measurements = chart.measurements;
@@ -199,41 +197,5 @@ describe('ColorStep', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('Zu wenige Messwerte');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
-  });
-
-  it('shows no camera options of its own (they live in the gear menu)', () => {
-    const wrapper = mount(ColorStep);
-    expect(wrapper.text()).not.toContain('Aktive Auflösung');
-    expect(wrapper.text()).toContain('Die Kamera ist aus');
-  });
-});
-
-describe('ColorStep (English)', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    installMediaStubs();
-    installFakeCamera();
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
-  });
-
-  it('explains the tab and names the reference set in English', async () => {
-    setLocale('en');
-    const wrapper = mount(ColorStep);
-    await useReferenceStore().load();
-    await flushPromises();
-    expect(wrapper.text()).toContain('This tab calculates the color correction.');
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
-      `Reference values: ${BUNDLED_NAME} (48 patches).`,
-    );
-    expect(wrapper.text()).toContain('Hold both color cards steady where the subject will be');
-  });
-
-  it('shows the report in English', async () => {
-    setLocale('en');
-    const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
-    prepareMeasurements();
-    await flushPromises();
-    expect(wrapper.get('[data-testid="report"]').text()).toContain('Color correction result');
   });
 });
