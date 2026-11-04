@@ -17,6 +17,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -25,7 +26,14 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      # The installed packages are kept per lockfile: npm ci takes about 40 s, restoring them a few.
+      - uses: actions/cache@v6
+        id: modules
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci
       - name: Check commit messages (pull requests only)
         if: github.event_name == 'pull_request'
         run: npx commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}"
@@ -38,7 +46,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint:knip
       - run: npm run audit
-      - name: Tests with coverage threshold 99 %
+      - name: Tests with coverage threshold 100 %
         run: npm run test:coverage
       - uses: actions/upload-artifact@v7
         if: always()
@@ -48,23 +56,40 @@ jobs:
           if-no-files-found: ignore
       - run: npm run build
 
+  # One job per browser, side by side.
   acceptance:
+    name: acceptance (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Install browsers for the acceptance tests (Chrome and Firefox)
-        run: npx playwright install --with-deps chrome firefox
-      - name: Acceptance tests (Playwright, Chrome and Firefox)
-        run: npm run e2e
+      - uses: actions/cache@v6
+        id: modules
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci
+      # Chrome comes with the runner image; Firefox is Playwright's own build and downloads in seconds.
+      # The system packages of `--with-deps` (fonts, video codecs) are not needed by the tests, and
+      # their download from the Ubuntu mirror took about a minute, at times it hung for many.
+      - name: Install Firefox
+        if: matrix.browser == 'firefox'
+        run: npx playwright install firefox
+      - name: Acceptance tests (Playwright, ${{ matrix.browser }})
+        run: npm run e2e -- --project=${{ matrix.browser }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.browser }}
           path: |
             playwright-report/
             test-results/
