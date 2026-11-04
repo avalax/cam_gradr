@@ -10,7 +10,7 @@
     "export": ".cube, project"
   },
   "tablist": "Sections",
-  "footer": "{id} · LUT generator for the Spyder Checkr Photo.",
+  "footer": "{id} · version {version} · LUT generator for the Spyder Checkr Photo.",
   "status": {
     "notMeasured": "Not measured yet",
     "lightOk": "Lighting is fine",

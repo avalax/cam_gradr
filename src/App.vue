@@ -15,7 +15,7 @@ import PreviewTab from './ui/PreviewTab.vue';
 import ProjectStatus from './ui/ProjectStatus.vue';
 import SettingsMenu from './ui/SettingsMenu.vue';
 import StatusGauge from './ui/StatusGauge.vue';
-import { APP_ID, APP_NAME } from './ui/app-info';
+import { APP_ID, APP_NAME, APP_VERSION } from './ui/app-info';
 import { trackHeight } from './ui/panel-height';
 import { colorStatus, grayStatus } from './ui/tab-status';
 import type { TabStatus } from './ui/tab-status';
@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
     </div>
 
     <footer class="text-xs text-slate-500 dark:text-slate-400">
-      {{ t('app.footer', { id: APP_ID }) }}
+      {{ t('app.footer', { id: APP_ID, version: APP_VERSION }) }}
     </footer>
   </main>
 </template>
