@@ -107,8 +107,10 @@ const MIN_PRIMARY_LUMINANCE = 0.5;
 const PRIMARY_PENALTY = 1000;
 const LUMINANCE: Vec3 = [0.2126, 0.7152, 0.0722];
 // Highest saturation (Lab chroma) relative to the reference that the matrix fine-tuning allows
-// without penalty, and the weight of the penalty above it.
-const SATURATION_LIMIT = 1.1;
+// without penalty, and the weight of the penalty above it. A 3×3 matrix cannot take back the
+// saturation of one hue alone: a lower limit against a camera that over-saturates its blues makes
+// its reds and yellows dull as well.
+const SATURATION_LIMIT = 1.3;
 const SATURATION_PENALTY = 1;
 const CURVE_POINTS = 48;
 // Step sizes of the matrix fine-tuning and the maximum number of sweeps per step size.
