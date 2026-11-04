@@ -41,8 +41,13 @@ npm run verify:all   # verify and e2e together
 
 - **Coverage of 100 %** for statements, branches, functions and lines; below that the run fails. Code
   that no test can reach is removed, not excluded.
-- New UI behavior gets a scenario in `e2e/`. The acceptance tests run in Chrome and Firefox against the
-  production build with a synthetic camera; `test.only`, `skip` and `fixme` are not allowed.
+- Tests follow the test pyramid. Logic and its edge cases belong in unit tests, and component tests
+  check only the wiring. The acceptance tests in `e2e/` hold one journey per user story. They also
+  cover what only a real browser shows: layout and sizes, the camera stream, WebGL pixels, downloads
+  and file inputs, storage across a reload, and hover and focus styles. A scenario never repeats what
+  a unit test covers, and new UI behavior extends an existing journey instead of starting a new one.
+  The acceptance tests run in Chrome and Firefox against the production build with a synthetic
+  camera; `test.only`, `skip` and `fixme` are not allowed.
 - Lint and typecheck without warnings: ESLint (strict and type-aware, Vue, accessibility), Prettier,
   Stylelint, markdownlint and knip.
 - No manufacturer reference values and no image files in the repo; test data is made up. Own shots and

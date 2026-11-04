@@ -179,8 +179,15 @@ describe('GrayStep', () => {
     const camera = useCameraStore();
     await camera.start();
     camera.still = stillFrame(0.5);
+    const putImageData = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData,
+    } as unknown as CanvasRenderingContext2D);
     const wrapper = mount(GrayStep);
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
+    // Coming back to the tab draws its still image again.
+    expect(putImageData).toHaveBeenCalledOnce();
     expect(button(wrapper, 'Eckpunkte löschen')).toBeDefined();
     expect(button(wrapper, 'Zurück zum Livebild')).toBeUndefined();
   });

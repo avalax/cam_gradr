@@ -76,6 +76,9 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="preview-no-source"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="wipe-line"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-canvas"]').attributes('style')).toContain(
+      'display: none',
+    );
   });
 
   it('points to camera or still image without an image source', () => {

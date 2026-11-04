@@ -293,7 +293,7 @@ watch(actual, (next, previous) => {
           class="rounded-t"
           data-testid="stage-label"
         />
-        <div class="relative">
+        <div class="relative" data-testid="stage-image">
           <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
           <div
             v-if="showPlaceholder"

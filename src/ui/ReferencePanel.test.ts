@@ -86,6 +86,7 @@ describe('ReferencePanel', () => {
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'kaputt.json', '{"format":"x"}');
     expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');
+    expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
   });
 
   it('does nothing without a selected file', async () => {

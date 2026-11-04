@@ -10,5 +10,5 @@
 ## Checked
 
 - [ ] `npm run verify` is green (lint, typecheck, tests, coverage of 100%)
-- [ ] `npm run e2e` is green, with a new or adapted scenario for changes to the UI
+- [ ] `npm run e2e` is green; journeys are only extended for what needs a real browser
 - [ ] No manufacturer data (reference values) and no images in the pull request

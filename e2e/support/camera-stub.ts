@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { SCENE_NAMES, sceneFor } from './synthetic-cards';
-import type { LightingName, Scene, SceneName } from './synthetic-cards';
+import type { Scene, SceneName } from './synthetic-cards';
 
 const REDRAW_MS = 100;
 const FRAME_RATE = 30;
@@ -72,13 +72,13 @@ function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void 
     ]);
 }
 
-// Replaces the camera of the page with a canvas stream showing the synthetic cards.
+// Replaces the camera of the page with a canvas stream showing the synthetic gray cards first.
 // This works in Chrome and Firefox alike (Firefox cannot use a video file as a camera).
-export async function installSyntheticCamera(page: Page, lighting: LightingName): Promise<void> {
+export async function installSyntheticCamera(page: Page): Promise<void> {
   const scenes = Object.fromEntries(SCENE_NAMES.map((name) => [name, sceneFor(name)]));
   await page.addInitScript(installInPage, {
     scenes,
-    initial: lighting,
+    initial: 'gray',
     redrawMs: REDRAW_MS,
     frameRate: FRAME_RATE,
   });
