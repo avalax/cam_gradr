@@ -135,6 +135,24 @@ function parseCurve(value: unknown, index: number): { xs: number[]; ys: number[]
   return { xs, ys };
 }
 
+// The optional root terms of a model and their limits: the model may use the matrix alone, older
+// files have no root terms, and files saved before the limits have root terms that act uncapped.
+function parseRoots(value: Record<string, unknown>): Pick<ColorModel, 'roots' | 'rootLimits'> {
+  if (value.roots === undefined) {
+    return {};
+  }
+  if (!Array.isArray(value.roots) || value.roots.length !== 3) {
+    throw new TypeError(t('project.errors.rootsRows'));
+  }
+  const roots = value.roots.map((row) => triple(row, t('project.errors.rootsWhere')));
+  const parsed = { roots: roots as unknown as NonNullable<ColorModel['roots']> };
+  if (value.rootLimits === undefined) {
+    return parsed;
+  }
+  const limits = triple(value.rootLimits, t('project.errors.rootLimitsWhere'));
+  return { ...parsed, rootLimits: limits as unknown as NonNullable<ColorModel['rootLimits']> };
+}
+
 function parseModel(value: unknown): ColorModel | null {
   if (value === null) {
     return null;
@@ -147,19 +165,11 @@ function parseModel(value: unknown): ColorModel | null {
     throw new TypeError(t('project.errors.matrixRows'));
   }
   const [r1, r2, r3] = value.matrix.map((row) => triple(row, t('project.errors.matrixWhere')));
-  const model: ColorModel = {
+  return {
     curves: [c1, c2, c3] as unknown as ColorModel['curves'],
     matrix: [r1, r2, r3] as unknown as ColorModel['matrix'],
+    ...parseRoots(value),
   };
-  // Root terms are optional: the model may use the matrix alone, and older files have none.
-  if (value.roots === undefined) {
-    return model;
-  }
-  if (!Array.isArray(value.roots) || value.roots.length !== 3) {
-    throw new TypeError(t('project.errors.rootsRows'));
-  }
-  const roots = value.roots.map((row) => triple(row, t('project.errors.rootsWhere')));
-  return { ...model, roots: roots as unknown as NonNullable<ColorModel['roots']> };
 }
 
 function parsePercent(value: unknown, name: string): number {

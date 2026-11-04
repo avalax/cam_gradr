@@ -18,6 +18,7 @@ import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 
 import { applyColorModel, fitColorModel } from './fit';
+import type { ColorModel } from './fit';
 
 function referenceSet(ids = dummyIds()): ReferenceSet {
   return {
@@ -54,6 +55,24 @@ function rootCamera(lab: Vec3): Rgb {
   const [rg, gb, rb] = [term(r, g), term(g, b), term(r, b)];
   const mixed = [r - 0.25 * rg + 0.15 * rb, g + 0.2 * rg - 0.2 * gb, b + 0.25 * gb - 0.15 * rb];
   return mixed.map((value) => linearToSrgb(Math.min(Math.max(value, 0), 1))) as unknown as Rgb;
+}
+
+// The bundled patches as the camera above sees them, and the fit of them.
+function fitLeaky() {
+  const bundled = bundledReference();
+  const leaky = Object.fromEntries(
+    Object.entries(bundled.patches).map(([id, lab]) => [id, rootCamera(lab)]),
+  );
+  return fitColorModel({ measurements: leaky, reference: bundled, neutralIds: NEUTRAL_IDS });
+}
+
+// The model without the limits of its root terms.
+function uncapped({ curves, matrix, roots }: ColorModel): ColorModel {
+  return roots === undefined ? { curves, matrix } : { curves, matrix, roots };
+}
+
+function distance(first: Vec3, second: Vec3): number {
+  return Math.hypot(first[0] - second[0], first[1] - second[1], first[2] - second[2]);
 }
 
 function measure(reference: ReferenceSet): Record<string, Rgb> {
@@ -253,11 +272,7 @@ describe('fitColorModel', () => {
   });
 
   it('adds root terms for a camera that mixes its channels beyond a matrix', () => {
-    const bundled = bundledReference();
-    const leaky = Object.fromEntries(
-      Object.entries(bundled.patches).map(([id, lab]) => [id, rootCamera(lab)]),
-    );
-    const fit = fitColorModel({ measurements: leaky, reference: bundled, neutralIds: NEUTRAL_IDS });
+    const fit = fitLeaky();
     const check = fit.report.crossCheck;
     expect(fit.model.roots).toHaveLength(3);
     // The root terms predict colors the fit has not seen clearly better than the matrix alone.
@@ -269,6 +284,23 @@ describe('fitColorModel', () => {
       expect(Math.abs(r - g)).toBeLessThan(0.01);
       expect(Math.abs(g - b)).toBeLessThan(0.01);
     }
+  });
+
+  it('caps the root terms for colors further from gray than every patch', () => {
+    const { model } = fitLeaky();
+    const free = uncapped(model);
+    const plain: ColorModel = { curves: model.curves, matrix: model.matrix };
+    expect(model.rootLimits).toHaveLength(3);
+    // A pure red with almost no green and blue lies beyond every patch: with the cap its root terms
+    // move it less away from the matrix alone than without.
+    const red: Rgb = [0.7, 0.02, 0.02];
+    const matrixOnly = applyColorModel(plain, red);
+    expect(distance(applyColorModel(model, red), matrixOnly)).toBeLessThan(
+      distance(applyColorModel(free, red), matrixOnly),
+    );
+    // A pale color lies well inside the patches: the cap leaves it as it is.
+    const pale: Rgb = [0.8, 0.78, 0.76];
+    expect(applyColorModel(model, pale)).toEqual(applyColorModel(free, pale));
   });
 
   it('ignores patches without a measurement', () => {

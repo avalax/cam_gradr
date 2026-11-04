@@ -32,6 +32,7 @@
     "matrixWhere": "Modell, Matrix",
     "rootsRows": "Modell: die Wurzelterme brauchen drei Zeilen",
     "rootsWhere": "Modell, Wurzelterme",
+    "rootLimitsWhere": "Modell, Grenzen der Wurzelterme",
     "percentRange": "Vorschau: {name} muss zwischen 0 und 100 liegen",
     "splitName": "Trennlinie",
     "colorReference": "Farbkarten: reference muss ein Name oder null sein",

@@ -94,7 +94,10 @@ again in better light.
 color channels with a 3×3 matrix. Some cameras mix their colors in a way the matrix cannot follow; for
 them the app adds root terms. It only does so when they also predict color patches better that the
 calculation has not seen (each patch predicted without it); otherwise the matrix stays alone. The
-result names the choice and both errors.
+result names the choice and both errors. Colors more saturated than every patch of the card get the
+root terms only up to the strength of the most saturated patch. Check strong colors in your scene in
+the preview: a deep red can still come out darker and more crimson than with the matrix alone, and
+lose texture where it reaches the edge of the colors sRGB can show.
 
 **Which reference values does the app use?** It ships an unofficial set (see below). You import your own
 values in the gear menu.

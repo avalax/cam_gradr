@@ -75,10 +75,17 @@ describe('parseProject', () => {
           [0, 0.2, 0],
           [-0.05, 0, 0.3],
         ],
+        rootLimits: [0.45, 0.3, 0.5],
       },
     };
     expect(parseProject(serializeProject(withRoots))).toEqual(withRoots);
     expect(parseProject(serializeProject(sample())).model).not.toHaveProperty('roots');
+    // Files saved before the limits keep their root terms, uncapped.
+    const raw = JSON.parse(serializeProject(withRoots)) as Record<string, any>;
+    delete raw.model.rootLimits;
+    const older = parseProject(JSON.stringify(raw)).model;
+    expect(older?.roots).toEqual(withRoots.model?.roots);
+    expect(older).not.toHaveProperty('rootLimits');
   });
 
   it('reads older files with strength and ignores it', () => {
@@ -153,6 +160,14 @@ describe('parseProject', () => {
         ]),
       'Wurzelterme: erwartet werden 3 Zahlen',
     );
+    rejects((raw) => {
+      raw.model.roots = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ];
+      raw.model.rootLimits = [0.5, 0.3];
+    }, 'Grenzen der Wurzelterme: erwartet werden 3 Zahlen');
   });
 
   it('lehnt fehlerhafte Vorschau-Einstellungen ab', () => {

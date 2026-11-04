@@ -23,10 +23,13 @@ export interface ColorModel {
   // Weight of each root term per output channel; missing for the matrix alone (and in projects
   // saved before the root terms existed).
   roots?: readonly [Vec3, Vec3, Vec3];
+  // Largest value of each root term per brightness (r + g + b) among the patches: beyond it the
+  // terms are capped (see cappedTerms). Missing without root terms.
+  rootLimits?: Vec3;
 }
 
 // How the curve outputs are mixed: the part of the model after the tone curves.
-type Mixing = Pick<ColorModel, 'matrix' | 'roots'>;
+type Mixing = Pick<ColorModel, 'matrix' | 'roots' | 'rootLimits'>;
 
 interface PatchError {
   id: string;
@@ -131,6 +134,10 @@ const CROSS_CHECK_STEPS = REFINE_STEPS.slice(0, -2);
 // at least this much (mean ΔE2000), and only with enough color patches to tell that.
 const ROOT_MARGIN = 0.1;
 const MIN_ROOT_COLORS = 18;
+// The root terms are fitted on the patches only and would extrapolate beyond them: a deep red with
+// hardly any green and blue in the camera turned wine-red and dark. Each term is therefore compressed
+// softly towards the largest value among the patches (per brightness), from this share of it on.
+const ROOT_KNEE = 0.8;
 const CURVE_FLOOR = 1e-3;
 const IDENTITY: readonly [Vec3, Vec3, Vec3] = [
   [1, 0, 0],
@@ -358,6 +365,47 @@ function rootTerms([r, g, b]: Vec3): Vec3 {
   return [(sr - sg) ** 2, (sg - sb) ** 2, (sr - sb) ** 2];
 }
 
+// Brightness of a curve output, to compare root terms independent of the light.
+function brightness([r, g, b]: Vec3): number {
+  return r + g + b;
+}
+
+// Largest value of each root term per brightness among the patches (see ColorModel.rootLimits).
+function rootLimitsOf(pairs: readonly Pair[]): Vec3 {
+  const ratios = pairs.map(({ corrected }) => {
+    const [first, second, third] = rootTerms(corrected);
+    const light = Math.max(brightness(corrected), Number.EPSILON);
+    return [first / light, second / light, third / light] as const;
+  });
+  const largest = (k: 0 | 1 | 2): number => Math.max(...ratios.map((ratio) => ratio[k]));
+  return [largest(0), largest(1), largest(2)];
+}
+
+// Compresses a root term softly towards its limit from ROOT_KNEE of it on, like the shoulder of the
+// targets: up to the knee it stays as it is, beyond it approaches the limit without reaching it.
+function capped(term: number, limit: number): number {
+  const ceiling = Math.max(limit, Number.EPSILON);
+  const share = term / ceiling;
+  return share <= ROOT_KNEE
+    ? term
+    : ceiling *
+        (ROOT_KNEE + (1 - ROOT_KNEE) * (1 - Math.exp(-(share - ROOT_KNEE) / (1 - ROOT_KNEE))));
+}
+
+// The root terms of a curve output, capped at the limits of the model when it has them.
+function cappedTerms(u: Vec3, limits: Vec3 | undefined): Vec3 {
+  const terms = rootTerms(u);
+  if (limits === undefined) {
+    return terms;
+  }
+  const light = brightness(u);
+  return [
+    capped(terms[0], limits[0] * light),
+    capped(terms[1], limits[1] * light),
+    capped(terms[2], limits[2] * light),
+  ];
+}
+
 // Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and, if wanted, of
 // the root weights, with weak regularization toward the identity matrix and root weights 0. Per row
 // the unknowns are the first two matrix entries (the third follows from the row sum) and the three
@@ -385,10 +433,11 @@ function fitMixing(pairs: readonly Pair[], withRoots: boolean): Mixing {
     // The regularization keeps the system positive definite at all times.
     return solve(augmented, size);
   });
-  return mixingOf([
+  const mixing = mixingOf([
     ...rows.flatMap((solution) => solution.slice(0, 2)),
     ...rows.flatMap((solution) => solution.slice(2)),
   ]);
+  return withRoots ? { ...mixing, rootLimits: rootLimitsOf(pairs) } : mixing;
 }
 
 // Without a tone curve each channel gets one factor (white balance) that brings its mid tones to
@@ -424,6 +473,9 @@ function mixingOf(free: readonly number[]): Mixing {
   return { matrix, roots: [roots(0), roots(3), roots(6)] };
 }
 
+// Mixing for a set of free numbers (see mixingOf), during the fine-tuning.
+type MixingAt = (free: readonly number[]) => Mixing;
+
 // Free numbers of a mixing (see mixingOf).
 function freeOf({ matrix, roots }: Mixing): number[] {
   const free = [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]];
@@ -457,8 +509,8 @@ function deviationOf(mixing: Mixing, goal: Pair): number {
 // deviation, and a matrix that makes blues glare is not a good compromise. The weak pull toward the
 // identity and root weights 0 (REFINE_RIDGE) keeps the mixing calm where the patches do not decide
 // it.
-function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
-  const mixing = mixingOf(free);
+function meanDeviation(free: readonly number[], goals: readonly Pair[], at: MixingAt): number {
+  const mixing = at(free);
   const deviation = mean(
     goals.map((goal) => {
       const lab = mixedLab(mixing, goal);
@@ -475,13 +527,13 @@ function meanDeviation(free: readonly number[], goals: readonly Pair[]): number 
 
 // Nudges each of the free numbers up and down by `step` and keeps every change that lowers the
 // deviation; returns whether anything improved.
-function nudge(free: number[], step: number, goals: readonly Pair[]): boolean {
+function nudge(free: number[], step: number, goals: readonly Pair[], at: MixingAt): boolean {
   let improved = false;
-  let best = meanDeviation(free, goals);
+  let best = meanDeviation(free, goals, at);
   for (let index = 0; index < free.length; index++) {
     for (const direction of [step, -step]) {
       const trial = free.with(index, Number(free[index]) + direction);
-      const value = meanDeviation(trial, goals);
+      const value = meanDeviation(trial, goals, at);
       if (value < best) {
         best = value;
         free[index] = Number(trial[index]);
@@ -498,12 +550,14 @@ function nudge(free: number[], step: number, goals: readonly Pair[]): boolean {
 // improves any more.
 function refineMixing(start: Mixing, goals: readonly Pair[], steps = REFINE_STEPS): Mixing {
   const free = freeOf(start);
+  // The limits of the root terms come from the patches, not from the free numbers: they stay.
+  const at: MixingAt = (numbers) => ({ ...start, ...mixingOf(numbers) });
   for (const step of steps) {
-    for (let sweep = 0; sweep < REFINE_SWEEPS && nudge(free, step, goals); sweep++) {
+    for (let sweep = 0; sweep < REFINE_SWEEPS && nudge(free, step, goals, at); sweep++) {
       // keep nudging with the same step as long as it helps
     }
   }
-  return mixingOf(free);
+  return at(free);
 }
 
 function fitWith(pairs: readonly Pair[], withRoots: boolean, steps = REFINE_STEPS): Mixing {
@@ -625,8 +679,8 @@ const NO_ROOTS: readonly [Vec3, Vec3, Vec3] = [
 
 // Mixes the curve outputs (linear) with the matrix and the root terms; the result lies in the sRGB
 // cube (linear).
-function mixLinear({ matrix, roots = NO_ROOTS }: Mixing, u: Vec3): Vec3 {
-  const h = rootTerms(u);
+function mixLinear({ matrix, roots = NO_ROOTS, rootLimits }: Mixing, u: Vec3): Vec3 {
+  const h = cappedTerms(u, rootLimits);
   const mix = (row: Vec3, weights: Vec3): number =>
     row[0] * u[0] +
     row[1] * u[1] +
