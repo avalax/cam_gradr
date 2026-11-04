@@ -204,6 +204,9 @@ describe('PreviewTab', () => {
     animation.runFrame();
     expect(fake.call('texImage2D')).toHaveBeenCalledTimes(1);
     expect(fake.call('texImage2D').mock.calls[0]?.[5]).toBe(video);
+    // The live image changes all the time and is drawn on every repaint.
+    animation.runFrame();
+    expect(fake.call('texImage2D')).toHaveBeenCalledTimes(2);
   });
 
   it('draws nothing without a source', () => {
@@ -215,15 +218,40 @@ describe('PreviewTab', () => {
     expect(fake.call('drawArrays')).not.toHaveBeenCalled();
   });
 
-  it('redraws at unchanged size without recreating the canvas', () => {
+  it('draws an unchanged still image only once', () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
     useCameraStore().still = stillFrame();
+    const wrapper = mount(PreviewTab);
+    animation.runFrame();
+    animation.runFrame();
+    animation.runFrame();
+    expect(fake.call('drawArrays')).toHaveBeenCalledTimes(1);
+    expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 8);
+  });
+
+  it('draws the still image again when the divider, the correction or the image changes', async () => {
+    const animation = mockAnimation();
+    const fake = mockContexts();
+    computeModel();
+    const camera = useCameraStore();
+    camera.still = stillFrame();
     mount(PreviewTab);
     animation.runFrame();
+    usePreviewStore().setSplit(30);
+    await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(2);
+    computeModel();
+    await flushPromises();
+    animation.runFrame();
+    expect(fake.call('drawArrays')).toHaveBeenCalledTimes(3);
+    camera.still = { width: 4, height: 2, data: new Float32Array(4 * 2 * 3).fill(0.6) };
+    await flushPromises();
+    animation.runFrame();
+    animation.runFrame();
+    expect(fake.call('drawArrays')).toHaveBeenCalledTimes(4);
   });
 
   it('updates the LUT when the color correction changes', async () => {

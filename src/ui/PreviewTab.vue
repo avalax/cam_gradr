@@ -110,6 +110,9 @@ const renderer = shallowRef<LutRenderer | null>(null);
 const stopLoop = shallowRef<(() => void) | null>(null);
 // Still image as a canvas that can be loaded into the texture like a video.
 const stillCanvas = document.createElement('canvas');
+// The live image is drawn on every repaint, a still image only when it, the LUT or the divider
+// has changed since: redrawn on every repaint, Firefox now and then showed it partly black.
+const stillChanged = ref(true);
 
 function drawStill(): void {
   const frame = shownStill.value;
@@ -119,6 +122,7 @@ function drawStill(): void {
     stillCanvas.height = frame.height;
     drawFrame(context, frame);
   }
+  stillChanged.value = true;
 }
 
 // Chooses the image source: this tab's still image, otherwise the live image or the image of the color measurement.
@@ -154,7 +158,8 @@ function sizeKey(size: { width: number; height: number }): string {
 function drawFrameToCanvas(): void {
   const target = canvas.value;
   const source = currentSource();
-  if (target !== null && source !== null && renderer.value !== null) {
+  const due = stillChanged.value || source?.image !== stillCanvas;
+  if (due && target !== null && source !== null && renderer.value !== null) {
     const size = renderer.value.outputSize(source);
     if (sizeKey(target) !== sizeKey(size)) {
       target.width = size.width;
@@ -162,6 +167,7 @@ function drawFrameToCanvas(): void {
       aspect.value = source.width / source.height;
     }
     renderer.value.render(source.image, { split: split.value / 100 });
+    stillChanged.value = false;
   }
 }
 
@@ -205,6 +211,10 @@ watch(lut, (next) => {
   if (next !== null) {
     renderer.value?.setLut(next);
   }
+  stillChanged.value = true;
+});
+watch(split, () => {
+  stillChanged.value = true;
 });
 
 // The wipe over the image writes the divider position to the store.
