@@ -125,6 +125,15 @@ describe('parseProject', () => {
     rejects((raw) => (raw.model.matrix = [[1, 0, 0]]), 'drei Zeilen');
     rejects((raw) => delete raw.model.matrix, 'drei Zeilen');
     rejects((raw) => (raw.model.matrix[0] = [1, 2]), 'Matrix: erwartet werden 3 Zahlen');
+    rejects((raw) => (raw.model.hue = [1, 2]), 'Farbton-Tabelle braucht 10 Zahlen');
+    rejects((raw) => (raw.model.hue = 'x'), 'Farbton-Tabelle braucht 10 Zahlen');
+    rejects((raw) => (raw.model.hue[3] = null), 'Farbton-Tabelle braucht 10 Zahlen');
+  });
+
+  it('reads models from before the hue table without one', () => {
+    const raw = structuredClone(sample()) as unknown as { model: Record<string, unknown> };
+    delete raw.model.hue;
+    expect(parseProject(JSON.stringify(raw)).model?.hue).toBeUndefined();
   });
 
   it('rejects faulty preview settings', () => {

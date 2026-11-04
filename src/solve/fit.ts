@@ -15,10 +15,12 @@ import { createPchip } from './pchip';
 import type { Curve } from './pchip';
 
 // Correction model: one tone curve per channel (including white balance) on linear values, then
-// a 3×3 matrix whose rows sum to 1 (neutral stays neutral).
+// a 3×3 matrix whose rows sum to 1 (neutral stays neutral), then a hue table that turns and scales
+// the chroma per hue (see HUE_ORDER). Models saved before version 1.8 have no hue table.
 export interface ColorModel {
   curves: readonly [Curve, Curve, Curve];
   matrix: readonly [Vec3, Vec3, Vec3];
+  hue?: readonly number[];
 }
 
 interface PatchError {
@@ -112,6 +114,16 @@ const LUMINANCE: Vec3 = [0.2126, 0.7152, 0.0722];
 // its reds and yellows dull as well.
 const SATURATION_LIMIT = 1.3;
 const SATURATION_PENALTY = 1;
+// The hue table after the matrix: a hue rotation and a chroma factor that change smoothly around the
+// hue circle (Fourier series up to this harmonic), like the hue and saturation tables of camera
+// profiles. The matrix corrects all colors alike; the table corrects what remains per hue. It keeps
+// brightness and neutrals and scales each hue ray as a whole, so colors beyond the most saturated
+// patches are not extrapolated wildly, as polynomial terms did (see PLAN.md).
+const HUE_ORDER = 2;
+export const HUE_COEFFICIENTS = 2 * (2 * HUE_ORDER + 1);
+// Pull of the hue table towards no change (per squared coefficient, in ΔE2000): strong, so that it
+// only follows what several patches of a hue agree on.
+const HUE_RIDGE = 5;
 const CURVE_POINTS = 48;
 // Step sizes of the matrix fine-tuning and the maximum number of sweeps per step size.
 const REFINE_STEPS = [0.1, 0.05, 0.02, 0.01, 0.004, 0.0015];
@@ -389,20 +401,26 @@ function primaryShortfall(matrix: readonly [Vec3, Vec3, Vec3]): number {
   return sum;
 }
 
-// Mean color deviation plus a penalty for colors that come out more saturated than the reference
-// (by more than SATURATION_LIMIT): too much saturation looks worse than too little at the same
-// deviation, and a matrix that makes blues glare is not a good compromise. The weak pull toward the
-// identity (REFINE_RIDGE) keeps the matrix calm where the patches do not decide it, and camera
-// primaries that would come out too dark are penalized (see MIN_PRIMARY_LUMINANCE).
-function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
-  const matrix = matrixOf(free);
-  const deviation = mean(
+// Mean color deviation of the patches as `render` corrects them, plus a penalty for colors that
+// come out more saturated than the reference (by more than SATURATION_LIMIT): too much saturation
+// looks worse than too little at the same deviation, and a matrix that makes blues glare is not a
+// good compromise.
+function deviationOf(goals: readonly Pair[], render: (goal: Pair) => Vec3): number {
+  return mean(
     goals.map((goal) => {
-      const lab = srgbToLab(towardsWhite(goal.measured, mixCode(matrix, goal.corrected)));
+      const lab = srgbToLab(towardsWhite(goal.measured, render(goal)));
       const excess = Math.max(0, chromaOf(lab) - SATURATION_LIMIT * chromaOf(goal.lab));
       return deltaE2000(lab, goal.lab) + SATURATION_PENALTY * excess;
     }),
   );
+}
+
+// Deviation of a matrix (see deviationOf). The weak pull toward the identity (REFINE_RIDGE) keeps the
+// matrix calm where the patches do not decide it, and camera primaries that would come out too dark
+// are penalized (see MIN_PRIMARY_LUMINANCE).
+function meanDeviation(free: readonly number[], goals: readonly Pair[]): number {
+  const matrix = matrixOf(free);
+  const deviation = deviationOf(goals, (goal) => mixCode(matrix, goal.corrected));
   const pull = free.reduce(
     (sum, value, index) => sum + (value - Number(IDENTITY_FREE[index])) ** 2,
     0,
@@ -410,18 +428,32 @@ function meanDeviation(free: readonly number[], goals: readonly Pair[]): number 
   return deviation + REFINE_RIDGE * pull + PRIMARY_PENALTY * primaryShortfall(matrix);
 }
 
-// Nudges each of the six numbers up and down by `step` and keeps every change that lowers the
-// deviation; returns whether anything improved.
-function nudge(free: number[], step: number, goals: readonly Pair[]): boolean {
+// Deviation of a hue table after the matrix (see deviationOf), with its pull towards no change.
+function hueDeviation(
+  table: readonly number[],
+  matrix: readonly [Vec3, Vec3, Vec3],
+  goals: readonly Pair[],
+): number {
+  const deviation = deviationOf(goals, (goal) => mixCode(matrix, goal.corrected, table));
+  return deviation + HUE_RIDGE * table.reduce((sum, value) => sum + value ** 2, 0);
+}
+
+// Nudges each number up and down by `step` and keeps every change that lowers the cost; returns
+// whether anything improved.
+function nudge(
+  values: number[],
+  step: number,
+  cost: (values: readonly number[]) => number,
+): boolean {
   let improved = false;
-  let best = meanDeviation(free, goals);
-  for (let index = 0; index < free.length; index++) {
+  let best = cost(values);
+  for (let index = 0; index < values.length; index++) {
     for (const direction of [step, -step]) {
-      const trial = free.with(index, Number(free[index]) + direction);
-      const value = meanDeviation(trial, goals);
+      const trial = values.with(index, Number(values[index]) + direction);
+      const value = cost(trial);
       if (value < best) {
         best = value;
-        free[index] = Number(trial[index]);
+        values[index] = Number(trial[index]);
         improved = true;
       }
     }
@@ -429,21 +461,36 @@ function nudge(free: number[], step: number, goals: readonly Pair[]): boolean {
   return improved;
 }
 
+// Pattern search for the numbers with the lowest cost: the step shrinks when nothing improves any
+// more.
+function patternSearch(
+  start: readonly number[],
+  cost: (values: readonly number[]) => number,
+): number[] {
+  const values = [...start];
+  for (const step of REFINE_STEPS) {
+    for (let sweep = 0; sweep < REFINE_SWEEPS && nudge(values, step, cost); sweep++) {
+      // keep nudging with the same step as long as it helps
+    }
+  }
+  return values;
+}
+
 // Fine-tunes the matrix so that the mean color deviation (CIEDE2000) is smallest. The least-squares
 // start works on linear light, where a dark channel of a saturated color hardly counts: yellows lose
-// their blue difference, blues become too strong. Pattern search: the step shrinks when nothing
-// improves any more.
+// their blue difference, blues become too strong.
 function refineMatrix(
   start: readonly [Vec3, Vec3, Vec3],
   goals: readonly Pair[],
 ): readonly [Vec3, Vec3, Vec3] {
   const free = [start[0][0], start[0][1], start[1][0], start[1][1], start[2][0], start[2][1]];
-  for (const step of REFINE_STEPS) {
-    for (let sweep = 0; sweep < REFINE_SWEEPS && nudge(free, step, goals); sweep++) {
-      // keep nudging with the same step as long as it helps
-    }
-  }
-  return matrixOf(free);
+  return matrixOf(patternSearch(free, (values) => meanDeviation(values, goals)));
+}
+
+// Fits the hue table to what the matrix leaves of the color deviation.
+function refineHue(matrix: readonly [Vec3, Vec3, Vec3], goals: readonly Pair[]): number[] {
+  const start = Array.from({ length: HUE_COEFFICIENTS }, () => 0);
+  return patternSearch(start, (table) => hueDeviation(table, matrix, goals));
 }
 
 const evaluators = new WeakMap<
@@ -507,6 +554,57 @@ function withinGamut(u: Vec3, mixed: Vec3): Vec3 {
   return [y + (mixed[0] - y) * scale, y + (mixed[1] - y) * scale, y + (mixed[2] - y) * scale];
 }
 
+// Orthonormal basis of the plane of colors without luminance (linear sRGB): hue and chroma of a color
+// are measured in it, around the gray of the same luminance.
+function chromaBasis(): readonly [Vec3, Vec3] {
+  const unit = (v: Vec3): Vec3 => {
+    const length = Math.hypot(...v);
+    return [v[0] / length, v[1] / length, v[2] / length];
+  };
+  const first = unit([1 - LUMINANCE[0], -LUMINANCE[0], -LUMINANCE[0]]);
+  const blue: Vec3 = [-LUMINANCE[2], -LUMINANCE[2], 1 - LUMINANCE[2]];
+  const along = blue[0] * first[0] + blue[1] * first[1] + blue[2] * first[2];
+  return [
+    first,
+    unit([blue[0] - along * first[0], blue[1] - along * first[1], blue[2] - along * first[2]]),
+  ];
+}
+
+const CHROMA_BASIS = chromaBasis();
+
+// Value of a Fourier series over the hue (radians) whose coefficients start at `offset`: constant
+// term, then cosine and sine of each harmonic up to HUE_ORDER.
+function harmonics(table: readonly number[], offset: number, hue: number): number {
+  let value = Number(table[offset]);
+  for (let k = 1; k <= HUE_ORDER; k++) {
+    value +=
+      Number(table[offset + 2 * k - 1]) * Math.cos(k * hue) +
+      Number(table[offset + 2 * k]) * Math.sin(k * hue);
+  }
+  return value;
+}
+
+// Turns and scales the chroma of a linear color around the gray of the same luminance by what the
+// hue table gives for its hue: the first half of the coefficients is the rotation (radians), the
+// second the logarithm of the chroma factor. Luminance stays, and a gray has no chroma to change.
+function turnHue(color: Vec3, table: readonly number[]): Vec3 {
+  const y = luminanceOf(color);
+  const [e1, e2] = CHROMA_BASIS;
+  const offset: Vec3 = [color[0] - y, color[1] - y, color[2] - y];
+  const a = offset[0] * e1[0] + offset[1] * e1[1] + offset[2] * e1[2];
+  const b = offset[0] * e2[0] + offset[1] * e2[1] + offset[2] * e2[2];
+  const hue = Math.atan2(b, a);
+  const angle = harmonics(table, 0, hue);
+  const scale = Math.exp(harmonics(table, HUE_COEFFICIENTS / 2, hue));
+  const turnedA = scale * (Math.cos(angle) * a - Math.sin(angle) * b);
+  const turnedB = scale * (Math.sin(angle) * a + Math.cos(angle) * b);
+  return [
+    y + turnedA * e1[0] + turnedB * e2[0],
+    y + turnedA * e1[1] + turnedB * e2[1],
+    y + turnedA * e1[2] + turnedB * e2[2],
+  ];
+}
+
 // Pulls a linear target color with negative channels into the sRGB cube by desaturating it towards
 // the gray of the same luminance, onto the edge: the nearest color sRGB can show, with hue and
 // brightness kept. Channels above 1 do not occur, as the targets are compressed below white.
@@ -544,16 +642,16 @@ export function targetLab(lab: Vec3, exposureGain: number): Vec3 {
   return xyzD50ToLab(linearSrgbToXyzD50(targetLinear(lab, exposureGain)));
 }
 
-// Mixes the curve outputs (linear) with the matrix, keeps the result inside the sRGB cube (see
-// withinGamut) and returns the sRGB code.
-function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3): Vec3 {
+// Mixes the curve outputs (linear) with the matrix, turns the hues with the hue table if there is
+// one, keeps the result inside the sRGB cube (see withinGamut) and returns the sRGB code.
+function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3, table?: readonly number[]): Vec3 {
   const [a, b, c] = matrix;
   const mixed: Vec3 = [
     a[0] * u[0] + a[1] * u[1] + a[2] * u[2],
     b[0] * u[0] + b[1] * u[1] + b[2] * u[2],
     c[0] * u[0] + c[1] * u[1] + c[2] * u[2],
   ];
-  const [r, g, blue] = withinGamut(u, mixed);
+  const [r, g, blue] = withinGamut(u, table === undefined ? mixed : turnHue(mixed, table));
   return [toCode(r), toCode(g), toCode(blue)];
 }
 
@@ -573,7 +671,7 @@ function towardsWhite(code: Vec3, corrected: Vec3): Vec3 {
 // Applies the model to an sRGB-encoded camera value and returns the corrected value.
 export function applyColorModel(model: ColorModel, code: Vec3): Vec3 {
   const linear: Vec3 = [srgbToLinear(code[0]), srgbToLinear(code[1]), srgbToLinear(code[2])];
-  const mixed = mixCode(model.matrix, curveLinear(curveFunctions(model), linear));
+  const mixed = mixCode(model.matrix, curveLinear(curveFunctions(model), linear), model.hue);
   return towardsWhite(code, mixed);
 }
 
@@ -638,7 +736,8 @@ export function fitColorModel(input: FitInput): FitResult {
     target: targetLinear(sample.reference, gain),
     lab: targetLab(sample.reference, gain),
   }));
-  const model: ColorModel = { curves, matrix: refineMatrix(fitMatrix(pairs), pairs) };
+  const matrix = refineMatrix(fitMatrix(pairs), pairs);
+  const model: ColorModel = { curves, matrix, hue: refineHue(matrix, pairs) };
 
   const errors = all.map((sample): PatchError => {
     // The deviation is measured against the color the correction can show at best.

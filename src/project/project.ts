@@ -2,6 +2,7 @@ import { COLOR_IDS, grayLayout } from '../chart/layouts';
 import type { Point, Rgb } from '../chart/types';
 import { t } from '../lang';
 import type { StillKey } from '../camera/camera-store';
+import { HUE_COEFFICIENTS } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
 
 import { FRAME_ENCODING } from './frame-codec';
@@ -134,6 +135,18 @@ function parseCurve(value: unknown, index: number): { xs: number[]; ys: number[]
   return { xs, ys };
 }
 
+// The hue table of the model; projects from before version 1.8 have none, and their correction stays
+// as it was.
+function parseHue(value: unknown): number[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.length !== HUE_COEFFICIENTS || !value.every(isNumber)) {
+    throw new TypeError(t('project.errors.hueShape', { count: HUE_COEFFICIENTS }));
+  }
+  return value;
+}
+
 function parseModel(value: unknown): ColorModel | null {
   if (value === null) {
     return null;
@@ -146,10 +159,12 @@ function parseModel(value: unknown): ColorModel | null {
     throw new TypeError(t('project.errors.matrixRows'));
   }
   const [r1, r2, r3] = value.matrix.map((row) => triple(row, t('project.errors.matrixWhere')));
-  return {
+  const model: ColorModel = {
     curves: [c1, c2, c3] as unknown as ColorModel['curves'],
     matrix: [r1, r2, r3] as unknown as ColorModel['matrix'],
   };
+  const hue = parseHue(value.hue);
+  return hue === undefined ? model : { ...model, hue };
 }
 
 function parsePercent(value: unknown, name: string): number {

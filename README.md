@@ -91,8 +91,8 @@ columns A–D, card 2 = E–H), at least 12 patches with at least 4 neutral ones
 
 ## Known limits
 
-- The correction (a tone curve per channel and a 3×3 matrix) only partly makes up for a webcam that
-  distorts colors strongly. A good shot matters more.
+- The correction (a tone curve per channel, a 3×3 matrix and a fine adjustment per hue) only partly
+  makes up for a webcam that distorts colors strongly. A good shot matters more.
 - The LUT works in sRGB / Rec.709, the color space of webcams and HDMI video. The cyan 1F and the yellow
   3F lie outside it; the app measures them against the nearest color sRGB can show.
 - The correction never cuts colors off. Where it would push the most saturated colors out of sRGB or

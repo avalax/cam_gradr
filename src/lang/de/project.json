@@ -30,6 +30,7 @@
     "modelShape": "Modell: erwartet werden drei Kurven und eine Matrix",
     "matrixRows": "Modell: die Matrix braucht drei Zeilen",
     "matrixWhere": "Modell, Matrix",
+    "hueShape": "Modell: die Farbton-Tabelle braucht {count} Zahlen",
     "percentRange": "Vorschau: {name} muss zwischen 0 und 100 liegen",
     "splitName": "Trennlinie",
     "colorReference": "Farbkarten: reference muss ein Name oder null sein",
