@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.9.0...cam-gradr-v1.10.0) (2026-11-06)
+
+
+### Features
+
+* **ui:** lay a look LUT over the correction ([#93](https://github.com/avalax/cam_gradr/issues/93)) ([345ef58](https://github.com/avalax/cam_gradr/commit/345ef58113860f62cd59a10bc12edf6ff8ff6712))
+* **ui:** take the preview still image from the image corner ([#91](https://github.com/avalax/cam_gradr/issues/91)) ([112a648](https://github.com/avalax/cam_gradr/commit/112a6485fd92a5d9ac54f469d321e3543db25218))
+
 ## [1.9.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.8.0...cam-gradr-v1.9.0) (2026-11-04)
 
 
