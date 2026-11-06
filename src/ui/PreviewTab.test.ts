@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { IDBFactory } from 'fake-indexeddb';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +8,10 @@ import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
+import type { LookLut } from '../look/look';
+import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
+import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { createFakeGl } from '../test-support/fake-gl';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -23,6 +27,26 @@ const reference = {
 const measurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
 );
+
+// A made-up look LUT that inverts every channel (2³, R fastest).
+const INVERT_CUBE = [
+  'LUT_3D_SIZE 2',
+  '1 1 1',
+  '0 1 1',
+  '1 0 1',
+  '0 0 1',
+  '1 1 0',
+  '0 1 0',
+  '1 0 0',
+  '0 0 0',
+].join(String.fromCodePoint(10));
+
+async function chooseInvert(): Promise<void> {
+  setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+  await useLookStore().importFiles([
+    { name: 'Invert.cube', text: () => Promise.resolve(INVERT_CUBE) },
+  ]);
+}
 
 function stillFrame() {
   return { width: 8, height: 4, data: new Float32Array(8 * 4 * 3).fill(0.4) };
@@ -184,6 +208,45 @@ describe('PreviewTab', () => {
     expect(floats).toMatchObject({ uLutSize: 33, uSplit: 0.25 });
     expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 25%');
     expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 8);
+  });
+
+  it('lays the chosen look LUT over the correction and can show the correction left', async () => {
+    const animation = mockAnimation();
+    const fake = mockContexts();
+    computeModel();
+    useCameraStore().still = stillFrame();
+    await chooseInvert();
+    const preview = usePreviewStore();
+    const wrapper = mount(PreviewTab);
+    const labels = () => wrapper.get('[data-testid="preview-labels"]').text();
+    const floats = () =>
+      Object.fromEntries(
+        fake
+          .call('uniform1f')
+          .mock.calls.map(([location, value]) => [
+            (location as { name: string }).name,
+            value as number,
+          ]),
+      );
+    expect(wrapper.find('[data-testid="look-bar"]').exists()).toBe(true);
+    expect(labels()).toBe('KameraKorrigiert + Look-LUT 100 %');
+    expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
+
+    preview.setStrength(50);
+    await flushPromises();
+    expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
+    preview.setLeft('corrected');
+    await flushPromises();
+    expect(fake.call('texImage3D')).toHaveBeenCalledTimes(3);
+    expect(labels()).toBe('KorrigiertKorrigiert + Look-LUT 50 %');
+    animation.runFrame();
+    expect(floats()).toMatchObject({ uLeftCorrected: 1 });
+
+    preview.setLook(null);
+    await flushPromises();
+    expect(labels()).toBe('KameraKorrigiert');
+    animation.runFrame();
+    expect(floats()).toMatchObject({ uLeftCorrected: 0 });
   });
 
   it('draws the video image while the camera is running as soon as it has data', async () => {

@@ -6,9 +6,11 @@ import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
+import type { LookLut } from '../look/look';
+import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../reference/storage';
+import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyIds, dummyLab, dummyReferenceJson } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
@@ -64,6 +66,27 @@ async function workedState(): Promise<string> {
   return (download.mock.calls.at(-1) as [string, string, string])[1];
 }
 
+// A made-up look LUT that changes nothing (2³, R fastest).
+const IDENTITY_CUBE = [
+  'LUT_3D_SIZE 2',
+  '0 0 0',
+  '1 0 0',
+  '0 1 0',
+  '1 1 0',
+  '0 0 1',
+  '1 0 1',
+  '0 1 1',
+  '1 1 1',
+].join(String.fromCodePoint(10));
+
+// Imports the look LUT "Warm" and chooses it at 70 %.
+async function chooseWarm(): Promise<void> {
+  await useLookStore().importFiles([
+    { name: 'Warm.cube', text: () => Promise.resolve(IDENTITY_CUBE) },
+  ]);
+  usePreviewStore().setStrength(70);
+}
+
 const frame = (value: number) => ({
   width: 4,
   height: 2,
@@ -78,7 +101,7 @@ function shown(): number | undefined {
 describe('useProjectStore with still images', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
     download.mockReset();
   });
 
@@ -169,7 +192,7 @@ describe('useProjectStore with still images', () => {
 describe('useProjectStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
     download.mockReset();
   });
 
@@ -213,6 +236,48 @@ describe('useProjectStore', () => {
     expect(useSolveStore().result?.report.patches).toHaveLength(48);
   });
 
+  it('saves the chosen look LUT by name and strength and restores it', async () => {
+    const looks = createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks');
+    setLookStorage(looks);
+    await chooseWarm();
+    const text = await workedState();
+    expect(parseProject(text).preview).toEqual({
+      split: 30,
+      look: { name: 'Warm', strength: 70 },
+    });
+
+    setActivePinia(createPinia());
+    const project = useProjectStore();
+    await project.load(text);
+    expect(usePreviewStore().look).toBe('Warm');
+    expect(usePreviewStore().strength).toBe(70);
+    expect(project.notice).toBeNull();
+  });
+
+  it('points out a missing look LUT, also together with a missing reference set', async () => {
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    await chooseWarm();
+    const text = await workedState();
+
+    setActivePinia(createPinia());
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'empty', 'looks'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
+    const project = useProjectStore();
+    await project.load(text);
+    expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
+    expect(project.notice).toContain('Look-LUT „Warm“ ist in diesem Browser nicht gespeichert');
+    expect(usePreviewStore().look).toBe('Warm');
+  });
+
+  it('takes the look LUT away when the file has none', async () => {
+    const text = await workedState();
+    usePreviewStore().setLook('Warm');
+    usePreviewStore().setStrength(40);
+    await useProjectStore().load(text);
+    expect(usePreviewStore().look).toBeNull();
+    expect(usePreviewStore().strength).toBe(100);
+  });
+
   it('closes error and notice with dismiss', async () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}');
@@ -226,7 +291,7 @@ describe('useProjectStore', () => {
   it('uses the saved model when the reference set is missing, and points that out', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
     const project = useProjectStore();
     await project.load(text);
 
@@ -238,7 +303,7 @@ describe('useProjectStore', () => {
   it('does not use another selected reference set for the report either', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'dritte'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'dritte', 'references'));
     const references = useReferenceStore();
     await references.importFile('x.json', dummyReferenceJson('Anderer Satz'));
     await useProjectStore().load(text);
@@ -318,7 +383,7 @@ describe('the project file that saving suggests', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
     download.mockReset();
   });
 

@@ -31,5 +31,6 @@
     "compileFailed": "Shader could not be compiled: {log}",
     "linkFailed": "Shader program could not be linked: {log}",
     "noContext": "Neither WebGL2 nor a 2D drawing context is available, so the preview is not possible."
-  }
+  },
+  "labelLook": "Corrected + look LUT {strength} %"
 }

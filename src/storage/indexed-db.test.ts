@@ -1,20 +1,21 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ReferenceSet } from './reference';
-import { createIndexedDbStorage } from './storage';
-import type { ReferenceStorage } from './storage';
+import type { ReferenceSet } from '../reference/reference';
+
+import { createIndexedDbStorage } from './indexed-db';
+import type { NamedStorage } from './indexed-db';
 
 const first: ReferenceSet = { name: 'Satz A', patches: { '1D': [90, 0, 0], '2D': [80, 0, 0] } };
 const second: ReferenceSet = { name: 'Satz B', patches: { '1D': [91, 0, 0] } };
 
 describe('createIndexedDbStorage', () => {
-  let storage: ReferenceStorage;
+  let storage: NamedStorage<ReferenceSet>;
   let factory: IDBFactory;
 
   beforeEach(() => {
     factory = new IDBFactory();
-    storage = createIndexedDbStorage(factory, 'test-db');
+    storage = createIndexedDbStorage<ReferenceSet>(factory, 'test-db', 'references');
   });
 
   it('is empty at the start', async () => {
@@ -48,13 +49,13 @@ describe('createIndexedDbStorage', () => {
 
   it('keeps data across several accesses with the same database', async () => {
     await storage.save(first);
-    const again = createIndexedDbStorage(factory, 'test-db');
+    const again = createIndexedDbStorage<ReferenceSet>(factory, 'test-db', 'references');
     expect(await again.list()).toEqual([first]);
   });
 
   it('keeps different database names apart', async () => {
     await storage.save(first);
-    const other = createIndexedDbStorage(factory, 'andere-db');
+    const other = createIndexedDbStorage<ReferenceSet>(factory, 'andere-db', 'references');
     expect(await other.list()).toEqual([]);
   });
 
@@ -64,7 +65,9 @@ describe('createIndexedDbStorage', () => {
         throw new Error('gesperrt');
       },
     } as unknown as IDBFactory;
-    await expect(createIndexedDbStorage(broken, 'x').list()).rejects.toThrow('gesperrt');
+    await expect(
+      createIndexedDbStorage<ReferenceSet>(broken, 'x', 'references').list(),
+    ).rejects.toThrow('gesperrt');
   });
 
   it('reports request errors', async () => {
@@ -76,7 +79,38 @@ describe('createIndexedDbStorage', () => {
         return failingRequest;
       },
     } as unknown as IDBFactory;
-    await expect(createIndexedDbStorage(failing, 'x').list()).rejects.toThrow('IndexedDB error');
+    await expect(
+      createIndexedDbStorage<ReferenceSet>(failing, 'x', 'references').list(),
+    ).rejects.toThrow('IndexedDB error');
+  });
+
+  it('keeps the reference sets of version 1 when it adds the look LUTs', async () => {
+    const old = factory.open('test-db', 1);
+    old.addEventListener('upgradeneeded', () => {
+      old.result.createObjectStore('references', { keyPath: 'name' }).put(first);
+    });
+    await new Promise((resolve) => {
+      old.addEventListener('success', resolve);
+    });
+    old.result.close();
+
+    expect(await storage.list()).toEqual([first]);
+    const looks = createIndexedDbStorage<{ name: string }>(factory, 'test-db', 'looks');
+    expect(await looks.list()).toEqual([]);
+  });
+
+  it('keeps reference sets and look LUTs in separate stores', async () => {
+    const looks = createIndexedDbStorage<{ name: string; size: number }>(
+      factory,
+      'test-db',
+      'looks',
+    );
+    await looks.save({ name: 'Satz A', size: 33 });
+    await storage.save(first);
+    expect(await looks.list()).toEqual([{ name: 'Satz A', size: 33 }]);
+    expect(await storage.list()).toEqual([first]);
+    await looks.remove('Satz A');
+    expect(await storage.list()).toEqual([first]);
   });
 
   it('reports transaction errors', async () => {
@@ -101,8 +135,8 @@ describe('createIndexedDbStorage', () => {
         return request;
       },
     } as unknown as IDBFactory;
-    await expect(createIndexedDbStorage(failing, 'x').save(first)).rejects.toThrow(
-      'IndexedDB error',
-    );
+    await expect(
+      createIndexedDbStorage<ReferenceSet>(failing, 'x', 'references').save(first),
+    ).rejects.toThrow('IndexedDB error');
   });
 });

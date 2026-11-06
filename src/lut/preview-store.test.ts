@@ -21,4 +21,27 @@ describe('usePreviewStore', () => {
     store.setSplit(-1);
     expect(store.split).toBe(0);
   });
+
+  it('starts without a look LUT, at full strength, with the camera left', () => {
+    const store = usePreviewStore();
+    expect(store.look).toBeNull();
+    expect(store.strength).toBe(100);
+    expect(store.left).toBe('camera');
+  });
+
+  it('chooses a look, rounds and clamps its strength and sets the left side', () => {
+    const store = usePreviewStore();
+    store.setLook('Warm');
+    store.setStrength(42.6);
+    store.setLeft('corrected');
+    expect(store.look).toBe('Warm');
+    expect(store.strength).toBe(43);
+    expect(store.left).toBe('corrected');
+    store.setStrength(120);
+    expect(store.strength).toBe(100);
+    store.setStrength(-5);
+    expect(store.strength).toBe(0);
+    store.setLook(null);
+    expect(store.look).toBeNull();
+  });
 });

@@ -1,0 +1,35 @@
+{
+  "label": "Look LUT",
+  "none": "No look LUT",
+  "empty": "No look LUT yet",
+  "import": "+ Import look LUT …",
+  "importFile": "Import look LUT (.cube)",
+  "remove": "Delete look LUT “{name}”",
+  "strength": "Strength",
+  "percent": "{value} %",
+  "left": "Left",
+  "leftCamera": "Camera",
+  "leftCorrected": "Without look LUT",
+  "hint": "With “+ Import look LUT …” in the list you add a look LUT (.cube, 3D LUT for Rec.709 input), for example a cinema look.",
+  "messages": {
+    "importedOne": "“{name}” imported and saved locally in the browser.",
+    "importedMany": "{count} look LUTs imported and saved locally in the browser.",
+    "rejected": "“{file}” was not imported: {reason}",
+    "logConversion": "“{name}” looks like a conversion from log (S-Log, LogC, V-Log …). The webcam already delivers Rec.709; with it the shadows would get too dark and the contrast too hard. As a look LUT, take a file for Rec.709 input.",
+    "removeAgain": "Delete again",
+    "removed": "Look LUT “{name}” deleted locally.",
+    "undo": "Undo",
+    "loadFailed": "Saved look LUTs could not be loaded.",
+    "saveFailed": "“{name}” could not be saved locally and only applies to this session.",
+    "removeFailed": "The look LUT could not be deleted locally."
+  },
+  "errors": {
+    "notCube": "Only .cube files are possible.",
+    "oneDimensional": "The file contains a 1D LUT (LUT_1D_SIZE). A look LUT must be a 3D LUT (LUT_3D_SIZE).",
+    "noSize": "LUT_3D_SIZE is missing before the values, the file is not a 3D LUT.",
+    "size": "LUT_3D_SIZE {size} is not supported ({min} to {max}).",
+    "numbers": "Line {line} contains no valid numbers.",
+    "count": "Expected {expected} value lines, the file has {actual}.",
+    "domain": "DOMAIN_MIN must be smaller than DOMAIN_MAX in every channel."
+  }
+}

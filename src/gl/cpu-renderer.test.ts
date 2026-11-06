@@ -80,6 +80,20 @@ describe('createCpuRenderer', () => {
     expect([...image.data]).toEqual([51, 51, 51, 255, 51, 51, 51, 255]);
   });
 
+  it('applies the left LUT left of the split line until it is taken away', () => {
+    const { canvas, image } = setup();
+    const renderer = createCpuRenderer(canvas);
+    renderer.setLut(identityLut(2));
+    renderer.setLeftLut(invertedLut());
+    renderer.render({} as HTMLVideoElement, { split: 0.5 });
+    // Left the inverted dark pixel, right the bright one unchanged by the identity.
+    expect([...image.data]).toEqual([204, 204, 204, 255, 204, 204, 204, 255]);
+    image.data.set(INPUT);
+    renderer.setLeftLut(null);
+    renderer.render({} as HTMLVideoElement, { split: 0.5 });
+    expect([...image.data]).toEqual(INPUT);
+  });
+
   it('draws the image unchanged as long as no LUT is set', () => {
     const { canvas, image, output } = setup();
     createCpuRenderer(canvas).render({} as HTMLVideoElement, { split: 0 });

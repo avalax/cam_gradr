@@ -141,6 +141,22 @@ describe('parseProject', () => {
     rejects((raw) => (raw.preview.split = -1), 'Trennlinie muss zwischen 0 und 100');
     rejects((raw) => (raw.preview.split = 'x'), 'Trennlinie muss zwischen 0 und 100');
   });
+
+  it('reads and writes the chosen look LUT by name and strength, never its data', () => {
+    const project = { ...sample(), preview: { split: 25, look: { name: 'Warm', strength: 70 } } };
+    const text = serializeProject(project);
+    expect(parseProject(text)).toEqual(project);
+    expect(JSON.parse(text).preview).toEqual({ split: 25, look: { name: 'Warm', strength: 70 } });
+  });
+
+  it('rejects a faulty look LUT', () => {
+    rejects((raw) => (raw.preview.look = 'Warm'), 'braucht name und strength');
+    rejects((raw) => (raw.preview.look = { strength: 50 }), 'braucht name und strength');
+    rejects(
+      (raw) => (raw.preview.look = { name: 'Warm', strength: 101 }),
+      'Stärke der Look-LUT muss zwischen 0 und 100',
+    );
+  });
 });
 
 describe('still images in the project file', () => {

@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
+import { useLookStore } from './look/look-store';
+import { usePreviewStore } from './lut/preview-store';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
 import CameraToggle from './ui/CameraToggle.vue';
@@ -23,16 +25,29 @@ import type { TabStatus } from './ui/tab-status';
 
 type TabKey = 'gray' | 'color' | 'preview' | 'export';
 
-// Each tab briefly states its result under its name; preview and export have a fixed text.
-// The texts are only translated when displayed so that a language change reaches them.
+// Each tab briefly states its result under its name; the preview names what lies left and right
+// of its divider, the export has a fixed text. The texts are only translated when displayed so
+// that a language change reaches them.
 const TABS: readonly { key: TabKey; label: () => string; hint: () => string }[] = [
   { key: 'gray', label: () => t('app.tabs.gray'), hint: () => '' },
   { key: 'color', label: () => t('app.tabs.color'), hint: () => '' },
-  { key: 'preview', label: () => t('app.tabs.preview'), hint: () => t('app.hints.preview') },
+  { key: 'preview', label: () => t('app.tabs.preview'), hint: () => previewHint() },
   { key: 'export', label: () => t('app.tabs.export'), hint: () => t('app.hints.export') },
 ];
 
 const { t } = useI18n();
+
+const preview = usePreviewStore();
+const looks = useLookStore();
+
+function previewHint(): string {
+  if (looks.find(preview.look) === null) {
+    return t('app.hints.preview');
+  }
+  return t(
+    preview.left === 'corrected' ? 'app.hints.previewLookCorrected' : 'app.hints.previewLook',
+  );
+}
 
 const tab = ref<TabKey>('gray');
 const camera = useCameraStore();
@@ -53,9 +68,10 @@ const entries = computed(() =>
   }),
 );
 
-// The bundled reference set and the locally saved sets are available from the start.
+// The bundled reference set, the locally saved sets and the look LUTs are available from the start.
 onMounted(() => {
   void useReferenceStore().load();
+  void looks.load();
 });
 
 // Each tab with a camera image (gray cards, color cards, preview) has its own still image: on switching

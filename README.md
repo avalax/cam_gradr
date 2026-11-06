@@ -35,8 +35,14 @@ Everything runs in your browser. Images and measurements never leave your comput
    names the largest deviations; switched to the grays it shows the gray ramp and how shadows, midtones
    and highlights change. The camera icon at the top right of the image takes a still image to check the
    correction on a steady image; in the card tabs the same corner holds the trash icon.
+   Below the image you can lay a **look LUT** over the correction, a ready-made `.cube` file such as a
+   cinema look: the last entry of the list imports one (several at once are fine), the slider sets its
+   strength, and "Left" chooses whether the camera image or the correction without the look lies left
+   of the divider. The trash icon next to the list deletes the chosen look LUT.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
-   more accurate, but some devices only accept 17³ or 33³ (see their manual).
+   more accurate, but some devices only accept 17³ or 33³ (see their manual). With a look LUT chosen in
+   the preview, the file holds correction and look at the set strength; "Correction only" leaves the look
+   out. The file name and the first lines of the file name the look and its strength.
 
 You can switch between the tabs at any time. Below each name is a short result with four bars: green
 means good (light in the normal range, or a mean deviation of at most 2 after the correction), yellow
@@ -48,7 +54,8 @@ still image, the old one comes back. Cards held upside down are recognized.
 
 **Projects:** In the Export tab, "Save project" and "Load project" keep your work as a JSON file, with
 the still images if "Include still images" stays checked. Saving suggests the file you loaded last. The
-file holds only the name of the reference set, not its values.
+file holds only the name of the reference set, not its values, and the name and strength of the look LUT,
+not the look itself.
 
 ## Tips
 
@@ -77,8 +84,14 @@ camera automatics. Read the hints in the result and capture the cards again.
 **Which version do I have?** The line at the bottom of the page names it, and so does the first line of
 every `.cube` file. A preview of a pull request adds its number.
 
-**Where does my data go?** Nowhere. Imported reference sets stay in your browser. A project file with
-still images contains camera images; only pass it on if that is fine.
+**Which look LUTs fit?** 3D LUTs in the `.cube` format (up to 129³) made for Rec.709 input, like the
+"look" or "creative" LUTs of most LUT packs. Conversion LUTs from the log curve of a camera (S-Log, LogC,
+V-Log …) belong in front of a look on such a camera; on a webcam the correction of cam_gradr does that
+job, and such a LUT makes the shadows too dark and the contrast too hard. The app warns about them by
+their name.
+
+**Where does my data go?** Nowhere. Imported reference sets and look LUTs stay in your browser. A project
+file with still images contains camera images; only pass it on if that is fine.
 
 ## Reference values
 

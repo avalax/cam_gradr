@@ -7,7 +7,9 @@
   },
   "hints": {
     "preview": "Original / corrected",
-    "export": ".cube, project"
+    "export": ".cube, project",
+    "previewLook": "Original / look LUT",
+    "previewLookCorrected": "Corrected / look LUT"
   },
   "tablist": "Sections",
   "footer": "{id} · version {version} · LUT generator for the Spyder Checkr Photo.",

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ColorModel } from '../solve/fit';
+import { parseLookCube } from '../look/look';
 
+import { cssColor } from './color-css';
 import { cubeSizeText, lutSlices } from './lut-slices';
 
 const identity: ColorModel = {
@@ -17,7 +19,25 @@ const identity: ColorModel = {
   ],
 };
 
+// A made-up look that inverts every channel (2³, R fastest).
+const invert = parseLookCube(
+  'Invert.cube',
+  ['LUT_3D_SIZE 2', '1 1 1', '0 1 1', '1 0 1', '0 0 1', '1 1 0', '0 1 0', '1 0 0', '0 0 0'].join(
+    '\n',
+  ),
+);
+
 describe('lutSlices', () => {
+  it('shows the look over the correction at its strength', () => {
+    const [plain] = lutSlices(identity, 2);
+    const [full] = lutSlices(identity, 2, { lut: invert, amount: 1 });
+    const [none] = lutSlices(identity, 2, { lut: invert, amount: 0 });
+    expect(none).toEqual(plain);
+    expect(full).not.toEqual(plain);
+    // Top left is green at a blue fraction of 0.15; inverted it turns magenta.
+    expect(full?.[0]).toBe(cssColor([1, 0, 0.85]));
+  });
+
   it('returns four slices with cells × cells colors each', () => {
     const slices = lutSlices(identity, 4);
     expect(slices).toHaveLength(4);

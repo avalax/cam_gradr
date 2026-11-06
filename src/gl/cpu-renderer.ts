@@ -27,6 +27,7 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
   const scratchCanvas = document.createElement('canvas');
   const scratch = context2d(scratchCanvas, true);
   let lut: Lut | null = null;
+  let leftLut: Lut | null = null;
 
   return {
     kind: 'cpu',
@@ -43,6 +44,10 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
       lut = next;
     },
 
+    setLeftLut(next: Lut | null): void {
+      leftLut = next;
+    },
+
     render(source: RenderSource, options): void {
       const { width, height } = canvas;
       scratchCanvas.width = width;
@@ -53,15 +58,17 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
       if (lut !== null) {
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            // As in the shader: left of the split line the original stays.
-            if ((x + 0.5) / width < options.split) {
+            // As in the shader: left of the split line the original stays, or the left LUT
+            // applies.
+            const applied = (x + 0.5) / width < options.split ? leftLut : lut;
+            if (applied === null) {
               continue;
             }
             const offset = (y * width + x) * CHANNELS;
             const r = Number(pixels[offset]) / BYTE_MAX;
             const g = Number(pixels[offset + 1]) / BYTE_MAX;
             const b = Number(pixels[offset + 2]) / BYTE_MAX;
-            const [cr, cg, cb] = sampleLut(lut, [r, g, b]);
+            const [cr, cg, cb] = sampleLut(applied, [r, g, b]);
             pixels[offset] = toByte(cr);
             pixels[offset + 1] = toByte(cg);
             pixels[offset + 2] = toByte(cb);
@@ -73,6 +80,7 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
 
     dispose(): void {
       lut = null;
+      leftLut = null;
     },
   };
 }

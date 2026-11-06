@@ -21,6 +21,23 @@ function codes(code: readonly number[]): number[] {
   return code.map((value) => Math.round(value * 255));
 }
 
+// A made-up look LUT that inverts every channel (2³, R fastest).
+const INVERT_CUBE = [
+  'LUT_3D_SIZE 2',
+  '1 1 1',
+  '0 1 1',
+  '1 0 1',
+  '0 0 1',
+  '1 1 0',
+  '0 1 0',
+  '1 0 0',
+  '0 0 0',
+].join('\n');
+
+function inverted(code: readonly number[]): number[] {
+  return code.map((value) => Math.round((1 - value) * 255));
+}
+
 // Waits until the preview shows the expected colors at a patch.
 async function expectPatch(app: AppPage, id: string, expected: readonly number[]): Promise<void> {
   const { x, y } = colorPatchCenter(id);
@@ -67,5 +84,30 @@ test.describe('Preview', () => {
     await expectPatch(app, LEFT_PATCH, codes(labToSrgb(dummyLab(LEFT_PATCH))));
     await app.page.keyboard.press('End');
     await expectPatch(app, RIGHT_PATCH, codes(cameraCode(dummyLab(RIGHT_PATCH))));
+
+    // A look LUT over the correction, imported through the last entry of the list: with the divider
+    // on the left the whole image shows it, at half strength the inversion meets in the middle.
+    await app.page.keyboard.press('Home');
+    const chooser = app.page.waitForEvent('filechooser');
+    await app.page.getByTestId('look-select').selectOption('/import');
+    const dialog = await chooser;
+    await dialog.setFiles({
+      name: 'Invert.cube',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(INVERT_CUBE),
+    });
+    await expect(app.page.getByTestId('look-select')).toHaveValue('Invert');
+    await expectPatch(app, RIGHT_PATCH, inverted(labToSrgb(dummyLab(RIGHT_PATCH))));
+    await app.page.getByTestId('look-strength').fill('50');
+    await expectPatch(app, RIGHT_PATCH, [128, 128, 128]);
+
+    // With the divider on the right the left side shows the correction without the look.
+    await app.page.getByTestId('wipe').focus();
+    await app.page.keyboard.press('End');
+    await app.page.getByTestId('look-left-corrected').click();
+    await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
+    await expect(app.page.getByRole('tab', { name: 'Vorschau' })).toContainText(
+      'Korrigiert / Look-LUT',
+    );
   });
 });

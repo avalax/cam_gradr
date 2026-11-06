@@ -22,6 +22,19 @@ describe('WipeLabels', () => {
     expect(right.findAll('i')).toHaveLength(3);
   });
 
+  it('takes other names for both sides and a green dot for a corrected left side', () => {
+    const wrapper = mount(WipeLabels, {
+      props: {
+        split: 50,
+        leftLabel: 'Korrigiert',
+        rightLabel: 'Korrigiert + Look-LUT 70 %',
+        leftCorrected: true,
+      },
+    });
+    expect(wrapper.text()).toBe('KorrigiertKorrigiert + Look-LUT 70 %');
+    expect(wrapper.findAll('.bg-emerald-700')).toHaveLength(2);
+  });
+
   it('shows only one side when the divider is at the edge', () => {
     const left = labels(0);
     expect(left.text()).toBe('Korrigiert');
