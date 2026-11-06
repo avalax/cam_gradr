@@ -100,20 +100,22 @@ describe('PreviewTab', () => {
       return Promise.resolve();
     });
     const wrapper = mount(PreviewTab);
-    const take = () => wrapper.findAll('button').find((b) => b.text() === 'Standbild aufnehmen');
-    expect(take()?.attributes('disabled')).toBeDefined();
+    // The button sits in the image corner and only appears with the live image.
+    const take = () => wrapper.find('[data-testid="preview-capture"]');
+    expect(take().exists()).toBe(false);
 
     await camera.start();
     await flushPromises();
-    expect(take()?.attributes('disabled')).toBeDefined();
+    expect(take().attributes('aria-label')).toBe('Standbild aufnehmen');
+    expect(take().attributes('disabled')).toBeDefined();
     await wrapper.get('video').trigger('loadeddata');
-    expect(take()?.attributes('disabled')).toBeUndefined();
-    await take()?.trigger('click');
+    expect(take().attributes('disabled')).toBeUndefined();
+    await take().trigger('click');
     await flushPromises();
     expect(capture).toHaveBeenCalledTimes(1);
     expect(camera.status).toBe('idle');
     expect(camera.still).not.toBeNull();
-    expect(take()?.attributes('disabled')).toBeDefined();
+    expect(take().exists()).toBe(false);
     await camera.start();
     await flushPromises();
     expect(camera.still).toBeNull();
@@ -129,10 +131,7 @@ describe('PreviewTab', () => {
     await camera.start();
     await flushPromises();
     await wrapper.get('video').trigger('loadeddata');
-    await wrapper
-      .findAll('button')
-      .find((b) => b.text() === 'Standbild aufnehmen')
-      ?.trigger('click');
+    await wrapper.get('[data-testid="preview-capture"]').trigger('click');
     await flushPromises();
     expect(camera.status).toBe('live');
   });
