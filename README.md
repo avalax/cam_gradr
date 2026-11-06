@@ -4,6 +4,8 @@
 the camera: the app helps you set the light, measures the colors and calculates a 3D LUT that corrects
 them. You download the LUT as a `.cube` file for a camera monitor or video software.
 
+![The preview of cam_gradr: a room seen by a webcam with a color cast on the left, corrected on the right](docs/preview.png)
+
 **Open the app: <https://avalax.github.io/cam_gradr/>**
 
 Everything runs in your browser. Images and measurements never leave your computer.

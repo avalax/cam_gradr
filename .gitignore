@@ -8,6 +8,8 @@ coverage/
 *.jpeg
 *.png
 *.webp
+# Ausnahme: das Bild der README, gerendert von `npm run readme:image`
+!docs/preview.png
 
 # Lokale Referenzwerte (Herstellerdaten) nie einchecken
 local-data/

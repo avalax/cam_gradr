@@ -26,6 +26,7 @@
     "prepare": "husky",
     "e2e": "playwright test",
     "e2e:install": "playwright install firefox",
+    "readme:image": "playwright test --config playwright.readme.config.ts",
     "verify:all": "npm run verify && npm run e2e"
   },
   "dependencies": {
