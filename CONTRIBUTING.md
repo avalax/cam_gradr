@@ -15,6 +15,7 @@ npm run verify       # lint (code, CSS, Markdown), format, typecheck, knip, unit
 npm run e2e:install  # once: Firefox for the acceptance tests (Chrome must be installed)
 npm run e2e          # Playwright acceptance tests (builds and starts the app)
 npm run verify:all   # verify and e2e together
+npm run readme:image # renders the picture in the README (docs/preview.png) with the real app
 ```
 
 ## Workflow
@@ -53,8 +54,10 @@ npm run verify:all   # verify and e2e together
 - Where a mistake can be caught statically, a lint rule replaces tests that look for it case by case.
 - Lint and typecheck without warnings: ESLint (strict and type-aware, Vue, accessibility), Prettier,
   Stylelint, markdownlint and knip.
-- No manufacturer reference values and no image files in the repo; test data is made up. Own shots and
-  project files belong in `local-data/`, which is ignored.
+- No manufacturer reference values and no camera images in the repo; test data is made up. Own shots and
+  project files belong in `local-data/`, which is ignored. The only image is the README picture
+  `docs/preview.png`: the app with a drawn room, rendered by `npm run readme:image`. Render it again
+  when the preview changes visibly.
 - User-visible texts never live in components or modules but in `src/lang/<language>/<area>.json`
   (English is the reference), used through `t()` or `useI18n()`. Error messages meant only for
   developers stay in English. ESLint reports bare text in templates, German in string literals and

@@ -10,6 +10,8 @@ const tallViewport = { viewport: { width: 1280, height: 1100 } };
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
+  // The README picture has its own configuration (playwright.readme.config.ts).
+  testIgnore: '**/readme/**',
   fullyParallel: true,
   // Two browsers in parallel strain small machines and CI runners; fewer workers keep the tests stable.
   workers: isCi ? 2 : 4,

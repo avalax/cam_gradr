@@ -26,12 +26,25 @@ function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void 
   if (context === null) {
     throw new Error('Canvas context is missing.');
   }
+  // Drawings load asynchronously and appear with the next redraw.
+  const pictures = new Map<Scene, HTMLImageElement>();
+  for (const scene of Object.values(scenes)) {
+    if (scene.svg !== undefined) {
+      const picture = new Image();
+      picture.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(scene.svg)}`;
+      pictures.set(scene, picture);
+    }
+  }
   let current: Scene = first;
   const draw = () => {
     for (const rect of current.rects) {
       const [r, g, b] = rect.color;
       context.fillStyle = `rgb(${String(r)}, ${String(g)}, ${String(b)})`;
       context.fillRect(rect.x, rect.y, rect.w, rect.h);
+    }
+    const picture = pictures.get(current);
+    if (picture?.complete === true) {
+      context.drawImage(picture, 0, 0, canvas.width, canvas.height);
     }
   };
   let tick = 0;
@@ -72,20 +85,26 @@ function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void 
     ]);
 }
 
-// Replaces the camera of the page with a canvas stream showing the synthetic gray cards first.
-// This works in Chrome and Firefox alike (Firefox cannot use a video file as a camera).
-export async function installSyntheticCamera(page: Page): Promise<void> {
-  const scenes = Object.fromEntries(SCENE_NAMES.map((name) => [name, sceneFor(name)]));
+// Replaces the camera of the page with a canvas stream showing the scenes, by default the synthetic
+// cards with the gray cards first. This works in Chrome and Firefox alike (Firefox cannot use a
+// video file as a camera).
+export async function installSyntheticCamera(
+  page: Page,
+  scenes: Record<string, Scene> = Object.fromEntries(
+    SCENE_NAMES.map((name) => [name, sceneFor(name)]),
+  ),
+  initial = 'gray',
+): Promise<void> {
   await page.addInitScript(installInPage, {
     scenes,
-    initial: 'gray',
+    initial,
     redrawMs: REDRAW_MS,
     frameRate: FRAME_RATE,
   });
 }
 
 // Sets the scene without waiting for the video image (the camera may still be off).
-export async function setScene(page: Page, name: SceneName): Promise<void> {
+export async function setScene(page: Page, name: string): Promise<void> {
   await page.evaluate((scene) => {
     (globalThis as unknown as { setSyntheticScene: (name: string) => void }).setSyntheticScene(
       scene,

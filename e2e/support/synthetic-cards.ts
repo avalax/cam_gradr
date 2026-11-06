@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseLayout } from '../../src/chart/layout';
+import type { Vec3 } from '../../src/color/lab';
 import { dummyLab } from '../../src/test-support/dummy-reference';
 import { cameraCode } from '../../src/test-support/synthetic-camera';
 
@@ -39,6 +40,8 @@ export interface Scene {
   width: number;
   height: number;
   rects: SceneRect[];
+  // A drawing (SVG markup) over the rectangles, stretched to the whole image.
+  svg?: string;
 }
 
 const SURROUND = 0.35;
@@ -93,15 +96,18 @@ function grayScene(): Scene {
   return { width: WIDTH, height: HEIGHT, rects };
 }
 
-// Both color cards: each patch shows what the artificial webcam reports for the (made-up)
-// reference value.
-function colorScene(): Scene {
+// Both color cards: each patch shows what the camera reports for the reference value, by default
+// the artificial webcam and the made-up values.
+export function colorScene(
+  labOf: (id: string) => Vec3 = dummyLab,
+  camera: (lab: Vec3) => Vec3 = cameraCode,
+): Scene {
   const rects: SceneRect[] = [background()];
   for (const card of colorLayout.cards) {
     const pixels = CARD_PIXELS[card.card as CardNumber];
     rects.push({ ...pixels, color: toGray(CARD_SURFACE) });
     for (const patch of card.patches) {
-      const [r, g, b] = cameraCode(dummyLab(patch.id));
+      const [r, g, b] = camera(labOf(patch.id));
       rects.push({
         x: pixels.x + patch.rect.x * pixels.w,
         y: pixels.y + patch.rect.y * pixels.h,
