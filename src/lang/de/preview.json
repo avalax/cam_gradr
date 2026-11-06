@@ -1,6 +1,8 @@
 {
-  "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie siehst du das Original, rechts das korrigierte Bild. Den Strich kannst du im Bild ziehen oder mit den Pfeiltasten verschieben.",
+  "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie siehst du das Original, rechts das korrigierte Bild. Den Strich kannst du im Bild ziehen oder mit den Pfeiltasten verschieben. Mit dem Kamera-Symbol oben rechts im Bild nimmst du ein Standbild auf; die Kamera geht dann aus.",
   "capture": "Standbild aufnehmen",
+  "captureTitle": "Standbild aufnehmen und Kamera ausschalten",
+  "toolbar": "Bildaktionen",
   "rendererWebgl": "Darstellung: Grafikkarte (WebGL2)",
   "rendererCpu": "Darstellung: Software, verkleinert (kein WebGL2 verfügbar)",
   "noModelTitle": "Noch keine Farbkorrektur",

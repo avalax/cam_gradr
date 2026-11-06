@@ -237,16 +237,6 @@ const splitModel = computed({
       <p class="text-sm text-slate-700 dark:text-slate-300">
         {{ t('preview.intro') }}
       </p>
-      <div class="flex flex-wrap gap-2">
-        <button
-          type="button"
-          class="rounded bg-emerald-700 px-3 py-1 text-sm text-white disabled:opacity-50"
-          :disabled="!isLive || !videoReady"
-          @click="capture"
-        >
-          {{ t('preview.capture') }}
-        </button>
-      </div>
       <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
         {{ error }}
       </p>
@@ -339,6 +329,40 @@ const splitModel = computed({
                 v-model="splitModel"
                 :label="t('preview.divider')"
               />
+              <!-- Toolbar in the image corner, where the card tabs have the trash: take a still
+                   image while the camera runs. The side column only describes, it holds no actions. -->
+              <div
+                v-if="model !== null && isLive"
+                class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
+                role="toolbar"
+                :aria-label="t('preview.toolbar')"
+              >
+                <button
+                  type="button"
+                  class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50 disabled:pointer-events-none disabled:opacity-50"
+                  :aria-label="t('preview.capture')"
+                  :title="t('preview.captureTitle')"
+                  :disabled="!videoReady"
+                  data-testid="preview-capture"
+                  @click="capture"
+                >
+                  <svg
+                    class="size-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                    />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>

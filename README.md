@@ -33,7 +33,8 @@ Everything runs in your browser. Images and measurements never leave your comput
    of a divider that you drag or move with the arrow keys; with the camera off it shows the still image
    of the color cards. The side column shows each colored patch as target, camera and corrected and
    names the largest deviations; switched to the grays it shows the gray ramp and how shadows, midtones
-   and highlights change. "Take still image" checks the correction on a steady image.
+   and highlights change. The camera icon at the top right of the image takes a still image to check the
+   correction on a steady image; in the card tabs the same corner holds the trash icon.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual).
 
