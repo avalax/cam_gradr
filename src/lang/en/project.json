@@ -8,7 +8,8 @@
     "close": "Dismiss message"
   },
   "notice": {
-    "missingReference": "The reference set “{name}” is not available; import it in the settings to see the report. Preview and export use the saved model."
+    "missingReference": "The reference set “{name}” is not available; import it in the settings to see the report. Preview and export use the saved model.",
+    "missingLook": "The look LUT “{name}” is not saved in this browser; import it in the preview. Until then preview and export show the correction without the look LUT."
   },
   "errors": {
     "invalidJson": "The file is not valid JSON",
@@ -43,6 +44,8 @@
     "frameUnreadable": "A still image in the file cannot be read",
     "frameWrongSize": "A still image in the file does not have the stated size",
     "saveFailed": "The project could not be saved: {reason}",
-    "openFailed": "The project file could not be opened: {reason}"
+    "openFailed": "The project file could not be opened: {reason}",
+    "lookShape": "Preview: the look LUT needs name and strength",
+    "strengthName": "strength of the look LUT"
   }
 }

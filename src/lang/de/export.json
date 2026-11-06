@@ -10,7 +10,14 @@
     "gotoColor": "Zu den Farbkarten",
     "download": "{file} herunterladen",
     "sizeKb": "ca. {value} KB",
-    "sizeMb": "ca. {value} MB"
+    "sizeMb": "ca. {value} MB",
+    "content": "Inhalt der LUT",
+    "contentPlain": "Nur Korrektur",
+    "contentLook": "Korrektur + Look-LUT",
+    "lookLine": "Look-LUT „{name}“ mit {strength} %, eingestellt in der {preview}.",
+    "previewLink": "Vorschau",
+    "plainLine": "Die LUT enthält nur die Farbkorrektur.",
+    "noLook": "Eine Look-LUT wählst du in der {preview}."
   },
   "project": {
     "heading": "Projekt sichern",
@@ -20,6 +27,9 @@
     "color": "Farbkarten",
     "correction": "Korrektur",
     "correctionValue": "Kurven + Matrix",
-    "reference": "Referenz"
+    "reference": "Referenz",
+    "look": "Look-LUT",
+    "lookValue": "{name} · {strength} %",
+    "lookNote": "Das Projekt merkt sich Name und Stärke der Look-LUT, nicht die Datei. Fehlt sie beim Laden im Browser, weist die App darauf hin."
   }
 }

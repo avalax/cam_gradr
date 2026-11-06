@@ -4,17 +4,25 @@ import { computed, ref } from 'vue';
 import { I18nT, useI18n } from 'vue-i18n';
 
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
+import { lookedLut } from '../look/look';
+import { useLookStore } from '../look/look-store';
 import { CUBE_SIZES, formatCube } from '../lut/cube';
 import { downloadFile } from '../lut/download';
 import { buildLut } from '../lut/lut';
+import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
+import { exportFileName, exportNotes, exportTitle } from './export-file';
+import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
 
-const emit = defineEmits<{ goto: [tab: 'color'] }>();
+const emit = defineEmits<{ goto: [tab: 'color' | 'preview'] }>();
+
+// What the file holds: the correction alone or with the look LUT chosen in the preview.
+const CONTENTS = ['plain', 'look'] as const;
 
 const DEFAULT_SIZE = 33;
 
@@ -25,6 +33,8 @@ const { model } = storeToRefs(solve);
 const { selected } = storeToRefs(useReferenceStore());
 const gray = useChartStore();
 const color = useColorChartStore();
+const preview = usePreviewStore();
+const looks = useLookStore();
 
 // What the project file contains: per card pair the corner points and measured patches.
 function chartFacts(state: { points: Record<number, unknown[]>; measurements: object }): string {
@@ -42,10 +52,30 @@ const facts = computed(() => [
     value: model.value === null ? '–' : t('export.project.correctionValue'),
   },
   { label: t('export.project.reference'), value: selected.value?.name ?? '–' },
+  {
+    label: t('export.project.look'),
+    value:
+      preview.look === null
+        ? '–'
+        : t('export.project.lookValue', { name: preview.look, strength: preview.strength }),
+  },
 ]);
 const size = ref<number>(DEFAULT_SIZE);
+const content = ref<(typeof CONTENTS)[number]>('look');
 
-const fileName = computed(() => `cam_gradr-${String(size.value)}.cube`);
+// The look goes into the file when it is chosen in the preview and the content asks for it.
+const chosen = computed(() => looks.find(preview.look));
+const exportLook = computed<ExportLook | null>(() =>
+  content.value === 'look' && chosen.value !== null
+    ? { name: chosen.value.name, strength: preview.strength }
+    : null,
+);
+const sliceLook = computed(() =>
+  exportLook.value === null || chosen.value === null
+    ? null
+    : { lut: chosen.value, amount: preview.strength / FULL_STRENGTH },
+);
+const fileName = computed(() => exportFileName(size.value, exportLook.value));
 const fileInfo = computed(
   () =>
     `${String(size.value)} × ${String(size.value)} × ${String(size.value)} · ${cubeSizeText(size.value)}`,
@@ -58,9 +88,14 @@ function onSize(next: number): void {
 function download(): void {
   const current = model.value;
   if (current !== null) {
+    const lut = lookedLut(
+      buildLut(current, size.value),
+      exportLook.value === null ? null : chosen.value,
+      preview.strength / FULL_STRENGTH,
+    );
     downloadFile(
       fileName.value,
-      formatCube(buildLut(current, size.value), 'cam_gradr'),
+      formatCube(lut, exportTitle(exportLook.value), exportNotes(exportLook.value)),
       'text/plain',
     );
   }
@@ -84,36 +119,95 @@ function download(): void {
         <I18nT keypath="export.lut.description" tag="p" class="text-xs text-zinc-600">
           <template #file><code>.cube</code></template>
         </I18nT>
-        <div
-          role="radiogroup"
-          :aria-label="t('export.lut.sizeLabel')"
-          class="inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm"
-          :class="{ 'opacity-50': model === null }"
-        >
-          <button
-            v-for="option in CUBE_SIZES"
-            :key="option"
-            type="button"
-            role="radio"
-            class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l"
-            :class="
-              size === option
-                ? 'bg-zinc-800 text-zinc-50'
-                : 'bg-white dark:bg-zinc-100 text-zinc-800'
-            "
-            :aria-checked="size === option"
-            :disabled="model === null"
-            :data-testid="`export-size-${String(option)}`"
-            @click="onSize(option)"
+        <!-- Content and size in one row, so that the export stays as tall as the other tabs. -->
+        <div class="flex flex-wrap gap-2">
+          <div
+            role="radiogroup"
+            :aria-label="t('export.lut.content')"
+            class="inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm"
+            :class="{ 'opacity-50': model === null }"
           >
-            {{
-              t(option === DEFAULT_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
-                size: option,
-              })
-            }}
-          </button>
+            <button
+              v-for="option in CONTENTS"
+              :key="option"
+              type="button"
+              role="radio"
+              class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500"
+              :class="
+                (exportLook === null ? 'plain' : 'look') === option
+                  ? 'bg-zinc-800 text-zinc-50'
+                  : 'bg-white dark:bg-zinc-100 text-zinc-800'
+              "
+              :aria-checked="(exportLook === null ? 'plain' : 'look') === option"
+              :disabled="model === null || (option === 'look' && chosen === null)"
+              :data-testid="`export-content-${option}`"
+              @click="content = option"
+            >
+              {{ t(option === 'look' ? 'export.lut.contentLook' : 'export.lut.contentPlain') }}
+            </button>
+          </div>
+          <div
+            role="radiogroup"
+            :aria-label="t('export.lut.sizeLabel')"
+            class="inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm"
+            :class="{ 'opacity-50': model === null }"
+          >
+            <button
+              v-for="option in CUBE_SIZES"
+              :key="option"
+              type="button"
+              role="radio"
+              class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l"
+              :class="
+                size === option
+                  ? 'bg-zinc-800 text-zinc-50'
+                  : 'bg-white dark:bg-zinc-100 text-zinc-800'
+              "
+              :aria-checked="size === option"
+              :disabled="model === null"
+              :data-testid="`export-size-${String(option)}`"
+              @click="onSize(option)"
+            >
+              {{
+                t(option === DEFAULT_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
+                  size: option,
+                })
+              }}
+            </button>
+          </div>
         </div>
-        <LutSlices :model="model" />
+        <I18nT
+          v-if="exportLook !== null"
+          keypath="export.lut.lookLine"
+          tag="p"
+          class="text-xs text-zinc-700"
+          data-testid="export-look"
+        >
+          <template #name>{{ exportLook.name }}</template>
+          <template #strength>{{ exportLook.strength }}</template>
+          <template #preview>
+            <button type="button" class="underline" @click="emit('goto', 'preview')">
+              {{ t('export.lut.previewLink') }}
+            </button>
+          </template>
+        </I18nT>
+        <I18nT
+          v-else-if="chosen === null"
+          keypath="export.lut.noLook"
+          tag="p"
+          class="text-xs text-zinc-700"
+          data-testid="export-look"
+        >
+          <template #preview>
+            <button type="button" class="underline" @click="emit('goto', 'preview')">
+              {{ t('export.lut.previewLink') }}
+            </button>
+          </template>
+        </I18nT>
+        <p v-else class="text-xs text-zinc-700" data-testid="export-look">
+          {{ t('export.lut.plainLine') }}
+        </p>
+        <LutSlices :model="model" :look="sliceLook" />
         <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
           <strong>{{ t('export.lut.noModelTitle') }}</strong> {{ t('export.lut.noModelText') }}
           <button type="button" class="underline" @click="emit('goto', 'color')">
@@ -164,6 +258,7 @@ function download(): void {
             <dd class="text-right">{{ fact.value }}</dd>
           </div>
         </dl>
+        <p class="text-[11px] leading-snug text-zinc-500">{{ t('export.project.lookNote') }}</p>
         <div class="mt-auto pt-1">
           <ProjectBar />
         </div>

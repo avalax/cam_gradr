@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../reference/storage';
+import { createIndexedDbStorage } from '../storage/indexed-db';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 
 import ReferencePanel from './ReferencePanel.vue';
@@ -38,7 +38,7 @@ function button(wrapper: ReturnType<typeof mount>, text: string) {
 describe('ReferencePanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
     download.mockReset();
   });
 

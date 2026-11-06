@@ -4,12 +4,15 @@ import { computed } from 'vue';
 import type { ColorModel } from '../solve/fit';
 
 import { lutSlices } from './lut-slices';
+import type { SliceLook } from './lut-slices';
 
-const props = defineProps<{ model: ColorModel | null }>();
+const props = defineProps<{ model: ColorModel | null; look?: SliceLook | null }>();
 
 const CELLS = 8;
 const EMPTY = [0, 1, 2, 3] as const;
-const slices = computed(() => (props.model === null ? null : lutSlices(props.model, CELLS)));
+const slices = computed(() =>
+  props.model === null ? null : lutSlices(props.model, CELLS, props.look ?? null),
+);
 </script>
 
 <template>

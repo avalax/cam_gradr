@@ -6,7 +6,8 @@ import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import { t } from '../lang';
-import { usePreviewStore } from '../lut/preview-store';
+import { useLookStore } from '../look/look-store';
+import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
@@ -45,7 +46,21 @@ function applyCharts(project: Project, withStills: boolean): void {
     measurements: project.color.measurements,
     rotated: project.color.rotated,
   });
-  usePreviewStore().setSplit(project.preview.split);
+  const preview = usePreviewStore();
+  preview.setSplit(project.preview.split);
+  preview.setLook(project.preview.look?.name ?? null);
+  preview.setStrength(project.preview.look?.strength ?? FULL_STRENGTH);
+}
+
+// The look LUT itself is not in the file: returns its name if this browser does not have it.
+async function missingLook(project: Project): Promise<string | null> {
+  const name = project.preview.look?.name;
+  if (name === undefined) {
+    return null;
+  }
+  const looks = useLookStore();
+  await looks.load();
+  return looks.find(name) === null ? name : null;
 }
 
 // Recomputes the correction with the selected reference set or uses the saved model.
@@ -107,7 +122,10 @@ function snapshot(withCorners: boolean): Project {
       reference: useReferenceStore().selectedName,
     },
     model: useSolveStore().model,
-    preview: { split: preview.split },
+    preview: {
+      split: preview.split,
+      ...(preview.look !== null && { look: { name: preview.look, strength: preview.strength } }),
+    },
   };
 }
 
@@ -161,9 +179,13 @@ export const useProjectStore = defineStore('project', () => {
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
-    // There are no success messages; only a missing reference set deserves a notice.
-    notice.value =
-      missing === null ? null : t('project.notice.missingReference', { name: missing });
+    const look = await missingLook(read.project);
+    // There are no success messages; only a missing reference set or look LUT deserves a notice.
+    const notices = [
+      missing === null ? null : t('project.notice.missingReference', { name: missing }),
+      look === null ? null : t('project.notice.missingLook', { name: look }),
+    ].filter((entry) => entry !== null);
+    notice.value = notices.length === 0 ? null : notices.join(' ');
   }
 
   // Lets the user choose a project file in the system dialog and loads it.

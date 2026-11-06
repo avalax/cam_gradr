@@ -1,5 +1,7 @@
 import { t } from '../lang';
 import { formatDecimal } from '../lang/format';
+import { blendColor, sampleLook } from '../look/look';
+import type { LookLut } from '../look/look';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
 
@@ -9,16 +11,29 @@ import { cssColor } from './color-css';
 // blue).
 const BLUE_LEVELS = [0.15, 0.4, 0.65, 0.9] as const;
 
-// The LUT as four small color fields: each field shows which colors the correction maps the
-// red-green plane to at a fixed blue fraction (green at the top, red on the right).
-export function lutSlices(model: ColorModel, cells: number): string[][] {
+// The look LUT over the correction, with its strength (0..1).
+export interface SliceLook {
+  lut: LookLut;
+  amount: number;
+}
+
+// The LUT as four small color fields: each field shows which colors the correction (and the look
+// over it) maps the red-green plane to at a fixed blue fraction (green at the top, red on the
+// right).
+export function lutSlices(
+  model: ColorModel,
+  cells: number,
+  look: SliceLook | null = null,
+): string[][] {
   const last = cells - 1;
   return BLUE_LEVELS.map((blue) => {
     const colors: string[] = [];
     for (let row = 0; row < cells; row++) {
       for (let column = 0; column < cells; column++) {
         const code = applyColorModel(model, [column / last, 1 - row / last, blue]);
-        colors.push(cssColor(code));
+        const shown =
+          look === null ? code : blendColor(code, sampleLook(look.lut, code), look.amount);
+        colors.push(cssColor(shown));
       }
     }
     return colors;

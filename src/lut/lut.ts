@@ -9,8 +9,8 @@ export interface Lut {
   data: Float32Array;
 }
 
-const MIN_SIZE = 2;
-const MAX_SIZE = 129;
+export const MIN_SIZE = 2;
+export const MAX_SIZE = 129;
 const CHANNELS = 3;
 
 function checkSize(size: number): void {

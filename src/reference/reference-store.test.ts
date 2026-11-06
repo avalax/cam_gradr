@@ -3,27 +3,27 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
+import { createIndexedDbStorage } from '../storage/indexed-db';
+import type { NamedStorage } from '../storage/indexed-db';
 
 import { BUNDLED_NAME } from './bundled';
 import { setReferenceStorage, useReferenceStore } from './reference-store';
 import type { ReferenceSet } from './reference';
-import { createIndexedDbStorage } from './storage';
-import type { ReferenceStorage } from './storage';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 
-function failingStorage(): ReferenceStorage {
+function failingStorage(): NamedStorage<ReferenceSet> {
   const fail = () => Promise.reject(new Error('kaputt'));
   return { list: fail, save: fail, remove: fail };
 }
 
 describe('useReferenceStore', () => {
-  let storage: ReferenceStorage;
+  let storage: NamedStorage<ReferenceSet>;
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    storage = createIndexedDbStorage(new IDBFactory(), 'test');
+    storage = createIndexedDbStorage(new IDBFactory(), 'test', 'references');
     setReferenceStorage(storage);
   });
 

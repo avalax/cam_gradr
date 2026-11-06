@@ -9,7 +9,7 @@ import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../reference/storage';
+import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
 import { dummyIds, dummyLab, dummyReferenceJson } from '../test-support/dummy-reference';
@@ -45,7 +45,7 @@ describe('ColorStep', () => {
     setActivePinia(createPinia());
     installMediaStubs();
     installFakeCamera();
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test'));
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
   });
 
   afterEach(() => {

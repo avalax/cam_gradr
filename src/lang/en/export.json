@@ -10,7 +10,14 @@
     "gotoColor": "Go to color cards",
     "download": "Download {file}",
     "sizeKb": "about {value} KB",
-    "sizeMb": "about {value} MB"
+    "sizeMb": "about {value} MB",
+    "content": "Content of the LUT",
+    "contentPlain": "Correction only",
+    "contentLook": "Correction + look LUT",
+    "lookLine": "Look LUT “{name}” at {strength} %, set in the {preview}.",
+    "previewLink": "preview",
+    "plainLine": "The LUT contains only the color correction.",
+    "noLook": "You choose a look LUT in the {preview}."
   },
   "project": {
     "heading": "Back up project",
@@ -20,6 +27,9 @@
     "color": "Color cards",
     "correction": "Correction",
     "correctionValue": "Curves + matrix",
-    "reference": "Reference"
+    "reference": "Reference",
+    "look": "Look LUT",
+    "lookValue": "{name} · {strength} %",
+    "lookNote": "The project keeps the name and strength of the look LUT, not the file. If it is missing in the browser when loading, the app points it out."
   }
 }

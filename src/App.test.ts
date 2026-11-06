@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { IDBFactory } from 'fake-indexeddb';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,9 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
+import type { LookLut } from './look/look';
+import { setLookStorage, useLookStore } from './look/look-store';
+import { usePreviewStore } from './lut/preview-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
+import { createIndexedDbStorage } from './storage/indexed-db';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
@@ -59,6 +64,35 @@ describe('App', () => {
     expect(gauges.map((gauge) => gauge.attributes('data-level'))).toEqual(['off', 'off']);
     expect(wrapper.findAll('[data-filled="true"]')).toHaveLength(0);
     expect(gray?.attributes('aria-describedby')).toBe('tab-hint-gray');
+  });
+
+  it('names in the preview tab what lies left and right of the divider', async () => {
+    installFakeCamera();
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'app', 'looks'));
+    const wrapper = mountApp();
+    const identity = [
+      'LUT_3D_SIZE 2',
+      '0 0 0',
+      '1 0 0',
+      '0 1 0',
+      '1 1 0',
+      '0 0 1',
+      '1 0 1',
+      '0 1 1',
+      '1 1 1',
+    ].join(String.fromCodePoint(10));
+    await useLookStore().importFiles([
+      { name: 'Warm.cube', text: () => Promise.resolve(identity) },
+    ]);
+    await flushPromises();
+    const preview = () => tabs(wrapper)[2]?.text();
+    expect(preview()).toContain('Original / Look-LUT');
+    usePreviewStore().setLeft('corrected');
+    await flushPromises();
+    expect(preview()).toContain('Korrigiert / Look-LUT');
+    usePreviewStore().setLook(null);
+    await flushPromises();
+    expect(preview()).toContain('Original / korrigiert');
   });
 
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {

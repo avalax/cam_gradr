@@ -11,7 +11,7 @@ describe('Shader', () => {
   it('are GLSL ES 3.00 and contain the required uniforms', () => {
     expect(VERTEX_SHADER.startsWith('#version 300 es')).toBe(true);
     expect(FRAGMENT_SHADER.startsWith('#version 300 es')).toBe(true);
-    for (const name of ['uImage', 'uLut', 'uLutSize', 'uSplit']) {
+    for (const name of ['uImage', 'uLut', 'uLutSize', 'uLeftLut', 'uLeftCorrected', 'uSplit']) {
       expect(FRAGMENT_SHADER).toContain(name);
     }
   });
@@ -26,7 +26,7 @@ describe('createLutRenderer', () => {
     expect(call('shaderSource')).toHaveBeenCalledWith(expect.anything(), FRAGMENT_SHADER);
     expect(call('linkProgram')).toHaveBeenCalledTimes(1);
     expect(call('deleteShader')).toHaveBeenCalledTimes(2);
-    expect(call('createTexture')).toHaveBeenCalledTimes(2);
+    expect(call('createTexture')).toHaveBeenCalledTimes(3);
     expect(call('texParameteri')).toHaveBeenCalledWith(
       constant('TEXTURE_3D'),
       constant('TEXTURE_WRAP_R'),
@@ -85,8 +85,32 @@ describe('createLutRenderer', () => {
         value as number,
       ]),
     );
-    expect(floats).toEqual({ uLutSize: 9, uSplit: 0.4 });
+    expect(floats).toEqual({ uLutSize: 9, uLeftLutSize: 2, uLeftCorrected: 0, uSplit: 0.4 });
     expect(call('drawArrays')).toHaveBeenCalledWith(constant('TRIANGLES'), 0, 3);
+  });
+
+  it('applies a second LUT left of the split line, or leaves the original there', () => {
+    const { gl, call } = createFakeGl();
+    const renderer = createLutRenderer(gl);
+    const floats = () =>
+      Object.fromEntries(
+        call('uniform1f').mock.calls.map(([location, value]) => [
+          (location as { name: string }).name,
+          value as number,
+        ]),
+      );
+    renderer.setLut(identityLut(9));
+    renderer.setLeftLut(identityLut(5));
+    expect(call('texImage3D')).toHaveBeenCalledTimes(2);
+    expect(call('texImage3D').mock.calls[1]?.[3]).toBe(5);
+    renderer.render(source, { split: 0.4 });
+    expect(floats()).toMatchObject({ uLeftLutSize: 5, uLeftCorrected: 1 });
+    expect(call('uniform1i')).toHaveBeenCalledWith({ name: 'uLeftLut' }, 2);
+
+    renderer.setLeftLut(null);
+    renderer.render(source, { split: 0.4 });
+    expect(call('texImage3D')).toHaveBeenCalledTimes(2);
+    expect(floats()).toMatchObject({ uLeftCorrected: 0 });
   });
 
   it('adapts the viewport to the current size of the drawing surface', () => {
@@ -121,7 +145,7 @@ describe('createLutRenderer', () => {
   it('releases all resources', () => {
     const { gl, call } = createFakeGl();
     createLutRenderer(gl).dispose();
-    expect(call('deleteTexture')).toHaveBeenCalledTimes(2);
+    expect(call('deleteTexture')).toHaveBeenCalledTimes(3);
     expect(call('deleteVertexArray')).toHaveBeenCalledTimes(1);
     expect(call('deleteProgram')).toHaveBeenCalledTimes(1);
   });

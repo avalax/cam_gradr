@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { IDBFactory } from 'fake-indexeddb';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +7,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
+import type { LookLut } from '../look/look';
+import { setLookStorage, useLookStore } from '../look/look-store';
+import { usePreviewStore } from '../lut/preview-store';
+import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { parseCube } from '../test-support/cube-parse';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -23,6 +28,26 @@ const reference = {
 const measurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
 );
+
+// A made-up look LUT that inverts every channel (2³, R fastest).
+const INVERT_CUBE = [
+  'LUT_3D_SIZE 2',
+  '1 1 1',
+  '0 1 1',
+  '1 0 1',
+  '0 0 1',
+  '1 1 0',
+  '0 1 0',
+  '1 0 0',
+  '0 0 0',
+].join(String.fromCodePoint(10));
+
+async function chooseInvert(): Promise<void> {
+  setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+  await useLookStore().importFiles([
+    { name: 'Invert.cube', text: () => Promise.resolve(INVERT_CUBE) },
+  ]);
+}
 
 function computeModel() {
   useSolveStore().compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
@@ -103,7 +128,7 @@ describe('ExportTab', () => {
   it('offers sizes 17, 33 and 65 with 33 as default', () => {
     computeModel();
     const wrapper = mount(ExportTab);
-    const radios = wrapper.findAll('[role="radio"]');
+    const radios = wrapper.findAll('[data-testid^="export-size-"]');
     expect(radios.map((radio) => radio.text())).toEqual(['17³', '33³ Standard', '65³']);
     expect(radios.map((radio) => radio.attributes('aria-checked'))).toEqual([
       'false',
@@ -112,6 +137,59 @@ describe('ExportTab', () => {
     ]);
     expect(wrapper.get('[data-testid="export-download"]').text()).toContain('cam_gradr-33.cube');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
+  });
+
+  it('writes the look LUT chosen in the preview into the file, or only the correction', async () => {
+    computeModel();
+    await chooseInvert();
+    usePreviewStore().setStrength(70);
+    const wrapper = mount(ExportTab);
+    const checked = () =>
+      wrapper
+        .findAll('[data-testid^="export-content-"]')
+        .map((radio) => radio.attributes('aria-checked'));
+    expect(checked()).toEqual(['false', 'true']);
+    expect(wrapper.get('[data-testid="export-look"]').text()).toBe(
+      'Look-LUT „Invert“ mit 70 %, eingestellt in der Vorschau.',
+    );
+    expect(wrapper.get('[data-testid="project-facts"]').text()).toContain('Invert · 70 %');
+    await wrapper.get('[data-testid="export-download"]').trigger('click');
+    const [name, content] = download.mock.calls[0] as [string, string, string];
+    expect(name).toBe('cam_gradr-33-invert-70.cube');
+    const looked = parseCube(content);
+    expect(looked.title).toBe('cam_gradr + Invert 70 %');
+    expect(content).toContain('# Look LUT: Invert.cube, strength 70 %');
+
+    await wrapper.get('[data-testid="export-content-plain"]').trigger('click');
+    expect(checked()).toEqual(['true', 'false']);
+    expect(wrapper.get('[data-testid="export-look"]').text()).toBe(
+      'Die LUT enthält nur die Farbkorrektur.',
+    );
+    await wrapper.get('[data-testid="export-download"]').trigger('click');
+    const [plainName, plainContent] = download.mock.calls[1] as [string, string, string];
+    expect(plainName).toBe('cam_gradr-33.cube');
+    const plain = parseCube(plainContent);
+    expect(plain.title).toBe('cam_gradr');
+    expect(plainContent).not.toContain('Look LUT');
+    // The look moved the colors 70 % of the way towards their inverse.
+    const first = Number(plain.lut.data[0]);
+    expect(looked.lut.data[0]).toBeCloseTo(first + 0.7 * (1 - 2 * first), 4);
+  });
+
+  it('points to the preview for a look LUT and goes there', async () => {
+    computeModel();
+    const wrapper = mount(ExportTab);
+    expect(wrapper.get('[data-testid="export-content-look"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[data-testid="export-look"]').text()).toBe(
+      'Eine Look-LUT wählst du in der Vorschau.',
+    );
+    await wrapper.get('[data-testid="export-look"] button').trigger('click');
+    expect(wrapper.emitted('goto')).toEqual([['preview']]);
+
+    await chooseInvert();
+    await wrapper.vm.$nextTick();
+    await wrapper.get('[data-testid="export-look"] button').trigger('click');
+    expect(wrapper.emitted('goto')).toEqual([['preview'], ['preview']]);
   });
 
   it('downloads a valid .cube file in the selected size', async () => {

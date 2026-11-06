@@ -21,6 +21,12 @@ const measurements: Record<string, Rgb> = Object.fromEntries(
 const { model } = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
 
 describe('formatCube', () => {
+  it('writes the notes into the header of the file', () => {
+    const text = formatCube(identityLut(2), 'Test', ['Look LUT: Warm.cube, strength 70 %']);
+    expect(text.split('\n', 2)[1]).toBe('# Look LUT: Warm.cube, strength 70 %');
+    expect(parseCube(text).lut.size).toBe(2);
+  });
+
   it('writes header and one line per grid point in .cube format', () => {
     const text = formatCube(identityLut(2), 'Test');
     const lines = text.trimEnd().split('\n');

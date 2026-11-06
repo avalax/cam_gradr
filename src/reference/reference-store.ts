@@ -5,24 +5,24 @@ import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
 import { t } from '../lang';
 import { APP_ID } from '../ui/app-info';
 import { downloadFile } from '../lut/download';
+import { createIndexedDbStorage } from '../storage/indexed-db';
+import type { NamedStorage } from '../storage/indexed-db';
 
 import { BUNDLED_FILE_NAME, BUNDLED_NAME, bundledReferenceText } from './bundled';
 import { parseReferenceFile, serializeReferenceJson } from './reference';
 import type { ReferenceSet } from './reference';
-import { createIndexedDbStorage } from './storage';
-import type { ReferenceStorage } from './storage';
 
 const rules = { knownIds: COLOR_IDS, neutralIds: NEUTRAL_IDS };
 
-const holder: { storage: ReferenceStorage | null } = { storage: null };
+const holder: { storage: NamedStorage<ReferenceSet> | null } = { storage: null };
 
 // Swap point for tests; in operation the browser's IndexedDB is used.
-export function setReferenceStorage(next: ReferenceStorage | null): void {
+export function setReferenceStorage(next: NamedStorage<ReferenceSet> | null): void {
   holder.storage = next;
 }
 
-function storage(): ReferenceStorage {
-  holder.storage ??= createIndexedDbStorage(indexedDB, APP_ID);
+function storage(): NamedStorage<ReferenceSet> {
+  holder.storage ??= createIndexedDbStorage(indexedDB, APP_ID, 'references');
   return holder.storage;
 }
 

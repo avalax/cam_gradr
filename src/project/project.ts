@@ -24,6 +24,11 @@ interface ChartState {
   rotated: boolean;
 }
 
+interface PreviewLook {
+  name: string;
+  strength: number;
+}
+
 export interface Project {
   format: typeof PROJECT_FORMAT;
   savedAt: string;
@@ -31,8 +36,9 @@ export interface Project {
   color: ChartState & { reference: string | null };
   // The computed correction model; reference values (manufacturer data) are deliberately not saved.
   model: ColorModel | null;
-  // Whether contrast and gamma were corrected too; files without the entry did (true).
-  preview: { split: number };
+  // Preview settings: the divider and the chosen look LUT by name and strength (percent), never
+  // its data; files without a look have no entry.
+  preview: { split: number; look?: PreviewLook };
   // Still images per tab; missing in files that were saved without images.
   stills?: Partial<Record<StillKey, EncodedFrame>>;
 }
@@ -174,6 +180,19 @@ function parsePercent(value: unknown, name: string): number {
   return value;
 }
 
+function parseLook(value: unknown): PreviewLook | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value) || typeof value.name !== 'string') {
+    throw new TypeError(t('project.errors.lookShape'));
+  }
+  return {
+    name: value.name,
+    strength: parsePercent(value.strength, t('project.errors.strengthName')),
+  };
+}
+
 function parseStill(value: unknown, key: string): EncodedFrame {
   const where = t('project.errors.stillWhere', { key });
   if (!isRecord(value) || value.encoding !== FRAME_ENCODING || typeof value.data !== 'string') {
@@ -236,6 +255,7 @@ export function parseProject(text: string): Project {
     throw new TypeError(t('project.errors.previewMissing'));
   }
   const stills = parseStills(raw.stills);
+  const look = parseLook(raw.preview.look);
   return {
     format: PROJECT_FORMAT,
     savedAt: typeof raw.savedAt === 'string' ? raw.savedAt : '',
@@ -244,6 +264,7 @@ export function parseProject(text: string): Project {
     model: parseModel(raw.model),
     preview: {
       split: parsePercent(raw.preview.split, t('project.errors.splitName')),
+      ...(look !== undefined && { look }),
     },
     ...(stills !== undefined && { stills }),
   };

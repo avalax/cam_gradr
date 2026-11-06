@@ -8,7 +8,8 @@
     "close": "Meldung schließen"
   },
   "notice": {
-    "missingReference": "Der Referenzsatz „{name}“ ist nicht vorhanden; importiere ihn in den Einstellungen, um den Bericht zu sehen. Vorschau und Export nutzen das gespeicherte Modell."
+    "missingReference": "Der Referenzsatz „{name}“ ist nicht vorhanden; importiere ihn in den Einstellungen, um den Bericht zu sehen. Vorschau und Export nutzen das gespeicherte Modell.",
+    "missingLook": "Die Look-LUT „{name}“ ist in diesem Browser nicht gespeichert; importiere sie in der Vorschau. Bis dahin zeigen Vorschau und Export die Korrektur ohne Look-LUT."
   },
   "errors": {
     "invalidJson": "Die Datei ist kein gültiges JSON",
@@ -43,6 +44,8 @@
     "frameUnreadable": "Ein Standbild in der Datei lässt sich nicht lesen",
     "frameWrongSize": "Ein Standbild in der Datei hat nicht die angegebene Größe",
     "saveFailed": "Das Projekt ließ sich nicht speichern: {reason}",
-    "openFailed": "Die Projektdatei ließ sich nicht öffnen: {reason}"
+    "openFailed": "Die Projektdatei ließ sich nicht öffnen: {reason}",
+    "lookShape": "Vorschau: die Look-LUT braucht name und strength",
+    "strengthName": "Stärke der Look-LUT"
   }
 }

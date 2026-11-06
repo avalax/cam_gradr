@@ -11,8 +11,10 @@ import { createCpuRenderer } from '../gl/cpu-renderer';
 import { createLutRenderer } from '../gl/lut-renderer';
 import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
+import { applyLook, blendLuts } from '../look/look';
+import { useLookStore } from '../look/look-store';
 import { buildLut } from '../lut/lut';
-import { usePreviewStore } from '../lut/preview-store';
+import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
@@ -30,6 +32,7 @@ import ColorTiles from './ColorTiles.vue';
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import GrayWedge from './GrayWedge.vue';
 import { attachStream, captureFromVideo } from './video-bindings';
+import LookBar from './LookBar.vue';
 import WipeDivider from './WipeDivider.vue';
 import WipeLabels from './WipeLabels.vue';
 
@@ -44,7 +47,8 @@ const solve = useSolveStore();
 const preview = usePreviewStore();
 const { stream, status, still } = storeToRefs(camera);
 const { model, result } = storeToRefs(solve);
-const { split } = storeToRefs(preview);
+const { split, look: lookName, strength, left } = storeToRefs(preview);
+const looks = useLookStore();
 const { measurements } = storeToRefs(useColorChartStore());
 const { selected } = storeToRefs(useReferenceStore());
 
@@ -96,7 +100,31 @@ const error = ref<string | null>(null);
 const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
-const lut = computed(() => (model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE)));
+const correctedLut = computed(() =>
+  model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE),
+);
+// The chosen look LUT in full over the correction. The strength only mixes the two, so that the
+// slider follows without delay.
+const fullLookLut = computed(() => {
+  const look = looks.find(lookName.value);
+  return look === null || correctedLut.value === null ? null : applyLook(correctedLut.value, look);
+});
+const lut = computed(() =>
+  correctedLut.value === null || fullLookLut.value === null
+    ? correctedLut.value
+    : blendLuts(correctedLut.value, fullLookLut.value, strength.value / FULL_STRENGTH),
+);
+// With a look the left side can show the correction without it instead of the camera image.
+const leftCorrected = computed(() => fullLookLut.value !== null && left.value === 'corrected');
+const leftLut = computed(() => (leftCorrected.value ? correctedLut.value : null));
+const leftLabel = computed(() =>
+  t(leftCorrected.value ? 'preview.labelCorrected' : 'preview.labelCamera'),
+);
+const rightLabel = computed(() =>
+  fullLookLut.value === null
+    ? t('preview.labelCorrected')
+    : t('preview.labelLook', { strength: strength.value }),
+);
 // Without a still image of its own, the preview shows the image the colors were measured on (as long
 // as the camera is off); a new capture or the live image replaces it.
 const shownStill = computed(
@@ -188,6 +216,7 @@ function setup(): void {
   if (lut.value !== null) {
     renderer.value.setLut(lut.value);
   }
+  renderer.value.setLeftLut(leftLut.value);
   stopLoop.value = startPreviewLoop(drawFrameToCanvas);
 }
 
@@ -211,6 +240,10 @@ watch(lut, (next) => {
   if (next !== null) {
     renderer.value?.setLut(next);
   }
+  stillChanged.value = true;
+});
+watch(leftLut, (next) => {
+  renderer.value?.setLeftLut(next);
   stillChanged.value = true;
 });
 watch(split, () => {
@@ -314,6 +347,9 @@ const splitModel = computed({
             <WipeLabels
               v-if="model !== null && hasSource"
               :split="splitModel"
+              :left-label="leftLabel"
+              :right-label="rightLabel"
+              :left-corrected="leftCorrected"
               class="rounded-t"
               data-testid="preview-labels"
             />
@@ -321,7 +357,7 @@ const splitModel = computed({
               <canvas
                 v-show="model !== null && hasSource"
                 ref="canvas"
-                class="w-full rounded-b bg-black"
+                class="w-full bg-black"
                 data-testid="preview-canvas"
               ></canvas>
               <WipeDivider
@@ -364,6 +400,7 @@ const splitModel = computed({
                 </button>
               </div>
             </div>
+            <LookBar v-if="model !== null && hasSource" />
           </div>
         </div>
 

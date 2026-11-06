@@ -11,22 +11,28 @@ void main() {
 }
 `;
 
-// Applies the 3D LUT to every pixel. uSplit separates before (left) and after (right).
+// Applies the 3D LUT to every pixel. uSplit separates before (left) and after (right); left of it
+// the original stays, or with uLeftCorrected the second LUT applies (the correction without look).
 export const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 precision highp sampler3D;
 uniform sampler2D uImage;
 uniform sampler3D uLut;
 uniform float uLutSize;
+uniform sampler3D uLeftLut;
+uniform float uLeftLutSize;
+uniform float uLeftCorrected;
 uniform float uSplit;
 in vec2 vUv;
 out vec4 outColor;
+vec3 lookup(sampler3D lut, float size, vec3 color) {
+  // Map to texel centers so that 0 and 1 hit exactly the first and last grid points.
+  return texture(lut, color * ((size - 1.0) / size) + 0.5 / size).rgb;
+}
 void main() {
   vec3 original = texture(uImage, vUv).rgb;
-  // Map to texel centers so that 0 and 1 hit exactly the first and last grid points.
-  vec3 coord = original * ((uLutSize - 1.0) / uLutSize) + 0.5 / uLutSize;
-  vec3 corrected = texture(uLut, coord).rgb;
-  outColor = vec4(vUv.x < uSplit ? original : corrected, 1.0);
+  vec3 left = uLeftCorrected > 0.5 ? lookup(uLeftLut, uLeftLutSize, original) : original;
+  outColor = vec4(vUv.x < uSplit ? left : lookup(uLut, uLutSize, original), 1.0);
 }
 `;
 
@@ -44,6 +50,8 @@ export interface LutRenderer {
   // Size of the drawing surface for an image source of this size.
   outputSize: (source: { width: number; height: number }) => { width: number; height: number };
   setLut: (lut: Lut) => void;
+  // LUT left of the split line; null leaves the original there.
+  setLeftLut: (lut: Lut | null) => void;
   render: (source: RenderSource, options: RenderOptions) => void;
   dispose: () => void;
 }
@@ -112,19 +120,47 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
   const vao = required(gl.createVertexArray(), t('preview.errors.vertexArray'));
   const imageTexture = required(gl.createTexture(), t('preview.errors.imageTexture'));
   const lutTexture = required(gl.createTexture(), t('preview.errors.lutTexture'));
+  const leftLutTexture = required(gl.createTexture(), t('preview.errors.lutTexture'));
   const uniforms = {
     image: gl.getUniformLocation(program, 'uImage'),
     lut: gl.getUniformLocation(program, 'uLut'),
     lutSize: gl.getUniformLocation(program, 'uLutSize'),
+    leftLut: gl.getUniformLocation(program, 'uLeftLut'),
+    leftLutSize: gl.getUniformLocation(program, 'uLeftLutSize'),
+    leftCorrected: gl.getUniformLocation(program, 'uLeftCorrected'),
     split: gl.getUniformLocation(program, 'uSplit'),
   };
   let lutSize = 2;
+  let leftLutSize = 2;
+  let leftCorrected = false;
 
   gl.bindTexture(gl.TEXTURE_2D, imageTexture);
   configureTexture(gl, gl.TEXTURE_2D);
-  gl.bindTexture(gl.TEXTURE_3D, lutTexture);
-  configureTexture(gl, gl.TEXTURE_3D);
-  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+  for (const texture of [lutTexture, leftLutTexture]) {
+    gl.bindTexture(gl.TEXTURE_3D, texture);
+    configureTexture(gl, gl.TEXTURE_3D);
+    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+  }
+
+  function upload(texture: WebGLTexture, lut: Lut): void {
+    gl.bindTexture(gl.TEXTURE_3D, texture);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    // The image upload in render() turns the flip on; a flipped LUT would swap the green axis.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    // 8 bits per channel are enough for the output and work everywhere, even with software GL.
+    gl.texImage3D(
+      gl.TEXTURE_3D,
+      0,
+      gl.RGBA8,
+      lut.size,
+      lut.size,
+      lut.size,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      toRgba8(lut),
+    );
+  }
 
   return {
     kind: 'webgl2',
@@ -133,23 +169,15 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
 
     setLut(lut: Lut): void {
       lutSize = lut.size;
-      gl.bindTexture(gl.TEXTURE_3D, lutTexture);
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      // The image upload in render() turns the flip on; a flipped LUT would swap the green axis.
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-      // 8 bits per channel are enough for the output and work everywhere, even with software GL.
-      gl.texImage3D(
-        gl.TEXTURE_3D,
-        0,
-        gl.RGBA8,
-        lut.size,
-        lut.size,
-        lut.size,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        toRgba8(lut),
-      );
+      upload(lutTexture, lut);
+    },
+
+    setLeftLut(lut: Lut | null): void {
+      leftCorrected = lut !== null;
+      if (lut !== null) {
+        leftLutSize = lut.size;
+        upload(leftLutTexture, lut);
+      }
     },
 
     render(source: RenderSource, options: RenderOptions): void {
@@ -163,9 +191,15 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_3D, lutTexture);
+      // Bound even when unused: two samplers of different types must not share a texture unit.
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_3D, leftLutTexture);
       gl.uniform1i(uniforms.image, 0);
       gl.uniform1i(uniforms.lut, 1);
+      gl.uniform1i(uniforms.leftLut, 2);
       gl.uniform1f(uniforms.lutSize, lutSize);
+      gl.uniform1f(uniforms.leftLutSize, leftLutSize);
+      gl.uniform1f(uniforms.leftCorrected, leftCorrected ? 1 : 0);
       gl.uniform1f(uniforms.split, options.split);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
@@ -173,6 +207,7 @@ export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
     dispose(): void {
       gl.deleteTexture(imageTexture);
       gl.deleteTexture(lutTexture);
+      gl.deleteTexture(leftLutTexture);
       gl.deleteVertexArray(vao);
       gl.deleteProgram(program);
     },
