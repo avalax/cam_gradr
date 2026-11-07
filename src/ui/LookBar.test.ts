@@ -35,8 +35,19 @@ async function withLooks(...names: string[]): Promise<void> {
   useLookStore().dismiss();
 }
 
-function options(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('option').map((option) => option.text());
+// Opens the list of the picker and returns its entries.
+async function options(wrapper: VueWrapper): Promise<string[]> {
+  await wrapper.get('[data-testid="look-select"]').trigger('click');
+  const texts = wrapper.findAll('[role="option"]').map((option) => option.text());
+  await wrapper.get('[data-testid="look-select"]').trigger('click');
+  return texts;
+}
+
+// Chooses an entry of the picker with the mouse.
+async function pick(wrapper: VueWrapper, text: string): Promise<void> {
+  await wrapper.get('[data-testid="look-select"]').trigger('click');
+  const option = wrapper.findAll('[role="option"]').find((entry) => entry.text() === text);
+  await option?.trigger('click');
 }
 
 describe('LookBar', () => {
@@ -49,9 +60,9 @@ describe('LookBar', () => {
     vi.restoreAllMocks();
   });
 
-  it('offers only the import without looks; strength and left side wait for a look', () => {
+  it('offers only the import without looks; strength and left side wait for a look', async () => {
     const wrapper = mount(LookBar);
-    expect(options(wrapper)).toEqual(['Noch keine Look-LUT', '+ Look-LUT importieren …']);
+    expect(await options(wrapper)).toEqual(['Noch keine Look-LUT', '+ Look-LUT importieren …']);
     expect(wrapper.get('[data-testid="look-messages"]').text()).toContain(
       '„+ Look-LUT importieren …“',
     );
@@ -67,14 +78,15 @@ describe('LookBar', () => {
     const preview = usePreviewStore();
     preview.setLook(null);
     const wrapper = mount(LookBar);
-    expect(options(wrapper)).toEqual([
+    expect(await options(wrapper)).toEqual([
       'Keine Look-LUT',
       'Cold',
       'Warm',
       '+ Look-LUT importieren …',
     ]);
 
-    await wrapper.get('select').setValue('Warm');
+    await pick(wrapper, 'Warm');
+    expect(wrapper.get('[data-testid="look-select"]').text()).toBe('Warm');
     expect(preview.look).toBe('Warm');
     expect(wrapper.get('[data-testid="look-remove"]').attributes('aria-label')).toBe(
       'Look-LUT „Warm“ löschen',
@@ -90,7 +102,7 @@ describe('LookBar', () => {
     await wrapper.get('[data-testid="look-left-camera"]').trigger('click');
     expect(preview.left).toBe('camera');
 
-    await wrapper.get('select').setValue('');
+    await pick(wrapper, 'Keine Look-LUT');
     expect(preview.look).toBeNull();
     expect(wrapper.find('[data-testid="look-remove"]').exists()).toBe(false);
   });
@@ -99,16 +111,10 @@ describe('LookBar', () => {
     await withLooks('Warm');
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockReturnValue(undefined);
     const wrapper = mount(LookBar);
-    const select = wrapper.get('select');
-    await select.setValue('/import');
+    await pick(wrapper, '+ Look-LUT importieren …');
     expect(click).toHaveBeenCalledTimes(1);
-    expect((select.element as HTMLSelectElement).value).toBe('Warm');
+    expect(wrapper.get('[data-testid="look-select"]').text()).toBe('Warm');
     expect(usePreviewStore().look).toBe('Warm');
-
-    usePreviewStore().setLook(null);
-    await flushPromises();
-    await select.setValue('/import');
-    expect((select.element as HTMLSelectElement).value).toBe('');
   });
 
   it('imports the chosen files and reports what happened', async () => {

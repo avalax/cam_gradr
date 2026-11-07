@@ -88,15 +88,22 @@ test.describe('Preview', () => {
     // A look LUT over the correction, imported through the last entry of the list: with the divider
     // on the left the whole image shows it, at half strength the inversion meets in the middle.
     await app.page.keyboard.press('Home');
+    const picker = app.page.getByTestId('look-select');
     const chooser = app.page.waitForEvent('filechooser');
-    await app.page.getByTestId('look-select').selectOption('/import');
+    await picker.click();
+    await app.page.getByRole('option', { name: '+ Look-LUT importieren …' }).click();
     const dialog = await chooser;
     await dialog.setFiles({
       name: 'Invert.cube',
       mimeType: 'text/plain',
       buffer: Buffer.from(INVERT_CUBE),
     });
-    await expect(app.page.getByTestId('look-select')).toHaveValue('Invert');
+    await expect(picker).toHaveText('Invert');
+    await expectPatch(app, RIGHT_PATCH, inverted(labToSrgb(dummyLab(RIGHT_PATCH))));
+    // Every step with the arrow keys applies at once.
+    await picker.press('ArrowUp');
+    await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
+    await picker.press('ArrowDown');
     await expectPatch(app, RIGHT_PATCH, inverted(labToSrgb(dummyLab(RIGHT_PATCH))));
     await app.page.getByTestId('look-strength').fill('50');
     await expectPatch(app, RIGHT_PATCH, [128, 128, 128]);

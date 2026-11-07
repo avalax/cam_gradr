@@ -7,15 +7,13 @@ import { useLookStore } from '../look/look-store';
 import type { LookMessage } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 
+import LookPicker from './LookPicker.vue';
+
 const { t } = useI18n();
 const looks = useLookStore();
 const preview = usePreviewStore();
 const { looks: list, messages } = storeToRefs(looks);
 const { strength, left } = storeToRefs(preview);
-
-// File names cannot contain a slash, so this value never collides with the name of a look.
-const IMPORT = '/import';
-const NONE = '';
 
 const file = useTemplateRef<HTMLInputElement>('file');
 const current = computed(() => looks.find(preview.look));
@@ -23,18 +21,15 @@ const strengthText = computed(() =>
   current.value === null ? '–' : t('look.percent', { value: strength.value }),
 );
 
-// The last entry of the list is an action: the list keeps the chosen look and the file dialog
-// opens.
-function onSelect(event: Event): void {
-  const select = event.target as HTMLSelectElement;
-  if (select.value === IMPORT) {
-    select.value = current.value?.name ?? NONE;
-    file.value?.click();
-    return;
-  }
-  looks.dismiss();
-  preview.setLook(select.value === NONE ? null : select.value);
-}
+const names = computed(() => list.value.map((look) => look.name));
+// The look chosen in the list; every change applies at once and clears the last messages.
+const chosen = computed({
+  get: () => current.value?.name ?? null,
+  set: (name: string | null) => {
+    looks.dismiss();
+    preview.setLook(name);
+  },
+});
 
 async function onFiles(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
@@ -88,18 +83,13 @@ const RELEASED = 'bg-zinc-50 text-zinc-800';
   >
     <div class="flex min-w-0 items-center gap-1.5">
       <label for="look-select" class="font-semibold">{{ t('look.label') }}</label>
-      <select
-        id="look-select"
-        class="min-w-0 max-w-60 flex-auto rounded border border-zinc-800 bg-white px-1 py-0.5 dark:bg-zinc-100"
-        :value="current?.name ?? NONE"
-        data-testid="look-select"
-        @change="onSelect"
-      >
-        <option :value="NONE">{{ t(list.length === 0 ? 'look.empty' : 'look.none') }}</option>
-        <option v-for="look in list" :key="look.name" :value="look.name">{{ look.name }}</option>
-        <hr />
-        <option :value="IMPORT">{{ t('look.import') }}</option>
-      </select>
+      <LookPicker
+        v-model="chosen"
+        :names="names"
+        :none-text="t(list.length === 0 ? 'look.empty' : 'look.none')"
+        :import-text="t('look.import')"
+        @import="file?.click()"
+      />
       <input
         ref="file"
         type="file"
