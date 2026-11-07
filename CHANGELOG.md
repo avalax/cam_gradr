@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.11.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.10.0...cam-gradr-v1.11.0) (2026-11-07)
+
+
+### Features
+
+* **project:** save the imported look LUTs in the project file ([#94](https://github.com/avalax/cam_gradr/issues/94)) ([a2bac52](https://github.com/avalax/cam_gradr/commit/a2bac52eb48f3fcdb8498783f4026c88456d10fd))
+* **ui:** switch the look LUT at once with the arrow keys ([#95](https://github.com/avalax/cam_gradr/issues/95)) ([cdf03c6](https://github.com/avalax/cam_gradr/commit/cdf03c625152196f0c59559385246b6bb8cf946b))
+* **ui:** switch the preview sides with a click on their labels ([#96](https://github.com/avalax/cam_gradr/issues/96)) ([6d30b92](https://github.com/avalax/cam_gradr/commit/6d30b92534a73419907a94c86b8e6b8022e6cd83))
+
 ## [1.10.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.9.0...cam-gradr-v1.10.0) (2026-11-06)
 
 
