@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import type { Rgb } from '../chart/types';
+import type { Corners, Rgb } from '../chart/types';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
@@ -17,23 +17,18 @@ import { cameraCode } from '../test-support/synthetic-camera';
 
 import ColorStep from './ColorStep.vue';
 
-const CORNERS = [
-  [100, 50],
-  [500, 50],
-  [500, 650],
-  [100, 650],
-  [700, 50],
-  [1100, 50],
-  [1100, 650],
-  [700, 650],
-] as const;
+// The two color cards side by side, 400 × 600 pixels each.
+const card = (x: number): Corners => [
+  { x, y: 50 },
+  { x: x + 400, y: 50 },
+  { x: x + 400, y: 650 },
+  { x, y: 650 },
+];
 
 // Sets corners and measurements as if a still image of the color cards had been evaluated.
 function prepareMeasurements() {
   const chart = useColorChartStore();
-  for (const [x, y] of CORNERS) {
-    chart.addCorner({ x, y });
-  }
+  chart.setCards([card(100), card(700)]);
   chart.measurements = Object.fromEntries(
     dummyIds().map((id): [string, Rgb] => [id, cameraCode(dummyLab(id))]),
   );
@@ -147,7 +142,7 @@ describe('ColorStep', () => {
     mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = useColorChartStore();
-    chart.addCorner({ x: 100, y: 50 });
+    chart.setCards([card(100)]);
     chart.measurements = { '1A': [0.5, 0.5, 0.5] };
     await flushPromises();
     expect(useSolveStore().result).toBeNull();

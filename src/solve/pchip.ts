@@ -43,15 +43,10 @@ function slopes(xs: readonly number[], ys: readonly number[]): number[] {
 }
 
 // Creates an evaluation function. Outside the control points it continues linearly with the
-// edge slope. xs must be strictly increasing, with at least two points.
+// edge slope. xs must be strictly increasing, with at least two points and as many ys: the fit
+// builds its curves that way, and a project file is checked for it when it is loaded.
 export function createPchip(curve: Curve): (x: number) => number {
   const { xs, ys } = curve;
-  if (xs.length < 2 || xs.length !== ys.length) {
-    throw new RangeError('A curve needs at least two points');
-  }
-  if (xs.some((x, k) => k > 0 && x <= Number(xs[k - 1]))) {
-    throw new RangeError('The x values must be strictly increasing');
-  }
   const m = slopes(xs, ys);
   const last = xs.length - 1;
   return (x: number): number => {

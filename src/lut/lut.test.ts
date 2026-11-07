@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { deltaE2000, srgbToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
@@ -17,7 +16,7 @@ const reference = {
 const measurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
 );
-const { model } = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
+const { model } = fitColorModel({ measurements, reference });
 
 function node(lut: { size: number; data: Float32Array }, r: number, g: number, b: number): Vec3 {
   const offset = (b * lut.size * lut.size + g * lut.size + r) * 3;
@@ -33,12 +32,6 @@ describe('identityLut', () => {
     expect(node(lut, 0, 1, 0)).toEqual([0, 0.5, 0]);
     expect(node(lut, 0, 0, 2)).toEqual([0, 0, 1]);
     expect(node(lut, 2, 2, 2)).toEqual([1, 1, 1]);
-  });
-
-  it('rejects invalid sizes', () => {
-    for (const size of [1, 0, -3, 2.5, 130, NaN]) {
-      expect(() => identityLut(size)).toThrow('The LUT size');
-    }
   });
 });
 

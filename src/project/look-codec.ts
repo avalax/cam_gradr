@@ -1,4 +1,5 @@
 import type { Vec3 } from '../color/lab';
+import { CHANNELS } from '../color/srgb';
 import { t } from '../lang';
 import type { LookLut } from '../look/look';
 
@@ -19,7 +20,6 @@ export interface EncodedLook {
 }
 
 const BYTES_PER_VALUE = 4;
-const CHANNELS = 3;
 
 export async function encodeLook(look: LookLut): Promise<EncodedLook> {
   const bytes = new Uint8Array(look.lut.data.length * BYTES_PER_VALUE);

@@ -1,4 +1,5 @@
 import type { Vec3 } from '../color/lab';
+import { CHANNELS } from '../color/srgb';
 import { t } from '../lang';
 import { MAX_SIZE, MIN_SIZE, sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
@@ -13,7 +14,6 @@ export interface LookLut {
   max: Vec3;
 }
 
-const CHANNELS = 3;
 const CUBE_EXTENSION = /\.cube$/i;
 // Names of conversions from the log curves of cameras (S-Log, LogC, V-Log, C-Log, F-Log, N-Log,
 // D-Log, Log3G). Such a LUT expects a log signal, a webcam delivers Rec.709 already.
@@ -189,11 +189,9 @@ export function blendLuts(base: Lut, looked: Lut, amount: number): Lut {
 
 // The same for a single color, as the export shows it in its slices.
 export function blendColor(base: Vec3, looked: Vec3, amount: number): Vec3 {
-  return base.map((value, axis) => value + amount * (looked[axis as 0 | 1 | 2] - value)) as [
-    number,
-    number,
-    number,
-  ];
+  return base.map(
+    (value, axis) => value + amount * (looked[axis as 0 | 1 | 2] - value),
+  ) as unknown as Vec3;
 }
 
 // Part of a file name for the look: lower case, without accents, other characters as hyphens.

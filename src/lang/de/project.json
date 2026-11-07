@@ -15,6 +15,7 @@
   "errors": {
     "invalidJson": "Die Datei ist kein gültiges JSON",
     "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\"",
+    "savedAt": "Der Zeitpunkt der Sicherung fehlt",
     "triple": "{where}: erwartet werden 3 Zahlen",
     "pointXY": "{where}: ein Eckpunkt braucht x und y",
     "unknownCard": "{where}: unbekannte Karte {key}",
@@ -23,7 +24,7 @@
     "unknownField": "{where}: unbekanntes Feld {id}",
     "fieldWhere": "{where}, Feld {id}",
     "fieldRange": "{where}, Feld {id}: Werte müssen zwischen 0 und 1 liegen",
-    "chartShape": "{where}: erwartet werden corners und measurements",
+    "chartShape": "{where}: erwartet werden corners, measurements und rotated",
     "chartGray": "Graukarten",
     "chartColor": "Farbkarten",
     "curveWhere": "Modell, Kurve {index}",

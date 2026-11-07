@@ -4,7 +4,6 @@ import { ref, shallowRef } from 'vue';
 import { useCameraStore } from '../camera/camera-store';
 import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import { NEUTRAL_IDS } from '../chart/layouts';
 import { t } from '../lang';
 import type { LookLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
@@ -87,11 +86,7 @@ async function applyCorrection(project: Project): Promise<string | null> {
   const reference = references.selected;
   if (reference !== null && reference.name === name) {
     // With reference values available, the error report can be recomputed.
-    solve.compute({
-      measurements: project.color.measurements,
-      reference,
-      neutralIds: NEUTRAL_IDS,
-    });
+    solve.compute({ measurements: project.color.measurements, reference });
   }
   if (solve.model === null && project.model !== null) {
     solve.loadModel(project.model);

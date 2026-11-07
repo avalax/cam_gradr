@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- the tests deliberately modify JSON without fixed types */
 import { describe, expect, it } from 'vitest';
 
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { fitColorModel } from '../solve/fit';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -17,7 +16,7 @@ const reference = {
 const measurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
 );
-const { model } = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
+const { model } = fitColorModel({ measurements, reference });
 
 function sample(): Project {
   return {
@@ -53,15 +52,13 @@ describe('parseProject', () => {
     expect(parseProject(text)).toEqual(sample());
   });
 
-  it('accepts a project without model, without reference and without date', () => {
+  it('accepts a project without model and without reference', () => {
     const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
     raw.model = null;
     raw.color.reference = null;
-    delete raw.savedAt;
     const project = parseProject(JSON.stringify(raw));
     expect(project.model).toBeNull();
     expect(project.color.reference).toBeNull();
-    expect(project.savedAt).toBe('');
   });
 
   it('reads older files with strength and ignores it', () => {
@@ -85,11 +82,14 @@ describe('parseProject', () => {
     expect(() => parseProject('{kaputt')).toThrow('kein gültiges JSON');
     expect(() => parseProject('[]')).toThrow('Unbekanntes Format');
     rejects((raw) => (raw.format = 'anderes/1'), 'Unbekanntes Format');
+    // Every version since 1.0.0 writes the time of saving.
+    rejects((raw) => delete raw.savedAt, 'Zeitpunkt der Sicherung fehlt');
   });
 
   it('rejects faulty chart sections', () => {
     rejects((raw) => delete raw.gray, 'Graukarten: erwartet werden');
     rejects((raw) => (raw.color.measurements = 5), 'Farbkarten: erwartet werden');
+    rejects((raw) => delete raw.gray.rotated, 'Graukarten: erwartet werden');
     rejects((raw) => (raw.gray.corners = { 1: [] }), 'unbekannte Karte 1');
     rejects((raw) => (raw.color.corners = { 3: [] }), 'unbekannte Karte 3');
     rejects((raw) => (raw.gray.corners = { 3: 'x' }), 'ungültige Eckpunktliste');

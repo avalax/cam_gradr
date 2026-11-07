@@ -1,3 +1,5 @@
+import { isRecord } from '../chart/layout';
+import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
 import type { Vec3 } from '../color/lab';
 import { t } from '../lang';
 
@@ -7,21 +9,10 @@ export interface ReferenceSet {
   patches: Readonly<Record<string, Vec3>>;
 }
 
-export interface ReferenceRules {
-  // Valid field IDs of the color cards.
-  knownIds: ReadonlySet<string>;
-  // Neutral fields (gray ramps) from which the tone curves are built.
-  neutralIds: ReadonlySet<string>;
-}
-
 const FORMAT = 'cam_gradr-reference/1';
 const MIN_PATCHES = 12;
 const MIN_NEUTRAL = 4;
 const MAX_ABS_AB = 160;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function toLab(values: readonly unknown[], where: string): Vec3 {
   const [l, a, b] = values;
@@ -40,11 +31,12 @@ function toLab(values: readonly unknown[], where: string): Vec3 {
   return lab;
 }
 
-// Checks the collected fields against the layout's rules and builds the data set.
-function build(name: string, entries: [string, Vec3][], rules: ReferenceRules): ReferenceSet {
+// Checks the collected fields against the color cards (known IDs, enough neutral fields for the
+// tone curves) and builds the data set.
+function build(name: string, entries: [string, Vec3][]): ReferenceSet {
   const patches: Record<string, Vec3> = {};
   for (const [id, lab] of entries) {
-    if (!rules.knownIds.has(id)) {
+    if (!COLOR_IDS.has(id)) {
       throw new RangeError(t('reference.errors.unknownId', { id }));
     }
     if (Object.hasOwn(patches, id)) {
@@ -56,19 +48,14 @@ function build(name: string, entries: [string, Vec3][], rules: ReferenceRules): 
   if (ids.length < MIN_PATCHES) {
     throw new RangeError(t('reference.errors.tooFewPatches', { min: String(MIN_PATCHES) }));
   }
-  if (ids.filter((id) => rules.neutralIds.has(id)).length < MIN_NEUTRAL) {
+  if (ids.filter((id) => NEUTRAL_IDS.has(id)).length < MIN_NEUTRAL) {
     throw new RangeError(t('reference.errors.tooFewNeutral', { min: String(MIN_NEUTRAL) }));
   }
   return { name, patches };
 }
 
-export function parseReferenceJson(text: string, rules: ReferenceRules): ReferenceSet {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch (error) {
-    throw new SyntaxError(t('reference.errors.invalidJson'), { cause: error });
-  }
+// Checks a set in the JSON format that is already parsed (the bundled set is imported as such).
+export function parseReferenceData(raw: unknown): ReferenceSet {
   if (!isRecord(raw) || raw.format !== FORMAT || !Array.isArray(raw.patches)) {
     throw new TypeError(t('reference.errors.unknownFormat', { format: FORMAT }));
   }
@@ -85,7 +72,17 @@ export function parseReferenceJson(text: string, rules: ReferenceRules): Referen
     ];
   });
   const name = typeof raw.name === 'string' && raw.name.trim() !== '' ? raw.name.trim() : 'Import';
-  return build(name, entries, rules);
+  return build(name, entries);
+}
+
+export function parseReferenceJson(text: string): ReferenceSet {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    throw new SyntaxError(t('reference.errors.invalidJson'), { cause: error });
+  }
+  return parseReferenceData(raw);
 }
 
 function detectDelimiter(line: string): string {
@@ -99,11 +96,7 @@ function detectDelimiter(line: string): string {
 
 // CSV with columns id, L, a, b (separator semicolon, tab or comma; optional header row).
 // With semicolon or tab the decimal comma is also allowed.
-export function parseReferenceCsv(
-  text: string,
-  fileName: string,
-  rules: ReferenceRules,
-): ReferenceSet {
+export function parseReferenceCsv(text: string, fileName: string): ReferenceSet {
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -129,7 +122,7 @@ export function parseReferenceCsv(
       entries.push([id, toLab(values, where)]);
     }
   }
-  return build(fileName.replace(/\.[^.]*$/, '') || 'Import', entries, rules);
+  return build(fileName.replace(/\.[^.]*$/, '') || 'Import', entries);
 }
 
 // Writes a set in the JSON format that can be imported again.
@@ -140,11 +133,7 @@ export function serializeReferenceJson(set: ReferenceSet): string {
 }
 
 // Chooses the format by file extension or content.
-export function parseReferenceFile(
-  fileName: string,
-  text: string,
-  rules: ReferenceRules,
-): ReferenceSet {
+export function parseReferenceFile(fileName: string, text: string): ReferenceSet {
   const isJson = fileName.toLowerCase().endsWith('.json') || text.trimStart().startsWith('{');
-  return isJson ? parseReferenceJson(text, rules) : parseReferenceCsv(text, fileName, rules);
+  return isJson ? parseReferenceJson(text) : parseReferenceCsv(text, fileName);
 }

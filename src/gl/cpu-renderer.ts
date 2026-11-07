@@ -1,3 +1,4 @@
+import { MAX_CODE, toByte } from '../color/srgb';
 import { sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
 import { t } from '../lang';
@@ -6,7 +7,7 @@ import type { LutRenderer, RenderSource } from './lut-renderer';
 
 // Software rendering on the CPU for browsers without WebGL2: lower resolution, runs anywhere.
 export const CPU_MAX_WIDTH = 480;
-const BYTE_MAX = 255;
+// The pixels of a canvas are RGBA.
 const CHANNELS = 4;
 
 function context2d(canvas: HTMLCanvasElement, willReadFrequently: boolean) {
@@ -17,11 +18,8 @@ function context2d(canvas: HTMLCanvasElement, willReadFrequently: boolean) {
   return context;
 }
 
-function toByte(value: number): number {
-  return Math.round(Math.min(Math.max(value, 0), 1) * BYTE_MAX);
-}
-
-// Same effect as the shader (LUT, strength, split line), computed pixel by pixel on the CPU.
+// Same effect as the shader (the LUT, and left of the split line the original or the left LUT),
+// computed pixel by pixel on the CPU.
 export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
   const output = context2d(canvas, false);
   const scratchCanvas = document.createElement('canvas');
@@ -65,9 +63,9 @@ export function createCpuRenderer(canvas: HTMLCanvasElement): LutRenderer {
               continue;
             }
             const offset = (y * width + x) * CHANNELS;
-            const r = Number(pixels[offset]) / BYTE_MAX;
-            const g = Number(pixels[offset + 1]) / BYTE_MAX;
-            const b = Number(pixels[offset + 2]) / BYTE_MAX;
+            const r = Number(pixels[offset]) / MAX_CODE;
+            const g = Number(pixels[offset + 1]) / MAX_CODE;
+            const b = Number(pixels[offset + 2]) / MAX_CODE;
             const [cr, cg, cb] = sampleLut(applied, [r, g, b]);
             pixels[offset] = toByte(cr);
             pixels[offset + 1] = toByte(cg);

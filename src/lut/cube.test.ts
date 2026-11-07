@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { fitColorModel } from '../solve/fit';
 import { parseCube } from '../test-support/cube-parse';
@@ -18,7 +17,7 @@ const reference = {
 const measurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
 );
-const { model } = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
+const { model } = fitColorModel({ measurements, reference });
 
 describe('formatCube', () => {
   it('writes the notes into the header of the file', () => {

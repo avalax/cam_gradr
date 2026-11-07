@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Frame } from '../camera/frame';
+
 import { exposureInput, measureChart } from './measure';
-import type { ChartLayout, Corners, PixelGrid, Rgb } from './types';
+import type { ChartLayout, Corners, Rgb } from './types';
 
 const layout: ChartLayout = {
   cards: [
@@ -11,16 +13,15 @@ const layout: ChartLayout = {
 };
 
 // 200x100 image: left half bright (chart 3), right half dark (chart 4).
-const grid: PixelGrid = (() => {
-  const data = new Uint8ClampedArray(200 * 100 * 4);
+const grid: Frame = (() => {
+  const data = new Float32Array(200 * 100 * 3);
   for (let y = 0; y < 100; y++) {
     for (let x = 0; x < 200; x++) {
-      const value = x < 100 ? 200 : 100;
-      const offset = (y * 200 + x) * 4;
-      data.set([value, value, value, 255], offset);
+      const value = (x < 100 ? 200 : 100) / 255;
+      data.set([value, value, value], (y * 200 + x) * 3);
     }
   }
-  return { width: 200, height: 100, data, channels: 4, maxValue: 255 };
+  return { width: 200, height: 100, data };
 })();
 
 const cardAt = (x: number): Corners => [

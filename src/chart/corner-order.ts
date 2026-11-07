@@ -1,7 +1,7 @@
 import type { Corners, Point } from './types';
 
-// Puts four clicked corners into the order top left, top right, bottom right,
-// bottom left (clockwise), regardless of the order in which they were set.
+// Puts four corners into the order top left, top right, bottom right, bottom left (clockwise),
+// whatever their order in the list: a corner can be dragged past its neighbor.
 export function sortCorners(points: readonly [Point, Point, Point, Point]): Corners {
   const centre = {
     x: points.reduce((sum, p) => sum + p.x, 0) / points.length,

@@ -1,5 +1,6 @@
-// Languages of the user interface. To add a language: create `<code>.json` in this folder and register
-// it here and in `index.ts`. The test `messages.test.ts` checks that all languages have the same keys.
+// Languages of the user interface. To add a language: create the folder `<code>/` with one JSON file
+// per area, as `en/` has them, and register it here and in `index.ts`. The test `messages.test.ts`
+// checks that all languages have the same keys.
 export const SUPPORTED_LOCALES = ['en', 'de'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 

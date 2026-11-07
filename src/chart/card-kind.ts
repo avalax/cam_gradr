@@ -1,4 +1,5 @@
 import type { Measurements } from './measure';
+import { median } from './sample';
 import type { Rgb } from './types';
 
 // Which kind of cards a step expects.
@@ -14,14 +15,6 @@ const COLORED = 0.2;
 const COLOR_CARDS_SHARE = 0.25;
 // Lowest share of a channel taken as the cast, so that the division stays defined.
 const MIN_CAST = 0.01;
-
-function median(values: readonly number[]): number {
-  const sorted = values.toSorted((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (Number(sorted[middle - 1]) + Number(sorted[middle])) / 2
-    : Number(sorted[middle]);
-}
 
 function saturation([r, g, b]: Rgb): number {
   const max = Math.max(r, g, b);

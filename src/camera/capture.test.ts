@@ -1,28 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { captureAveraged } from './capture';
+import type { RawFrame } from './frame';
 
 describe('captureAveraged', () => {
-  it('captures count frames and waits between the frames', async () => {
-    const grab = vi.fn(() => ({ width: 1, height: 1, data: [255, 0, 0, 255] }));
+  it('averages eight frames and waits for the next frame between them', async () => {
+    const grab = vi
+      .fn<() => RawFrame>()
+      .mockReturnValueOnce({ width: 1, height: 1, data: [255, 0, 0, 255] })
+      .mockReturnValue({ width: 1, height: 1, data: [0, 0, 0, 255] });
     const nextFrame = vi.fn(() => Promise.resolve());
-    const frame = await captureAveraged({ grab, nextFrame }, 3);
-    expect(grab).toHaveBeenCalledTimes(3);
-    expect(nextFrame).toHaveBeenCalledTimes(2);
-    expect([...frame.data]).toEqual([1, 0, 0]);
-  });
-
-  it('does not wait for a single frame', async () => {
-    const nextFrame = vi.fn(() => Promise.resolve());
-    await captureAveraged(
-      { grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }), nextFrame },
-      1,
-    );
-    expect(nextFrame).not.toHaveBeenCalled();
-  });
-
-  it.each([0, -1, 1.5, NaN])('lehnt count %s ab', async (count) => {
-    const grabber = { grab: vi.fn(), nextFrame: vi.fn() };
-    await expect(captureAveraged(grabber, count)).rejects.toThrow(RangeError);
+    const frame = await captureAveraged({ grab, nextFrame });
+    expect(grab).toHaveBeenCalledTimes(8);
+    expect(nextFrame).toHaveBeenCalledTimes(7);
+    expect([...frame.data]).toEqual([1 / 8, 0, 0]);
   });
 });

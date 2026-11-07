@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 
+import type { Frame } from '../camera/frame';
+
 import { coloredShare, isExpectedKind } from './card-kind';
 import type { CardKind } from './card-kind';
 import { sortCorners } from './corner-order';
@@ -9,23 +11,14 @@ import type { ExposureResult } from './exposure';
 import { grayLayout, colorLayout } from './layouts';
 import { measureChart, exposureInput } from './measure';
 import type { Measurements } from './measure';
-import type { ChartLayout, Corners, PixelGrid, Point } from './types';
+import type { ChartLayout, Corners, Point } from './types';
 
-// Order of the gray cards when picking corners: left (50 %), then right (18 %).
-export const GRAY_CARD_ORDER = [3, 4] as const;
-// Order of the color charts: left (columns A–D), then right (columns E–H).
-const COLOR_CARD_ORDER = [1, 2] as const;
-export const CORNERS_PER_CARD = 4;
-
-interface CornerSlot {
-  card: number;
-  index: number;
-}
+const CORNERS_PER_CARD = 4;
 
 interface ChartStoreOptions {
   id: string;
+  // Its cards from left to right: gray cards 50 % then 18 %, color cards columns A–D then E–H.
   layout: ChartLayout;
-  cardOrder: readonly number[];
   // Pairs (darkest, brightest patch) of a chart: they let the app detect whether the charts are
   // held rotated by 180° (the dark patch is then at the bottom instead of the top).
   orientation: readonly (readonly [string, string])[];
@@ -62,6 +55,7 @@ function turned(upright: CornerMap, order: readonly number[]): CornerMap {
 
 // State for a chart group (charts, corners, measurements); one instance per step.
 function defineChartStore(options: ChartStoreOptions) {
+  const cardOrder = options.layout.cards.map((card) => card.card);
   return defineStore(options.id, () => {
     const points = ref<Record<number, Point[]>>({});
     const measurements = shallowRef<Measurements>({});
@@ -78,24 +72,17 @@ function defineChartStore(options: ChartStoreOptions) {
       return points.value[card] ?? [];
     }
 
-    // Next free corner in the fixed order, or null if everything is set.
-    const nextSlot = computed<CornerSlot | null>(() => {
-      for (const card of options.cardOrder) {
-        if (placed(card).length < CORNERS_PER_CARD) {
-          return { card, index: placed(card).length };
-        }
-      }
-      return null;
-    });
-
-    const ready = computed(() => nextSlot.value === null);
+    // All cards have their corners.
+    const ready = computed(() =>
+      cardOrder.every((card) => placed(card).length === CORNERS_PER_CARD),
+    );
 
     const uprightCorners = computed<CornerMap>(() => {
       const result: CornerMap = {};
-      for (const card of options.cardOrder) {
+      for (const card of cardOrder) {
         const [a, b, c, d] = placed(card);
         if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
-          // The order of the clicks does not matter: the corners are sorted automatically.
+          // Dragged corners can change places: they are sorted again.
           result[card] = sortCorners([a, b, c, d]);
         }
       }
@@ -103,15 +90,8 @@ function defineChartStore(options: ChartStoreOptions) {
     });
 
     const corners = computed<CornerMap>(() =>
-      rotated.value ? turned(uprightCorners.value, options.cardOrder) : uprightCorners.value,
+      rotated.value ? turned(uprightCorners.value, cardOrder) : uprightCorners.value,
     );
-
-    function addCorner(point: Point): void {
-      const slot = nextSlot.value;
-      if (slot !== null) {
-        points.value = { ...points.value, [slot.card]: [...placed(slot.card), point] };
-      }
-    }
 
     function moveCorner(card: number, index: number, point: Point): void {
       const list = placed(card);
@@ -126,7 +106,7 @@ function defineChartStore(options: ChartStoreOptions) {
     // Sets the corners of all charts at once (automatic detection), from left to right.
     function setCards(found: readonly Corners[]): void {
       points.value = Object.fromEntries(
-        options.cardOrder.map((card, index) => [card, [...(found[index] ?? [])]]),
+        cardOrder.map((card, index) => [card, [...(found[index] ?? [])]]),
       );
     }
 
@@ -187,7 +167,8 @@ function defineChartStore(options: ChartStoreOptions) {
       }
     }
 
-    // Measures the patches in the current image (for the gray cards also the room brightness).
+    // How clearly the patches of the orientation pairs run from dark to bright (positive) or the
+    // other way round (negative).
     function orientationScore(found: Measurements): number {
       let score = 0;
       for (const [dark, light] of options.orientation) {
@@ -200,30 +181,27 @@ function defineChartStore(options: ChartStoreOptions) {
       return score;
     }
 
-    // Measures in both orientations (upright and rotated by 180°) and takes the one in which the
-    // strip patches run from dark to bright; on a tie the previous orientation stays.
     // Which kind of cards is in the image? Judged by measuring the fields of the color cards at the
     // corners (color cards are colorful there, gray cards are not), in both orientations.
-    function expectedKind(grid: PixelGrid): boolean {
+    function expectedKind(frame: Frame): boolean {
       const upright = uprightCorners.value;
       if (Object.keys(upright).length === 0) {
         return true;
       }
-      const [first = -1, second = -1] = options.cardOrder;
+      const [first = -1, second = -1] = cardOrder;
       const share = (found: CornerMap): number =>
-        coloredShare(measureChart(colorLayout, { 1: found[first], 2: found[second] }, grid));
-      const best = Math.max(share(upright), share(turned(upright, options.cardOrder)));
+        coloredShare(measureChart(colorLayout, { 1: found[first], 2: found[second] }, frame));
+      const best = Math.max(share(upright), share(turned(upright, cardOrder)));
       return isExpectedKind(options.kind, best);
     }
 
-    function measure(grid: PixelGrid): void {
-      plausible.value = expectedKind(grid);
-      const straight = measureChart(options.layout, uprightCorners.value, grid);
-      const flipped = measureChart(
-        options.layout,
-        turned(uprightCorners.value, options.cardOrder),
-        grid,
-      );
+    // Measures the patches in the still image (for the gray cards also the room brightness), in
+    // both orientations (upright and rotated by 180°), and takes the one in which the strip patches
+    // run from dark to bright; on a tie the previous orientation stays.
+    function measure(frame: Frame): void {
+      plausible.value = expectedKind(frame);
+      const straight = measureChart(options.layout, uprightCorners.value, frame);
+      const flipped = measureChart(options.layout, turned(uprightCorners.value, cardOrder), frame);
       const better = orientationScore(flipped) - orientationScore(straight);
       rotated.value = better === 0 ? rotated.value : better > 0;
       measurements.value = rotated.value ? flipped : straight;
@@ -239,10 +217,8 @@ function defineChartStore(options: ChartStoreOptions) {
       exposure,
       plausible,
       rotated,
-      nextSlot,
       ready,
       corners,
-      addCorner,
       moveCorner,
       setCards,
       reset,
@@ -258,7 +234,6 @@ function defineChartStore(options: ChartStoreOptions) {
 export const useChartStore = defineChartStore({
   id: 'chart',
   layout: grayLayout,
-  cardOrder: GRAY_CARD_ORDER,
   kind: 'neutral',
   orientation: [
     ['S3-0', 'S3-5'],
@@ -270,7 +245,6 @@ export const useChartStore = defineChartStore({
 export const useColorChartStore = defineChartStore({
   id: 'chart-color',
   layout: colorLayout,
-  cardOrder: COLOR_CARD_ORDER,
   kind: 'colorful',
   // Gray ladder of the color charts: bright at the top (row 1), dark at the bottom (row 6).
   orientation: [

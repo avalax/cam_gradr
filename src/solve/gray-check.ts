@@ -1,5 +1,6 @@
+import { grayLayout } from '../chart/layouts';
 import type { Measurements } from '../chart/measure';
-import type { ChartLayout, Rgb } from '../chart/types';
+import type { Rgb } from '../chart/types';
 import { deltaE2000, srgbToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 
@@ -37,10 +38,9 @@ function check(
 export function checkGrayCards(
   model: ColorModel,
   measurements: Measurements,
-  layout: ChartLayout,
   exposureGain: number,
 ): GrayCheck[] {
-  return layout.cards.flatMap((card) =>
+  return grayLayout.cards.flatMap((card) =>
     card.patches.flatMap((patch) => {
       const measured = measurements[patch.id];
       return measured === undefined || patch.nominalLab === undefined

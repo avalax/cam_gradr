@@ -124,9 +124,9 @@ describe('useCameraStore', () => {
     fakeApi();
     const store = useCameraStore();
     const grab = vi.fn(() => ({ width: 1, height: 1, data: [255, 255, 255, 255] }));
-    await store.captureStill({ grab, nextFrame: () => Promise.resolve() }, 2);
+    await store.captureStill({ grab, nextFrame: () => Promise.resolve() });
     expect(store.still?.width).toBe(1);
-    expect(grab).toHaveBeenCalledTimes(2);
+    expect(grab).toHaveBeenCalledTimes(8);
     expect(store.errorMessage).toBeNull();
   });
 
@@ -139,7 +139,7 @@ describe('useCameraStore', () => {
       },
       nextFrame: () => Promise.resolve(),
     };
-    await store.captureStill(failing, 1);
+    await store.captureStill(failing);
     expect(store.errorMessage).toBe('Canvas kaputt');
     expect(store.still).toBeNull();
   });
@@ -154,7 +154,7 @@ describe('useCameraStore', () => {
       },
       nextFrame: () => Promise.resolve(),
     };
-    await store.captureStill(failing, 1);
+    await store.captureStill(failing);
     expect(store.errorMessage).toBe('Aufnahme fehlgeschlagen.');
   });
 
@@ -165,10 +165,10 @@ describe('useCameraStore', () => {
       grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }),
       nextFrame: () => Promise.resolve(),
     };
-    await store.captureStill(grabber, 1);
+    await store.captureStill(grabber);
     store.clearStill();
     expect(store.still).toBeNull();
-    await store.captureStill(grabber, 1);
+    await store.captureStill(grabber);
     await store.start();
     expect(store.still).toBeNull();
   });
@@ -180,11 +180,11 @@ describe('useCameraStore', () => {
       grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }),
       nextFrame: () => Promise.resolve(),
     };
-    await store.captureStill(grabber, 1);
+    await store.captureStill(grabber);
     const gray = store.still;
     store.swapStill('gray', 'color');
     expect(store.still).toBeNull();
-    await store.captureStill(grabber, 1);
+    await store.captureStill(grabber);
     const color = store.still;
     expect(color).not.toBe(gray);
     store.swapStill('color', 'gray');
@@ -205,7 +205,7 @@ describe('useCameraStore', () => {
     expect(store.still).toBeNull();
     // Without a still image in the tab being left, nothing is parked; discarding clears all.
     store.swapStill('color', 'gray');
-    await store.captureStill(grabber, 1);
+    await store.captureStill(grabber);
     store.discardStills();
     store.swapStill('gray', 'color');
     expect(store.still).toBeNull();
@@ -241,7 +241,7 @@ describe('useCameraStore', () => {
       const old = frame(0.2);
       store.still = old;
       await store.start();
-      await store.captureStill(grabber, 1);
+      await store.captureStill(grabber);
       const fresh = store.still;
       expect(fresh).not.toBeNull();
       store.stop();
@@ -325,13 +325,5 @@ describe('useCameraStore', () => {
     expect(shown(store)).toBeCloseTo(0.5);
     store.restoreStills({});
     expect(store.still).toBeNull();
-  });
-
-  it('uses the default number of frames', async () => {
-    fakeApi();
-    const store = useCameraStore();
-    const grab = vi.fn(() => ({ width: 1, height: 1, data: [0, 0, 0, 0] }));
-    await store.captureStill({ grab, nextFrame: () => Promise.resolve() });
-    expect(grab).toHaveBeenCalledTimes(8);
   });
 });

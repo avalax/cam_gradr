@@ -65,13 +65,13 @@ describe('test data', () => {
 describe('fitColorModel', () => {
   const reference = referenceSet();
   const measurements = measure(reference);
-  const result = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
+  const result = fitColorModel({ measurements, reference });
 
   it('reports the error separately for neutral patches and color patches', () => {
     const { neutral, color } = result.report;
-    expect(neutral?.count).toBe(NEUTRAL_IDS.size);
+    expect(neutral.count).toBe(NEUTRAL_IDS.size);
     expect(color?.count).toBe(dummyIds().length - NEUTRAL_IDS.size);
-    expect(neutral?.meanAfter).toBeLessThan(neutral?.meanBefore ?? 0);
+    expect(neutral.meanAfter).toBeLessThan(neutral.meanBefore);
     expect(color?.meanAfter).toBeLessThan(color?.meanBefore ?? 0);
   });
 
@@ -96,7 +96,6 @@ describe('fitColorModel', () => {
     const compressed = fitColorModel({
       measurements: { ...measure(real), ...ladder },
       reference: real,
-      neutralIds: NEUTRAL_IDS,
     });
     const brightest = compressed.report.patches.find((patch) => patch.id === '2E');
     expect(brightest?.after).toBeLessThan(8);
@@ -105,7 +104,7 @@ describe('fitColorModel', () => {
       '2D',
       '2E',
     ]);
-    expect(compressed.report.neutral?.meanAfter).toBeLessThan(3.5);
+    expect(compressed.report.neutral.meanAfter).toBeLessThan(3.5);
   });
 
   it('reports no indistinguishable neutral patches when the camera measures cleanly', () => {
@@ -117,10 +116,9 @@ describe('fitColorModel', () => {
     const gray = fitColorModel({
       measurements: measure(onlyNeutral),
       reference: onlyNeutral,
-      neutralIds: NEUTRAL_IDS,
     });
     expect(gray.report.color).toBeNull();
-    expect(gray.report.neutral?.count).toBe(NEUTRAL_IDS.size);
+    expect(gray.report.neutral.count).toBe(NEUTRAL_IDS.size);
   });
 
   it('largely undoes the known distortion of the artificial webcam', () => {
@@ -156,7 +154,7 @@ describe('fitColorModel', () => {
           ];
         }),
       );
-      const fit = fitColorModel({ measurements: skewed, reference, neutralIds: NEUTRAL_IDS });
+      const fit = fitColorModel({ measurements: skewed, reference });
       const matrixOnly = { curves: fit.model.curves, matrix: fit.model.matrix };
       const colorError = (model: typeof matrixOnly) => {
         const errors = fit.report.patches
@@ -221,7 +219,6 @@ describe('fitColorModel', () => {
     const contrasty = fitColorModel({
       measurements: { ...measure(reference), ...ladder },
       reference,
-      neutralIds: NEUTRAL_IDS,
     });
     // Shadows are brightened by at most the gain limit (in linear light), not several times over.
     for (const code of [0.05, 0.1, 0.2]) {
@@ -277,7 +274,6 @@ describe('fitColorModel', () => {
     const strong = fitColorModel({
       measurements: washed,
       reference: real,
-      neutralIds: NEUTRAL_IDS,
     });
     expect(strong.model.matrix.flat().some((value) => value < 0)).toBe(true);
     const corners: Vec3[] = [
@@ -349,7 +345,6 @@ describe('fitColorModel', () => {
     const fit = fitColorModel({
       measurements: measure(partial),
       reference: partial,
-      neutralIds: NEUTRAL_IDS,
     });
     expect(fit.report.meanAfter).toBeLessThan(fit.report.meanBefore);
   });
@@ -357,14 +352,14 @@ describe('fitColorModel', () => {
   it('ignores patches without a measurement', () => {
     const fewer = { ...measurements };
     delete fewer['1A'];
-    const fit = fitColorModel({ measurements: fewer, reference, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: fewer, reference });
     expect(fit.report.patches.some((entry) => entry.id === '1A')).toBe(false);
   });
 
   it('handles curves with duplicate measurements and anchors', () => {
     // White and a lighter step measure exactly the same (clipped), the black is above 0.
     const clipped = { ...measurements, '1E': [1, 1, 1] as Rgb, '1D': [1, 1, 1] as Rgb };
-    const { model } = fitColorModel({ measurements: clipped, reference, neutralIds: NEUTRAL_IDS });
+    const { model } = fitColorModel({ measurements: clipped, reference });
     for (const curve of model.curves) {
       expect(curve.ys.every((value) => Number.isFinite(value))).toBe(true);
       expect(
@@ -375,7 +370,7 @@ describe('fitColorModel', () => {
 
   it('uses a measured black at 0 without an additional anchor point', () => {
     const blackIsZero = { ...measurements, '6E': [0, 0, 0] as Rgb };
-    const fit = fitColorModel({ measurements: blackIsZero, reference, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: blackIsZero, reference });
     for (const curve of fit.model.curves) {
       expect(curve.xs[0]).toBe(0);
       expect(curve.xs.filter((x) => x === 0)).toHaveLength(1);
@@ -387,7 +382,7 @@ describe('fitColorModel', () => {
     const dark = Object.fromEntries(
       Object.entries(measurements).map(([id, code]) => [id, halve(code)]),
     );
-    const fit = fitColorModel({ measurements: dark, reference, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: dark, reference });
     const gray = halve(cameraCode(dummyLab('3D')));
     const corrected = applyColorModel(fit.model, gray);
     expect(Math.abs(corrected[1] - gray[1])).toBeLessThan(0.05);
@@ -404,8 +399,8 @@ describe('fitColorModel', () => {
     const exact = Object.fromEntries(
       Object.entries(real.patches).map(([id, lab]) => [id, labToSrgb(lab)]),
     );
-    const fit = fitColorModel({ measurements: exact, reference: real, neutralIds: NEUTRAL_IDS });
-    expect(fit.report.neutral?.meanAfter).toBeLessThan(0.5);
+    const fit = fitColorModel({ measurements: exact, reference: real });
+    expect(fit.report.neutral.meanAfter).toBeLessThan(0.5);
     expect(fit.report.meanAfter).toBeLessThan(0.5);
     for (const value of applyColorModel(fit.model, [1, 1, 1])) {
       expect(value).toBeCloseTo(1, 6);
@@ -418,7 +413,7 @@ describe('fitColorModel', () => {
     const exact = Object.fromEntries(
       Object.entries(real.patches).map(([id, lab]) => [id, labToSrgb(lab)]),
     );
-    const fit = fitColorModel({ measurements: exact, reference: real, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: exact, reference: real });
     for (const id of ['1F', '3F']) {
       const patch = fit.report.patches.find((entry) => entry.id === id);
       const linear = labToLinearSrgb(patch?.reference ?? [0, 0, 0]);
@@ -439,7 +434,7 @@ describe('fitColorModel', () => {
         return [id, labToSrgb(xyzD50ToLab(linearSrgbToXyzD50([r * 1.3, g * 1.3, b * 1.3])))];
       }),
     );
-    const fit = fitColorModel({ measurements: bright, reference: real, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: bright, reference: real });
     expect(fit.report.exposureGain).toBeGreaterThan(1.2);
     for (const patch of fit.report.patches) {
       expect(patch.reference[0]).toBeLessThanOrEqual(100);
@@ -460,7 +455,7 @@ describe('fitColorModel', () => {
         ) as unknown as Rgb,
       ]),
     );
-    const fit = fitColorModel({ measurements: tinted, reference: real, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: tinted, reference: real });
     for (const value of applyColorModel(fit.model, [1, 1, 1])) {
       expect(value).toBeCloseTo(1, 6);
     }
@@ -485,7 +480,7 @@ describe('fitColorModel', () => {
     for (const id of ['6E', '5E', '4E']) {
       crushed[id] = [0.002, 0.002, 0.002];
     }
-    const fit = fitColorModel({ measurements: crushed, reference, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: crushed, reference });
     for (const curve of fit.model.curves) {
       for (const [index, x] of curve.xs.entries()) {
         expect(Number(curve.ys[index])).toBeLessThanOrEqual(4 * x + 1e-9);
@@ -495,7 +490,7 @@ describe('fitColorModel', () => {
 
   it('survives a completely black camera image', () => {
     const black = Object.fromEntries(Object.keys(measurements).map((id) => [id, [0, 0, 0] as Rgb]));
-    const fit = fitColorModel({ measurements: black, reference, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: black, reference });
     for (const curve of fit.model.curves) {
       expect(curve.ys.every((value) => Number.isFinite(value))).toBe(true);
     }
@@ -517,22 +512,20 @@ describe('fitColorModel', () => {
     const fit = fitColorModel({
       measurements: measure(bright),
       reference: bright,
-      neutralIds: NEUTRAL_IDS,
     });
     expect(fit.report.patches).toHaveLength(12);
   });
 
   it('throws with too few patches or neutral patches', () => {
     const few = referenceSet(['1D', '2D', '3D']);
-    expect(() =>
-      fitColorModel({ measurements: measure(few), reference: few, neutralIds: NEUTRAL_IDS }),
-    ).toThrow('Zu wenige Messwerte');
+    expect(() => fitColorModel({ measurements: measure(few), reference: few })).toThrow(
+      'Zu wenige Messwerte',
+    );
     const colourOnly = referenceSet(dummyIds().filter((id) => !NEUTRAL_IDS.has(id)));
     expect(() =>
       fitColorModel({
         measurements: measure(colourOnly),
         reference: colourOnly,
-        neutralIds: NEUTRAL_IDS,
       }),
     ).toThrow('Zu wenige Messwerte');
   });
@@ -541,7 +534,7 @@ describe('fitColorModel', () => {
     const flat: Record<string, Rgb> = Object.fromEntries(
       dummyIds().map((id) => [id, [0.5, 0.5, 0.5]]),
     );
-    const fit = fitColorModel({ measurements: flat, reference, neutralIds: NEUTRAL_IDS });
+    const fit = fitColorModel({ measurements: flat, reference });
     for (const [index, row] of fit.model.matrix.entries()) {
       expect(row[index]).toBeGreaterThan(0.5);
     }

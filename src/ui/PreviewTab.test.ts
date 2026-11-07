@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import type { LookLut } from '../look/look';
 import { setLookStorage, useLookStore } from '../look/look-store';
@@ -53,7 +52,7 @@ function stillFrame() {
 }
 
 function computeModel() {
-  useSolveStore().compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
+  useSolveStore().compute({ measurements, reference });
 }
 
 // Scheduler for the draw cycle: runs can be triggered by hand.
@@ -369,7 +368,8 @@ describe('PreviewTab', () => {
     computeModel();
     await flushPromises();
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
-    useSolveStore().reset();
+    // A failed calculation leaves no model.
+    useSolveStore().compute({ measurements: {}, reference });
     await flushPromises();
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
   });

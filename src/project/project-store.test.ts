@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import type { LookLut } from '../look/look';
 import { setLookStorage, useLookStore } from '../look/look-store';
@@ -59,7 +58,6 @@ async function workedState(): Promise<string> {
   useSolveStore().compute({
     measurements: colorMeasurements,
     reference: references.selected ?? { name: '', patches: {} },
-    neutralIds: NEUTRAL_IDS,
   });
   usePreviewStore().setSplit(30);
   await useProjectStore().save();
