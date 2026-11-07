@@ -6,6 +6,7 @@ import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { NEUTRAL_IDS } from '../chart/layouts';
 import { t } from '../lang';
+import type { LookLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
 import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
@@ -16,11 +17,22 @@ import { openProjectFile, saveProjectFile } from './project-file';
 import type { FileDialogs, ProjectFile } from './project-file';
 import { PROJECT_FORMAT, parseProject, serializeProject } from './project';
 import type { Project } from './project';
+import { decodeLook, encodeLook } from './look-codec';
 
-// Checks the file and unpacks its still images before anything in the state changes.
-async function readProject(text: string): Promise<{ project: Project; stills: Stills | null }> {
+interface ReadProject {
+  project: Project;
+  stills: Stills | null;
+  looks: LookLut[];
+}
+
+// Checks the file and unpacks its still images and look LUTs before anything in the state changes.
+async function readProject(text: string): Promise<ReadProject> {
   const project = parseProject(text);
-  return { project, stills: await decodeStills(project) };
+  return {
+    project,
+    stills: await decodeStills(project),
+    looks: await Promise.all((project.looks ?? []).map((look) => decodeLook(look))),
+  };
 }
 
 // Replaces the still images; with saved images the live image is no longer needed.
@@ -52,15 +64,14 @@ function applyCharts(project: Project, withStills: boolean): void {
   preview.setStrength(project.preview.look?.strength ?? FULL_STRENGTH);
 }
 
-// The look LUT itself is not in the file: returns its name if this browser does not have it.
-async function missingLook(project: Project): Promise<string | null> {
-  const name = project.preview.look?.name;
-  if (name === undefined) {
-    return null;
-  }
+// Takes over the look LUTs saved in the file that this browser does not have yet, and returns the
+// name of the chosen look LUT if it is still missing.
+async function missingLook(project: Project, saved: readonly LookLut[]): Promise<string | null> {
   const looks = useLookStore();
   await looks.load();
-  return looks.find(name) === null ? name : null;
+  await looks.adopt(saved);
+  const name = project.preview.look?.name;
+  return name === undefined || looks.find(name) !== null ? null : name;
 }
 
 // Recomputes the correction with the selected reference set or uses the saved model.
@@ -129,6 +140,14 @@ function snapshot(withCorners: boolean): Project {
   };
 }
 
+// Adds all imported look LUTs with their data.
+async function attachLooks(project: Project): Promise<void> {
+  const { looks } = useLookStore();
+  if (looks.length > 0) {
+    project.looks = await Promise.all(looks.map((look) => encodeLook(look)));
+  }
+}
+
 export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 
 // Saving and loading the working state as a JSON file (without the manufacturers' reference values).
@@ -139,11 +158,14 @@ export const useProjectStore = defineStore('project', () => {
   const file = shallowRef<ProjectFile | null>(null);
 
   // Saves the working state; with `withStills` the tabs' still images are included in the file.
-  async function save(options?: { withStills: boolean }): Promise<void> {
+  async function save(options?: { withStills: boolean; withLooks?: boolean }): Promise<void> {
     error.value = null;
     notice.value = null;
     const withStills = options?.withStills === true;
     const project = snapshot(withStills);
+    if (options?.withLooks === true) {
+      await attachLooks(project);
+    }
     if (withStills) {
       const stills: NonNullable<Project['stills']> = {};
       for (const [key, frame] of Object.entries(useCameraStore().allStills())) {
@@ -165,7 +187,7 @@ export const useProjectStore = defineStore('project', () => {
   // came from, which saving suggests afterwards.
   async function load(text: string, source?: ProjectFile): Promise<void> {
     notice.value = null;
-    let read: { project: Project; stills: Stills | null };
+    let read: ReadProject;
     try {
       read = await readProject(text);
     } catch (error_) {
@@ -179,7 +201,7 @@ export const useProjectStore = defineStore('project', () => {
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
-    const look = await missingLook(read.project);
+    const look = await missingLook(read.project, read.looks);
     // There are no success messages; only a missing reference set or look LUT deserves a notice.
     const notices = [
       missing === null ? null : t('project.notice.missingReference', { name: missing }),

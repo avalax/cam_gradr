@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { useLookStore } from '../look/look-store';
 import { fileDialogs } from '../project/project-file';
 import { useProjectStore } from '../project/project-store';
 
@@ -11,9 +12,15 @@ const { t } = useI18n();
 const project = useProjectStore();
 // The still images show what the camera sees; the file then contains camera images.
 const withStills = ref(true);
+// The imported look LUTs go along, so that the project also works in another browser; the file
+// then contains the LUTs, which matters when passing it on. The checkbox shows as soon as one is
+// imported.
+const withLooks = ref(true);
+const looks = useLookStore();
+const anyLook = computed(() => looks.looks.length > 0);
 
 async function save(): Promise<void> {
-  await project.save({ withStills: withStills.value });
+  await project.save({ withStills: withStills.value, withLooks: anyLook.value && withLooks.value });
 }
 
 // Where the browser has the system dialogs (Chrome, Edge), the file is chosen there instead of in
@@ -43,6 +50,10 @@ async function onFile(event: Event): Promise<void> {
     <label class="flex items-start gap-2 text-xs text-zinc-600">
       <input v-model="withStills" type="checkbox" class="mt-0.5" data-testid="project-stills" />
       <span>{{ t('project.bar.stills') }}</span>
+    </label>
+    <label v-if="anyLook" class="flex items-start gap-2 text-xs text-zinc-600">
+      <input v-model="withLooks" type="checkbox" class="mt-0.5" data-testid="project-looks" />
+      <span>{{ t('project.bar.looks') }}</span>
     </label>
     <div class="flex flex-wrap items-center gap-2">
       <button

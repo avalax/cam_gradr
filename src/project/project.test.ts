@@ -149,6 +149,42 @@ describe('parseProject', () => {
     expect(JSON.parse(text).preview).toEqual({ split: 25, look: { name: 'Warm', strength: 70 } });
   });
 
+  it('reads the look LUTs saved along', () => {
+    const looks = [
+      {
+        name: 'Warm',
+        size: 2,
+        min: [0, 0, 0] as const,
+        max: [1, 1, 1] as const,
+        encoding: 'f32le-deflate-base64' as const,
+        data: 'eJw=',
+      },
+    ];
+    const project: Project = { ...sample(), looks };
+    expect(parseProject(serializeProject(project))).toEqual(project);
+  });
+
+  it('rejects broken look LUTs', () => {
+    const look = {
+      name: 'Warm',
+      size: 2,
+      min: [0, 0, 0],
+      max: [1, 1, 1],
+      encoding: 'f32le-deflate-base64',
+      data: '',
+    };
+    const withLook = (change: Record<string, unknown>) => (raw: Record<string, any>) => {
+      raw.looks = [{ ...look, ...change }];
+    };
+    rejects(withLook({ name: 5 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(withLook({ encoding: 'png' }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(withLook({ data: 5 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(withLook({ size: 1 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(withLook({ size: 130 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(withLook({ min: [0, 0] }), 'erwartet werden 3 Zahlen');
+    rejects((raw) => (raw.looks = 'Warm'), 'ungültig');
+  });
+
   it('rejects a faulty look LUT', () => {
     rejects((raw) => (raw.preview.look = 'Warm'), 'braucht name und strength');
     rejects((raw) => (raw.preview.look = { strength: 50 }), 'braucht name und strength');
