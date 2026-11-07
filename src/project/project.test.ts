@@ -1,22 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- the tests deliberately modify JSON without fixed types */
 import { describe, expect, it } from 'vitest';
 
-import type { Rgb } from '../chart/types';
-import { fitColorModel } from '../solve/fit';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { dummyLab } from '../test-support/dummy-reference';
+import { syntheticFit, syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import { PROJECT_FORMAT, parseProject, serializeProject } from './project';
 import type { Project } from './project';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
-const { model } = fitColorModel({ measurements, reference });
+const measurements = syntheticMeasurements();
+const { model } = syntheticFit();
 
 function sample(): Project {
   return {

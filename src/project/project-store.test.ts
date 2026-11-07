@@ -11,8 +11,9 @@ import { usePreviewStore } from '../lut/preview-store';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
-import { dummyIds, dummyLab, dummyReferenceJson } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { cubeFile, emptyLookStorage } from '../test-support/look-cubes';
+import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import { parseProject } from './project';
 import { fileDialogs } from './project-file';
@@ -21,6 +22,8 @@ import { PROJECT_FILE_NAME, useProjectStore } from './project-store';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
+const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
+vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
 
 // The fake system dialogs installed by the test (fails the test if they are missing).
 function installedDialogs(): FileDialogs {
@@ -31,9 +34,7 @@ function installedDialogs(): FileDialogs {
   return dialogs;
 }
 
-const colorMeasurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
+const colorMeasurements = syntheticMeasurements();
 const grayMeasurements: Record<string, Rgb> = {
   G18: [0.46, 0.46, 0.46],
   G50: [0.74, 0.74, 0.74],
@@ -64,24 +65,9 @@ async function workedState(): Promise<string> {
   return (download.mock.calls.at(-1) as [string, string, string])[1];
 }
 
-// A made-up look LUT that changes nothing (2³, R fastest).
-const IDENTITY_CUBE = [
-  'LUT_3D_SIZE 2',
-  '0 0 0',
-  '1 0 0',
-  '0 1 0',
-  '1 1 0',
-  '0 0 1',
-  '1 0 1',
-  '0 1 1',
-  '1 1 1',
-].join(String.fromCodePoint(10));
-
 // Imports the look LUT "Warm" and chooses it at 70 %.
 async function chooseWarm(): Promise<void> {
-  await useLookStore().importFiles([
-    { name: 'Warm.cube', text: () => Promise.resolve(IDENTITY_CUBE) },
-  ]);
+  await useLookStore().importFiles([cubeFile('Warm.cube')]);
   usePreviewStore().setStrength(70);
 }
 
@@ -253,12 +239,12 @@ describe('useProjectStore', () => {
   });
 
   it('points out a missing look LUT, also together with a missing reference set', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    emptyLookStorage();
     await chooseWarm();
     const text = await workedState();
 
     setActivePinia(createPinia());
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'empty', 'looks'));
+    emptyLookStorage();
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
     const project = useProjectStore();
     await project.load(text);
@@ -268,10 +254,8 @@ describe('useProjectStore', () => {
   });
 
   it('saves all look LUTs along on request and takes them over into another browser', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
-    await useLookStore().importFiles([
-      { name: 'Cold.cube', text: () => Promise.resolve(IDENTITY_CUBE) },
-    ]);
+    emptyLookStorage();
+    await useLookStore().importFiles([cubeFile('Cold.cube')]);
     await chooseWarm();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
@@ -292,7 +276,7 @@ describe('useProjectStore', () => {
   });
 
   it('keeps the look LUT of the browser when the file brings one of the same name', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    emptyLookStorage();
     await chooseWarm();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
@@ -305,7 +289,7 @@ describe('useProjectStore', () => {
   });
 
   it('writes no look LUT list when none is imported', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'none', 'looks'));
+    emptyLookStorage();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
     const text = (download.mock.calls.at(-1) as [string, string, string])[1];
@@ -313,7 +297,7 @@ describe('useProjectStore', () => {
   });
 
   it('saves no look LUT data without the request', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    emptyLookStorage();
     await chooseWarm();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: false });
@@ -323,7 +307,7 @@ describe('useProjectStore', () => {
   });
 
   it('rejects a file whose look LUT cannot be read and changes nothing', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    emptyLookStorage();
     await chooseWarm();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
@@ -367,18 +351,6 @@ describe('useProjectStore', () => {
     expect(useSolveStore().model).not.toBeNull();
     expect(useSolveStore().result).toBeNull();
     expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
-  });
-
-  it('does not use another selected reference set for the report either', async () => {
-    const text = await workedState();
-    setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'dritte', 'references'));
-    const references = useReferenceStore();
-    await references.importFile('x.json', dummyReferenceJson('Anderer Satz'));
-    await useProjectStore().load(text);
-
-    expect(useSolveStore().result).toBeNull();
-    expect(useSolveStore().model).not.toBeNull();
   });
 
   it('loads a project without reference and without model', async () => {

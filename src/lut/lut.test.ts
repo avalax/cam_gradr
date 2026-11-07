@@ -1,22 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Rgb } from '../chart/types';
 import { deltaE2000, srgbToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
-import { applyColorModel, fitColorModel } from '../solve/fit';
+import { applyColorModel } from '../solve/fit';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { cameraCode, syntheticFit } from '../test-support/synthetic-camera';
 
 import { buildLut, identityLut, sampleLut } from './lut';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
-const { model } = fitColorModel({ measurements, reference });
+const { model } = syntheticFit();
 
 function node(lut: { size: number; data: Float32Array }, r: number, g: number, b: number): Vec3 {
   const offset = (b * lut.size * lut.size + g * lut.size + r) * 3;

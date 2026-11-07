@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
+import { failingStorage } from '../test-support/failing-storage';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 
@@ -12,11 +13,6 @@ import type { ReferenceSet } from './reference';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
-
-function failingStorage(): NamedStorage<ReferenceSet> {
-  const fail = () => Promise.reject(new Error('kaputt'));
-  return { list: fail, save: fail, remove: fail };
-}
 
 describe('useReferenceStore', () => {
   let storage: NamedStorage<ReferenceSet>;
@@ -37,27 +33,15 @@ describe('useReferenceStore', () => {
     expect(store.sets).toHaveLength(1);
   });
 
-  it('imports, selects and saves a set locally', async () => {
+  it('imports, selects and saves a set locally, and reports the saving', async () => {
     const store = useReferenceStore();
+    expect(store.lastSaved).toBeNull();
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     expect(store.error).toBeNull();
     expect(store.selected?.name).toBe('Satz A');
+    expect(store.lastSaved).toBe('Satz A');
     const saved = await storage.list();
     expect(saved.map((set) => set.name)).toEqual(['Satz A']);
-  });
-
-  it('reports as soon as a set is saved locally', async () => {
-    const store = useReferenceStore();
-    expect(store.lastSaved).toBeNull();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    expect(store.lastSaved).toBe('Satz A');
-  });
-
-  it('reports no saving when the storage fails', async () => {
-    setReferenceStorage(failingStorage());
-    const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    expect(store.lastSaved).toBeNull();
   });
 
   it('reports as soon as a set is deleted locally', async () => {
@@ -66,13 +50,6 @@ describe('useReferenceStore', () => {
     expect(store.lastRemoved).toBeNull();
     await store.remove('Satz A');
     expect(store.lastRemoved).toBe('Satz A');
-  });
-
-  it('reports no deletion when the storage fails', async () => {
-    setReferenceStorage(failingStorage());
-    const store = useReferenceStore();
-    await store.remove('Satz A');
-    expect(store.lastRemoved).toBeNull();
   });
 
   it('loads saved sets in addition to the bundled one and preselects it', async () => {
@@ -165,16 +142,19 @@ describe('useReferenceStore', () => {
     expect(await storage.list()).toEqual([]);
   });
 
-  it('continues with a warning when the storage fails', async () => {
+  it('continues with the bundled set and a warning when the storage fails', async () => {
     setReferenceStorage(failingStorage());
     const store = useReferenceStore();
     await store.load();
     expect(store.warning).toContain('geladen');
+    expect(store.selected?.name).toBe(BUNDLED_NAME);
     await store.importFile('a.json', dummyReferenceJson('Satz A'));
     expect(store.selected?.name).toBe('Satz A');
     expect(store.warning).toContain('nur für diese Sitzung');
+    expect(store.lastSaved).toBeNull();
     await store.remove('Satz A');
     expect(store.warning).toContain('gelöscht');
+    expect(store.lastRemoved).toBeNull();
   });
 
   it('uses the IndexedDB storage of the browser unless replaced', async () => {
@@ -186,14 +166,6 @@ describe('useReferenceStore', () => {
   });
 
   describe('mitgelieferter Satz', () => {
-    it('is available even without working storage', async () => {
-      setReferenceStorage(failingStorage());
-      const store = useReferenceStore();
-      await store.load();
-      expect(store.warning).not.toBeNull();
-      expect(store.selected?.name).toBe(BUNDLED_NAME);
-    });
-
     it('is replaced by a custom set of the same name', async () => {
       await storage.save({ name: BUNDLED_NAME, patches: { '1A': [50, 0, 0] } });
       const store = useReferenceStore();

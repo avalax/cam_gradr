@@ -1,23 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Rgb } from '../chart/types';
-import { fitColorModel } from '../solve/fit';
 import { parseCube } from '../test-support/cube-parse';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { syntheticFit } from '../test-support/synthetic-camera';
 import { APP_VERSION } from '../ui/app-version';
 
 import { formatCube } from './cube';
 import { buildLut, identityLut } from './lut';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
-const { model } = fitColorModel({ measurements, reference });
+const { model } = syntheticFit();
 
 describe('formatCube', () => {
   it('writes the notes into the header of the file', () => {

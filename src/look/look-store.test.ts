@@ -5,34 +5,15 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { usePreviewStore } from '../lut/preview-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
+import { failingStorage } from '../test-support/failing-storage';
+import { IDENTITY_CUBE, cubeFile as file } from '../test-support/look-cubes';
 
 import { parseLookCube } from './look';
 import type { LookLut } from './look';
 import { setLookStorage, useLookStore } from './look-store';
 
-const IDENTITY = [
-  'LUT_3D_SIZE 2',
-  '0 0 0',
-  '1 0 0',
-  '0 1 0',
-  '1 1 0',
-  '0 0 1',
-  '1 0 1',
-  '0 1 1',
-  '1 1 1',
-];
-
-function file(name: string, text = IDENTITY.join('\n')) {
-  return { name, text: () => Promise.resolve(text) };
-}
-
 function look(name: string): LookLut {
-  return parseLookCube(`${name}.cube`, IDENTITY.join('\n'));
-}
-
-function failingStorage(): NamedStorage<LookLut> {
-  const fail = () => Promise.reject(new Error('gesperrt'));
-  return { list: fail, save: fail, remove: fail };
+  return parseLookCube(`${name}.cube`, IDENTITY_CUBE);
 }
 
 describe('useLookStore', () => {
