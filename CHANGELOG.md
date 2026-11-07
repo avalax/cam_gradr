@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.11.1...cam-gradr-v1.11.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **ui:** name the shown sides at the divider and translate camera fallbacks ([#100](https://github.com/avalax/cam_gradr/issues/100)) ([cfaa275](https://github.com/avalax/cam_gradr/commit/cfaa275d94cbebcbeda4e3fdd72094547689e0a2))
+
 ## [1.11.1](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.11.0...cam-gradr-v1.11.1) (2026-11-07)
 
 
