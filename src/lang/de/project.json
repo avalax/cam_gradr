@@ -2,7 +2,8 @@
   "bar": {
     "stills": "Standbilder mitspeichern (die Datei enthält dann Kamerabilder)",
     "save": "Projekt speichern",
-    "load": "Projekt laden"
+    "load": "Projekt laden",
+    "looks": "Look-LUTs mitspeichern (die Datei enthält dann alle importierten LUTs)"
   },
   "status": {
     "close": "Meldung schließen"
@@ -46,6 +47,9 @@
     "saveFailed": "Das Projekt ließ sich nicht speichern: {reason}",
     "openFailed": "Die Projektdatei ließ sich nicht öffnen: {reason}",
     "lookShape": "Vorschau: die Look-LUT braucht name und strength",
-    "strengthName": "Stärke der Look-LUT"
+    "strengthName": "Stärke der Look-LUT",
+    "lookData": "Die gespeicherten Look-LUTs sind ungültig",
+    "lookUnreadable": "Die gespeicherte Look-LUT „{name}“ lässt sich nicht lesen",
+    "lookWrongSize": "Die gespeicherte Look-LUT „{name}“ hat nicht die angegebene Größe"
   }
 }
