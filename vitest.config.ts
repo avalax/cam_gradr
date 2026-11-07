@@ -12,7 +12,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text'],
       include: ['src/**/*.{ts,vue}'],
-      // Narrowly scoped exclusions: only the entry point and pure type declarations.
+      // Not counted: the entry point, type declarations, the tests with their helpers and the bundled data.
       exclude: [
         'src/main.ts',
         'src/**/*.test.ts',

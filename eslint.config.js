@@ -55,7 +55,7 @@ export default tseslint.config(
         'error',
         { varsIgnorePattern: '^_', argsIgnorePattern: '^_', ignoreRestSiblings: true },
       ],
-      // Early returns create unreachable guard branches that needlessly burden the 99 % coverage.
+      // Early returns create unreachable guard branches that needlessly burden the 100 % coverage.
       'unicorn/prefer-early-return': 'off',
       // Purely stylistic rules that tend to get in the way of math/measurement code.
       'unicorn/prefer-continue': 'off',
