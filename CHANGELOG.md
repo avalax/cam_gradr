@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.11.0...cam-gradr-v1.11.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **ui:** draw the settings gear as a line icon ([#98](https://github.com/avalax/cam_gradr/issues/98)) ([c57c7fb](https://github.com/avalax/cam_gradr/commit/c57c7fb26ee8177fd500cbc54b8a180556e53036))
+
 ## [1.11.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.10.0...cam-gradr-v1.11.0) (2026-11-07)
 
 
