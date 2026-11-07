@@ -20,7 +20,6 @@ describe('useLanguageStore', () => {
     const store = useLanguageStore();
     store.choose('en');
     expect(store.preference).toBe('en');
-    expect(store.locale).toBe('en');
     expect(i18n.global.locale.value).toBe('en');
     expect(document.documentElement.lang).toBe('en');
     expect(localStorage.getItem('avalax.cam_gradr.language')).toBe('en');
@@ -38,7 +37,7 @@ describe('useLanguageStore', () => {
       store.choose('auto');
       expect(store.preference).toBe('auto');
       // No supported language in the browser: English.
-      expect(store.locale).toBe('en');
+      expect(i18n.global.locale.value).toBe('en');
     } finally {
       vi.unstubAllGlobals();
     }
@@ -59,7 +58,7 @@ describe('useLanguageStore', () => {
     setActivePinia(createPinia());
     const store = useLanguageStore();
     store.apply();
-    expect(store.locale).toBe('en');
+    expect(i18n.global.locale.value).toBe('en');
     expect(document.documentElement.lang).toBe('en');
   });
 });

@@ -2,7 +2,9 @@
   "title": "Einstellungen",
   "sections": {
     "camera": "Kamera",
-    "reference": "Referenzwerte"
+    "reference": "Referenzwerte",
+    "language": "Sprache",
+    "theme": "Darstellung"
   },
   "bundledSet": "Mitgelieferter Satz"
 }

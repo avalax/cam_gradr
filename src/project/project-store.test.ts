@@ -472,7 +472,6 @@ describe('the project file that saving suggests', () => {
   it('does not take the name of a faulty file', async () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}', { name: 'kaputt.json' });
-    expect(project.file).toBeNull();
     await project.save();
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe(PROJECT_FILE_NAME);
   });
@@ -489,25 +488,35 @@ describe('the project file that saving suggests', () => {
     const project = useProjectStore();
     await project.open(installedDialogs());
     expect(project.error).toBeNull();
-    expect(project.file).toEqual({ name: 'mein-projekt.json', handle: opened.handle });
     await project.save();
     expect(showSaveFilePicker).toHaveBeenCalledWith(
       expect.objectContaining({ suggestedName: 'mein-projekt.json', startIn: opened.handle }),
     );
     expect(chosen.written).toHaveLength(1);
-    expect(project.file?.handle).toBe(chosen.handle);
+    // The next save starts in the folder of the file just written.
+    await project.save();
+    expect(showSaveFilePicker).toHaveBeenLastCalledWith(
+      expect.objectContaining({ startIn: chosen.handle }),
+    );
   });
 
   it('keeps everything as it is when a dialog is cancelled', async () => {
     const abort = new DOMException('The user aborted a request.', 'AbortError');
+    const showSaveFilePicker = vi.fn().mockRejectedValue(abort);
     Object.assign(globals, {
       showOpenFilePicker: vi.fn().mockRejectedValue(abort),
-      showSaveFilePicker: vi.fn().mockRejectedValue(abort),
+      showSaveFilePicker,
     });
     const project = useProjectStore();
     await project.open(installedDialogs());
     await project.save();
-    expect(project.file).toBeNull();
+    await project.save();
+    // Neither dialog left a file behind: saving still suggests the default name, in no folder.
+    const [options] = showSaveFilePicker.mock.lastCall as [
+      { suggestedName: string; startIn?: FileSystemFileHandle },
+    ];
+    expect(options.suggestedName).toBe(PROJECT_FILE_NAME);
+    expect(options.startIn).toBeUndefined();
     expect(project.error).toBeNull();
   });
 

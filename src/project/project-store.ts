@@ -223,5 +223,5 @@ export const useProjectStore = defineStore('project', () => {
     notice.value = null;
   }
 
-  return { error, notice, file, save, load, open, dismiss };
+  return { error, notice, save, load, open, dismiss };
 });

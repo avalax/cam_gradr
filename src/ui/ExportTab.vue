@@ -70,6 +70,17 @@ const exportLook = computed<ExportLook | null>(() =>
     ? { name: chosen.value.name, strength: preview.strength }
     : null,
 );
+// The content the file really gets: without a look chosen in the preview it is the correction alone,
+// whatever `content` asks for.
+const contained = computed(() => (exportLook.value === null ? 'plain' : 'look'));
+// The line under the choice names the look in the file, the plain correction, or where to choose a
+// look.
+const lookLine = computed(() => {
+  if (exportLook.value !== null) {
+    return 'export.lut.lookLine';
+  }
+  return chosen.value === null ? 'export.lut.noLook' : 'export.lut.plainLine';
+});
 const sliceLook = computed(() =>
   exportLook.value === null || chosen.value === null
     ? null
@@ -80,10 +91,6 @@ const fileInfo = computed(
   () =>
     `${String(size.value)} × ${String(size.value)} × ${String(size.value)} · ${cubeSizeText(size.value)}`,
 );
-
-function onSize(next: number): void {
-  size.value = next;
-}
 
 function download(): void {
   const current = model.value;
@@ -134,11 +141,11 @@ function download(): void {
               role="radio"
               class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500"
               :class="
-                (exportLook === null ? 'plain' : 'look') === option
+                contained === option
                   ? 'bg-zinc-800 text-zinc-50'
                   : 'bg-white dark:bg-zinc-100 text-zinc-800'
               "
-              :aria-checked="(exportLook === null ? 'plain' : 'look') === option"
+              :aria-checked="contained === option"
               :disabled="model === null || (option === 'look' && chosen === null)"
               :data-testid="`export-content-${option}`"
               @click="content = option"
@@ -166,7 +173,7 @@ function download(): void {
               :aria-checked="size === option"
               :disabled="model === null"
               :data-testid="`export-size-${String(option)}`"
-              @click="onSize(option)"
+              @click="size = option"
             >
               {{
                 t(option === DEFAULT_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
@@ -176,37 +183,15 @@ function download(): void {
             </button>
           </div>
         </div>
-        <I18nT
-          v-if="exportLook !== null"
-          keypath="export.lut.lookLine"
-          tag="p"
-          class="text-xs text-zinc-700"
-          data-testid="export-look"
-        >
-          <template #name>{{ exportLook.name }}</template>
-          <template #strength>{{ exportLook.strength }}</template>
+        <I18nT :keypath="lookLine" tag="p" class="text-xs text-zinc-700" data-testid="export-look">
+          <template #name>{{ exportLook?.name }}</template>
+          <template #strength>{{ exportLook?.strength }}</template>
           <template #preview>
             <button type="button" class="underline" @click="emit('goto', 'preview')">
               {{ t('export.lut.previewLink') }}
             </button>
           </template>
         </I18nT>
-        <I18nT
-          v-else-if="chosen === null"
-          keypath="export.lut.noLook"
-          tag="p"
-          class="text-xs text-zinc-700"
-          data-testid="export-look"
-        >
-          <template #preview>
-            <button type="button" class="underline" @click="emit('goto', 'preview')">
-              {{ t('export.lut.previewLink') }}
-            </button>
-          </template>
-        </I18nT>
-        <p v-else class="text-xs text-zinc-700" data-testid="export-look">
-          {{ t('export.lut.plainLine') }}
-        </p>
         <LutSlices :model="model" :look="sliceLook" />
         <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
           <strong>{{ t('export.lut.noModelTitle') }}</strong> {{ t('export.lut.noModelText') }}

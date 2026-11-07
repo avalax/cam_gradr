@@ -27,10 +27,6 @@ const grayRows = computed(() =>
 );
 const grayOff = computed(() => props.grayCheck.some((check) => check.after > GRAY_WARN));
 
-function format(value: number): string {
-  return formatDecimal(value, 1);
-}
-
 // Per patch: target color, camera value and corrected value as color swatches including the error.
 const tiles = computed(() =>
   props.result.report.patches.map((patch) => ({
@@ -45,23 +41,23 @@ const tiles = computed(() =>
 <template>
   <section class="space-y-3" data-testid="report">
     <h3 class="text-base font-semibold">{{ t('report.title') }}</h3>
-    <dl class="grid grid-cols-3 gap-x-4 gap-y-1 text-sm" data-testid="report-summary">
+    <dl class="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
       <dt class="font-medium"></dt>
       <dt class="font-medium">{{ t('report.before') }}</dt>
       <dt class="font-medium">{{ t('report.after') }}</dt>
       <dd>{{ t('report.meanError') }}</dd>
-      <dd data-testid="mean-before">{{ format(result.report.meanBefore) }}</dd>
-      <dd data-testid="mean-after">{{ format(result.report.meanAfter) }}</dd>
+      <dd data-testid="mean-before">{{ formatDecimal(result.report.meanBefore) }}</dd>
+      <dd data-testid="mean-after">{{ formatDecimal(result.report.meanAfter) }}</dd>
       <dd>{{ t('report.maxError') }}</dd>
-      <dd data-testid="max-before">{{ format(result.report.maxBefore) }}</dd>
-      <dd data-testid="max-after">{{ format(result.report.maxAfter) }}</dd>
+      <dd data-testid="max-before">{{ formatDecimal(result.report.maxBefore) }}</dd>
+      <dd data-testid="max-after">{{ formatDecimal(result.report.maxAfter) }}</dd>
       <dd>{{ t('report.neutralMean', { count: result.report.neutral.count }) }}</dd>
-      <dd data-testid="neutral-before">{{ format(result.report.neutral.meanBefore) }}</dd>
-      <dd data-testid="neutral-after">{{ format(result.report.neutral.meanAfter) }}</dd>
+      <dd>{{ formatDecimal(result.report.neutral.meanBefore) }}</dd>
+      <dd data-testid="neutral-after">{{ formatDecimal(result.report.neutral.meanAfter) }}</dd>
       <template v-if="result.report.color !== null">
         <dd>{{ t('report.colorMean', { count: result.report.color.count }) }}</dd>
-        <dd data-testid="color-before">{{ format(result.report.color.meanBefore) }}</dd>
-        <dd data-testid="color-after">{{ format(result.report.color.meanAfter) }}</dd>
+        <dd data-testid="color-before">{{ formatDecimal(result.report.color.meanBefore) }}</dd>
+        <dd>{{ formatDecimal(result.report.color.meanAfter) }}</dd>
       </template>
     </dl>
 
@@ -84,8 +80,8 @@ const tiles = computed(() =>
           {{
             t('report.grayRow', {
               name: row.name,
-              before: format(row.before),
-              after: format(row.after),
+              before: formatDecimal(row.before),
+              after: formatDecimal(row.after),
             })
           }}
         </li>
@@ -108,8 +104,8 @@ const tiles = computed(() =>
         :title="
           t('report.tileTitle', {
             id: tile.id,
-            before: format(tile.before),
-            after: format(tile.after),
+            before: formatDecimal(tile.before),
+            after: formatDecimal(tile.after),
           })
         "
       >
@@ -121,8 +117,8 @@ const tiles = computed(() =>
         <span class="mt-1 block">{{
           t('report.tileLabel', {
             id: tile.id,
-            before: format(tile.before),
-            after: format(tile.after),
+            before: formatDecimal(tile.before),
+            after: formatDecimal(tile.after),
           })
         }}</span>
       </li>

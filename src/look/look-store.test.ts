@@ -144,7 +144,8 @@ describe('useLookStore', () => {
     await store.importFiles([file('Warm.cube')]);
     await store.remove('Warm');
     await store.importFiles([file('Cold.cube')]);
-    expect(store.removed).toBeNull();
+    await store.undo();
+    expect(store.looks.map((entry) => entry.name)).toEqual(['Cold']);
     store.dismiss();
     expect(store.messages).toEqual([]);
   });

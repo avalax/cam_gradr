@@ -5,14 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type { ExposureResult } from '../chart/exposure';
 
 import type { Edge } from './measure-field';
-import {
-  detailCaption,
-  detailRows,
-  fieldHint,
-  fieldPosition,
-  mainIssue,
-  okBox,
-} from './measure-field';
+import { detailRows, fieldHint, fieldPosition, mainIssue, okBox } from './measure-field';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
 const { t } = useI18n();
@@ -46,7 +39,6 @@ const boxStyle = {
   width: `${String(box.width)}%`,
   height: `${String(box.height)}%`,
 };
-const caption = computed(() => detailCaption());
 const hint = computed(() => fieldHint(props.exposure));
 const issue = computed(() => mainIssue(props.exposure));
 const markerStyle = computed(() => {
@@ -113,7 +105,10 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
         data-testid="measure-details"
       >
         <p class="font-medium" data-testid="measure-hint">{{ hint }}</p>
-        <p v-if="rows.length > 0" class="mt-2 text-xs text-slate-300">{{ caption }}</p>
+        <!-- The percentages are brightness values in the camera image. -->
+        <p v-if="rows.length > 0" class="mt-2 text-xs text-slate-300">
+          {{ t('measure.caption') }}
+        </p>
         <dl v-if="rows.length > 0" class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
           <template v-for="row in rows" :key="row.label">
             <dt class="text-slate-300">{{ row.label }}</dt>

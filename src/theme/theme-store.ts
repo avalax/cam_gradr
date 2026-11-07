@@ -41,5 +41,5 @@ export const useThemeStore = defineStore('theme', () => {
     render();
   }
 
-  return { preference, theme, summary, choose, apply };
+  return { preference, summary, choose, apply };
 });

@@ -2,7 +2,6 @@
   "intro": "The preview shows the camera image with the calculated color correction. Left of the divider you see the original, right of it the corrected image. You can drag the line in the image or move it with the arrow keys. The camera icon at the top right of the image takes a still image and switches the camera off.",
   "capture": "Take still image",
   "captureTitle": "Take a still image and switch the camera off",
-  "toolbar": "Image actions",
   "rendererWebgl": "Rendering: graphics card (WebGL2)",
   "rendererCpu": "Rendering: software, downscaled (WebGL2 not available)",
   "noModelTitle": "No color correction yet",

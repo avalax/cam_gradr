@@ -5,8 +5,10 @@ import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 import { RESOLUTIONS } from '../camera/types';
+import type { Resolution } from '../camera/types';
 
 import { cameraName } from './camera-name';
+import ChoiceChips from './ChoiceChips.vue';
 
 const { t } = useI18n();
 const store = useCameraStore();
@@ -14,17 +16,19 @@ const { devices, selectedDeviceId, resolution, status, actual } = storeToRefs(st
 
 const isStarting = computed(() => status.value === 'starting');
 
-function keyOf(r: { width: number; height: number }): string {
+function keyOf(r: Resolution): string {
   return `${String(r.width)}x${String(r.height)}`;
 }
+
+const resolutions = RESOLUTIONS.map((r) => ({
+  key: keyOf(r),
+  value: r,
+  label: `${String(r.width)} × ${String(r.height)}`,
+}));
 
 function onDevice(event: Event): void {
   const value = (event.target as HTMLSelectElement).value;
   void store.selectDevice(value === '' ? null : value);
-}
-
-function onResolution(next: (typeof RESOLUTIONS)[number]): void {
-  void store.selectResolution(next);
 }
 </script>
 
@@ -46,26 +50,13 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
     </label>
     <div class="flex flex-col gap-1 text-sm">
       <span id="resolution-label">{{ t('camera.controls.resolution') }}</span>
-      <div role="radiogroup" aria-labelledby="resolution-label" class="flex flex-wrap gap-1.5">
-        <button
-          v-for="r in RESOLUTIONS"
-          :key="keyOf(r)"
-          type="button"
-          role="radio"
-          class="rounded-full border px-3 py-0.5 text-xs disabled:opacity-50"
-          :class="
-            keyOf(r) === keyOf(resolution)
-              ? 'border-zinc-800 bg-zinc-800 text-zinc-50'
-              : 'border-zinc-400 bg-white dark:bg-zinc-100 text-zinc-800'
-          "
-          :aria-checked="keyOf(r) === keyOf(resolution)"
-          :disabled="isStarting"
-          :data-resolution="keyOf(r)"
-          @click="onResolution(r)"
-        >
-          {{ r.width }} × {{ r.height }}
-        </button>
-      </div>
+      <ChoiceChips
+        :options="resolutions"
+        :selected="keyOf(resolution)"
+        :disabled="isStarting"
+        aria-labelledby="resolution-label"
+        @choose="store.selectResolution"
+      />
       <p v-if="actual !== null" class="text-xs text-zinc-500">
         {{ t('camera.controls.actualResolution', { width: actual.width, height: actual.height }) }}
       </p>

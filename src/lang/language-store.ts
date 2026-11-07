@@ -11,13 +11,11 @@ import type { LanguagePreference } from './index';
 // The choice is saved in the browser and applied to the whole app at once.
 export const useLanguageStore = defineStore('language', () => {
   const preference = ref<LanguagePreference>(languagePreference.read());
-  const locale = computed(() => i18n.global.locale.value);
 
   // Short text for the closed settings section, e.g. "English (automatic)".
   const summary = computed(() => {
-    const language = LANGUAGE_NAMES[locale.value];
-    const key = preference.value === 'auto' ? 'language.summaryAuto' : 'language.summary';
-    return t(key, { language });
+    const language = LANGUAGE_NAMES[i18n.global.locale.value];
+    return preference.value === 'auto' ? t('language.summaryAuto', { language }) : language;
   });
 
   function choose(next: LanguagePreference): void {
@@ -31,5 +29,5 @@ export const useLanguageStore = defineStore('language', () => {
     setLocale(resolveLocale(preference.value));
   }
 
-  return { preference, locale, summary, choose, apply };
+  return { preference, summary, choose, apply };
 });
