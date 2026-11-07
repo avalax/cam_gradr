@@ -35,6 +35,42 @@ describe('WipeLabels', () => {
     expect(wrapper.findAll('.bg-emerald-700')).toHaveLength(2);
   });
 
+  it('makes both halves buttons that switch their side and say what a click shows', async () => {
+    const wrapper = mount(WipeLabels, {
+      props: {
+        split: 50,
+        rightLabel: 'Kamera + Look-LUT 70 %',
+        rightCamera: true,
+        switchable: true,
+        leftTip: 'Klicken: korrigiert zeigen',
+        rightTip: 'Klicken: Look-LUT mit Korrektur',
+      },
+    });
+    const left = wrapper.get('[data-testid="labels-left"]');
+    const right = wrapper.get('[data-testid="labels-right"]');
+    expect(left.element.tagName).toBe('BUTTON');
+    expect(left.attributes('title')).toBe('Klicken: korrigiert zeigen');
+    expect(right.attributes('aria-label')).toBe(
+      'Kamera + Look-LUT 70 %. Klicken: Look-LUT mit Korrektur',
+    );
+    // Without a look the right dot is green; on the camera image it is grey like the camera.
+    expect(right.find('i').classes()).toContain('bg-zinc-400');
+    await left.trigger('click');
+    await right.trigger('click');
+    expect(wrapper.emitted('switch')).toEqual([['left'], ['right']]);
+  });
+
+  it('keeps plain labels that ignore clicks unless switchable', async () => {
+    const wrapper = labels(50);
+    const left = wrapper.get('[data-testid="labels-left"]');
+    expect(left.element.tagName).toBe('SPAN');
+    expect(left.attributes('title')).toBeUndefined();
+    await left.trigger('click');
+    expect(wrapper.emitted('switch')).toBeUndefined();
+    const named = mount(WipeLabels, { props: { split: 50, switchable: true } });
+    expect(named.get('[data-testid="labels-left"]').attributes('aria-label')).toBe('Kamera');
+  });
+
   it('shows only one side when the divider is at the edge', () => {
     const left = labels(0);
     expect(left.text()).toBe('Korrigiert');

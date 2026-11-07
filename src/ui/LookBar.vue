@@ -13,7 +13,7 @@ const { t } = useI18n();
 const looks = useLookStore();
 const preview = usePreviewStore();
 const { looks: list, messages } = storeToRefs(looks);
-const { strength, left } = storeToRefs(preview);
+const { strength } = storeToRefs(preview);
 
 const file = useTemplateRef<HTMLInputElement>('file');
 const current = computed(() => looks.find(preview.look));
@@ -67,14 +67,11 @@ function text(message: LookMessage): string {
     }
   }
 }
-
-const PRESSED = 'bg-zinc-800 text-zinc-50';
-const RELEASED = 'bg-zinc-50 text-zinc-800';
 </script>
 
 <template>
   <!-- The look LUT under the preview: choose or import in one list, delete only the chosen one,
-       strength, and what the left side of the divider shows. -->
+       strength. What the sides of the divider show is switched by a click on their labels. -->
   <div
     class="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-b border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2.5 py-2 text-xs text-zinc-800"
     role="group"
@@ -148,37 +145,6 @@ const RELEASED = 'bg-zinc-50 text-zinc-800';
         :aria-label="t('look.strength')"
         >{{ strengthText }}</output
       >
-    </div>
-
-    <div class="flex items-center gap-1.5" :class="{ 'opacity-50': current === null }">
-      <span id="look-left" class="font-semibold">{{ t('look.left') }}</span>
-      <div
-        class="flex overflow-hidden rounded border border-zinc-500"
-        role="group"
-        aria-labelledby="look-left"
-      >
-        <button
-          type="button"
-          class="px-2 py-0.5 text-[11px] font-semibold"
-          :class="current === null || left === 'camera' ? PRESSED : RELEASED"
-          :aria-pressed="current === null || left === 'camera'"
-          data-testid="look-left-camera"
-          @click="preview.setLeft('camera')"
-        >
-          {{ t('look.leftCamera') }}
-        </button>
-        <button
-          type="button"
-          class="border-l border-zinc-500 px-2 py-0.5 text-[11px] font-semibold"
-          :class="current !== null && left === 'corrected' ? PRESSED : RELEASED"
-          :aria-pressed="current !== null && left === 'corrected'"
-          :disabled="current === null"
-          data-testid="look-left-corrected"
-          @click="preview.setLeft('corrected')"
-        >
-          {{ t('look.leftCorrected') }}
-        </button>
-      </div>
     </div>
   </div>
 

@@ -13,7 +13,7 @@ import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
 import { applyLook, blendLuts } from '../look/look';
 import { useLookStore } from '../look/look-store';
-import { buildLut } from '../lut/lut';
+import { buildLut, identityLut } from '../lut/lut';
 import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
@@ -47,7 +47,7 @@ const solve = useSolveStore();
 const preview = usePreviewStore();
 const { stream, status, still } = storeToRefs(camera);
 const { model, result } = storeToRefs(solve);
-const { split, look: lookName, strength, left } = storeToRefs(preview);
+const { split, look: lookName, strength, left, right } = storeToRefs(preview);
 const looks = useLookStore();
 const { measurements } = storeToRefs(useColorChartStore());
 const { selected } = storeToRefs(useReferenceStore());
@@ -103,28 +103,53 @@ const isLive = computed(() => status.value === 'live');
 const correctedLut = computed(() =>
   model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE),
 );
-// The chosen look LUT in full over the correction. The strength only mixes the two, so that the
-// slider follows without delay.
-const fullLookLut = computed(() => {
-  const look = looks.find(lookName.value);
-  return look === null || correctedLut.value === null ? null : applyLook(correctedLut.value, look);
-});
-const lut = computed(() =>
-  correctedLut.value === null || fullLookLut.value === null
-    ? correctedLut.value
-    : blendLuts(correctedLut.value, fullLookLut.value, strength.value / FULL_STRENGTH),
+const IDENTITY = identityLut(PREVIEW_LUT_SIZE);
+const chosenLook = computed(() => (model.value === null ? null : looks.find(lookName.value)));
+// With a look the right side lays it over the correction or, without correction, over the camera
+// image (the identity).
+const rightCamera = computed(() => chosenLook.value !== null && right.value === 'camera');
+const rightBase = computed(() => (rightCamera.value ? IDENTITY : correctedLut.value));
+// The chosen look LUT in full over its base. The strength only mixes the two, so that the slider
+// follows without delay.
+const fullLookLut = computed(() =>
+  chosenLook.value === null || rightBase.value === null
+    ? null
+    : applyLook(rightBase.value, chosenLook.value),
 );
-// With a look the left side can show the correction without it instead of the camera image.
-const leftCorrected = computed(() => fullLookLut.value !== null && left.value === 'corrected');
+const lut = computed(() =>
+  rightBase.value === null || fullLookLut.value === null
+    ? correctedLut.value
+    : blendLuts(rightBase.value, fullLookLut.value, strength.value / FULL_STRENGTH),
+);
+// With a look the left side can show the correction instead of the camera image.
+const leftCorrected = computed(() => chosenLook.value !== null && left.value === 'corrected');
 const leftLut = computed(() => (leftCorrected.value ? correctedLut.value : null));
 const leftLabel = computed(() =>
   t(leftCorrected.value ? 'preview.labelCorrected' : 'preview.labelCamera'),
 );
-const rightLabel = computed(() =>
-  fullLookLut.value === null
-    ? t('preview.labelCorrected')
-    : t('preview.labelLook', { strength: strength.value }),
+const rightLabel = computed(() => {
+  if (chosenLook.value === null) {
+    return t('preview.labelCorrected');
+  }
+  return t(rightCamera.value ? 'preview.labelLookCamera' : 'preview.labelLook', {
+    strength: strength.value,
+  });
+});
+// A click on a label switches what its side starts from (only with a look).
+const leftTip = computed(() =>
+  t(leftCorrected.value ? 'preview.switchToCamera' : 'preview.switchToCorrected'),
 );
+const rightTip = computed(() =>
+  t(rightCamera.value ? 'preview.switchLookCorrected' : 'preview.switchLookCamera'),
+);
+
+function switchSide(side: 'left' | 'right'): void {
+  if (side === 'left') {
+    preview.setLeft(leftCorrected.value ? 'camera' : 'corrected');
+  } else {
+    preview.setRight(rightCamera.value ? 'corrected' : 'camera');
+  }
+}
 // Without a still image of its own, the preview shows the image the colors were measured on (as long
 // as the camera is off); a new capture or the live image replaces it.
 const shownStill = computed(
@@ -350,8 +375,13 @@ const splitModel = computed({
               :left-label="leftLabel"
               :right-label="rightLabel"
               :left-corrected="leftCorrected"
+              :right-camera="rightCamera"
+              :switchable="chosenLook !== null"
+              :left-tip="leftTip"
+              :right-tip="rightTip"
               class="rounded-t"
               data-testid="preview-labels"
+              @switch="switchSide"
             />
             <div class="relative">
               <canvas

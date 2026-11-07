@@ -7,9 +7,6 @@
   "remove": "Delete look LUT “{name}”",
   "strength": "Strength",
   "percent": "{value} %",
-  "left": "Left",
-  "leftCamera": "Camera",
-  "leftCorrected": "Without look LUT",
   "hint": "With “+ Import look LUT …” in the list you add a look LUT (.cube, 3D LUT for Rec.709 input), for example a cinema look.",
   "messages": {
     "importedOne": "“{name}” imported and saved locally in the browser.",

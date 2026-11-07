@@ -60,7 +60,7 @@ describe('LookBar', () => {
     vi.restoreAllMocks();
   });
 
-  it('offers only the import without looks; strength and left side wait for a look', async () => {
+  it('offers only the import without looks; the strength waits for a look', async () => {
     const wrapper = mount(LookBar);
     expect(await options(wrapper)).toEqual(['Noch keine Look-LUT', '+ Look-LUT importieren …']);
     expect(wrapper.get('[data-testid="look-messages"]').text()).toContain(
@@ -68,12 +68,10 @@ describe('LookBar', () => {
     );
     expect(wrapper.find('[data-testid="look-remove"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="look-strength"]').attributes('disabled')).toBeDefined();
-    expect(wrapper.get('[data-testid="look-left-corrected"]').attributes('disabled')).toBeDefined();
-    expect(wrapper.get('[data-testid="look-left-camera"]').attributes('aria-pressed')).toBe('true');
     expect(wrapper.get('output').text()).toBe('–');
   });
 
-  it('chooses a look, its strength and what the left side shows', async () => {
+  it('chooses a look and its strength', async () => {
     await withLooks('Warm', 'Cold');
     const preview = usePreviewStore();
     preview.setLook(null);
@@ -94,13 +92,6 @@ describe('LookBar', () => {
     await wrapper.get('[data-testid="look-strength"]').setValue('40');
     expect(preview.strength).toBe(40);
     expect(wrapper.get('output').text()).toBe('40 %');
-    await wrapper.get('[data-testid="look-left-corrected"]').trigger('click');
-    expect(preview.left).toBe('corrected');
-    expect(wrapper.get('[data-testid="look-left-corrected"]').attributes('aria-pressed')).toBe(
-      'true',
-    );
-    await wrapper.get('[data-testid="look-left-camera"]').trigger('click');
-    expect(preview.left).toBe('camera');
 
     await pick(wrapper, 'Keine Look-LUT');
     expect(preview.look).toBeNull();

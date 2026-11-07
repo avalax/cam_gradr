@@ -40,13 +40,20 @@ const { t } = useI18n();
 const preview = usePreviewStore();
 const looks = useLookStore();
 
+// The hint names what lies left and right of the divider.
+const PREVIEW_HINTS = {
+  camera: { corrected: 'app.hints.previewLook', camera: 'app.hints.previewLookOnly' },
+  corrected: {
+    corrected: 'app.hints.previewLookCorrected',
+    camera: 'app.hints.previewLookOnlyCorrected',
+  },
+} as const;
+
 function previewHint(): string {
   if (looks.find(preview.look) === null) {
     return t('app.hints.preview');
   }
-  return t(
-    preview.left === 'corrected' ? 'app.hints.previewLookCorrected' : 'app.hints.previewLook',
-  );
+  return t(PREVIEW_HINTS[preview.left][preview.right]);
 }
 
 const tab = ref<TabKey>('gray');

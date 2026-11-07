@@ -32,5 +32,10 @@
     "linkFailed": "Shader program could not be linked: {log}",
     "noContext": "Neither WebGL2 nor a 2D drawing context is available, so the preview is not possible."
   },
-  "labelLook": "Corrected + look LUT {strength} %"
+  "labelLook": "Corrected + look LUT {strength} %",
+  "labelLookCamera": "Camera + look LUT {strength} %",
+  "switchToCorrected": "Click: show corrected",
+  "switchToCamera": "Click: show camera image",
+  "switchLookCamera": "Click: look LUT without correction",
+  "switchLookCorrected": "Click: look LUT with correction"
 }

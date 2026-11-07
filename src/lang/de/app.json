@@ -9,7 +9,9 @@
     "preview": "Original / korrigiert",
     "export": ".cube, Projekt",
     "previewLook": "Original / Look-LUT",
-    "previewLookCorrected": "Korrigiert / Look-LUT"
+    "previewLookCorrected": "Korrigiert / Look-LUT",
+    "previewLookOnly": "Original / nur Look-LUT",
+    "previewLookOnlyCorrected": "Korrigiert / nur Look-LUT"
   },
   "tablist": "Bereiche",
   "footer": "{id} · Version {version} · LUT-Generator für die Spyder Checkr Photo.",

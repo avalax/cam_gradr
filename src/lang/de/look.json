@@ -7,9 +7,6 @@
   "remove": "Look-LUT „{name}“ löschen",
   "strength": "Stärke",
   "percent": "{value} %",
-  "left": "Links",
-  "leftCamera": "Kamera",
-  "leftCorrected": "Ohne Look-LUT",
   "hint": "Über „+ Look-LUT importieren …“ in der Liste holst du eine Look-LUT (.cube, 3D-LUT für Rec.709-Eingang), etwa einen Kino-Look.",
   "messages": {
     "importedOne": "„{name}“ importiert und lokal im Browser gespeichert.",

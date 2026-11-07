@@ -36,10 +36,11 @@ Everything runs in your browser. Images and measurements never leave your comput
    and highlights change. The camera icon at the top right of the image takes a still image to check the
    correction on a steady image; in the card tabs the same corner holds the trash icon.
    Below the image you can lay a **look LUT** over the correction, a ready-made `.cube` file such as a
-   cinema look: the last entry of the list imports one (several at once are fine), the slider sets its
-   strength, and "Left" chooses whether the camera image or the correction without the look lies left
-   of the divider. The arrow keys switch the look at once, also with the list open, and Escape goes
-   back to the one before. The trash icon next to the list deletes the chosen look LUT.
+   cinema look: the last entry of the list imports one (several at once are fine), and the slider sets
+   its strength. The arrow keys switch the look at once, also with the list open, and Escape goes back
+   to the one before. The trash icon next to the list deletes the chosen look LUT. With a look LUT, a
+   click on the label above the image switches its side: the left one between camera and corrected, the
+   right one between the look over the correction and the look alone on the camera image.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual). With a look LUT chosen in
    the preview, the file holds correction and look at the set strength; "Correction only" leaves the look
