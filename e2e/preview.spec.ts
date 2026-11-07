@@ -6,16 +6,23 @@ import type { AppPage } from './support/app-page';
 import { expect, test } from './support/fixtures';
 import { colorPatchCenter } from './support/synthetic-cards';
 
-// Acceptance test of the user story, as of M4:
+// Acceptance test of the user stories:
+// "As a user I see how much better the colors of the camera become with the computed correction."
 // "As a user I see in the preview how the color correction changes the camera image."
-// The hints, the side column and the choice of the renderer are covered by the component tests;
-// here the pixels the graphics card or the software rendering really draws count.
+// The hints, the side column, the choice of the renderer, the keys of the look list and the texts of
+// the labels are covered by the component tests; here the real pipeline from the camera to the
+// correction and the pixels the graphics card or the software rendering really draws count.
 
 const TOLERANCE = 7;
 // Image center: to the left of it (x < 640) the original is shown with the divider at 50 %, to
 // the right the corrected image.
 const LEFT_PATCH = '6A';
 const RIGHT_PATCH = '5H';
+
+// The interface shows numbers with a decimal comma, as is usual in Germany.
+function parseGerman(text: string): number {
+  return Number(text.replace(',', '.'));
+}
 
 function codes(code: readonly number[]): number[] {
   return code.map((value) => Math.round(value * 255));
@@ -63,6 +70,15 @@ test.describe('Preview', () => {
     expect(largest).toBeGreaterThan(2 * TOLERANCE);
 
     await app.computeColorModel();
+    // The calculation clearly improves the colors of the cards.
+    await app.showReport();
+    const before = parseGerman(await app.page.getByTestId('mean-before').innerText());
+    const after = parseGerman(await app.page.getByTestId('mean-after').innerText());
+    expect(before).toBeGreaterThan(4);
+    expect(after).toBeLessThan(1.5);
+    expect(after).toBeLessThan(before / 3);
+    await app.hideReport();
+
     // With the camera off the preview shows the image of the color measurement.
     await app.openTab('Vorschau');
     await expectSplitImage(app);
@@ -100,25 +116,14 @@ test.describe('Preview', () => {
     });
     await expect(picker).toHaveText('Invert');
     await expectPatch(app, RIGHT_PATCH, inverted(labToSrgb(dummyLab(RIGHT_PATCH))));
-    // Every step with the arrow keys applies at once.
-    await picker.press('ArrowUp');
-    await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
-    await picker.press('ArrowDown');
-    await expectPatch(app, RIGHT_PATCH, inverted(labToSrgb(dummyLab(RIGHT_PATCH))));
-    // A click on the label puts the look straight on the camera image, a second one back.
-    const tab = app.page.getByRole('tab', { name: 'Vorschau' });
-    await app.page.getByTestId('labels-right').click();
-    await expectPatch(app, RIGHT_PATCH, inverted(cameraCode(dummyLab(RIGHT_PATCH))));
-    await expect(tab).toContainText('Original / nur Look-LUT');
-    await app.page.getByTestId('labels-right').click();
     await app.page.getByTestId('look-strength').fill('50');
     await expectPatch(app, RIGHT_PATCH, [128, 128, 128]);
 
-    // With the divider on the right a click on its label shows the correction without the look.
+    // With the divider on the right a click on its label shows the correction without the look: the
+    // second LUT of the left side.
     await app.page.getByTestId('wipe').focus();
     await app.page.keyboard.press('End');
     await app.page.getByTestId('labels-left').click();
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
-    await expect(tab).toContainText('Korrigiert / Look-LUT');
   });
 });

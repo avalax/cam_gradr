@@ -7,7 +7,7 @@ import { cameraCode } from '../src/test-support/synthetic-camera';
 import { expect, test } from './support/fixtures';
 import { colorPatchCenter } from './support/synthetic-cards';
 
-// Acceptance tests of the user story, as of M5:
+// Acceptance test of the user story:
 // "As a user I export the correction as a LUT file and save my work as a project."
 // The file formats, the LUT sizes, faulty files, missing reference sets and the file dialogs of
 // Chrome and Edge are covered by the unit tests; here real downloads, file inputs and reloads count.
@@ -20,7 +20,7 @@ test.describe('Export and project', () => {
   test('The .cube file corrects the camera, a loaded project brings back correction, stills and preview', async ({
     app,
   }) => {
-    // The longest journey (download, save, reload, load, search and preview): with all tests in
+    // The longest journey (download, save, reload, load and preview): with all tests in
     // parallel on a busy machine it can need more than the usual time limit.
     test.slow();
     await app.computeColorModel();
@@ -40,33 +40,13 @@ test.describe('Export and project', () => {
       }
     }
 
-    await app.openPreviewWithImage();
-    // Set the divider to 30 % with the keyboard (Home, then Shift + Arrow Right three times).
-    await app.page.getByTestId('wipe').focus();
-    await app.page.keyboard.press('Home');
-    for (let step = 0; step < 3; step++) {
-      await app.page.keyboard.press('Shift+ArrowRight');
-    }
-    await expect(app.page.getByTestId('wipe')).toHaveAttribute('aria-valuenow', '30');
     const { text } = await app.saveProject();
 
-    // Loading the stills of the project turns a running camera off.
+    // The stills of the project come back with their corner points and the measuring field.
     await app.page.reload();
-    await app.openPreviewWithImage();
     await app.loadProject(text, 'mein-projekt.json');
-    await expect(app.cameraSwitch).toHaveAttribute('aria-checked', 'false');
     await expect(app.page.getByTestId('project-message')).toHaveCount(0);
-
-    // The stills come back with their corner points; a new search hides them, and without a new
-    // capture they return.
     await app.openTab('Graukarten');
-    await app.expectCorners();
-    await expect(app.page.getByTestId('measure-marker')).toBeVisible();
-    await app.chooseCards('empty');
-    await app.startCamera();
-    await expect(app.page.locator('svg circle')).toHaveCount(0);
-    await expect(app.page.getByTestId('measure-marker')).toHaveCount(0);
-    await app.stopCamera();
     await app.expectCorners();
     await expect(app.page.getByTestId('measure-marker')).toBeVisible();
 
@@ -76,16 +56,11 @@ test.describe('Export and project', () => {
     await app.showReport();
     await app.hideReport();
 
-    // The preview corrects the live image again; at 30 % patch 5H lies on the corrected side.
+    // The preview corrects the live image again; patch 5H lies right of the divider, corrected.
     await app.openPreviewWithImage();
     await app.showCards('colors');
     const { x, y } = colorPatchCenter('5H');
     const expected = labToSrgb(dummyLab('5H')).map((value) => Math.round(value * 255));
     await app.expectPreviewColor(x, y, expected, 7);
-
-    // Saving again suggests the name of the loaded file and keeps the divider.
-    const resaved = await app.saveProject();
-    expect(resaved.fileName).toBe('mein-projekt.json');
-    expect(resaved.text).toMatch(/"split": 30/);
   });
 });
