@@ -269,6 +269,77 @@ describe('useProjectStore', () => {
     expect(usePreviewStore().look).toBe('Warm');
   });
 
+  it('saves all look LUTs along on request and takes them over into another browser', async () => {
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    await useLookStore().importFiles([
+      { name: 'Cold.cube', text: () => Promise.resolve(IDENTITY_CUBE) },
+    ]);
+    await chooseWarm();
+    await workedState();
+    await useProjectStore().save({ withStills: false, withLooks: true });
+    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    expect(parseProject(text).looks?.map((look) => look.name)).toEqual(['Cold', 'Warm']);
+
+    setActivePinia(createPinia());
+    const other = createIndexedDbStorage<LookLut>(new IDBFactory(), 'other', 'looks');
+    setLookStorage(other);
+    const project = useProjectStore();
+    await project.load(text);
+    expect(project.notice).toBeNull();
+    expect(useLookStore().looks.map((look) => look.name)).toEqual(['Cold', 'Warm']);
+    expect(useLookStore().find('Warm')?.lut.size).toBe(2);
+    const stored = await other.list();
+    expect(stored).toHaveLength(2);
+    expect(usePreviewStore().look).toBe('Warm');
+  });
+
+  it('keeps the look LUT of the browser when the file brings one of the same name', async () => {
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    await chooseWarm();
+    await workedState();
+    await useProjectStore().save({ withStills: false, withLooks: true });
+    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const looks = useLookStore();
+    const own = looks.find('Warm');
+    await useProjectStore().load(text);
+    expect(looks.find('Warm')).toBe(own);
+    expect(looks.messages).toEqual([{ kind: 'imported', names: ['Warm'] }]);
+  });
+
+  it('writes no look LUT list when none is imported', async () => {
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'none', 'looks'));
+    await workedState();
+    await useProjectStore().save({ withStills: false, withLooks: true });
+    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    expect(parseProject(text).looks).toBeUndefined();
+  });
+
+  it('saves no look LUT data without the request', async () => {
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    await chooseWarm();
+    await workedState();
+    await useProjectStore().save({ withStills: false, withLooks: false });
+    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    expect(parseProject(text).preview.look).toEqual({ name: 'Warm', strength: 70 });
+    expect(parseProject(text).looks).toBeUndefined();
+  });
+
+  it('rejects a file whose look LUT cannot be read and changes nothing', async () => {
+    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
+    await chooseWarm();
+    await workedState();
+    await useProjectStore().save({ withStills: false, withLooks: true });
+    const raw = JSON.parse((download.mock.calls.at(-1) as [string, string, string])[1]) as {
+      looks: { data: string }[];
+    };
+    raw.looks[0] = { ...raw.looks[0], data: 'kaputt' };
+    usePreviewStore().setSplit(80);
+    const project = useProjectStore();
+    await project.load(JSON.stringify(raw));
+    expect(project.error).toContain('lässt sich nicht lesen');
+    expect(usePreviewStore().split).toBe(80);
+  });
+
   it('takes the look LUT away when the file has none', async () => {
     const text = await workedState();
     usePreviewStore().setLook('Warm');

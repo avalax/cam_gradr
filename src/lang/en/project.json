@@ -2,7 +2,8 @@
   "bar": {
     "stills": "Include still images (the file will then contain camera images)",
     "save": "Save project",
-    "load": "Load project"
+    "load": "Load project",
+    "looks": "Include look LUTs (the file will then contain all imported LUTs)"
   },
   "status": {
     "close": "Dismiss message"
@@ -46,6 +47,9 @@
     "saveFailed": "The project could not be saved: {reason}",
     "openFailed": "The project file could not be opened: {reason}",
     "lookShape": "Preview: the look LUT needs name and strength",
-    "strengthName": "strength of the look LUT"
+    "strengthName": "strength of the look LUT",
+    "lookData": "The saved look LUTs are invalid",
+    "lookUnreadable": "The saved look LUT “{name}” cannot be read",
+    "lookWrongSize": "The saved look LUT “{name}” does not have the stated size"
   }
 }

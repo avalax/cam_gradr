@@ -54,8 +54,9 @@ still image, the old one comes back. Cards held upside down are recognized.
 
 **Projects:** In the Export tab, "Save project" and "Load project" keep your work as a JSON file, with
 the still images if "Include still images" stays checked. Saving suggests the file you loaded last. The
-file holds only the name of the reference set, not its values, and the name and strength of the look LUT,
-not the look itself.
+file holds only the name of the reference set, not its values, and the name and strength of the chosen
+look LUT. As soon as a look LUT is imported, "Include look LUTs" (checked by default) puts all imported
+look LUTs into the file as well; loading the project in another browser then brings them along.
 
 ## Tips
 
@@ -91,7 +92,8 @@ job, and such a LUT makes the shadows too dark and the contrast too hard. The ap
 their name.
 
 **Where does my data go?** Nowhere. Imported reference sets and look LUTs stay in your browser. A project
-file with still images contains camera images; only pass it on if that is fine.
+file with still images contains camera images, one with look LUTs contains the LUT files; only pass it on
+if that is fine (bought LUTs usually must not be shared).
 
 ## Reference values
 

@@ -166,6 +166,24 @@ describe('useLookStore', () => {
     expect(store.messages).toEqual([{ kind: 'saveFailed', name: 'Warm' }]);
   });
 
+  it('takes over looks from a project file, keeps its own and reports storage problems', async () => {
+    const store = useLookStore();
+    await store.importFiles([file('Warm.cube')]);
+    const own = store.find('Warm');
+    await store.adopt([look('Warm'), look('Cold')]);
+    expect(store.find('Warm')).toBe(own);
+    expect(store.looks.map((entry) => entry.name)).toEqual(['Cold', 'Warm']);
+    const stored = await storage.list();
+    expect(stored.map((entry) => entry.name).toSorted((a, b) => a.localeCompare(b))).toEqual([
+      'Cold',
+      'Warm',
+    ]);
+
+    setLookStorage(failingStorage());
+    await store.adopt([look('Blue')]);
+    expect(store.messages).toEqual([{ kind: 'saveFailed', name: 'Blue' }]);
+  });
+
   it('uses the IndexedDB storage of the browser unless replaced', async () => {
     setLookStorage(null);
     const store = useLookStore();

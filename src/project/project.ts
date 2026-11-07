@@ -4,9 +4,12 @@ import { t } from '../lang';
 import type { StillKey } from '../camera/camera-store';
 import { HUE_COEFFICIENTS } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
+import { MAX_SIZE, MIN_SIZE } from '../lut/lut';
 
 import { FRAME_ENCODING } from './frame-codec';
 import type { EncodedFrame } from './frame-codec';
+import { LOOK_ENCODING } from './look-codec';
+import type { EncodedLook } from './look-codec';
 
 export const PROJECT_FORMAT = 'cam_gradr-project/1';
 
@@ -36,11 +39,13 @@ export interface Project {
   color: ChartState & { reference: string | null };
   // The computed correction model; reference values (manufacturer data) are deliberately not saved.
   model: ColorModel | null;
-  // Preview settings: the divider and the chosen look LUT by name and strength (percent), never
-  // its data; files without a look have no entry.
+  // Preview settings: the divider and the chosen look LUT by name and strength (percent); files
+  // without a look have no entry.
   preview: { split: number; look?: PreviewLook };
   // Still images per tab; missing in files that were saved without images.
   stills?: Partial<Record<StillKey, EncodedFrame>>;
+  // All imported look LUTs with their data ("Include look LUTs"); missing otherwise.
+  looks?: EncodedLook[];
 }
 
 const STILL_KEYS: ReadonlySet<string> = new Set(['gray', 'color', 'preview']);
@@ -180,6 +185,30 @@ function parsePercent(value: unknown, name: string): number {
   return value;
 }
 
+// Checks the frame of a saved look LUT; whether its data unpack is checked when loading.
+function parseLookData(value: unknown): EncodedLook {
+  if (
+    !isRecord(value) ||
+    typeof value.name !== 'string' ||
+    value.encoding !== LOOK_ENCODING ||
+    typeof value.data !== 'string' ||
+    !Number.isSafeInteger(value.size) ||
+    Number(value.size) < MIN_SIZE ||
+    Number(value.size) > MAX_SIZE
+  ) {
+    throw new TypeError(t('project.errors.lookData'));
+  }
+  const where = t('project.errors.lookData');
+  return {
+    name: value.name,
+    size: Number(value.size),
+    min: triple(value.min, where) as unknown as EncodedLook['min'],
+    max: triple(value.max, where) as unknown as EncodedLook['max'],
+    encoding: LOOK_ENCODING,
+    data: value.data,
+  };
+}
+
 function parseLook(value: unknown): PreviewLook | undefined {
   if (value === undefined) {
     return undefined;
@@ -191,6 +220,16 @@ function parseLook(value: unknown): PreviewLook | undefined {
     name: value.name,
     strength: parsePercent(value.strength, t('project.errors.strengthName')),
   };
+}
+
+function parseLooks(value: unknown): EncodedLook[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw new TypeError(t('project.errors.lookData'));
+  }
+  return value.map((entry) => parseLookData(entry));
 }
 
 function parseStill(value: unknown, key: string): EncodedFrame {
@@ -234,6 +273,13 @@ function parseStills(value: unknown): Partial<Record<StillKey, EncodedFrame>> | 
   return stills;
 }
 
+// The parts of the file that may be missing: still images and look LUTs.
+function parseExtras(raw: Record<string, unknown>): Pick<Project, 'stills' | 'looks'> {
+  const stills = parseStills(raw.stills);
+  const looks = parseLooks(raw.looks);
+  return { ...(stills !== undefined && { stills }), ...(looks !== undefined && { looks }) };
+}
+
 // Validates a project file and returns typed data; errors have understandable messages.
 export function parseProject(text: string): Project {
   let raw: unknown;
@@ -254,7 +300,6 @@ export function parseProject(text: string): Project {
   if (!isRecord(raw.preview)) {
     throw new TypeError(t('project.errors.previewMissing'));
   }
-  const stills = parseStills(raw.stills);
   const look = parseLook(raw.preview.look);
   return {
     format: PROJECT_FORMAT,
@@ -266,7 +311,7 @@ export function parseProject(text: string): Project {
       split: parsePercent(raw.preview.split, t('project.errors.splitName')),
       ...(look !== undefined && { look }),
     },
-    ...(stills !== undefined && { stills }),
+    ...parseExtras(raw),
   };
 }
 

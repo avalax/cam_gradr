@@ -30,6 +30,6 @@
     "reference": "Referenz",
     "look": "Look-LUT",
     "lookValue": "{name} · {strength} %",
-    "lookNote": "Das Projekt merkt sich Name und Stärke der Look-LUT, nicht die Datei. Fehlt sie beim Laden im Browser, weist die App darauf hin."
+    "lookNote": "Mit „Look-LUTs mitspeichern“ stecken alle importierten Look-LUTs in der Datei und kommen beim Laden in den Browser, falls sie dort fehlen; sonst merkt sich das Projekt nur Name und Stärke der gewählten."
   }
 }

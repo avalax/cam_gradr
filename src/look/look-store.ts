@@ -138,6 +138,20 @@ export const useLookStore = defineStore('look', () => {
     }
   }
 
+  // Takes over the look LUTs of a project file that this browser does not have yet and saves them;
+  // a look of the same name in the browser stays.
+  async function adopt(saved: readonly LookLut[]): Promise<void> {
+    const report: LookMessage[] = [];
+    const missing = saved.filter((entry) => find(entry.name) === null);
+    for (const look of missing) {
+      put(look);
+      await save(look, report);
+    }
+    if (report.length > 0) {
+      messages.value = report;
+    }
+  }
+
   // Brings the last deleted look back, chosen again if it was chosen before.
   async function undo(): Promise<void> {
     const last = removed.value;
@@ -158,5 +172,5 @@ export const useLookStore = defineStore('look', () => {
     messages.value = [];
   }
 
-  return { looks, messages, removed, find, load, importFiles, remove, undo, dismiss };
+  return { looks, messages, removed, find, load, importFiles, adopt, remove, undo, dismiss };
 });
