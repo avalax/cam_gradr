@@ -38,7 +38,8 @@ Everything runs in your browser. Images and measurements never leave your comput
    Below the image you can lay a **look LUT** over the correction, a ready-made `.cube` file such as a
    cinema look: the last entry of the list imports one (several at once are fine), the slider sets its
    strength, and "Left" chooses whether the camera image or the correction without the look lies left
-   of the divider. The trash icon next to the list deletes the chosen look LUT.
+   of the divider. The arrow keys switch the look at once, also with the list open, and Escape goes
+   back to the one before. The trash icon next to the list deletes the chosen look LUT.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual). With a look LUT chosen in
    the preview, the file holds correction and look at the set strength; "Correction only" leaves the look
