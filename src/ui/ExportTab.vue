@@ -16,6 +16,7 @@ import { useSolveStore } from '../solve/solve-store';
 import { exportFileName, exportNotes, exportTitle } from './export-file';
 import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
+import ChoiceChips from './ChoiceChips.vue';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
 
@@ -73,6 +74,24 @@ const exportLook = computed<ExportLook | null>(() =>
 // The content the file really gets: without a look chosen in the preview it is the correction alone,
 // whatever `content` asks for.
 const contained = computed(() => (exportLook.value === null ? 'plain' : 'look'));
+const contentOptions = computed(() =>
+  CONTENTS.map((option) => ({
+    key: option,
+    value: option,
+    label: t(option === 'look' ? 'export.lut.contentLook' : 'export.lut.contentPlain'),
+    // Without a look chosen in the preview there is nothing to add.
+    disabled: option === 'look' && chosen.value === null,
+  })),
+);
+const sizeOptions = computed(() =>
+  CUBE_SIZES.map((option) => ({
+    key: String(option),
+    value: option,
+    label: t(option === DEFAULT_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
+      size: option,
+    }),
+  })),
+);
 // The line under the choice names the look in the file, the plain correction, or where to choose a
 // look.
 const lookLine = computed(() => {
@@ -128,60 +147,24 @@ function download(): void {
         </I18nT>
         <!-- Content and size in one row, so that the export stays as tall as the other tabs. -->
         <div class="flex flex-wrap gap-2">
-          <div
-            role="radiogroup"
+          <ChoiceChips
+            variant="segmented"
+            :options="contentOptions"
+            :selected="contained"
+            :disabled="model === null"
             :aria-label="t('export.lut.content')"
-            class="inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm"
-            :class="{ 'opacity-50': model === null }"
-          >
-            <button
-              v-for="option in CONTENTS"
-              :key="option"
-              type="button"
-              role="radio"
-              class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500"
-              :class="
-                contained === option
-                  ? 'bg-zinc-800 text-zinc-50'
-                  : 'bg-white dark:bg-zinc-100 text-zinc-800'
-              "
-              :aria-checked="contained === option"
-              :disabled="model === null || (option === 'look' && chosen === null)"
-              :data-testid="`export-content-${option}`"
-              @click="content = option"
-            >
-              {{ t(option === 'look' ? 'export.lut.contentLook' : 'export.lut.contentPlain') }}
-            </button>
-          </div>
-          <div
-            role="radiogroup"
+            data-testid="export-content"
+            @choose="content = $event"
+          />
+          <ChoiceChips
+            variant="segmented"
+            :options="sizeOptions"
+            :selected="String(size)"
+            :disabled="model === null"
             :aria-label="t('export.lut.sizeLabel')"
-            class="inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm"
-            :class="{ 'opacity-50': model === null }"
-          >
-            <button
-              v-for="option in CUBE_SIZES"
-              :key="option"
-              type="button"
-              role="radio"
-              class="border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l"
-              :class="
-                size === option
-                  ? 'bg-zinc-800 text-zinc-50'
-                  : 'bg-white dark:bg-zinc-100 text-zinc-800'
-              "
-              :aria-checked="size === option"
-              :disabled="model === null"
-              :data-testid="`export-size-${String(option)}`"
-              @click="size = option"
-            >
-              {{
-                t(option === DEFAULT_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
-                  size: option,
-                })
-              }}
-            </button>
-          </div>
+            data-testid="export-size"
+            @choose="size = $event"
+          />
         </div>
         <I18nT :keypath="lookLine" tag="p" class="text-xs text-zinc-700" data-testid="export-look">
           <template #name>{{ exportLook?.name }}</template>

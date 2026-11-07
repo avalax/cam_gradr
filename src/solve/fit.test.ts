@@ -339,20 +339,15 @@ describe('fitColorModel', () => {
     }
   });
 
-  it('also works with only some of the patches', () => {
+  it('works with only some of the patches and ignores patches without a measurement', () => {
     const ids = dummyIds().filter((id, index) => NEUTRAL_IDS.has(id) || index % 3 === 0);
     const partial = referenceSet(ids);
-    const fit = fitColorModel({
-      measurements: measure(partial),
-      reference: partial,
-    });
-    expect(fit.report.meanAfter).toBeLessThan(fit.report.meanBefore);
-  });
-
-  it('ignores patches without a measurement', () => {
-    const fewer = { ...measurements };
+    const fewer = { ...measure(partial) };
+    // 1A is in the reference, only its measurement is missing.
+    expect(partial.patches['1A']).toBeDefined();
     delete fewer['1A'];
-    const fit = fitColorModel({ measurements: fewer, reference });
+    const fit = fitColorModel({ measurements: fewer, reference: partial });
+    expect(fit.report.meanAfter).toBeLessThan(fit.report.meanBefore);
     expect(fit.report.patches.some((entry) => entry.id === '1A')).toBe(false);
   });
 

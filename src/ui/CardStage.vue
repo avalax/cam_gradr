@@ -138,8 +138,9 @@ function redetect(): void {
   }
 }
 
-const hits = ref(0);
-const previous = ref<Corners[] | null>(null);
+// Not shown anywhere, so plain variables: the consecutive hits and the cards of the last search.
+let hits = 0;
+let previous: Corners[] | null = null;
 const capturing = ref(false);
 // The last capture showed other cards than expected and was discarded.
 const wrong = ref(false);
@@ -189,13 +190,13 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
 
 // Does the search hit the same cards in the same place as last time?
 function isSteady(found: Corners[], width: number): boolean {
-  return previous.value !== null && sameCards(found, previous.value, STEADY_SHARE * width);
+  return previous !== null && sameCards(found, previous, STEADY_SHARE * width);
 }
 
 // Counts the consecutive searches that hit the same cards; `found` is null until all cards are there.
 function countHits(found: Corners[] | null, width: number): void {
-  hits.value = found === null ? 0 : isSteady(found, width) ? hits.value + 1 : 1;
-  previous.value = found;
+  hits = found === null ? 0 : isSteady(found, width) ? hits + 1 : 1;
+  previous = found;
 }
 
 async function autoTick(): Promise<void> {
@@ -212,25 +213,25 @@ async function autoTick(): Promise<void> {
     wrong.value = false;
   }
   // Wrong cards are not captured again until they have left the image.
-  if (found !== null && !wrong.value && hits.value >= AUTO_CONFIRMATIONS) {
-    hits.value = 0;
-    previous.value = null;
+  if (found !== null && !wrong.value && hits >= AUTO_CONFIRMATIONS) {
+    hits = 0;
+    previous = null;
     await autoCapture(found);
   }
 }
 
-const autoTimer = shallowRef<ReturnType<typeof setInterval>>();
+let autoTimer: ReturnType<typeof setInterval> | undefined;
 
 onMounted(() => {
   attachStream(video.value, stream.value);
   drawStill(still.value);
-  autoTimer.value = setInterval(() => {
+  autoTimer = setInterval(() => {
     void autoTick();
   }, AUTO_INTERVAL_MS);
 });
 
 onBeforeUnmount(() => {
-  clearInterval(autoTimer.value);
+  clearInterval(autoTimer);
   // When leaving the tab, the previous state applies again.
   props.store.endSearch();
 });
