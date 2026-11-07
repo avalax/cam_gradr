@@ -1,4 +1,5 @@
 import type { Vec3 } from '../color/lab';
+import type { ReferenceSet } from '../reference/reference';
 
 // Made-up reference values for tests. They do not come from the manufacturer and do not resemble its
 // data; gray fields are neutral with evenly falling lightness, color fields lie on a circle.
@@ -28,6 +29,11 @@ export function dummyIds(): string[] {
   return COLUMN_LETTERS.flatMap((letter) =>
     Array.from({ length: ROWS }, (_, row) => `${String(row + 1)}${letter}`),
   );
+}
+
+// The made-up reference set as the app holds it after an import.
+export function dummyReference(name = 'Test'): ReferenceSet {
+  return { name, patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])) };
 }
 
 // Reference file in the import format (JSON) with made-up values.

@@ -2,12 +2,10 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { IDBFactory } from 'fake-indexeddb';
 
-import type { LookLut } from '../look/look';
-import { setLookStorage, useLookStore } from '../look/look-store';
+import { useLookStore } from '../look/look-store';
 import { useProjectStore } from '../project/project-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
+import { cubeFile, emptyLookStorage } from '../test-support/look-cubes';
 
 import ProjectBar from './ProjectBar.vue';
 
@@ -55,27 +53,14 @@ describe('ProjectBar', () => {
   });
 
   it('offers to save the look LUTs along as soon as one is imported', async () => {
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'bar', 'looks'));
+    emptyLookStorage();
     const wrapper = mount(ProjectBar);
     const save = vi.spyOn(useProjectStore(), 'save').mockResolvedValue();
     expect(wrapper.find('[data-testid="project-looks"]').exists()).toBe(false);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(save).toHaveBeenLastCalledWith({ withStills: true, withLooks: false });
 
-    const identity = [
-      'LUT_3D_SIZE 2',
-      '0 0 0',
-      '1 0 0',
-      '0 1 0',
-      '1 1 0',
-      '0 0 1',
-      '1 0 1',
-      '0 1 1',
-      '1 1 1',
-    ];
-    await useLookStore().importFiles([
-      { name: 'Warm.cube', text: () => Promise.resolve(identity.join(String.fromCodePoint(10))) },
-    ]);
+    await useLookStore().importFiles([cubeFile('Warm.cube')]);
     await flushPromises();
     const box = wrapper.get('[data-testid="project-looks"]');
     expect((box.element as HTMLInputElement).checked).toBe(true);

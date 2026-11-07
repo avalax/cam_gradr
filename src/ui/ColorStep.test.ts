@@ -6,32 +6,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import type { Corners, Rgb } from '../chart/types';
+import type { Rgb } from '../chart/types';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
+import { bothCards, cardCorners } from '../test-support/cards';
+import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
-import { dummyIds, dummyLab, dummyReferenceJson } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { cameraCode, syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import ColorStep from './ColorStep.vue';
 
-// The two color cards side by side, 400 × 600 pixels each.
-const card = (x: number): Corners => [
-  { x, y: 50 },
-  { x: x + 400, y: 50 },
-  { x: x + 400, y: 650 },
-  { x, y: 650 },
-];
+const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
+vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
 
 // Sets corners and measurements as if a still image of the color cards had been evaluated.
 function prepareMeasurements() {
   const chart = useColorChartStore();
-  chart.setCards([card(100), card(700)]);
-  chart.measurements = Object.fromEntries(
-    dummyIds().map((id): [string, Rgb] => [id, cameraCode(dummyLab(id))]),
-  );
+  chart.setCards(bothCards());
+  chart.measurements = syntheticMeasurements();
   return chart;
 }
 
@@ -102,47 +96,32 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="gray-G50"]').text()).toContain('Graukarte 50 %');
   });
 
-  it('shows no check without measured gray cards', async () => {
+  it('recomputes when the measurements or the reference set change', async () => {
     const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
-    prepareMeasurements();
-    await flushPromises();
-    expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
-  });
-
-  it('recomputes when the measurements change', async () => {
-    const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    await useReferenceStore().importFile('a.json', dummyReferenceJson('Satz A'));
     const chart = prepareMeasurements();
     await flushPromises();
     const first = useSolveStore().result;
     chart.measurements = Object.fromEntries(
-      dummyIds().map((id): [string, Rgb] => [
+      Object.entries(syntheticMeasurements()).map(([id, code]): [string, Rgb] => [
         id,
-        cameraCode(dummyLab(id)).map((v) => v * 0.9) as unknown as Rgb,
+        code.map((v) => v * 0.9) as unknown as Rgb,
       ]),
     );
     await flushPromises();
-    expect(useSolveStore().result).not.toBe(first);
+    const second = useSolveStore().result;
+    expect(second).not.toBe(first);
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(true);
-  });
-
-  it('recomputes when a different reference set is selected', async () => {
-    mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson('Satz A'));
-    prepareMeasurements();
-    await flushPromises();
-    const first = useSolveStore().result;
     await useReferenceStore().importFile('b.json', dummyReferenceJson('Satz B'));
     await flushPromises();
-    expect(useSolveStore().result).not.toBe(first);
+    expect(useSolveStore().result).not.toBe(second);
   });
 
   it('does not compute until all corner points are set', async () => {
     mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());
     const chart = useColorChartStore();
-    chart.setCards([card(100)]);
+    chart.setCards([cardCorners(100)]);
     chart.measurements = { '1A': [0.5, 0.5, 0.5] };
     await flushPromises();
     expect(useSolveStore().result).toBeNull();

@@ -2,21 +2,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
-import type { Rgb } from '../chart/types';
-import { fitColorModel } from '../solve/fit';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { syntheticFit } from '../test-support/synthetic-camera';
 
 import ResultReport from './ResultReport.vue';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
-const result = fitColorModel({ measurements, reference });
+const result = syntheticFit();
 
 describe('ResultReport', () => {
   it('shows mean and largest error before and after, also per kind of patch', () => {

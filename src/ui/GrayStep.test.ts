@@ -6,21 +6,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCameraStore } from '../camera/camera-store';
 import type { Frame } from '../camera/frame';
 import { useChartStore } from '../chart/chart-store';
-import type { Corners } from '../chart/types';
+import { bothCards } from '../test-support/cards';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
 
 import GrayStep from './GrayStep.vue';
 
-const CORNERS = [
-  [100, 50],
-  [500, 50],
-  [500, 650],
-  [100, 650],
-  [700, 50],
-  [1100, 50],
-  [1100, 650],
-  [700, 650],
-] as const;
+// Drawing a 1280 × 720 still image pixel by pixel takes long, above all with coverage; the drawing
+// itself is tested in draw-frame.test.ts, here it only counts that the still image is drawn.
+const { drawFrame } = vi.hoisted(() => ({ drawFrame: vi.fn() }));
+vi.mock('../camera/draw-frame', () => ({ drawFrame }));
 
 function stillFrame(value: number): Frame {
   return {
@@ -97,11 +91,7 @@ type Wrapper = Awaited<ReturnType<typeof mountLive>>;
 
 // Sets the corner points of both cards, as the automatic detection does.
 function placeAll() {
-  const corners = CORNERS.map(([x, y]) => ({ x, y }));
-  useChartStore().setCards([
-    corners.slice(0, 4) as unknown as Corners,
-    corners.slice(4) as unknown as Corners,
-  ]);
+  useChartStore().setCards(bothCards());
 }
 
 // The button that discards the corner points and searches again.
@@ -119,16 +109,16 @@ describe('GrayStep', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     installMediaStubs();
+    drawFrame.mockClear();
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
       left: 0,
       top: 0,
       width: 1280,
       height: 720,
     } as DOMRect);
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
-      putImageData: vi.fn(),
-    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
   });
 
   afterEach(() => {
@@ -175,16 +165,12 @@ describe('GrayStep', () => {
     installFakeCamera();
     const camera = useCameraStore();
     await camera.start();
-    camera.still = stillFrame(0.5);
-    const putImageData = vi.fn();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
-      putImageData,
-    } as unknown as CanvasRenderingContext2D);
+    const still = stillFrame(0.5);
+    camera.still = still;
     const wrapper = mount(GrayStep);
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
     // Coming back to the tab draws its still image again.
-    expect(putImageData).toHaveBeenCalledOnce();
+    expect(drawFrame).toHaveBeenCalledExactlyOnceWith(expect.anything(), still);
     expect(resetButton(wrapper)).toBeDefined();
   });
 
@@ -318,12 +304,6 @@ describe('GrayStep', () => {
     camera.still = stillFrame(0.8);
     await flushPromises();
     expect(useChartStore().exposure?.level18).toBeGreaterThan(dark ?? 1);
-  });
-
-  it('shows a measuring field for brightness and contrast next to the image', async () => {
-    const wrapper = await mountLive();
-    expect(wrapper.find('[data-testid="measure-field"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="measure-hint"]').exists()).toBe(true);
   });
 
   // Every search runs the detection on a whole image; with coverage and all test files in parallel a

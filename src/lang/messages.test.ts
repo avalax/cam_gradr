@@ -22,14 +22,6 @@ function flatten(tree: Tree, prefix = ''): Map<string, string> {
   return flat;
 }
 
-function sortedKeys(flat: Map<string, string>): string[] {
-  const keys: string[] = [];
-  for (const key of flat.keys()) {
-    keys.push(key);
-  }
-  return keys.toSorted((a, b) => a.localeCompare(b));
-}
-
 // The named placeholders of a text, for example "{count}".
 function placeholders(text: string): string[] {
   const found: string[] = Array.from(text.matchAll(/\{(\w+)\}/g), (match) => String(match[1]));
@@ -56,10 +48,6 @@ function offenders(test: (text: string) => boolean): string[] {
 }
 
 describe('translations', () => {
-  it('have exactly the same keys in all languages', () => {
-    expect(sortedKeys(german)).toEqual(sortedKeys(english));
-  });
-
   it('have no empty texts', () => {
     expect(offenders((text) => text.trim() === '')).toEqual([]);
   });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { grayLayout } from '../chart/layouts';
 import type { ChartLayout, Corners } from '../chart/types';
+import { cardCorners } from '../test-support/cards';
 
 import { buildShapes, clientToImage } from './overlay-geometry';
 
@@ -58,13 +59,7 @@ describe('buildShapes', () => {
 
   it('places the patches of the gray cards as on the real cards', () => {
     // Both cards upright, 400 × 600 pixels: card 3 (50 %) on the left, card 4 (18 %) on the right.
-    const card = (x: number): Corners => [
-      { x, y: 50 },
-      { x: x + 400, y: 50 },
-      { x: x + 400, y: 650 },
-      { x, y: 650 },
-    ];
-    const shapes = buildShapes(grayLayout, { 3: card(100), 4: card(700) });
+    const shapes = buildShapes(grayLayout, { 3: cardCorners(100), 4: cardCorners(700) });
     const box = (key: string) => {
       const points = (shapes.find((shape) => shape.key === key)?.points ?? '')
         .split(' ')

@@ -1,34 +1,15 @@
 // @vitest-environment happy-dom
-import { IDBFactory } from 'fake-indexeddb';
 import { flushPromises, mount } from '@vue/test-utils';
 import type { VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setLookStorage, useLookStore } from '../look/look-store';
-import type { LookLut } from '../look/look';
 import { usePreviewStore } from '../lut/preview-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
-import type { NamedStorage } from '../storage/indexed-db';
+import { failingStorage } from '../test-support/failing-storage';
+import { IDENTITY_CUBE, cubeFile as file, emptyLookStorage } from '../test-support/look-cubes';
 
 import LookBar from './LookBar.vue';
-
-// A made-up look LUT that changes nothing (2³, R fastest).
-const IDENTITY_CUBE = [
-  'LUT_3D_SIZE 2',
-  '0 0 0',
-  '1 0 0',
-  '0 1 0',
-  '1 1 0',
-  '0 0 1',
-  '1 0 1',
-  '0 1 1',
-  '1 1 1',
-].join(String.fromCodePoint(10));
-
-function file(name: string) {
-  return { name, text: () => Promise.resolve(IDENTITY_CUBE) };
-}
 
 async function withLooks(...names: string[]): Promise<void> {
   await useLookStore().importFiles(names.map((name) => file(`${name}.cube`)));
@@ -53,7 +34,7 @@ async function pick(wrapper: VueWrapper, text: string): Promise<void> {
 describe('LookBar', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'test', 'looks'));
+    emptyLookStorage();
   });
 
   afterEach(() => {
@@ -173,9 +154,7 @@ describe('LookBar', () => {
   });
 
   it('reports problems of the local storage', async () => {
-    const fail = () => Promise.reject(new Error('gesperrt'));
-    const failing: NamedStorage<LookLut> = { list: fail, save: fail, remove: fail };
-    setLookStorage(failing);
+    setLookStorage(failingStorage());
     const wrapper = mount(LookBar);
     await useLookStore().load();
     await flushPromises();

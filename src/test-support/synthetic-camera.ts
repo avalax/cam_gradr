@@ -1,6 +1,11 @@
+import type { Rgb } from '../chart/types';
 import { labToLinearSrgb } from '../color/lab';
 import type { Vec3 } from '../color/lab';
 import { linearToSrgb } from '../color/srgb';
+import { fitColorModel } from '../solve/fit';
+import type { FitResult } from '../solve/fit';
+
+import { dummyIds, dummyLab, dummyReference } from './dummy-reference';
 
 // Artificial webcam with a known distortion: color mixing (row sum 1) and per-channel
 // gain and gamma. Tests use it as "ground truth": a good model undoes it.
@@ -26,4 +31,21 @@ export function cameraCode(lab: Vec3): Vec3 {
     linearToSrgb(channel(Number(mixed[1]), 1)),
     linearToSrgb(channel(Number(mixed[2]), 2)),
   ];
+}
+
+// What the artificial webcam measures on every patch of the made-up reference.
+export function syntheticMeasurements(): Record<string, Rgb> {
+  return Object.fromEntries(dummyIds().map((id) => [id, cameraCode(dummyLab(id))]));
+}
+
+const memory: { fit: FitResult | null } = { fit: null };
+
+// The color fit of these measurements against the made-up reference. A full fit takes about 100 ms,
+// so it runs once per test file; the result must not be changed.
+export function syntheticFit(): FitResult {
+  memory.fit ??= fitColorModel({
+    measurements: syntheticMeasurements(),
+    reference: dummyReference(),
+  });
+  return memory.fit;
 }

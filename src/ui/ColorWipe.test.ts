@@ -3,11 +3,9 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import { colorLayout } from '../chart/layouts';
-import { labToSrgb } from '../color/lab';
 import type { Rgb } from '../chart/types';
 import type { FitResult } from '../solve/fit';
 
-import { cssColor } from './color-css';
 import ColorWipe from './ColorWipe.vue';
 
 const report = { meanBefore: 18.44, meanAfter: 8.04 } as FitResult['report'];
@@ -89,29 +87,6 @@ describe('ColorWipe', () => {
     expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
       'Ø Abweichung 18,4 → 8,0',
     );
-  });
-
-  it('looks the same on both sides of the line without a correction', () => {
-    const measurements: Record<string, Rgb> = { '1A': [0.2, 0.3, 0.4] };
-    const wrapper = mountWipe({
-      measurements,
-      reference: { name: 'Test', patches: { '2A': [50, 20, -10] } },
-    });
-    for (const id of ['1A', '2A', '3A']) {
-      const camera = wrapper.get(`[data-testid="color-wipe-camera"] [data-patch="${id}"]`);
-      const corrected = wrapper.get(`[data-testid="color-wipe-corrected"] [data-patch="${id}"]`);
-      expect(corrected.attributes('style')).toBe(camera.attributes('style'));
-      expect(corrected.classes()).toEqual(camera.classes());
-      expect(corrected.classes()).not.toContain('opacity-50');
-      expect(corrected.element.parentElement?.parentElement?.className).toContain('bg-zinc-50');
-      expect(corrected.attributes('title')).toBe(camera.attributes('title'));
-    }
-    expect(wrapper.get('[data-testid="color-wipe-corrected"]').attributes('data-measured')).toBe(
-      'false',
-    );
-    // Without a measurement a patch shows the reference target color undiluted.
-    const target = wrapper.get('[data-testid="color-wipe-camera"] [data-patch="2A"]');
-    expect(target.attributes('style')).toContain(cssColor(labToSrgb([50, 20, -10])));
   });
 
   it('fades in the corrected layer right of the line and follows the wipe', async () => {

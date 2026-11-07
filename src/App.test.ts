@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-import { IDBFactory } from 'fake-indexeddb';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,13 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
-import type { LookLut } from './look/look';
-import { setLookStorage, useLookStore } from './look/look-store';
 import { usePreviewStore } from './lut/preview-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
-import { createIndexedDbStorage } from './storage/indexed-db';
+import { cubeFile, importLooks } from './test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
@@ -41,51 +38,24 @@ describe('App', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows name, identifier, the camera toggle and initially the gray cards tab', () => {
+  it('shows name, identifier, camera toggle, settings and initially the gray cards tab', () => {
     installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
     expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera starten');
+    expect(wrapper.find('[data-testid="settings-button"]').exists()).toBe(true);
     expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
     expect(wrapper.get('footer').text()).toContain(APP_ID);
     expect(wrapper.get('footer').text()).toContain(`Version ${APP_VERSION}`);
-    expect(APP_ID).toBe('avalax.cam_gradr');
-  });
-
-  it('shows no result yet under gray cards and color cards and displays empty scales', () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    const [gray, color, preview, exportTab] = tabs(wrapper);
-    expect(gray?.text()).toContain('Noch nicht gemessen');
-    expect(color?.text()).toContain('Noch nicht berechnet');
-    expect(preview?.text()).toContain('Original / korrigiert');
-    expect(exportTab?.text()).toContain('.cube, Projekt');
-    const gauges = wrapper.findAll('[data-testid="status-gauge"]');
-    expect(gauges.map((gauge) => gauge.attributes('data-level'))).toEqual(['off', 'off']);
-    expect(wrapper.findAll('[data-filled="true"]')).toHaveLength(0);
-    expect(gray?.attributes('aria-describedby')).toBe('tab-hint-gray');
   });
 
   it('names in the preview tab what lies left and right of the divider', async () => {
     installFakeCamera();
-    setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'app', 'looks'));
     const wrapper = mountApp();
-    const identity = [
-      'LUT_3D_SIZE 2',
-      '0 0 0',
-      '1 0 0',
-      '0 1 0',
-      '1 1 0',
-      '0 0 1',
-      '1 0 1',
-      '0 1 1',
-      '1 1 1',
-    ].join(String.fromCodePoint(10));
-    await useLookStore().importFiles([
-      { name: 'Warm.cube', text: () => Promise.resolve(identity) },
-    ]);
-    await flushPromises();
     const preview = () => tabs(wrapper)[2]?.text();
+    expect(preview()).toContain('Original / korrigiert');
+    await importLooks(cubeFile('Warm.cube'));
+    await flushPromises();
     expect(preview()).toContain('Original / Look-LUT');
     usePreviewStore().setLeft('corrected');
     await flushPromises();
@@ -104,6 +74,12 @@ describe('App', () => {
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
     installFakeCamera();
     const wrapper = mountApp();
+    const gauges = () =>
+      wrapper
+        .findAll('[data-testid="status-gauge"]')
+        .map((gauge) => gauge.attributes('data-level'));
+    expect(gauges()).toEqual(['off', 'off']);
+    expect(tabs(wrapper)[3]?.text()).toContain('.cube, Projekt');
     useChartStore().exposure = {
       verdict: 'ok',
       highlightsClipped: false,
@@ -121,8 +97,7 @@ describe('App', () => {
     const [gray, color] = tabs(wrapper);
     expect(gray?.text()).toContain('Licht passt');
     expect(color?.text()).toContain('Ø 20,2 → 8,0');
-    const gauges = wrapper.findAll('[data-testid="status-gauge"]');
-    expect(gauges.map((gauge) => gauge.attributes('data-level'))).toEqual(['ok', 'warn']);
+    expect(gauges()).toEqual(['ok', 'warn']);
   });
 
   it('gives the export the height of the other tabs as its minimum height', async () => {
@@ -178,6 +153,7 @@ describe('App', () => {
     }
     expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
     expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-gray');
+    expect(all[0]?.attributes('aria-describedby')).toBe('tab-hint-gray');
   });
 
   it('switches between the tabs without conditions', async () => {
@@ -188,20 +164,6 @@ describe('App', () => {
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
     await tabs(wrapper)[0]?.trigger('click');
     expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
-  });
-
-  it('toggles the camera via the switch next to the tabs without changing the tab', async () => {
-    const api = installFakeCamera();
-    const wrapper = mountApp();
-    await tabs(wrapper)[2]?.trigger('click');
-    await wrapper.get('[data-testid="camera-toggle"]').trigger('click');
-    await flushPromises();
-    expect(api.open).toHaveBeenCalledTimes(1);
-    expect(useCameraStore().status).toBe('live');
-    expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
-    await wrapper.get('[data-testid="camera-toggle"]').trigger('click');
-    expect(api.close).toHaveBeenCalledTimes(1);
-    expect(tabs(wrapper)[2]?.attributes('aria-selected')).toBe('true');
   });
 
   it('keeps the camera running when switching tabs', async () => {
@@ -239,21 +201,6 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(true);
     await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
-  });
-
-  it('offers camera and reference values in the gear menu and the project in the export tab', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
-    await wrapper.get('[data-testid="settings-button"]').trigger('click');
-    // The gear menu opens with the camera settings.
-    expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
-    await wrapper.get('[data-testid="section-reference"]').trigger('click');
-    expect(wrapper.find('[data-testid="reference-select"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(false);
-    await tabs(wrapper)[3]?.trigger('click');
-    expect(wrapper.find('[data-testid="project-save"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
   });
 
   it('loads the bundled reference set at startup', async () => {

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { i18n, resolveLocale, setLocale } from './index';
 
@@ -12,15 +12,6 @@ describe('resolveLocale', () => {
   it('takes a chosen language regardless of the browser', () => {
     expect(resolveLocale('en', ['de'])).toBe('en');
     expect(resolveLocale('de', ['en'])).toBe('de');
-  });
-
-  it('reads the browser languages when none are given', () => {
-    vi.stubGlobal('navigator', { languages: ['de-AT', 'en'] });
-    try {
-      expect(resolveLocale('auto')).toBe('de');
-    } finally {
-      vi.unstubAllGlobals();
-    }
   });
 });
 

@@ -1,19 +1,13 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { Rgb } from '../chart/types';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { dummyReference } from '../test-support/dummy-reference';
+import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import { useSolveStore } from './solve-store';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
+const reference = dummyReference();
+const measurements = syntheticMeasurements();
 
 describe('useSolveStore', () => {
   beforeEach(() => {

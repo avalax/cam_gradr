@@ -55,7 +55,22 @@ const en = {
   look: enLook,
 };
 
-const de = {
+// `en` is the reference: its keys type every `t('…')` call. `messages.test.ts` checks that the
+// placeholders match.
+type MessageSchema = typeof en;
+
+// The same messages, at every level with only the keys of the reference: `never` for an extra key.
+type SameKeys<T, Reference> = T extends string
+  ? string
+  : { [K in keyof T]: K extends keyof Reference ? SameKeys<T[K], Reference[K]> : never };
+
+// Takes a translation only if it has exactly the keys of English: a missing or an extra key does
+// not compile.
+function translation<T extends MessageSchema>(messages: T & SameKeys<T, MessageSchema>): T {
+  return messages;
+}
+
+const de = translation({
   app: deApp,
   camera: deCamera,
   settings: deSettings,
@@ -72,11 +87,7 @@ const de = {
   solve: deSolve,
   theme: deTheme,
   look: deLook,
-};
-
-// `en` is the reference: its keys type every `t('…')` call, and `messages.test.ts` checks that the
-// other languages have exactly the same keys and placeholders.
-type MessageSchema = typeof en;
+});
 
 export const messages = { en, de };
 

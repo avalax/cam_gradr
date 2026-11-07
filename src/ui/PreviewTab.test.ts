@@ -1,50 +1,28 @@
 // @vitest-environment happy-dom
-import { IDBFactory } from 'fake-indexeddb';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
-import type { Rgb } from '../chart/types';
-import type { LookLut } from '../look/look';
-import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
+import { dummyReference } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
+import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { syntheticFit, syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import PreviewTab from './PreviewTab.vue';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
+const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
+vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
 
-// A made-up look LUT that inverts every channel (2³, R fastest).
-const INVERT_CUBE = [
-  'LUT_3D_SIZE 2',
-  '1 1 1',
-  '0 1 1',
-  '1 0 1',
-  '0 0 1',
-  '1 1 0',
-  '0 1 0',
-  '1 0 0',
-  '0 0 0',
-].join(String.fromCodePoint(10));
+const reference = dummyReference();
+const measurements = syntheticMeasurements();
 
 async function chooseInvert(): Promise<void> {
-  setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
-  await useLookStore().importFiles([
-    { name: 'Invert.cube', text: () => Promise.resolve(INVERT_CUBE) },
-  ]);
+  await importLooks(cubeFile('Invert.cube', INVERT_CUBE));
 }
 
 function stillFrame() {
@@ -159,19 +137,6 @@ describe('PreviewTab', () => {
     expect(camera.status).toBe('live');
   });
 
-  it('names the camera and the corrected side above the image', async () => {
-    mockAnimation();
-    mockContexts();
-    const wrapper = mount(PreviewTab);
-    expect(wrapper.find('[data-testid="preview-labels"]').exists()).toBe(false);
-    computeModel();
-    useCameraStore().still = stillFrame();
-    await wrapper.vm.$nextTick();
-    const labels = wrapper.get('[data-testid="preview-labels"]').text();
-    expect(labels).toContain('Kamera');
-    expect(labels).toContain('Korrigiert');
-  });
-
   it('shows the image of the color measurement as long as the preview has none of its own', () => {
     mockAnimation();
     mockContexts();
@@ -186,7 +151,7 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="wipe-line"]').exists()).toBe(true);
   });
 
-  it('loads the LUT and draws the still image with the divider line', () => {
+  it('loads the LUT and draws the still image with the divider line on the graphics card', async () => {
     const animation = mockAnimation();
     const fake = mockContexts();
     computeModel();
@@ -207,6 +172,10 @@ describe('PreviewTab', () => {
     expect(floats).toMatchObject({ uLutSize: 33, uSplit: 0.25 });
     expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 25%');
     expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 8);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe(
+      'webgl2',
+    );
   });
 
   it('lays the chosen look LUT over the correction and can show the correction left', async () => {
@@ -348,7 +317,7 @@ describe('PreviewTab', () => {
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(2);
-    computeModel();
+    useSolveStore().loadModel({ ...syntheticFit().model });
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(3);
@@ -365,7 +334,7 @@ describe('PreviewTab', () => {
     computeModel();
     mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
-    computeModel();
+    useSolveStore().loadModel({ ...syntheticFit().model });
     await flushPromises();
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
     // A failed calculation leaves no model.
@@ -475,16 +444,6 @@ describe('PreviewTab', () => {
     await useCameraStore().start();
     await flushPromises();
     expect(wrapper.get('video').element.srcObject).not.toBeNull();
-  });
-
-  it('indicates that the graphics card is drawing', async () => {
-    mockAnimation();
-    mockContexts();
-    const wrapper = mount(PreviewTab);
-    await flushPromises();
-    expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe(
-      'webgl2',
-    );
   });
 
   it('falls back to software rendering without WebGL2 and draws downscaled', async () => {

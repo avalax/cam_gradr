@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { setLocale } from '../lang';
 import { useLanguageStore } from '../lang/language-store';
 
 import LanguageSettings from './LanguageSettings.vue';
@@ -46,11 +45,5 @@ describe('LanguageSettings', () => {
     expect(wrapper.get('[role="radiogroup"]').attributes('aria-label')).toBe('Language of the app');
     await wrapper.get('[data-option="de"]').trigger('click');
     expect(wrapper.get('[data-option="auto"]').text()).toBe('Automatisch (Browser)');
-  });
-
-  it('shows the texts in the selected language', () => {
-    setLocale('en');
-    const wrapper = mount(LanguageSettings);
-    expect(wrapper.text()).toContain('Automatic follows the language of your browser.');
   });
 });

@@ -1,55 +1,29 @@
 // @vitest-environment happy-dom
-import { IDBFactory } from 'fake-indexeddb';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useChartStore } from '../chart/chart-store';
-import type { Rgb } from '../chart/types';
-import type { LookLut } from '../look/look';
-import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { parseCube } from '../test-support/cube-parse';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
-import { cameraCode } from '../test-support/synthetic-camera';
+import { dummyReference } from '../test-support/dummy-reference';
+import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
+import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import ExportTab from './ExportTab.vue';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
-
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
-const measurements: Record<string, Rgb> = Object.fromEntries(
-  dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
-);
-
-// A made-up look LUT that inverts every channel (2³, R fastest).
-const INVERT_CUBE = [
-  'LUT_3D_SIZE 2',
-  '1 1 1',
-  '0 1 1',
-  '1 0 1',
-  '0 0 1',
-  '1 1 0',
-  '0 1 0',
-  '1 0 0',
-  '0 0 0',
-].join(String.fromCodePoint(10));
+const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
+vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
 
 async function chooseInvert(): Promise<void> {
-  setLookStorage(createIndexedDbStorage<LookLut>(new IDBFactory(), 'looks', 'looks'));
-  await useLookStore().importFiles([
-    { name: 'Invert.cube', text: () => Promise.resolve(INVERT_CUBE) },
-  ]);
+  await importLooks(cubeFile('Invert.cube', INVERT_CUBE));
 }
 
 function computeModel() {
-  useSolveStore().compute({ measurements, reference });
+  useSolveStore().compute({ measurements: syntheticMeasurements(), reference: dummyReference() });
 }
 
 describe('ExportTab', () => {

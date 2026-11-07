@@ -3,16 +3,13 @@ import { describe, expect, it } from 'vitest';
 import type { Rgb } from '../chart/types';
 import { labToLinearSrgb, linearSrgbToXyzD50, xyzD50ToLab } from '../color/lab';
 import type { Vec3 } from '../color/lab';
-import { dummyIds, dummyLab } from '../test-support/dummy-reference';
+import { dummyIds, dummyLab, dummyReference } from '../test-support/dummy-reference';
 import { cameraCode } from '../test-support/synthetic-camera';
 
 import { fitColorModel } from './fit';
 import { checkGrayCards } from './gray-check';
 
-const reference = {
-  name: 'Test',
-  patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
-};
+const reference = dummyReference();
 
 // The same color at a different exposure (its linear light times `exposure`).
 function exposed(lab: Vec3, exposure: number): Vec3 {
