@@ -273,6 +273,12 @@ describe('PreviewTab', () => {
     await wrapper.get('[data-testid="labels-left"]').trigger('click');
     expect(preview.left).toBe('corrected');
     expect(labels()).toBe('KorrigiertKamera + Look-LUT 100 %');
+    // The divider names the sides that are shown.
+    const wipe = wrapper.get('[data-testid="wipe"]');
+    expect(wipe.attributes('aria-label')).toBe(
+      'Trennlinie: links Korrigiert, rechts Kamera + Look-LUT 100 %',
+    );
+    expect(wipe.attributes('aria-valuetext')).toBe('50 % Korrigiert');
     await wrapper.get('[data-testid="labels-left"]').trigger('click');
     await wrapper.get('[data-testid="labels-right"]').trigger('click');
     expect(preview.left).toBe('camera');

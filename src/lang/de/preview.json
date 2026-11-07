@@ -9,7 +9,7 @@
   "noModelText": "Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und nachher.",
   "noSourceTitle": "Noch kein Bild",
   "noSourceText": "Schalte oben die Kamera an, um das Livebild zu sehen oder ein Standbild aufzunehmen.",
-  "divider": "Trennlinie: links Original, rechts korrigiert",
+  "divider": "Trennlinie: links {left}, rechts {right}",
   "labelCamera": "Kamera",
   "labelCorrected": "Korrigiert",
   "viewLabel": "Ansicht der Seitenspalte",

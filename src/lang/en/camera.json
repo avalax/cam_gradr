@@ -8,6 +8,7 @@
   "controls": {
     "camera": "Camera",
     "defaultCamera": "Default camera",
+    "unnamed": "Camera {number}",
     "resolution": "Resolution",
     "actualResolution": "Active resolution: {width} × {height}",
     "autoHint": "Lock auto exposure and auto white balance in your camera software. Automatic adjustments distort the measurement."

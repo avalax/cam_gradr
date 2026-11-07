@@ -393,7 +393,8 @@ const splitModel = computed({
               <WipeDivider
                 v-if="model !== null && hasSource"
                 v-model="splitModel"
-                :label="t('preview.divider')"
+                :label="t('preview.divider', { left: leftLabel, right: rightLabel })"
+                :left-name="leftLabel"
               />
               <!-- Toolbar in the image corner, where the card tabs have the trash: take a still
                    image while the camera runs. The side column only describes, it holds no actions. -->

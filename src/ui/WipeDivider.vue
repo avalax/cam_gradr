@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
 
-defineProps<{ label: string }>();
+defineProps<{
+  label: string;
+  // What the left side shows, for the value a screen reader announces.
+  leftName: string;
+}>();
 
-// Position of the divider in percent of the width (the original is to its left).
+// Position of the divider in percent of the width (the left side is to its left).
 const position = defineModel<number>({ required: true });
 
 const FULL = 100;
@@ -54,7 +58,7 @@ function onKey(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <!-- Wipe: the divider can be dragged or moved by keyboard; the original is to its left. -->
+  <!-- Wipe: the divider can be dragged or moved by keyboard. -->
   <div
     ref="area"
     class="absolute inset-0 cursor-ew-resize touch-none select-none outline-offset-2 focus-visible:outline"
@@ -65,7 +69,7 @@ function onKey(event: KeyboardEvent): void {
     aria-valuemin="0"
     :aria-valuemax="FULL"
     :aria-valuenow="position"
-    :aria-valuetext="`${String(position)} % Original`"
+    :aria-valuetext="`${String(position)} % ${leftName}`"
     data-testid="wipe"
     @pointerdown="onDown"
     @pointermove="onMove"

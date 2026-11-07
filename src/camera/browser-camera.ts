@@ -18,10 +18,7 @@ export function createBrowserCamera(getMedia: () => MediaApi | undefined): Camer
         const devices = await requireMedia(getMedia()).enumerateDevices();
         return devices
           .filter((device) => device.kind === 'videoinput')
-          .map((device, index) => ({
-            id: device.deviceId,
-            label: device.label === '' ? `Kamera ${String(index + 1)}` : device.label,
-          }));
+          .map((device) => ({ id: device.deviceId, label: device.label }));
       } catch (error) {
         throw toCameraError(error);
       }

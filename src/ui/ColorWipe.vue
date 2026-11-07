@@ -97,7 +97,12 @@ const summary = computed(() =>
         </div>
       </div>
 
-      <WipeDivider v-if="!live" v-model="split" :label="t('color.wipe.divider')" />
+      <WipeDivider
+        v-if="!live"
+        v-model="split"
+        :label="t('color.wipe.divider')"
+        :left-name="t('color.wipe.cameraLayer')"
+      />
     </div>
 
     <!-- The summary is also the trigger: on hover or keyboard focus the color correction result

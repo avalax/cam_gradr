@@ -1,5 +1,6 @@
 export interface VideoDevice {
   id: string;
+  // Empty while the browser hides the names (before the camera was allowed once).
   label: string;
 }
 
