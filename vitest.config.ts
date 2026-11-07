@@ -10,7 +10,7 @@ export default defineConfig({
     setupFiles: ['src/test-support/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
+      reporter: ['text'],
       include: ['src/**/*.{ts,vue}'],
       // Narrowly scoped exclusions: only the entry point and pure type declarations.
       exclude: [

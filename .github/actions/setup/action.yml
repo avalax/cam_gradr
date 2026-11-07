@@ -1,0 +1,19 @@
+name: Set up Node and the packages
+description: >-
+  Node from .nvmrc and the installed packages, kept per lockfile: npm ci takes about 40 s, restoring
+  node_modules a few. The workflows share the cache.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version-file: .nvmrc
+    - uses: actions/cache@v6
+      id: modules
+      with:
+        path: node_modules
+        key: node-modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+    - if: steps.modules.outputs.cache-hit != 'true'
+      run: npm ci
+      shell: bash

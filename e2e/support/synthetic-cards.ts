@@ -24,8 +24,8 @@ type CardNumber = keyof typeof CARD_PIXELS;
 // bright rooms are covered by the unit tests of the rating.
 const LIGHTING = { large18: 0.46, large50: 0.74, stripDark: 0.12, stripLight: 0.85 };
 
-// The gray cards, the color cards (step 2) or no cards at all.
-export type SceneName = 'gray' | 'colors' | 'empty';
+// The gray cards or the color cards (step 2).
+export type SceneName = 'gray' | 'colors';
 
 // One filled rectangle of the synthetic image (pixels, color 0..255).
 interface SceneRect {
@@ -136,11 +136,7 @@ export function colorPatchCenter(id: string): { x: number; y: number } {
 }
 
 export function sceneFor(name: SceneName): Scene {
-  if (name === 'empty') {
-    // No cards in the image: the search finds nothing and keeps running.
-    return { width: WIDTH, height: HEIGHT, rects: [background()] };
-  }
   return name === 'colors' ? colorScene() : grayScene();
 }
 
-export const SCENE_NAMES: readonly SceneName[] = ['gray', 'colors', 'empty'];
+export const SCENE_NAMES: readonly SceneName[] = ['gray', 'colors'];
