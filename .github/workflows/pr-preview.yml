@@ -30,20 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         if: github.event.action != 'closed'
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         if: github.event.action != 'closed'
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      # The installed packages of the CI, kept per lockfile (see ci.yml).
-      - uses: actions/cache@v6
-        id: modules
-        if: github.event.action != 'closed'
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
-      - run: npm ci
-        if: github.event.action != 'closed' && steps.modules.outputs.cache-hit != 'true'
       - run: npm run build
         if: github.event.action != 'closed'
         env:

@@ -139,7 +139,7 @@ describe('ExportTab', () => {
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
 
-  it('writes the look LUT chosen in the preview into the file, or only the correction', async () => {
+  it('downloads the selected size with the look LUT chosen in the preview, or only the correction', async () => {
     computeModel();
     await chooseInvert();
     usePreviewStore().setStrength(70);
@@ -153,10 +153,14 @@ describe('ExportTab', () => {
       'Look-LUT „Invert“ mit 70 %, eingestellt in der Vorschau.',
     );
     expect(wrapper.get('[data-testid="project-facts"]').text()).toContain('Invert · 70 %');
+    // The smallest size keeps the test fast.
+    await wrapper.get('[data-testid="export-size-17"]').trigger('click');
     await wrapper.get('[data-testid="export-download"]').trigger('click');
-    const [name, content] = download.mock.calls[0] as [string, string, string];
-    expect(name).toBe('cam_gradr-33-invert-70.cube');
+    const [name, content, mime] = download.mock.calls[0] as [string, string, string];
+    expect(name).toBe('cam_gradr-17-invert-70.cube');
+    expect(mime).toBe('text/plain');
     const looked = parseCube(content);
+    expect(looked.lut.size).toBe(17);
     expect(looked.title).toBe('cam_gradr + Invert 70 %');
     expect(content).toContain('# Look LUT: Invert.cube, strength 70 %');
 
@@ -167,10 +171,13 @@ describe('ExportTab', () => {
     );
     await wrapper.get('[data-testid="export-download"]').trigger('click');
     const [plainName, plainContent] = download.mock.calls[1] as [string, string, string];
-    expect(plainName).toBe('cam_gradr-33.cube');
+    expect(plainName).toBe('cam_gradr-17.cube');
     const plain = parseCube(plainContent);
     expect(plain.title).toBe('cam_gradr');
     expect(plainContent).not.toContain('Look LUT');
+    // The file holds the full correction: the node (r = 1/16 of the scale) does not stay on the
+    // identity.
+    expect(plain.lut.data[3 * (1 + 17 * 2 + 17 * 17 * 4)]).not.toBeCloseTo(1 / 16, 3);
     // The look moved the colors 70 % of the way towards their inverse.
     const first = Number(plain.lut.data[0]);
     expect(looked.lut.data[0]).toBeCloseTo(first + 0.7 * (1 - 2 * first), 4);
@@ -190,23 +197,5 @@ describe('ExportTab', () => {
     await wrapper.vm.$nextTick();
     await wrapper.get('[data-testid="export-look"] button').trigger('click');
     expect(wrapper.emitted('goto')).toEqual([['preview'], ['preview']]);
-  });
-
-  it('downloads a valid .cube file in the selected size', async () => {
-    computeModel();
-    const wrapper = mount(ExportTab);
-    await wrapper.get('[data-testid="export-size-17"]').trigger('click');
-    await wrapper.get('[data-testid="export-download"]').trigger('click');
-
-    expect(download).toHaveBeenCalledTimes(1);
-    const [name, content, mime] = download.mock.calls[0] as [string, string, string];
-    expect(name).toBe('cam_gradr-17.cube');
-    expect(mime).toBe('text/plain');
-    const parsed = parseCube(content);
-    expect(parsed.lut.size).toBe(17);
-    expect(parsed.title).toBe('cam_gradr');
-    // The file holds the full correction: the node (r = 1/16 of the scale) does not stay on the
-    // identity.
-    expect(parsed.lut.data[3 * (1 + 17 * 2 + 17 * 17 * 4)]).not.toBeCloseTo(1 / 16, 3);
   });
 });

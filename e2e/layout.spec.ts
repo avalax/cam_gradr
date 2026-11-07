@@ -39,7 +39,7 @@ test.describe('Layout', () => {
     }
   });
 
-  test('The image keeps its size while the camera starts and captures, nothing flickers', async ({
+  test('The image keeps its size while the camera starts and captures, and fits on one screen', async ({
     app,
   }) => {
     await app.open();
@@ -60,22 +60,14 @@ test.describe('Layout', () => {
       tick();
       return sizes;
     });
-    await app.startSearch();
-    await app.captureStill();
-    await app.expectCorners();
-
-    const sizes = await watcher.jsonValue();
-    expect(sizes).toHaveLength(1);
-    expect(sizes[0]).toMatch(/^[1-9]\d*x[1-9]\d*$/);
-  });
-
-  test('Image and buttons of the gray cards fit on one screen and use its width', async ({
-    app,
-  }) => {
-    await app.open();
     await app.startGrayStage();
     await app.captureStill();
     await app.expectCorners();
+
+    // Nothing flickers.
+    const sizes = await watcher.jsonValue();
+    expect(sizes).toHaveLength(1);
+    expect(sizes[0]).toMatch(/^[1-9]\d*x[1-9]\d*$/);
 
     // On a tall window the image uses the width: window width minus margins, frame around the
     // content, control column (21 rem) and measuring field.

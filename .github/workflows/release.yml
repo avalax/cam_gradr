@@ -24,8 +24,6 @@ jobs:
         with:
           # Own token (PAT or GitHub App) so that CI runs on the release PR.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
 
   # The Pages workflow publishes the release on GitHub Pages once this workflow has finished.
   publish:
@@ -36,11 +34,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/

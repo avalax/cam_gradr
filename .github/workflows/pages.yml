@@ -33,24 +33,16 @@ jobs:
         run: echo "tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
+      # The previews come from the branch pr-previews of this repository.
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.release.outputs.tag }}
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      # The installed packages of the CI, kept per lockfile of the release (see ci.yml).
-      - uses: actions/cache@v6
-        id: modules
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
-      - if: steps.modules.outputs.cache-hit != 'true'
-        run: npm ci
-      - run: npm run build
+      # The release workflow built the release for this base path and attached it as a zip.
+      - name: Unpack the build of the release
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'cam-gradr-*.zip' --dir "$RUNNER_TEMP"
+          unzip -q "$RUNNER_TEMP"/cam-gradr-*.zip -d dist
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
       - name: Add the previews of the open pull requests
         run: |
           if git fetch -q --depth 1 origin pr-previews && git cat-file -e FETCH_HEAD:pr-preview 2> /dev/null; then

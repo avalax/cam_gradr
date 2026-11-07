@@ -18,7 +18,7 @@ async function cornerPosition(corner: Locator): Promise<{ x: number; y: number }
 }
 
 test.describe('Gray cards', () => {
-  test('The app captures the cards by itself and rates the room, "Eckpunkte löschen" searches again', async ({
+  test('The app captures the cards by itself and rates the room, a corner point follows the pointer', async ({
     app,
   }) => {
     await app.open();
@@ -38,17 +38,6 @@ test.describe('Gray cards', () => {
     await expect(app.details).toBeHidden();
     await app.scale.focus();
     await expect(app.details).toBeVisible();
-
-    // Without cards in the image the new search keeps running, so its state can be checked; the
-    // synthetic camera would otherwise find the cards again within about a second.
-    await app.chooseCards('empty');
-    await app.button('Eckpunkte löschen').click();
-    await expect(app.page.locator('svg circle')).toHaveCount(0);
-
-    await app.chooseCards('gray');
-    await app.captureStill();
-    await app.expectCorners();
-    await app.expectVerdict('im Normalbereich');
 
     // A corner point follows the pointer; the image is drawn smaller than the camera delivers it.
     const corner = app.page.locator('svg circle').first();

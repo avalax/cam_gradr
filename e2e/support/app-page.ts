@@ -47,12 +47,6 @@ export class AppPage {
     await expect(this.cameraSwitch).toHaveAttribute('data-status', 'live');
   }
 
-  // Turns the camera off again with the switch.
-  async stopCamera(): Promise<void> {
-    await this.cameraSwitch.click();
-    await expect(this.cameraSwitch).toHaveAttribute('aria-checked', 'false');
-  }
-
   // Turns the camera on in a card tab. The app may find the cards, capture and switch the camera off
   // again within about a second, so either counts: the camera runs, or the corners are already set.
   async startSearch(): Promise<void> {
@@ -111,12 +105,6 @@ export class AppPage {
   // Holds other cards in front of the camera (e.g. the color cards after step 1).
   async showCards(scene: SceneName): Promise<void> {
     await showScene(this.page, scene);
-  }
-
-  // Chooses what the camera shows from its next image on, without waiting for it (the camera may be
-  // off).
-  async chooseCards(scene: SceneName): Promise<void> {
-    await setScene(this.page, scene);
   }
 
   // Gray cards complete: camera on, cards are detected and captured, then on to the color cards.
