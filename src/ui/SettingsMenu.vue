@@ -65,7 +65,7 @@ onBeforeUnmount(() => {
   <div class="relative" data-settings-root>
     <button
       type="button"
-      class="rounded border px-2 py-1 text-lg leading-none"
+      class="grid place-items-center rounded border px-[7px] py-[5px]"
       :aria-label="t('settings.title')"
       aria-haspopup="dialog"
       :aria-expanded="open"
@@ -73,7 +73,24 @@ onBeforeUnmount(() => {
       data-testid="settings-button"
       @click="open = !open"
     >
-      <span aria-hidden="true">⚙</span>
+      <!-- A line icon like the camera and the trash: the gear character turns into a colored emoji
+           in some browsers (Chrome on Windows). -->
+      <svg
+        class="size-[18px]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <!-- The hub as a path: the tests count the corner points as circles. -->
+        <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+        <path
+          d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+        />
+      </svg>
     </button>
     <div
       v-if="open"
