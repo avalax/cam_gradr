@@ -158,7 +158,7 @@ const stopLoop = shallowRef<(() => void) | null>(null);
 const stillCanvas = document.createElement('canvas');
 // The live image is drawn on every repaint, a still image only when it, the LUT or the divider
 // has changed since: redrawn on every repaint, Firefox now and then showed it partly black.
-const stillChanged = ref(true);
+let stillChanged = true;
 
 function drawStill(): void {
   const frame = shownStill.value;
@@ -168,7 +168,7 @@ function drawStill(): void {
     stillCanvas.height = frame.height;
     drawFrame(context, frame);
   }
-  stillChanged.value = true;
+  stillChanged = true;
 }
 
 // Chooses the image source: this tab's still image, otherwise the live image or the image of the color measurement.
@@ -204,7 +204,7 @@ function sizeKey(size: { width: number; height: number }): string {
 function drawFrameToCanvas(): void {
   const target = canvas.value;
   const source = currentSource();
-  const due = stillChanged.value || source?.image !== stillCanvas;
+  const due = stillChanged || source?.image !== stillCanvas;
   if (due && target !== null && source !== null && renderer.value !== null) {
     const size = renderer.value.outputSize(source);
     if (sizeKey(target) !== sizeKey(size)) {
@@ -213,7 +213,7 @@ function drawFrameToCanvas(): void {
       aspect.value = source.width / source.height;
     }
     renderer.value.render(source.image, { split: split.value / 100 });
-    stillChanged.value = false;
+    stillChanged = false;
   }
 }
 
@@ -258,14 +258,14 @@ watch(lut, (next) => {
   if (next !== null) {
     renderer.value?.setLut(next);
   }
-  stillChanged.value = true;
+  stillChanged = true;
 });
 watch(leftLut, (next) => {
   renderer.value?.setLeftLut(next);
-  stillChanged.value = true;
+  stillChanged = true;
 });
 watch(split, () => {
-  stillChanged.value = true;
+  stillChanged = true;
 });
 
 // Mean error before and after the correction while the report is available.

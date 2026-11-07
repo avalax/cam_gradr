@@ -98,14 +98,14 @@ const panelStyle = computed(() =>
     ? { minHeight: `${String(knownHeight.value)}px` }
     : undefined,
 );
-const stopTracking = ref<(() => void) | null>(null);
+let stopTracking: (() => void) | null = null;
 onMounted(() => {
   const element = panel.value;
   /* v8 ignore next 3 -- the content area exists as soon as the app is mounted */
   if (element === null) {
     return;
   }
-  stopTracking.value = trackHeight(element, (height) => {
+  stopTracking = trackHeight(element, (height) => {
     if (tab.value !== 'export') {
       knownHeight.value = height;
     }
@@ -113,7 +113,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  stopTracking.value?.();
+  stopTracking?.();
   camera.stop();
 });
 </script>

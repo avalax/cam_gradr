@@ -79,6 +79,11 @@ export default tseslint.config(
   {
     files: ['**/*.vue'],
     languageOptions: { parserOptions: { parser: tseslint.parser } },
+    rules: {
+      // The top level of <script setup> runs once per component instance, not once per module: a
+      // plain `let` there is the honest choice for state that nothing renders or watches.
+      'unicorn/no-top-level-assignment-in-function': 'off',
+    },
   },
   {
     // User-visible texts live in src/lang/ and are used through t(): no bare text in templates, and

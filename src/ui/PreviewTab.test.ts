@@ -17,6 +17,8 @@ import PreviewTab from './PreviewTab.vue';
 
 const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
 vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
+const { lutOnce } = await vi.hoisted(() => import('../test-support/lut-once'));
+vi.mock(import('../lut/lut'), async (original) => lutOnce(await original()));
 
 const reference = dummyReference();
 const measurements = syntheticMeasurements();

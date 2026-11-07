@@ -18,7 +18,7 @@ const open = ref(false);
 // The highlighted entry: 0 is "no look", then the looks, then the import.
 const active = ref(0);
 // The look when the list opened, for Escape.
-const before = ref<string | null>(null);
+let before: string | null = null;
 const list = useTemplateRef<HTMLUListElement>('list');
 
 const lastLook = computed(() => props.names.length);
@@ -47,7 +47,7 @@ function moveTo(index: number): void {
 }
 
 function openList(): void {
-  before.value = chosen.value;
+  before = chosen.value;
   active.value = selectedIndex.value;
   open.value = true;
 }
@@ -59,7 +59,7 @@ function close(): void {
 function choose(index: number): void {
   close();
   if (index === importIndex.value) {
-    chosen.value = before.value;
+    chosen.value = before;
     emit('import');
     return;
   }
@@ -104,7 +104,7 @@ const KEYS: Record<string, (event: KeyboardEvent) => void> = {
   ' ': confirm,
   Escape: () => {
     if (open.value) {
-      chosen.value = before.value;
+      chosen.value = before;
       close();
     }
   },

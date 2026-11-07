@@ -30,6 +30,18 @@ describe('ChoiceChips', () => {
     expect(wrapper.emitted('choose')).toEqual([[{ width: 640 }]]);
   });
 
+  it('can lock one option, and shows the segmented control grayed out while disabled', async () => {
+    const options = SIZES.map((option, index) => ({ ...option, disabled: index === 1 }));
+    const wrapper = mount(ChoiceChips, {
+      props: { options, selected: 'small', variant: 'segmented' },
+    });
+    const radios = wrapper.findAll('[role="radio"]');
+    expect(radios.map((radio) => radio.attributes('disabled'))).toEqual([undefined, '']);
+    expect(wrapper.get('[role="radiogroup"]').classes()).not.toContain('opacity-50');
+    await wrapper.setProps({ disabled: true });
+    expect(wrapper.get('[role="radiogroup"]').classes()).toContain('opacity-50');
+  });
+
   it('locks all options while disabled', () => {
     const wrapper = mount(ChoiceChips, {
       props: { options: SIZES, selected: 'small', disabled: true },
