@@ -8,6 +8,7 @@ import { useLanguageStore } from '../lang/language-store';
 import { useThemeStore } from '../theme/theme-store';
 import { useReferenceStore } from '../reference/reference-store';
 
+import { cameraName } from './camera-name';
 import CameraControls from './CameraControls.vue';
 import LanguageSettings from './LanguageSettings.vue';
 import ReferencePanel from './ReferencePanel.vue';
@@ -31,9 +32,12 @@ const { summary: languageSummary } = storeToRefs(useLanguageStore());
 const { summary: themeSummary } = storeToRefs(useThemeStore());
 
 const cameraSummary = computed(() => {
-  const device = devices.value.find((entry) => entry.id === selectedDeviceId.value);
+  const index = devices.value.findIndex((entry) => entry.id === selectedDeviceId.value);
+  const device = devices.value[index];
+  const name =
+    device === undefined ? t('camera.controls.defaultCamera') : cameraName(device, index);
   const size = actual.value ?? resolution.value;
-  return `${device?.label ?? t('camera.controls.defaultCamera')} · ${String(size.width)} × ${String(size.height)}`;
+  return `${name} · ${String(size.width)} × ${String(size.height)}`;
 });
 const referenceSummary = computed(() => selected.value?.name ?? t('settings.bundledSet'));
 

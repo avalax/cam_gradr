@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n';
 import { useCameraStore } from '../camera/camera-store';
 import { RESOLUTIONS } from '../camera/types';
 
+import { cameraName } from './camera-name';
+
 const { t } = useI18n();
 const store = useCameraStore();
 const { devices, selectedDeviceId, resolution, status, actual } = storeToRefs(store);
@@ -37,8 +39,8 @@ function onResolution(next: (typeof RESOLUTIONS)[number]): void {
         @change="onDevice"
       >
         <option value="">{{ t('camera.controls.defaultCamera') }}</option>
-        <option v-for="device in devices" :key="device.id" :value="device.id">
-          {{ device.label }}
+        <option v-for="(device, index) in devices" :key="device.id" :value="device.id">
+          {{ cameraName(device, index) }}
         </option>
       </select>
     </label>

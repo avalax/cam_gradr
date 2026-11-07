@@ -20,7 +20,8 @@ Everything runs in your browser. Images and measurements never leave your comput
 
 1. **Prepare the camera.** Lock auto exposure and auto white balance in the camera's own software; the
    app cannot do that, and automatic adjustments falsify the measurement. Choose the camera and the
-   resolution in the gear menu ⚙ (1280 × 720 is a good start) and switch the camera on at the top right.
+   resolution in the settings behind the gear icon (1280 × 720 is a good start) and switch the camera
+   on at the top right.
 2. **Gray cards: set the light.** Hold both gray cards steady where the subject will be. The app finds
    them, takes a still image and switches the camera off. A dot in the measuring field next to the image
    shows brightness (vertical) and contrast (horizontal). Change the light or the camera and start the
@@ -68,7 +69,7 @@ look LUTs into the file as well; loading the project in another browser then bri
 - The brightest gray patches must not burn out and the darkest must not sink into black. Fix the
   brightness first, then the contrast.
 - After the gray cards, change neither the light nor the camera settings.
-- The dark appearance (⚙ → Appearance) throws less light from the screen onto the cards.
+- The dark appearance (settings → Appearance) throws less light from the screen onto the cards.
 
 ## Questions
 
@@ -82,7 +83,7 @@ the still image as soon as it finds the cards twice in a row in the same place.
 camera automatics. Read the hints in the result and capture the cards again.
 
 **Can I change the language?** The app follows your browser (English or German). You can change it in
-⚙ → Language.
+settings → Language.
 
 **Which version do I have?** The line at the bottom of the page names it, and so does the first line of
 every `.cube` file. A preview of a pull request adds its number.
@@ -105,7 +106,7 @@ publish them in machine-readable form, but an unofficial transcription from the 
 (bartneck.de), with the typos the post mentions corrected. Whether they match your card exactly (batch,
 aging) is not proven.
 
-In ⚙ → Reference values you switch the set, import your own file or download the active set. A file
+In settings → Reference values you switch the set, import your own file or download the active set. A file
 holds Lab values (white point D50) per patch ID `1A` to `6H` (digit = row, letter = column; card 1 =
 columns A–D, card 2 = E–H), at least 12 patches with at least 4 neutral ones (columns D and E):
 

@@ -9,6 +9,7 @@ function mountDivider(modelValue = 50) {
     props: {
       modelValue,
       label: 'Wischer',
+      leftName: 'Kamera',
       'onUpdate:modelValue': (value: number) => wrapper.setProps({ modelValue: value }),
     },
   });
@@ -31,7 +32,7 @@ describe('WipeDivider', () => {
     const area = wrapper.get('[data-testid="wipe"]');
     expect(area.attributes('role')).toBe('slider');
     expect(area.attributes('aria-valuenow')).toBe('30');
-    expect(area.attributes('aria-valuetext')).toBe('30 % Original');
+    expect(area.attributes('aria-valuetext')).toBe('30 % Kamera');
     expect(area.attributes('aria-label')).toBe('Wischer');
     expect(area.attributes('tabindex')).toBe('0');
   });

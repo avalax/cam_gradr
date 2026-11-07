@@ -8,6 +8,7 @@
   "controls": {
     "camera": "Kamera",
     "defaultCamera": "Standardkamera",
+    "unnamed": "Kamera {number}",
     "resolution": "Auflösung",
     "actualResolution": "Aktive Auflösung: {width} × {height}",
     "autoHint": "Stelle Auto-Belichtung und Auto-Weißabgleich in der Kamera-Software fest. Automatische Anpassungen verfälschen die Messung."

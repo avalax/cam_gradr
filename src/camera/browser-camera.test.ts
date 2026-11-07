@@ -34,7 +34,7 @@ describe('createBrowserCamera', () => {
     );
     expect(await camera.enumerate()).toEqual([
       { id: 'v1', label: 'Webcam' },
-      { id: 'v2', label: 'Kamera 2' },
+      { id: 'v2', label: '' },
     ]);
   });
 
