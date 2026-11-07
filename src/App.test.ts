@@ -90,6 +90,12 @@ describe('App', () => {
     usePreviewStore().setLeft('corrected');
     await flushPromises();
     expect(preview()).toContain('Korrigiert / Look-LUT');
+    usePreviewStore().setRight('camera');
+    await flushPromises();
+    expect(preview()).toContain('Korrigiert / nur Look-LUT');
+    usePreviewStore().setLeft('camera');
+    await flushPromises();
+    expect(preview()).toContain('Original / nur Look-LUT');
     usePreviewStore().setLook(null);
     await flushPromises();
     expect(preview()).toContain('Original / korrigiert');

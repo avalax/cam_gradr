@@ -249,6 +249,43 @@ describe('PreviewTab', () => {
     expect(floats()).toMatchObject({ uLeftCorrected: 0 });
   });
 
+  it('switches both sides with a click on their labels, the right one to the look alone', async () => {
+    mockAnimation();
+    const fake = mockContexts();
+    computeModel();
+    useCameraStore().still = stillFrame();
+    await chooseInvert();
+    const preview = usePreviewStore();
+    const wrapper = mount(PreviewTab);
+    const labels = () => wrapper.get('[data-testid="preview-labels"]').text();
+    expect(wrapper.get('[data-testid="labels-right"]').attributes('title')).toBe(
+      'Klicken: Look-LUT ohne Korrektur',
+    );
+
+    await wrapper.get('[data-testid="labels-right"]').trigger('click');
+    expect(preview.right).toBe('camera');
+    expect(labels()).toBe('KameraKamera + Look-LUT 100 %');
+    expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
+    // Without correction the inverting look turns black into white.
+    const bytes = fake.call('texImage3D').mock.calls[1]?.[9] as Uint8Array;
+    expect([...bytes.slice(0, 3)]).toEqual([255, 255, 255]);
+
+    await wrapper.get('[data-testid="labels-left"]').trigger('click');
+    expect(preview.left).toBe('corrected');
+    expect(labels()).toBe('KorrigiertKamera + Look-LUT 100 %');
+    await wrapper.get('[data-testid="labels-left"]').trigger('click');
+    await wrapper.get('[data-testid="labels-right"]').trigger('click');
+    expect(preview.left).toBe('camera');
+    expect(preview.right).toBe('corrected');
+    expect(wrapper.get('[data-testid="labels-right"]').attributes('title')).toBe(
+      'Klicken: Look-LUT ohne Korrektur',
+    );
+    await wrapper.get('[data-testid="labels-right"]').trigger('click');
+    expect(wrapper.get('[data-testid="labels-right"]').attributes('title')).toBe(
+      'Klicken: Look-LUT mit Korrektur',
+    );
+  });
+
   it('draws the video image while the camera is running as soon as it has data', async () => {
     const animation = mockAnimation();
     const fake = mockContexts();

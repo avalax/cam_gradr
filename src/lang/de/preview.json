@@ -32,5 +32,10 @@
     "linkFailed": "Shader-Programm konnte nicht gelinkt werden: {log}",
     "noContext": "Weder WebGL2 noch ein 2D-Zeichenkontext sind verfügbar, die Vorschau ist nicht möglich."
   },
-  "labelLook": "Korrigiert + Look-LUT {strength} %"
+  "labelLook": "Korrigiert + Look-LUT {strength} %",
+  "labelLookCamera": "Kamera + Look-LUT {strength} %",
+  "switchToCorrected": "Klicken: korrigiert zeigen",
+  "switchToCamera": "Klicken: Kamerabild zeigen",
+  "switchLookCamera": "Klicken: Look-LUT ohne Korrektur",
+  "switchLookCorrected": "Klicken: Look-LUT mit Korrektur"
 }

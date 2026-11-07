@@ -27,6 +27,9 @@ describe('usePreviewStore', () => {
     expect(store.look).toBeNull();
     expect(store.strength).toBe(100);
     expect(store.left).toBe('camera');
+    expect(store.right).toBe('corrected');
+    store.setRight('camera');
+    expect(store.right).toBe('camera');
   });
 
   it('chooses a look, rounds and clamps its strength and sets the left side', () => {

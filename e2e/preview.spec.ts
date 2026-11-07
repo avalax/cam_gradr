@@ -105,16 +105,20 @@ test.describe('Preview', () => {
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
     await picker.press('ArrowDown');
     await expectPatch(app, RIGHT_PATCH, inverted(labToSrgb(dummyLab(RIGHT_PATCH))));
+    // A click on the label puts the look straight on the camera image, a second one back.
+    const tab = app.page.getByRole('tab', { name: 'Vorschau' });
+    await app.page.getByTestId('labels-right').click();
+    await expectPatch(app, RIGHT_PATCH, inverted(cameraCode(dummyLab(RIGHT_PATCH))));
+    await expect(tab).toContainText('Original / nur Look-LUT');
+    await app.page.getByTestId('labels-right').click();
     await app.page.getByTestId('look-strength').fill('50');
     await expectPatch(app, RIGHT_PATCH, [128, 128, 128]);
 
-    // With the divider on the right the left side shows the correction without the look.
+    // With the divider on the right a click on its label shows the correction without the look.
     await app.page.getByTestId('wipe').focus();
     await app.page.keyboard.press('End');
-    await app.page.getByTestId('look-left-corrected').click();
+    await app.page.getByTestId('labels-left').click();
     await expectPatch(app, RIGHT_PATCH, codes(labToSrgb(dummyLab(RIGHT_PATCH))));
-    await expect(app.page.getByRole('tab', { name: 'Vorschau' })).toContainText(
-      'Korrigiert / Look-LUT',
-    );
+    await expect(tab).toContainText('Korrigiert / Look-LUT');
   });
 });
