@@ -1,9 +1,12 @@
+import type { Vec3 } from '../color/lab';
+
 import type { CardLayout, ChartLayout, PatchLayout, Rect } from './types';
 
 const ROLES = new Set<unknown>(['large', 'strip', 'neutral']);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+// A JSON object (not an array); the readers of the layout, reference and project files share it.
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isInsideCard(rect: Rect): boolean {
@@ -39,7 +42,7 @@ function parseNominalLab(value: unknown, id: string): PatchLayout['nominalLab'] 
   if (!Array.isArray(value) || value.length !== 3 || value.some((n) => !Number.isFinite(n))) {
     throw new TypeError(`Patch ${id}: nominalLab must contain three numbers`);
   }
-  return value as unknown as [number, number, number];
+  return value as unknown as Vec3;
 }
 
 function parsePatch(value: unknown, card: number): PatchLayout {

@@ -1,7 +1,14 @@
-import { linearToSrgb, srgbToLinear } from './srgb';
+import { linearToSrgbClamped, srgbToLinear } from './srgb';
 
 export type Vec3 = readonly [number, number, number];
 type Matrix3 = readonly [Vec3, Vec3, Vec3];
+
+// Weights of the channels in the luminance of a linear sRGB value (Rec.709).
+export const LUMINANCE: Vec3 = [0.2126, 0.7152, 0.0722];
+
+export function luminanceOf([r, g, b]: Vec3): number {
+  return LUMINANCE[0] * r + LUMINANCE[1] * g + LUMINANCE[2] * b;
+}
 
 // Reference white points D50 (as in CSS Color 4) and D65, each with Y = 1.
 const WHITE_D50: Vec3 = [0.3457 / 0.3585, 1, (1 - 0.3457 - 0.3585) / 0.3585];
@@ -84,13 +91,9 @@ export function srgbToLab(code: Vec3): Vec3 {
 }
 
 // CIE Lab (D50) -> sRGB-encoded value, clamped to 0..1.
-function toCode(value: number): number {
-  return linearToSrgb(Math.min(Math.max(value, 0), 1));
-}
-
 export function labToSrgb(lab: Vec3): Vec3 {
   const [r, g, b] = xyzD50ToLinearSrgb(labToXyzD50(lab));
-  return [toCode(r), toCode(g), toCode(b)];
+  return [linearToSrgbClamped(r), linearToSrgbClamped(g), linearToSrgbClamped(b)];
 }
 
 // CIE Lab (D50) -> linear sRGB value (D65), unclamped.

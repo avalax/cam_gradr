@@ -1,6 +1,6 @@
 import { t } from '../lang';
 
-export type CameraErrorCode =
+type CameraErrorCode =
   'unsupported' | 'permission-denied' | 'not-found' | 'in-use' | 'unsatisfiable' | 'unknown';
 
 export class CameraError extends Error {

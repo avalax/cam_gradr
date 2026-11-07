@@ -1,36 +1,37 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  CORNERS_PER_CARD,
-  GRAY_CARD_ORDER,
-  useChartStore,
-  useColorChartStore,
-} from './chart-store';
-import { colorLayout, grayLayout } from './layouts';
-import type { Corners, PixelGrid } from './types';
+import type { Frame } from '../camera/frame';
+
+import { useChartStore, useColorChartStore } from './chart-store';
+import { colorLayout } from './layouts';
+import type { Corners } from './types';
 
 const point = (x: number, y: number) => ({ x, y });
 
-function placeCard(store: ReturnType<typeof useChartStore>, x: number) {
-  store.addCorner(point(x, 0));
-  store.addCorner(point(x + 100, 0));
-  store.addCorner(point(x + 100, 100));
-  store.addCorner(point(x, 100));
+// A card 100 pixels wide and high with its left edge at x.
+const card = (x: number): Corners => [
+  point(x, 0),
+  point(x + 100, 0),
+  point(x + 100, 100),
+  point(x, 100),
+];
+
+// Both cards as the detection finds them: the left one at x = 0, the right one at `right`.
+function placeCards(store: ReturnType<typeof useChartStore>, right: number) {
+  store.setCards([card(0), card(right)]);
 }
 
-// 200x100 image: chart 3 left, chart 4 right; patch brightness given per chart.
-function grid(left: number, right: number): PixelGrid {
-  const data = new Uint8ClampedArray(200 * 100 * 4);
+// 200x100 image: chart 3 left, chart 4 right; patch brightness (8-bit code) given per chart.
+function grid(left: number, right: number): Frame {
+  const data = new Float32Array(200 * 100 * 3);
   for (let y = 0; y < 100; y++) {
     for (let x = 0; x < 200; x++) {
-      data.set(
-        [x < 100 ? left : right, x < 100 ? left : right, x < 100 ? left : right, 255],
-        (y * 200 + x) * 4,
-      );
+      const value = (x < 100 ? left : right) / 255;
+      data.set([value, value, value], (y * 200 + x) * 3);
     }
   }
-  return { width: 200, height: 100, data, channels: 4, maxValue: 255 };
+  return { width: 200, height: 100, data };
 }
 
 describe('useChartStore', () => {
@@ -41,8 +42,7 @@ describe('useChartStore', () => {
   describe('search with held state', () => {
     function withCards() {
       const store = useChartStore();
-      placeCard(store, 0);
-      placeCard(store, 200);
+      placeCards(store, 200);
       store.measure(grid(200, 200));
       return store;
     }
@@ -106,54 +106,29 @@ describe('useChartStore', () => {
     });
   });
 
-  it('loads the gray layout with both cards', () => {
-    expect(grayLayout.cards.map((card) => card.card)).toEqual([...GRAY_CARD_ORDER]);
-  });
-
-  it('requires the corners in a fixed order', () => {
+  it('orders the corners whatever their order in the list', () => {
     const store = useChartStore();
-    expect(store.nextSlot).toEqual({ card: 3, index: 0 });
-    store.addCorner(point(1, 1));
-    expect(store.nextSlot).toEqual({ card: 3, index: 1 });
-    for (let i = 1; i < CORNERS_PER_CARD; i++) {
-      store.addCorner(point(i, i));
-    }
-    expect(store.nextSlot).toEqual({ card: 4, index: 0 });
-    expect(store.ready).toBe(false);
-  });
-
-  it('is ready when all 8 corners are set, and ignores further ones', () => {
-    const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
-    expect(store.ready).toBe(true);
-    expect(store.nextSlot).toBeNull();
-    store.addCorner(point(5, 5));
-    expect(store.points[3]).toHaveLength(4);
-    expect(store.points[4]).toHaveLength(4);
-    expect(Object.keys(store.corners)).toEqual(['3', '4']);
-  });
-
-  it('orders the corners regardless of the click order', () => {
-    const store = useChartStore();
-    // Click order: top left, bottom left, bottom right, top right.
-    store.addCorner(point(0, 0));
-    store.addCorner(point(0, 100));
-    store.addCorner(point(100, 100));
-    store.addCorner(point(100, 0));
-    expect(store.corners[3]).toEqual([point(0, 0), point(100, 0), point(100, 100), point(0, 100)]);
+    // The top right corner was dragged to the bottom left and the other way round.
+    store.setCards([[point(0, 0), point(0, 100), point(100, 100), point(100, 0)], card(100)]);
+    expect(store.corners[3]).toEqual(card(0));
     expect(store.points[3]?.[1]).toEqual(point(0, 100));
   });
 
-  it('returns corners only for complete charts', () => {
+  // A card with only some corners (as the corner list of a project file allows it).
+  function withCorners(...corners: { x: number; y: number }[]) {
     const store = useChartStore();
-    store.addCorner(point(1, 1));
+    store.restore({ points: { 3: corners }, measurements: {}, rotated: false });
+    return store;
+  }
+
+  it('returns corners only for complete charts', () => {
+    const store = withCorners(point(1, 1));
     expect(store.corners).toEqual({});
+    expect(store.ready).toBe(false);
   });
 
   it('moves existing corners and ignores unset ones', () => {
-    const store = useChartStore();
-    store.addCorner(point(1, 1));
+    const store = withCorners(point(1, 1));
     store.moveCorner(3, 0, point(9, 9));
     expect(store.points[3]).toEqual([point(9, 9)]);
     store.moveCorner(3, 2, point(5, 5));
@@ -163,17 +138,14 @@ describe('useChartStore', () => {
   });
 
   it('moves only the selected corner', () => {
-    const store = useChartStore();
-    store.addCorner(point(1, 1));
-    store.addCorner(point(2, 2));
+    const store = withCorners(point(1, 1), point(2, 2));
     store.moveCorner(3, 1, point(7, 7));
     expect(store.points[3]).toEqual([point(1, 1), point(7, 7)]);
   });
 
   it('measures and rates the exposure', () => {
     const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(grid(188, 118));
     expect(Object.keys(store.measurements).toSorted((a, b) => a.localeCompare(b))).toContain('G18');
     expect(store.exposure).not.toBeNull();
@@ -181,9 +153,7 @@ describe('useChartStore', () => {
 
   it('measures only the patches for the color charts, without rating room brightness', () => {
     const store = useColorChartStore();
-    expect(store.nextSlot).toEqual({ card: 1, index: 0 });
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(grid(188, 118));
     expect(Object.keys(store.measurements)).toContain('3A');
     expect(Object.keys(store.measurements)).toContain('3E');
@@ -225,12 +195,6 @@ describe('useChartStore', () => {
 
   it('adopts the detected charts from left to right', () => {
     const store = useChartStore();
-    const card = (x: number): Corners => [
-      point(x, 0),
-      point(x + 100, 0),
-      point(x + 100, 100),
-      point(x, 100),
-    ];
     store.setCards([card(0), card(100)]);
     expect(store.points[3]).toEqual(card(0));
     expect(store.points[4]).toEqual(card(100));
@@ -242,8 +206,7 @@ describe('useChartStore', () => {
 
   it('resets everything', () => {
     const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(grid(188, 118));
     store.reset();
     expect(store.points).toEqual({});
@@ -254,24 +217,22 @@ describe('useChartStore', () => {
 
   // Two charts side by side (100 pixels wide each); the strip patches run from top to bottom
   // dark→bright (upright) or bright→dark (held rotated by 180°).
-  function stripGrid(upright: boolean): PixelGrid {
-    const data = new Uint8ClampedArray(200 * 100 * 4);
+  function stripGrid(upright: boolean): Frame {
+    const data = new Float32Array(200 * 100 * 3);
     for (let y = 0; y < 100; y++) {
       for (let x = 0; x < 200; x++) {
         const inLeftStrip = x >= 72 && x < 95;
         const inRightStrip = x >= 106 && x < 124;
         const level = inLeftStrip || inRightStrip ? (upright ? y : 100 - y) / 100 : 0.3;
-        const value = Math.round(level * 255);
-        data.set([value, value, value, 255], (y * 200 + x) * 4);
+        data.set([level, level, level], (y * 200 + x) * 3);
       }
     }
-    return { width: 200, height: 100, data, channels: 4, maxValue: 255 };
+    return { width: 200, height: 100, data };
   }
 
   it('leaves upright charts unchanged', () => {
     const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(stripGrid(true));
     expect(store.rotated).toBe(false);
     expect(Number(store.measurements['S3-0']?.[0])).toBeLessThan(
@@ -284,8 +245,7 @@ describe('useChartStore', () => {
 
   it('detects charts rotated by 180° and reassigns the patches', () => {
     const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(stripGrid(false));
     expect(store.rotated).toBe(true);
     expect(Number(store.measurements['S3-0']?.[0])).toBeLessThan(
@@ -302,8 +262,7 @@ describe('useChartStore', () => {
 
   it('switches back with the image when the charts are held upright again', () => {
     const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(stripGrid(false));
     store.measure(stripGrid(true));
     expect(store.rotated).toBe(false);
@@ -311,8 +270,7 @@ describe('useChartStore', () => {
 
   it('keeps the previous orientation when the measurement allows no conclusion', () => {
     const store = useChartStore();
-    placeCard(store, 0);
-    placeCard(store, 100);
+    placeCards(store, 100);
     store.measure(stripGrid(false));
     store.measure(grid(100, 100));
     expect(store.rotated).toBe(true);
@@ -345,20 +303,16 @@ describe('color charts rotated by 180°', () => {
   // Color charts side by side (100 pixels wide each): chart 1 left, chart 2 right, or rotated by
   // 180° (chart 2 left, chart 1 right, both upside down). The gray ladder (rows 1–6 of columns D
   // and E) runs upright from bright at the top to dark at the bottom.
-  function colorGrid(rotated: boolean): PixelGrid {
-    const data = new Uint8ClampedArray(200 * 100 * 4).fill(255);
+  function colorGrid(rotated: boolean): Frame {
+    const data = new Float32Array(200 * 100 * 3).fill(1);
     // Colored fields are red, green or blue; the gray ladder is neutral.
     const hues = [
-      [204, 77, 77, 255],
-      [77, 204, 77, 255],
-      [77, 77, 204, 255],
+      [0.8, 0.3, 0.3],
+      [0.3, 0.8, 0.3],
+      [0.3, 0.3, 0.8],
     ];
     const paint = (x: number, y: number, level: number, hue: number | null) => {
-      const value = Math.round(level * 255);
-      data.set(
-        hue === null ? [value, value, value, 255] : (hues[hue % 3] ?? []),
-        (y * 200 + x) * 4,
-      );
+      data.set(hue === null ? [level, level, level] : (hues[hue % 3] ?? []), (y * 200 + x) * 3);
     };
     for (const card of colorLayout.cards) {
       const slot = (card.card === 1) === rotated ? 1 : 0;
@@ -374,44 +328,33 @@ describe('color charts rotated by 180°', () => {
         }
       }
     }
-    return { width: 200, height: 100, data, channels: 4, maxValue: 255 };
-  }
-
-  function placeBoth(store: ReturnType<typeof useColorChartStore>) {
-    for (const x of [0, 100]) {
-      store.addCorner(point(x, 0));
-      store.addCorner(point(x + 100, 0));
-      store.addCorner(point(x + 100, 100));
-      store.addCorner(point(x, 100));
-    }
+    return { width: 200, height: 100, data };
   }
 
   it('recognizes color charts as such, upright or rotated, but not gray cards in their place', () => {
     const color = useColorChartStore();
     for (const rotated of [false, true]) {
-      placeBoth(color);
+      placeCards(color, 100);
       color.measure(colorGrid(rotated));
       expect(color.plausible).toBe(true);
       color.reset();
     }
     const gray = useChartStore();
-    placeCard(gray, 0);
-    placeCard(gray, 100);
+    placeCards(gray, 100);
     gray.measure(grid(150, 90));
     expect(gray.plausible).toBe(true);
     gray.reset();
-    placeCard(gray, 0);
-    placeCard(gray, 100);
+    placeCards(gray, 100);
     gray.measure(colorGrid(false));
     expect(gray.plausible).toBe(false);
-    placeBoth(color);
+    placeCards(color, 100);
     color.measure(grid(150, 90));
     expect(color.plausible).toBe(false);
   });
 
   it('leaves upright color charts unchanged', () => {
     const store = useColorChartStore();
-    placeBoth(store);
+    placeCards(store, 100);
     store.measure(colorGrid(false));
     expect(store.rotated).toBe(false);
     expect(Number(store.measurements['1D']?.[0])).toBeGreaterThan(
@@ -421,7 +364,7 @@ describe('color charts rotated by 180°', () => {
 
   it('detects color charts rotated by 180° from the gray ladder and reassigns the patches', () => {
     const store = useColorChartStore();
-    placeBoth(store);
+    placeCards(store, 100);
     store.measure(colorGrid(true));
     expect(store.rotated).toBe(true);
     expect(Number(store.measurements['1D']?.[0])).toBeGreaterThan(

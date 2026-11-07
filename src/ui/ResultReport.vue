@@ -55,11 +55,9 @@ const tiles = computed(() =>
       <dd>{{ t('report.maxError') }}</dd>
       <dd data-testid="max-before">{{ format(result.report.maxBefore) }}</dd>
       <dd data-testid="max-after">{{ format(result.report.maxAfter) }}</dd>
-      <template v-if="result.report.neutral !== null">
-        <dd>{{ t('report.neutralMean', { count: result.report.neutral.count }) }}</dd>
-        <dd data-testid="neutral-before">{{ format(result.report.neutral.meanBefore) }}</dd>
-        <dd data-testid="neutral-after">{{ format(result.report.neutral.meanAfter) }}</dd>
-      </template>
+      <dd>{{ t('report.neutralMean', { count: result.report.neutral.count }) }}</dd>
+      <dd data-testid="neutral-before">{{ format(result.report.neutral.meanBefore) }}</dd>
+      <dd data-testid="neutral-after">{{ format(result.report.neutral.meanAfter) }}</dd>
       <template v-if="result.report.color !== null">
         <dd>{{ t('report.colorMean', { count: result.report.color.count }) }}</dd>
         <dd data-testid="color-before">{{ format(result.report.color.meanBefore) }}</dd>

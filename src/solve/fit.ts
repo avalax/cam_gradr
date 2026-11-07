@@ -1,13 +1,16 @@
 import { t } from '../lang';
 import {
+  LUMINANCE,
   deltaE2000,
   labToLinearSrgb,
   linearSrgbToXyzD50,
+  luminanceOf,
   srgbToLab,
   xyzD50ToLab,
 } from '../color/lab';
 import type { Vec3 } from '../color/lab';
-import { linearToSrgb, srgbToLinear } from '../color/srgb';
+import { linearToSrgbClamped, srgbToLinear } from '../color/srgb';
+import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import type { ReferenceSet } from '../reference/reference';
 
@@ -46,8 +49,9 @@ interface FitReport {
   meanAfter: number;
   maxBefore: number;
   maxAfter: number;
-  // Separated into neutral patches (gray ladder) and colored patches; null if there are none.
-  neutral: GroupStats | null;
+  // Separated into neutral patches (gray ladder) and colored patches. There are always neutral
+  // patches (the fit needs them); colored ones are null if the reference set has none.
+  neutral: GroupStats;
   color: GroupStats | null;
   // Neutral patches the camera can no longer tell apart (compressed or clipped highlights).
   indistinct: string[];
@@ -65,7 +69,6 @@ export interface FitInput {
   // Measured camera values (sRGB-encoded, 0..1) per patch ID.
   measurements: Readonly<Record<string, Rgb>>;
   reference: ReferenceSet;
-  neutralIds: ReadonlySet<string>;
 }
 
 const MIN_NEUTRAL = 4;
@@ -107,7 +110,6 @@ const GAMUT_KNEE = 0.8;
 // different blues apart.
 const MIN_PRIMARY_LUMINANCE = 0.5;
 const PRIMARY_PENALTY = 1000;
-const LUMINANCE: Vec3 = [0.2126, 0.7152, 0.0722];
 // Highest saturation (Lab chroma) relative to the reference that the matrix fine-tuning allows
 // without penalty, and the weight of the penalty above it. A 3×3 matrix cannot take back the
 // saturation of one hue alone: a lower limit against a camera that over-saturates its blues makes
@@ -157,7 +159,7 @@ function samples(input: FitInput): Sample[] {
         // The neutral patches, too, target their reference color and not a pure gray: the gray ramp
         // of a card is slightly tinted, and a camera that shows it correctly must stay unchanged.
         target: labToLinearSrgb(lab),
-        isNeutral: input.neutralIds.has(id),
+        isNeutral: NEUTRAL_IDS.has(id),
       });
     }
   }
@@ -230,7 +232,7 @@ function exposureGain(blocks: readonly Block[]): number {
   const logs = blocks
     .filter((block) => targetLevel(block) >= EXPOSURE_FROM && targetLevel(block) <= EXPOSURE_TO)
     .map((block) => ({ level: blockLevel(block), target: targetLevel(block) }))
-    .filter((entry) => entry.level > 0 && entry.target > 0)
+    .filter((entry) => entry.level > 0)
     .map((entry) => Math.log(entry.level / entry.target));
   return logs.length === 0 ? 1 : Math.exp(mean(logs));
 }
@@ -334,8 +336,7 @@ function buildCurve(points: readonly (readonly [number, number])[]): Curve {
   return { xs, ys: ys.map((y) => belowOne(y, SHOULDER, previous)) };
 }
 
-// Row-wise least-squares estimate of the matrix with the constraint row sum = 1 and
-// weak regularization toward the identity matrix.
+// A patch as the matrix and the hue table are fitted to it.
 interface Pair {
   // Camera value (sRGB-encoded) and its tone curve output (linear).
   measured: Vec3;
@@ -521,14 +522,6 @@ function curveFunctions(model: ColorModel): readonly [CurveFunction, CurveFuncti
   return functions;
 }
 
-function toCode(value: number): number {
-  return linearToSrgb(Math.min(Math.max(value, 0), 1));
-}
-
-function luminanceOf([r, g, b]: Vec3): number {
-  return LUMINANCE[0] * r + LUMINANCE[1] * g + LUMINANCE[2] * b;
-}
-
 // How far a linear color lies from the gray of luminance `y` towards the edge of the sRGB cube: 0 is
 // that gray, 1 the edge, more lies beyond it.
 function reachOf(color: Vec3, y: number): number {
@@ -608,12 +601,13 @@ function turnHue(color: Vec3, table: readonly number[]): Vec3 {
 // Pulls a linear target color with negative channels into the sRGB cube by desaturating it towards
 // the gray of the same luminance, onto the edge: the nearest color sRGB can show, with hue and
 // brightness kept. Channels above 1 do not occur, as the targets are compressed below white.
-function intoGamut([r, g, b]: Vec3): Vec3 {
+function intoGamut(color: Vec3): Vec3 {
+  const [r, g, b] = color;
   const low = Math.min(r, g, b);
   if (low >= 0) {
-    return [r, g, b];
+    return color;
   }
-  const luminance = Math.max(0.2126 * r + 0.7152 * g + 0.0722 * b, 0);
+  const luminance = Math.max(luminanceOf(color), 0);
   const factor = luminance / (luminance - low);
   return [
     luminance + (r - luminance) * factor,
@@ -652,7 +646,7 @@ function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3, table?: readonly 
     c[0] * u[0] + c[1] * u[1] + c[2] * u[2],
   ];
   const [r, g, blue] = withinGamut(u, table === undefined ? mixed : turnHue(mixed, table));
-  return [toCode(r), toCode(g), toCode(blue)];
+  return [linearToSrgbClamped(r), linearToSrgbClamped(g), linearToSrgbClamped(blue)];
 }
 
 // Blends the corrected value (sRGB code) of a camera value close to clipping in all channels
@@ -679,14 +673,12 @@ function mean(values: readonly number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function groupStats(errors: readonly PatchError[]): GroupStats | null {
-  return errors.length === 0
-    ? null
-    : {
-        count: errors.length,
-        meanBefore: mean(errors.map((error) => error.before)),
-        meanAfter: mean(errors.map((error) => error.after)),
-      };
+function groupStats(errors: readonly PatchError[]): GroupStats {
+  return {
+    count: errors.length,
+    meanBefore: mean(errors.map((error) => error.before)),
+    meanAfter: mean(errors.map((error) => error.after)),
+  };
 }
 
 function summarize(
@@ -696,6 +688,7 @@ function summarize(
 ): FitReport {
   const before = errors.map((error) => error.before);
   const after = errors.map((error) => error.after);
+  const colored = errors.filter((error) => !error.neutral);
   return {
     patches: [...errors],
     meanBefore: mean(before),
@@ -703,7 +696,7 @@ function summarize(
     maxBefore: Math.max(...before),
     maxAfter: Math.max(...after),
     neutral: groupStats(errors.filter((error) => error.neutral)),
-    color: groupStats(errors.filter((error) => !error.neutral)),
+    color: colored.length === 0 ? null : groupStats(colored),
     indistinct,
     exposureGain,
   };

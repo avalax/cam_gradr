@@ -1,8 +1,10 @@
+import type { Frame } from '../camera/frame';
+
 import { codeLuma } from './exposure';
 import type { ExposureInput } from './exposure';
 import { homographyFromCorners } from './homography';
 import { samplePatch } from './sample';
-import type { ChartLayout, Corners, PixelGrid, Rgb } from './types';
+import type { ChartLayout, Corners, Rgb } from './types';
 
 export type Measurements = Readonly<Record<string, Rgb>>;
 
@@ -10,7 +12,7 @@ export type Measurements = Readonly<Record<string, Rgb>>;
 export function measureChart(
   layout: ChartLayout,
   corners: Readonly<Record<number, Corners | undefined>>,
-  grid: PixelGrid,
+  frame: Frame,
 ): Measurements {
   const result: Record<string, Rgb> = {};
   for (const card of layout.cards) {
@@ -18,7 +20,7 @@ export function measureChart(
     if (cardCorners !== undefined) {
       const homography = homographyFromCorners(cardCorners);
       for (const patch of card.patches) {
-        const value = samplePatch(grid, homography, patch.rect);
+        const value = samplePatch(frame, homography, patch.rect);
         if (value !== null) {
           result[patch.id] = value;
         }

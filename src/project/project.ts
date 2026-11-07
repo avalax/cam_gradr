@@ -1,5 +1,6 @@
-import { COLOR_IDS, grayLayout } from '../chart/layouts';
-import type { Point, Rgb } from '../chart/types';
+import { isRecord } from '../chart/layout';
+import { COLOR_IDS, GRAY_IDS, colorLayout, grayLayout } from '../chart/layouts';
+import type { ChartLayout, Point, Rgb } from '../chart/types';
 import { t } from '../lang';
 import type { StillKey } from '../camera/camera-store';
 import { HUE_COEFFICIENTS } from '../solve/fit';
@@ -13,17 +14,11 @@ import type { EncodedLook } from './look-codec';
 
 export const PROJECT_FORMAT = 'cam_gradr-project/1';
 
-const GRAY_IDS: ReadonlySet<string> = new Set(
-  grayLayout.cards.flatMap((card) => card.patches.map((patch) => patch.id)),
-);
-const GRAY_CARDS = [3, 4];
-const COLOR_CARDS = [1, 2];
-
 // State of a card group: corner points set per card and measured camera values per field.
 interface ChartState {
   corners: Record<number, Point[]>;
   measurements: Record<string, Rgb>;
-  // Cards held rotated by 180° (missing in older project files).
+  // Cards held rotated by 180°.
   rotated: boolean;
 }
 
@@ -51,10 +46,6 @@ export interface Project {
 const STILL_KEYS: ReadonlySet<string> = new Set(['gray', 'color', 'preview']);
 const MAX_STILL_SIDE = 16_384;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function isNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -76,11 +67,11 @@ function parsePoint(value: unknown, where: string): Point {
 function parseCorners(
   value: Record<string, unknown>,
   where: string,
-  cards: number[],
+  layout: ChartLayout,
 ): Record<number, Point[]> {
   const corners: Record<number, Point[]> = {};
   for (const [key, list] of Object.entries(value)) {
-    if (!cards.includes(Number(key))) {
+    if (layout.cards.every((card) => card.card !== Number(key))) {
       throw new RangeError(t('project.errors.unknownCard', { where, key }));
     }
     if (!Array.isArray(list) || list.length > 4) {
@@ -115,16 +106,21 @@ function parseMeasurements(
 function parseChart(
   value: unknown,
   where: string,
-  cards: number[],
+  layout: ChartLayout,
   ids: ReadonlySet<string>,
 ): ChartState {
-  if (!isRecord(value) || !isRecord(value.corners) || !isRecord(value.measurements)) {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.corners) ||
+    !isRecord(value.measurements) ||
+    typeof value.rotated !== 'boolean'
+  ) {
     throw new TypeError(t('project.errors.chartShape', { where }));
   }
   return {
-    corners: parseCorners(value.corners, where, cards),
+    corners: parseCorners(value.corners, where, layout),
     measurements: parseMeasurements(value.measurements, where, ids),
-    rotated: value.rotated === true,
+    rotated: value.rotated,
   };
 }
 
@@ -291,7 +287,10 @@ export function parseProject(text: string): Project {
   if (!isRecord(raw) || raw.format !== PROJECT_FORMAT) {
     throw new TypeError(t('project.errors.unknownFormat', { format: PROJECT_FORMAT }));
   }
-  const color = parseChart(raw.color, t('project.errors.chartColor'), COLOR_CARDS, COLOR_IDS);
+  if (typeof raw.savedAt !== 'string') {
+    throw new TypeError(t('project.errors.savedAt'));
+  }
+  const color = parseChart(raw.color, t('project.errors.chartColor'), colorLayout, COLOR_IDS);
   // parseChart has already checked that raw.color is an object.
   const reference = (raw.color as Record<string, unknown>).reference;
   if (reference !== null && typeof reference !== 'string') {
@@ -303,8 +302,8 @@ export function parseProject(text: string): Project {
   const look = parseLook(raw.preview.look);
   return {
     format: PROJECT_FORMAT,
-    savedAt: typeof raw.savedAt === 'string' ? raw.savedAt : '',
-    gray: parseChart(raw.gray, t('project.errors.chartGray'), GRAY_CARDS, GRAY_IDS),
+    savedAt: raw.savedAt,
+    gray: parseChart(raw.gray, t('project.errors.chartGray'), grayLayout, GRAY_IDS),
     color: { ...color, reference },
     model: parseModel(raw.model),
     preview: {

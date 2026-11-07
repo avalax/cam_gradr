@@ -2,7 +2,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import { fitColorModel } from '../solve/fit';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
@@ -17,7 +16,7 @@ const reference = {
 const measurements: Record<string, Rgb> = Object.fromEntries(
   dummyIds().map((id) => [id, cameraCode(dummyLab(id))]),
 );
-const result = fitColorModel({ measurements, reference, neutralIds: NEUTRAL_IDS });
+const result = fitColorModel({ measurements, reference });
 
 describe('ResultReport', () => {
   it('shows mean and largest error before and after, also per kind of patch', () => {

@@ -1,3 +1,5 @@
+import type { Vec3 } from '../color/lab';
+
 export interface Point {
   x: number;
   y: number;
@@ -11,7 +13,8 @@ export interface Rect {
   h: number;
 }
 
-export type Rgb = readonly [number, number, number];
+// An RGB value (sRGB-encoded, 0..1), such as a measured camera value.
+export type Rgb = Vec3;
 
 // Corners of a chart in the image: top left, top right, bottom right, bottom left.
 export type Corners = readonly [Point, Point, Point, Point];
@@ -21,7 +24,7 @@ export interface PatchLayout {
   rect: Rect;
   role?: 'large' | 'strip' | 'neutral';
   // Nominal value (Lab, D50) if known; only for check patches, not from a measurement.
-  nominalLab?: readonly [number, number, number];
+  nominalLab?: Vec3;
 }
 
 export interface CardLayout {
@@ -31,13 +34,4 @@ export interface CardLayout {
 
 export interface ChartLayout {
   cards: readonly CardLayout[];
-}
-
-// Pixel grid with any number of channels (e.g. RGBA with 0..255 or RGB with 0..1).
-export interface PixelGrid {
-  width: number;
-  height: number;
-  data: ArrayLike<number>;
-  channels: number;
-  maxValue: number;
 }

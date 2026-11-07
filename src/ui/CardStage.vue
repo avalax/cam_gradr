@@ -16,11 +16,10 @@ import { useCameraStore } from '../camera/camera-store';
 import { drawFrame } from '../camera/draw-frame';
 import type { Frame } from '../camera/frame';
 import type { ChartStore } from '../chart/chart-store';
-import { detectCards, detectOutlines, sameCards } from '../chart/detect';
+import { detectOutlines, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
 import { imageMaxWidth as maxWidthFor } from './image-size';
-import { frameGrid } from './gray-monitor';
 import { buildShapes, clientToImage } from './overlay-geometry';
 import StageLabel from './StageLabel.vue';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
@@ -166,8 +165,9 @@ async function autoCapture(fromLive: Corners[]): Promise<void> {
     capturing.value = false;
     return;
   }
-  const found = detectCards(frame, props.layout.cards.length);
-  if (found !== null && sameCards(found, fromLive, STEADY_SHARE * frame.width)) {
+  // Only all cards count; `sameCards` also compares their number with the live image.
+  const found = detectOutlines(frame, props.layout.cards.length);
+  if (sameCards(found, fromLive, STEADY_SHARE * frame.width)) {
     props.store.setCards(found);
     await nextTick();
     if (props.store.plausible) {
@@ -262,7 +262,7 @@ watch(
 watch([still, points], () => {
   const frame = still.value;
   if (frame !== null) {
-    props.store.measure(frameGrid(frame));
+    props.store.measure(frame);
   }
 });
 

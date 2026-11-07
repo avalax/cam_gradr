@@ -11,13 +11,9 @@ import type { Frame } from './frame';
 import { DEFAULT_RESOLUTION } from './types';
 import type { CameraApi, CameraSession, Resolution, VideoDevice } from './types';
 
-export type CameraStatus = 'idle' | 'starting' | 'live' | 'error';
-
 // The tabs with a camera image; each has its own still image.
 export type StillKey = 'gray' | 'color' | 'preview';
 export type Stills = Partial<Record<StillKey, Frame>>;
-
-const STILL_FRAME_COUNT = 8;
 
 const holder: { api: CameraApi } = {
   api: createBrowserCamera(() => navigator.mediaDevices),
@@ -32,7 +28,7 @@ export const useCameraStore = defineStore('camera', () => {
   const devices = ref<VideoDevice[]>([]);
   const selectedDeviceId = ref<string | null>(null);
   const resolution = ref<Resolution>(DEFAULT_RESOLUTION);
-  const status = ref<CameraStatus>('idle');
+  const status = ref<'idle' | 'starting' | 'live' | 'error'>('idle');
   const errorMessage = ref<string | null>(null);
   const stream = shallowRef<MediaStream | null>(null);
   const actual = ref<Resolution | null>(null);
@@ -147,10 +143,10 @@ export const useCameraStore = defineStore('camera', () => {
     parked.value = rest;
   }
 
-  async function captureStill(grabber: FrameGrabber, count = STILL_FRAME_COUNT): Promise<void> {
+  async function captureStill(grabber: FrameGrabber): Promise<void> {
     errorMessage.value = null;
     try {
-      still.value = await captureAveraged(grabber, count);
+      still.value = await captureAveraged(grabber);
       // The new still image replaces the held one.
       held.value = null;
     } catch (error) {

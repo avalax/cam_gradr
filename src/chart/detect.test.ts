@@ -2,8 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import type { Frame } from '../camera/frame';
 
-import { detectCards, detectOutlines, sameCards } from './detect';
+import { detectOutlines, sameCards } from './detect';
 import type { Corners, Point } from './types';
+
+// All `count` cards, or null while not all of them are found (as the capture takes them).
+function detectAll(frame: Frame, count: number): Corners[] | null {
+  const found = detectOutlines(frame, count);
+  return found.length === count ? found : null;
+}
 
 const SIZE = { width: 640, height: 360 };
 const TOLERANCE = 12;
@@ -65,14 +71,14 @@ function expectCard(card: Corners | undefined, x: number, y: number, w: number, 
   expectPoint(card?.[3], { x, y: y + h });
 }
 
-describe('detectCards', () => {
+describe('detectOutlines with all cards', () => {
   it('finds two charts from left to right with the corners clockwise', () => {
     // The right chart is drawn first: the position in the image counts, not the order.
     const frame = scene((f) => {
       drawCard(f, 380, 60, 160, 250);
       drawCard(f, 90, 70, 170, 260);
     });
-    const cards = detectCards(frame, 2);
+    const cards = detectAll(frame, 2);
     expect(cards).toHaveLength(2);
     expectCard(cards?.[0], 90, 70, 170, 260);
     expectCard(cards?.[1], 380, 60, 160, 250);
@@ -82,7 +88,7 @@ describe('detectCards', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { shear: 24 });
     });
-    const [card] = detectCards(frame, 1) ?? [];
+    const [card] = detectAll(frame, 1) ?? [];
     expectPoint(card?.[0], { x: 100, y: 60 });
     expectPoint(card?.[1], { x: 260, y: 60 });
     expectPoint(card?.[2], { x: 284, y: 310 });
@@ -93,21 +99,21 @@ describe('detectCards', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { dark: 0.28 });
     });
-    expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
+    expectCard(detectAll(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
   it('also finds a gray frame, as a webcam delivers in bright light', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { dark: 0.42 });
     });
-    expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
+    expectCard(detectAll(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
   it('also finds the corners with tabs in the top and bottom edges', () => {
     const frame = scene((f) => {
       drawCard(f, 100, 60, 160, 250, { tabs: true });
     });
-    expectCard(detectCards(frame, 1)?.[0], 100, 60, 160, 250);
+    expectCard(detectAll(frame, 1)?.[0], 100, 60, 160, 250);
   });
 
   it('detects a perspective-distorted chart (a bit narrower at the top)', () => {
@@ -120,7 +126,7 @@ describe('detectCards', () => {
         }
       }
     });
-    const [card] = detectCards(frame, 1) ?? [];
+    const [card] = detectAll(frame, 1) ?? [];
     expectPoint(card?.[0], { x: 110, y: 60 });
     expectPoint(card?.[1], { x: 250, y: 60 });
     expectPoint(card?.[2], { x: 260, y: 310 });
@@ -147,7 +153,7 @@ describe('detectCards', () => {
         }
       }
     }
-    expect(detectCards({ ...SIZE, data }, 1)).toBeNull();
+    expect(detectAll({ ...SIZE, data }, 1)).toBeNull();
   });
 
   it('rejects two charts that do not match each other', () => {
@@ -155,7 +161,7 @@ describe('detectCards', () => {
       drawCard(f, 60, 60, 170, 260);
       drawCard(f, 380, 120, 100, 160);
     });
-    expect(detectCards(frame, 2)).toBeNull();
+    expect(detectAll(frame, 2)).toBeNull();
   });
 
   it('works on a downscaled copy for larger images', () => {
@@ -163,7 +169,7 @@ describe('detectCards', () => {
     const height = 720;
     const frame = { width, height, data: new Float32Array(width * height * 3).fill(BACKGROUND) };
     drawCard(frame, 300, 100, 340, 520);
-    expectCard(detectCards(frame, 1)?.[0], 300, 100, 340, 520);
+    expectCard(detectAll(frame, 1)?.[0], 300, 100, 340, 520);
   });
 
   it('also finds small charts, held at the distance of the subject (about 17 % of the image height)', () => {
@@ -171,7 +177,7 @@ describe('detectCards', () => {
       drawCard(f, 250, 150, 38, 60);
       drawCard(f, 302, 150, 38, 60);
     });
-    const cards = detectCards(frame, 2);
+    const cards = detectAll(frame, 2);
     expect(cards).toHaveLength(2);
     expectCard(cards?.[0], 250, 150, 38, 60);
     expectCard(cards?.[1], 302, 150, 38, 60);
@@ -181,7 +187,7 @@ describe('detectCards', () => {
     const oneCard = scene((f) => {
       drawCard(f, 90, 70, 170, 260);
     });
-    expect(detectCards(oneCard, 2)).toBeNull();
+    expect(detectAll(oneCard, 2)).toBeNull();
   });
 
   it('picks the matching pair out of three charts', () => {
@@ -191,7 +197,7 @@ describe('detectCards', () => {
       // Much smaller than the other two: does not fit the pair.
       drawCard(f, 520, 150, 90, 140);
     });
-    const found = detectCards(frame, 2);
+    const found = detectAll(frame, 2);
     expect(found).toHaveLength(2);
     expectPoint(found?.[0]?.[0], { x: 60, y: 60 });
     expectPoint(found?.[1]?.[0], { x: 300, y: 60 });
@@ -203,7 +209,7 @@ describe('detectCards', () => {
       drawCard(f, 230, 60, 170, 260);
       drawCard(f, 440, 60, 170, 260);
     });
-    expect(detectCards(frame, 2)).toHaveLength(2);
+    expect(detectAll(frame, 2)).toHaveLength(2);
   });
 
   it('rejects charts that are stacked instead of side by side', () => {
@@ -211,7 +217,7 @@ describe('detectCards', () => {
       drawCard(f, 200, 10, 110, 160);
       drawCard(f, 200, 190, 110, 160);
     });
-    expect(detectCards(frame, 2)).toBeNull();
+    expect(detectAll(frame, 2)).toBeNull();
   });
 
   it('keeps the tighter frame when a shadow next to the chart makes the dark area larger', () => {
@@ -224,7 +230,7 @@ describe('detectCards', () => {
         }
       }
     });
-    const card = detectCards(frame, 1)?.[0];
+    const card = detectAll(frame, 1)?.[0];
     expectPoint(card?.[1], { x: 260, y: 60 });
     expectPoint(card?.[2], { x: 260, y: 310 });
   });
@@ -240,7 +246,7 @@ describe('detectCards', () => {
         }
       }
     });
-    expect(detectCards(frame, 1)).toHaveLength(1);
+    expect(detectAll(frame, 1)).toHaveLength(1);
   });
 
   it('takes neither a flat nor a narrow dark line for a chart', () => {
@@ -257,12 +263,12 @@ describe('detectCards', () => {
         }
       }
     });
-    expect(detectCards(frame, 1)).toBeNull();
+    expect(detectAll(frame, 1)).toBeNull();
   });
 
   it('finds nothing in a uniform image', () => {
     expect(
-      detectCards(
+      detectAll(
         scene(() => {
           // empty image
         }),
@@ -281,7 +287,7 @@ describe('detectCards', () => {
       // Landscape.
       drawCard(f, 300, 200, 300, 120);
     });
-    expect(detectCards(frame, 1)).toHaveLength(1);
+    expect(detectAll(frame, 1)).toHaveLength(1);
   });
 });
 
@@ -337,12 +343,12 @@ function expectCorners(cards: Corners[] | null, tolerance: number): void {
   }
 }
 
-describe('detectCards at full resolution', () => {
+describe('detectOutlines at full resolution', () => {
   it('finds the edges of the charts to a fraction of a pixel, although it searches downscaled', () => {
     const frame = fineScene((f, box) => {
       cover(f, box, 0.05);
     });
-    expectCorners(detectCards(frame, 2), 0.5);
+    expectCorners(detectAll(frame, 2), 0.5);
   });
 
   it('takes the edge of the chart, not the gray shadow of the case wall next to it', () => {
@@ -351,7 +357,7 @@ describe('detectCards at full resolution', () => {
       cover(f, { x: box.x - 9, y: box.y - 9, w: box.w + 18, h: box.h + 18 }, 0.2);
       cover(f, box, 0.05);
     });
-    expectCorners(detectCards(frame, 2), 0.5);
+    expectCorners(detectAll(frame, 2), 0.5);
   });
 
   it('takes the middle of a slow ramp, as a bright shot blurs the edge', () => {
@@ -369,7 +375,7 @@ describe('detectCards at full resolution', () => {
     });
     // Within a ramp of 12 pixels the edge is only known roughly; the foot of the ramp, which the
     // first step alone would take, lies about 5 pixels inside.
-    expectCorners(detectCards(frame, 2), 2.5);
+    expectCorners(detectAll(frame, 2), 2.5);
   });
 
   it('keeps the edge of the downscaled search where the surround is hardly brighter', () => {
@@ -377,17 +383,19 @@ describe('detectCards at full resolution', () => {
     const frame = fineScene((f, box) => {
       cover(f, box, 0.08);
     }, 0.12);
-    expectCorners(detectCards(frame, 2), 8);
+    expectCorners(detectAll(frame, 2), 8);
   });
 });
 
 describe('detectOutlines', () => {
-  it('returns both charts as soon as both are there, like detectCards', () => {
+  it('returns both charts from left to right as soon as both are there', () => {
     const frame = scene((f) => {
       drawCard(f, 380, 60, 160, 250);
       drawCard(f, 90, 70, 170, 260);
     });
-    expect(detectOutlines(frame, 2)).toEqual(detectCards(frame, 2));
+    const outlines = detectOutlines(frame, 2);
+    expect(outlines).toHaveLength(2);
+    expect(outlines[0]?.[0].x).toBeLessThan(Number(outlines[1]?.[0].x));
   });
 
   it('returns the one chart that is found while the other is missing', () => {

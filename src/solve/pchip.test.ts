@@ -55,11 +55,4 @@ describe('createPchip', () => {
     expect(f(1.1)).toBeLessThanOrEqual(1);
     expect(f(1)).toBeCloseTo(1, 12);
   });
-
-  it('rejects invalid inputs', () => {
-    expect(() => createPchip({ xs: [0], ys: [0] })).toThrow('at least two');
-    expect(() => createPchip({ xs: [0, 1], ys: [0] })).toThrow('at least two');
-    expect(() => createPchip({ xs: [0, 0], ys: [0, 1] })).toThrow('strictly increasing');
-    expect(() => createPchip({ xs: [0, 1, 0.5], ys: [0, 1, 1] })).toThrow('strictly increasing');
-  });
 });

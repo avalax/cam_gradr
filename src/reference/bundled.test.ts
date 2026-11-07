@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
+import { COLOR_IDS } from '../chart/layouts';
 
-import { BUNDLED_NAME, BUNDLED_SOURCE_URL, bundledReferenceText } from './bundled';
-import { parseReferenceJson } from './reference';
+import { BUNDLED_NAME, BUNDLED_SOURCE_URL, bundledReference } from './bundled';
 
 describe('mitgelieferter Referenzsatz', () => {
   it('is a valid set with all 48 color fields', () => {
-    const set = parseReferenceJson(bundledReferenceText(), {
-      knownIds: COLOR_IDS,
-      neutralIds: NEUTRAL_IDS,
-    });
+    const set = bundledReference();
     expect(set.name).toBe(BUNDLED_NAME);
     expect(Object.keys(set.patches).toSorted((a, b) => a.localeCompare(b))).toEqual(
       [...COLOR_IDS].toSorted((a, b) => a.localeCompare(b)),

@@ -5,7 +5,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useChartStore } from '../chart/chart-store';
-import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import type { LookLut } from '../look/look';
 import { setLookStorage, useLookStore } from '../look/look-store';
@@ -50,7 +49,7 @@ async function chooseInvert(): Promise<void> {
 }
 
 function computeModel() {
-  useSolveStore().compute({ measurements, reference, neutralIds: NEUTRAL_IDS });
+  useSolveStore().compute({ measurements, reference });
 }
 
 describe('ExportTab', () => {

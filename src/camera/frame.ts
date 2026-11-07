@@ -1,3 +1,5 @@
+import { CHANNELS, MAX_CODE } from '../color/srgb';
+
 export interface RawFrame {
   width: number;
   height: number;
@@ -11,9 +13,8 @@ export interface Frame {
   data: Float32Array;
 }
 
+// Raw frames come from a canvas as RGBA.
 const CHANNELS_IN = 4;
-const CHANNELS_OUT = 3;
-const MAX_CODE = 255;
 
 // Averages several RGBA frames of equal size into one RGB frame (noise reduction).
 export function averageFrames(frames: readonly RawFrame[]): Frame {
@@ -27,9 +28,9 @@ export function averageFrames(frames: readonly RawFrame[]): Frame {
     }
   }
   const scale = 1 / (frames.length * MAX_CODE);
-  const data = new Float32Array(first.width * first.height * CHANNELS_OUT);
+  const data = new Float32Array(first.width * first.height * CHANNELS);
   for (let index = 0; index < data.length; index++) {
-    const source = Math.floor(index / CHANNELS_OUT) * CHANNELS_IN + (index % CHANNELS_OUT);
+    const source = Math.floor(index / CHANNELS) * CHANNELS_IN + (index % CHANNELS);
     let total = 0;
     for (const frame of frames) {
       total += frame.data[source] ?? 0;

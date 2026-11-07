@@ -1,4 +1,6 @@
 import type { Frame } from '../camera/frame';
+import { LUMINANCE } from '../color/lab';
+import { CHANNELS } from '../color/srgb';
 
 import { sortCorners } from './corner-order';
 import type { Corners, Point } from './types';
@@ -41,7 +43,6 @@ const SAME_PLACE = 0.5;
 // and makes the area too large, while the frame itself stays straight.
 const CLEAN_EDGE_ERROR = 0.01;
 const UNCLEAN_RANK = 1e9;
-const LUMA = [0.2126, 0.7152, 0.0722] as const;
 // Refinement at full resolution: the profile reaches this far (in downscaled pixels) to both sides
 // of the coarse edge, the surround must be at least this much brighter than the dark frame, a rise
 // out of the frame counts from this share of the way to the brightest point outside and goes on as
@@ -85,11 +86,11 @@ function toGray(frame: Frame): Gray {
       let total = 0;
       for (let dy = 0; dy < scale; dy++) {
         for (let dx = 0; dx < scale; dx++) {
-          const offset = ((y * scale + dy) * frame.width + x * scale + dx) * LUMA.length;
+          const offset = ((y * scale + dy) * frame.width + x * scale + dx) * CHANNELS;
           total +=
-            LUMA[0] * Number(frame.data[offset]) +
-            LUMA[1] * Number(frame.data[offset + 1]) +
-            LUMA[2] * Number(frame.data[offset + 2]);
+            LUMINANCE[0] * Number(frame.data[offset]) +
+            LUMINANCE[1] * Number(frame.data[offset + 1]) +
+            LUMINANCE[2] * Number(frame.data[offset + 2]);
         }
       }
       data[y * width + x] = total / (scale * scale);
@@ -357,11 +358,11 @@ function bestGroup(cards: readonly Card[], count: number): Card[] | undefined {
 function lumaAt(frame: Frame, x: number, y: number): number {
   const column = Math.min(Math.max(x, 0), frame.width - 1);
   const row = Math.min(Math.max(y, 0), frame.height - 1);
-  const offset = (row * frame.width + column) * LUMA.length;
+  const offset = (row * frame.width + column) * CHANNELS;
   return (
-    LUMA[0] * Number(frame.data[offset]) +
-    LUMA[1] * Number(frame.data[offset + 1]) +
-    LUMA[2] * Number(frame.data[offset + 2])
+    LUMINANCE[0] * Number(frame.data[offset]) +
+    LUMINANCE[1] * Number(frame.data[offset + 1]) +
+    LUMINANCE[2] * Number(frame.data[offset + 2])
   );
 }
 
@@ -486,16 +487,9 @@ function cornersOf(cards: readonly Card[], gray: Gray, frame: Frame): Corners[] 
 
 // Searches for `count` charts in the image and returns their corners from left to right. All
 // thresholds are tried; of the plausible charts the best matching group with the cleanest edges
-// wins (other dark objects such as hair or clothes do not matter). If no such group exists, null
-// is returned and the corners must be set by hand.
-export function detectCards(frame: Frame, count: number): Corners[] | null {
-  const gray = toGray(frame);
-  const best = bestGroup(candidateCards(gray), count);
-  return best === undefined ? null : cornersOf(best, gray, frame);
-}
-
-// Like detectCards, but also returns what was found so far: the best matching group of up to
-// `count` charts (fewer while only some of them are recognized, empty if none).
+// wins (other dark objects such as hair or clothes do not matter). Without such a group of all
+// charts, the best group of fewer comes back (empty if none): the live image outlines the cards
+// that are recognized so far.
 export function detectOutlines(frame: Frame, count: number): Corners[] {
   const gray = toGray(frame);
   const cards = candidateCards(gray);

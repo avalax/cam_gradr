@@ -1,4 +1,5 @@
 import type { Frame } from '../camera/frame';
+import { CHANNELS, MAX_CODE, toByte } from '../color/srgb';
 import { t } from '../lang';
 
 import { packBase64, unpackBase64 } from './deflate';
@@ -17,18 +18,10 @@ export interface EncodedFrame {
   data: string;
 }
 
-const CHANNELS = 3;
-const MAX_CODE = 255;
-
-function toCode(value: number): number {
-  const clamped = Math.min(Math.max(value, 0), 1);
-  return Math.round(clamped * MAX_CODE);
-}
-
 export async function encodeFrame(frame: Frame): Promise<EncodedFrame> {
   const raw = new Uint8Array(frame.width * frame.height * CHANNELS);
   for (const [index, value] of frame.data.entries()) {
-    raw[index] = toCode(value);
+    raw[index] = toByte(value);
   }
   return {
     width: frame.width,

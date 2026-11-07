@@ -1,3 +1,4 @@
+import { CHANNELS, MAX_CODE, toByte } from '../color/srgb';
 import { t } from '../lang';
 import type { Lut } from '../lut/lut';
 
@@ -105,11 +106,10 @@ function toRgba8(lut: Lut): Uint8Array {
   const count = lut.size ** 3;
   const bytes = new Uint8Array(count * 4);
   for (let index = 0; index < count; index++) {
-    for (let channel = 0; channel < 3; channel++) {
-      const value = Math.min(Math.max(Number(lut.data[index * 3 + channel]), 0), 1);
-      bytes[index * 4 + channel] = Math.round(value * 255);
+    for (let channel = 0; channel < CHANNELS; channel++) {
+      bytes[index * 4 + channel] = toByte(Number(lut.data[index * CHANNELS + channel]));
     }
-    bytes[index * 4 + 3] = 255;
+    bytes[index * 4 + 3] = MAX_CODE;
   }
   return bytes;
 }

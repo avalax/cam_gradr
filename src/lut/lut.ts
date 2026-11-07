@@ -1,4 +1,5 @@
 import type { Vec3 } from '../color/lab';
+import { CHANNELS } from '../color/srgb';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
 
@@ -9,20 +10,11 @@ export interface Lut {
   data: Float32Array;
 }
 
+// Sizes a look LUT may have; the correction is only built in the fixed sizes of export and preview.
 export const MIN_SIZE = 2;
 export const MAX_SIZE = 129;
-const CHANNELS = 3;
-
-function checkSize(size: number): void {
-  if (!Number.isSafeInteger(size) || size < MIN_SIZE || size > MAX_SIZE) {
-    throw new RangeError(
-      `The LUT size must be an integer from ${String(MIN_SIZE)} to ${String(MAX_SIZE)}.`,
-    );
-  }
-}
 
 function fill(size: number, nodeValue: (r: number, g: number, b: number) => Vec3): Lut {
-  checkSize(size);
   const data = new Float32Array(size ** 3 * CHANNELS);
   const last = size - 1;
   let offset = 0;

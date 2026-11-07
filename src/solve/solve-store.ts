@@ -31,11 +31,5 @@ export const useSolveStore = defineStore('solve', () => {
     error.value = null;
   }
 
-  function reset(): void {
-    result.value = null;
-    model.value = null;
-    error.value = null;
-  }
-
-  return { result, model, error, compute, loadModel, reset };
+  return { result, model, error, compute, loadModel };
 });

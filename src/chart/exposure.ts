@@ -1,8 +1,9 @@
+import { luminanceOf } from '../color/lab';
 import { linearToSrgb, srgbToLinear } from '../color/srgb';
 
 import type { Rgb } from './types';
 
-export interface ExposureConfig {
+interface ExposureConfig {
   // From this value (0..1) of one of its channels the brightest strip patch counts as clipped: the
   // top of the range, a little below 1 because the still is averaged. The strip patch is about as
   // bright as a white; at the target exposure it reads about 0.95, which is fine.
@@ -52,11 +53,8 @@ export interface ExposureResult {
 }
 
 // Brightness of an sRGB-encoded color value (Rec.709 luminance, sRGB-encoded again).
-export function codeLuma(rgb: Rgb): number {
-  const [r, g, b] = rgb;
-  return linearToSrgb(
-    0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b),
-  );
+export function codeLuma([r, g, b]: Rgb): number {
+  return linearToSrgb(luminanceOf([srgbToLinear(r), srgbToLinear(g), srgbToLinear(b)]));
 }
 
 function pickVerdict(
@@ -89,19 +87,18 @@ function contrastVerdict(verdict: Verdict, contrast: number, tolerance: number):
   return contrast > 0 ? 'high-contrast' : 'low-contrast';
 }
 
-export function assessExposure(
-  input: ExposureInput,
-  config: ExposureConfig = DEFAULT_EXPOSURE_CONFIG,
-): ExposureResult {
+export function assessExposure(input: ExposureInput): ExposureResult {
+  const { highlightClip, shadowFloor, target18, target50, tolerance, contrastTolerance } =
+    DEFAULT_EXPOSURE_CONFIG;
   const level18 = codeLuma(input.large18);
   const level50 = codeLuma(input.large50);
-  const delta = (level18 - config.target18 + (level50 - config.target50)) / 2;
-  const contrast = level50 - level18 - (config.target50 - config.target18);
-  const highlightsClipped = Math.max(...input.stripLight) >= config.highlightClip;
-  const shadowsCrushed = Math.min(...input.stripDark) <= config.shadowFloor;
-  const verdict = pickVerdict(highlightsClipped, shadowsCrushed, delta, config.tolerance);
+  const delta = (level18 - target18 + (level50 - target50)) / 2;
+  const contrast = level50 - level18 - (target50 - target18);
+  const highlightsClipped = Math.max(...input.stripLight) >= highlightClip;
+  const shadowsCrushed = Math.min(...input.stripDark) <= shadowFloor;
+  const verdict = pickVerdict(highlightsClipped, shadowsCrushed, delta, tolerance);
   return {
-    verdict: contrastVerdict(verdict, contrast, config.contrastTolerance),
+    verdict: contrastVerdict(verdict, contrast, contrastTolerance),
     highlightsClipped,
     shadowsCrushed,
     level18,

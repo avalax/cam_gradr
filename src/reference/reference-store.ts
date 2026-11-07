@@ -1,18 +1,15 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
-import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
 import { t } from '../lang';
 import { APP_ID } from '../ui/app-info';
 import { downloadFile } from '../lut/download';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 
-import { BUNDLED_FILE_NAME, BUNDLED_NAME, bundledReferenceText } from './bundled';
+import { BUNDLED_NAME, bundledReference } from './bundled';
 import { parseReferenceFile, serializeReferenceJson } from './reference';
 import type { ReferenceSet } from './reference';
-
-const rules = { knownIds: COLOR_IDS, neutralIds: NEUTRAL_IDS };
 
 const holder: { storage: NamedStorage<ReferenceSet> | null } = { storage: null };
 
@@ -55,10 +52,7 @@ export const useReferenceStore = defineStore('reference', () => {
       warning.value = t('reference.warnings.loadFailed');
     }
     if (sets.value.every((set) => set.name !== BUNDLED_NAME)) {
-      sets.value = [
-        parseReferenceFile(BUNDLED_FILE_NAME, bundledReferenceText(), rules),
-        ...sets.value,
-      ];
+      sets.value = [bundledReference(), ...sets.value];
     }
     selectedName.value ??= BUNDLED_NAME;
   }
@@ -68,7 +62,7 @@ export const useReferenceStore = defineStore('reference', () => {
     error.value = null;
     warning.value = null;
     try {
-      const set = parseReferenceFile(fileName, text, rules);
+      const set = parseReferenceFile(fileName, text);
       sets.value = [...sets.value.filter((existing) => existing.name !== set.name), set];
       selectedName.value = set.name;
       try {

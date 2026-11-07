@@ -109,13 +109,6 @@ describe('assessExposure', () => {
       'too-bright',
     );
   });
-
-  it('uses a passed configuration', () => {
-    const strict = { ...DEFAULT_EXPOSURE_CONFIG, tolerance: 0.001 };
-    expect(
-      assessExposure(input({ large18: grey(0.48), large50: grey(0.76) }), strict).verdict,
-    ).toBe('too-bright');
-  });
 });
 
 describe('Kontrast', () => {
