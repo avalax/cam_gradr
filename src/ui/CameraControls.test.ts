@@ -20,8 +20,8 @@ describe('CameraControls', () => {
     expect(wrapper.get('[role="note"]').text()).toContain('Auto-Belichtung');
     expect(wrapper.findAll('select')).toHaveLength(1);
     expect(wrapper.findAll('[role="radio"]')).toHaveLength(RESOLUTIONS.length);
-    expect(wrapper.get('[data-resolution="1280x720"]').attributes('aria-checked')).toBe('true');
-    expect(wrapper.get('[data-resolution="640x480"]').attributes('aria-checked')).toBe('false');
+    expect(wrapper.get('[data-option="1280x720"]').attributes('aria-checked')).toBe('true');
+    expect(wrapper.get('[data-option="640x480"]').attributes('aria-checked')).toBe('false');
   });
 
   it('locks the selection while the camera is starting', async () => {
@@ -30,10 +30,10 @@ describe('CameraControls', () => {
     const start = useCameraStore().start();
     await flushPromises();
     await start;
-    expect(wrapper.get('[data-resolution="640x480"]').attributes('disabled')).toBeUndefined();
+    expect(wrapper.get('[data-option="640x480"]').attributes('disabled')).toBeUndefined();
     useCameraStore().status = 'starting';
     await flushPromises();
-    expect(wrapper.get('[data-resolution="640x480"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[data-option="640x480"]').attributes('disabled')).toBeDefined();
     expect(wrapper.get('select').attributes('disabled')).toBeDefined();
   });
 
@@ -58,7 +58,7 @@ describe('CameraControls', () => {
     await deviceSelect.setValue('');
     await flushPromises();
     expect(api.open).toHaveBeenLastCalledWith(null, { width: 1280, height: 720 });
-    await wrapper.get('[data-resolution="1920x1080"]').trigger('click');
+    await wrapper.get('[data-option="1920x1080"]').trigger('click');
     await flushPromises();
     expect(api.open).toHaveBeenLastCalledWith(expect.anything(), { width: 1920, height: 1080 });
   });

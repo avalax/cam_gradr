@@ -1,6 +1,6 @@
 import { codeLuma } from '../chart/exposure';
+import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
 import type { Measurements } from '../chart/measure';
-import type { ChartLayout } from '../chart/types';
 import { labToSrgb } from '../color/lab';
 import type { ReferenceSet } from '../reference/reference';
 import { applyColorModel, targetLab } from '../solve/fit';
@@ -44,7 +44,6 @@ function patchRow(
 // The measured neutral patches of the color cards from light to dark (by camera value). Without
 // a correction model there is no gray wedge.
 export function wedgeRows(
-  neutralIds: ReadonlySet<string>,
   measurements: Measurements,
   model: ColorModel | null,
   reference: ReferenceSet | null,
@@ -54,7 +53,7 @@ export function wedgeRows(
     return [];
   }
   const rows: { luma: number; row: WedgeRow }[] = [];
-  for (const id of neutralIds) {
+  for (const id of NEUTRAL_IDS) {
     const row = patchRow(id, measurements, model, reference, exposureGain);
     const measured = measurements[id];
     if (row !== null && measured !== undefined) {
@@ -72,8 +71,6 @@ export function byRowThenColumn(a: string, b: string): number {
 // The chromatic patches per card in card order; only measured patches, without a correction model
 // nothing. Cards without measured chromatic patches are missing.
 export function colorCards(
-  layout: ChartLayout,
-  neutralIds: ReadonlySet<string>,
   measurements: Measurements,
   model: ColorModel | null,
   reference: ReferenceSet | null,
@@ -82,11 +79,11 @@ export function colorCards(
   if (model === null) {
     return [];
   }
-  return layout.cards
+  return colorLayout.cards
     .map((card) =>
       card.patches
         .map((patch) => patch.id)
-        .filter((id) => !neutralIds.has(id))
+        .filter((id) => !NEUTRAL_IDS.has(id))
         .toSorted(byRowThenColumn)
         .map((id) => patchRow(id, measurements, model, reference, exposureGain))
         .filter((row) => row !== null),
@@ -191,14 +188,10 @@ export function brightnessText(brighter: number): string {
   return t(brighter > 0 ? 'wedge.brightness.brighter' : 'wedge.brightness.darker', { points });
 }
 
-export function oneDecimal(value: number): string {
-  return formatDecimal(value, 1);
-}
-
 // Mean error before and after the correction as a label, e.g. "Ø deviation 18.4 → 8.0".
 export function deviationSummary(report: { meanBefore: number; meanAfter: number }): string {
   return t('wedge.deviationSummary', {
-    before: oneDecimal(report.meanBefore),
-    after: oneDecimal(report.meanAfter),
+    before: formatDecimal(report.meanBefore),
+    after: formatDecimal(report.meanAfter),
   });
 }

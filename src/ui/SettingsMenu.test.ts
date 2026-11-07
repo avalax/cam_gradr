@@ -74,7 +74,7 @@ describe('SettingsMenu', () => {
     expect(wrapper.get('[data-testid="section-camera"]').attributes('aria-expanded')).toBe('false');
     expect(wrapper.find('[data-testid="theme-options"]').exists()).toBe(true);
 
-    await wrapper.get('[data-theme-option="dark"]').trigger('click');
+    await wrapper.get('[data-option="dark"]').trigger('click');
     expect(wrapper.get('[data-testid="section-theme"]').text()).toContain('Dunkel');
     wrapper.unmount();
   });
@@ -91,7 +91,7 @@ describe('SettingsMenu', () => {
     expect(wrapper.get('[data-testid="section-camera"]').attributes('aria-expanded')).toBe('false');
     expect(wrapper.find('[data-testid="language-options"]').exists()).toBe(true);
 
-    await wrapper.get('[data-language="en"]').trigger('click');
+    await wrapper.get('[data-option="en"]').trigger('click');
     expect(wrapper.get('[data-testid="section-language"]').text()).toContain('Language');
     expect(wrapper.get('[data-testid="section-language"]').text()).toContain('English');
     expect(wrapper.get('[data-testid="section-camera"]').text()).toContain('Camera');

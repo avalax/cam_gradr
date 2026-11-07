@@ -172,5 +172,5 @@ export const useLookStore = defineStore('look', () => {
     messages.value = [];
   }
 
-  return { looks, messages, removed, find, load, importFiles, adopt, remove, undo, dismiss };
+  return { looks, messages, find, load, importFiles, adopt, remove, undo, dismiss };
 });

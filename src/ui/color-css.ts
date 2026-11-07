@@ -1,6 +1,5 @@
 import type { Vec3 } from '../color/lab';
-
-const MAX_CODE = 255;
+import { MAX_CODE } from '../color/srgb';
 
 // CSS color to an sRGB-encoded value (0..1).
 export function cssColor(code: Vec3): string {

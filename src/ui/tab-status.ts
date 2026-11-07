@@ -1,8 +1,8 @@
 import { DEFAULT_EXPOSURE_CONFIG } from '../chart/exposure';
 import type { ExposureResult } from '../chart/exposure';
 import { t } from '../lang';
+import { formatDecimal } from '../lang/format';
 
-import { oneDecimal } from './gray-wedge';
 import { mainIssue } from './measure-field';
 
 export type StatusLevel = 'off' | 'warn' | 'ok';
@@ -71,8 +71,8 @@ export function colorStatus(report: { meanBefore: number; meanAfter: number } | 
     return { level: 'off', fill: 0, text: t('app.status.notComputed') };
   }
   const text = t('app.status.meanChange', {
-    before: oneDecimal(report.meanBefore),
-    after: oneDecimal(report.meanAfter),
+    before: formatDecimal(report.meanBefore),
+    after: formatDecimal(report.meanAfter),
   });
   const fill = colorFill(report.meanAfter);
   return { level: report.meanAfter <= COLOR_GOOD ? 'ok' : 'warn', fill, text };

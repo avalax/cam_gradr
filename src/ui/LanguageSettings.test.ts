@@ -32,20 +32,20 @@ describe('LanguageSettings', () => {
 
   it('marks the language of each button for screen readers', () => {
     const wrapper = mount(LanguageSettings);
-    expect(wrapper.get('[data-language="auto"]').attributes('lang')).toBeUndefined();
-    expect(wrapper.get('[data-language="en"]').attributes('lang')).toBe('en');
-    expect(wrapper.get('[data-language="de"]').attributes('lang')).toBe('de');
+    expect(wrapper.get('[data-option="auto"]').attributes('lang')).toBeUndefined();
+    expect(wrapper.get('[data-option="en"]').attributes('lang')).toBe('en');
+    expect(wrapper.get('[data-option="de"]').attributes('lang')).toBe('de');
   });
 
   it('switches the language immediately and relabels itself afterwards', async () => {
     const wrapper = mount(LanguageSettings);
-    await wrapper.get('[data-language="en"]').trigger('click');
+    await wrapper.get('[data-option="en"]').trigger('click');
     expect(useLanguageStore().preference).toBe('en');
-    expect(wrapper.get('[data-language="auto"]').text()).toBe('Automatic (browser)');
-    expect(wrapper.get('[data-language="en"]').attributes('aria-checked')).toBe('true');
+    expect(wrapper.get('[data-option="auto"]').text()).toBe('Automatic (browser)');
+    expect(wrapper.get('[data-option="en"]').attributes('aria-checked')).toBe('true');
     expect(wrapper.get('[role="radiogroup"]').attributes('aria-label')).toBe('Language of the app');
-    await wrapper.get('[data-language="de"]').trigger('click');
-    expect(wrapper.get('[data-language="auto"]').text()).toBe('Automatisch (Browser)');
+    await wrapper.get('[data-option="de"]').trigger('click');
+    expect(wrapper.get('[data-option="auto"]').text()).toBe('Automatisch (Browser)');
   });
 
   it('shows the texts in the selected language', () => {

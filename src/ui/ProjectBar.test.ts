@@ -113,7 +113,9 @@ describe('ProjectBar', () => {
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     const saved = (download.mock.calls[0] as [string, string, string])[1];
     await chooseFile(wrapper, saved);
-    expect(useProjectStore().file).toEqual({ name: 'project.json' });
+    await wrapper.get('[data-testid="project-save"]').trigger('click');
+    await flushPromises();
+    expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('project.json');
   });
 
   it('leaves choosing the file to the file input without the system dialogs', () => {

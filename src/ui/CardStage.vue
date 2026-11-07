@@ -19,7 +19,9 @@ import type { ChartStore } from '../chart/chart-store';
 import { detectOutlines, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
+import { TRASH_PATH } from './icons';
 import { imageMaxWidth as maxWidthFor } from './image-size';
+import ImageCornerButton from './ImageCornerButton.vue';
 import { buildShapes, clientToImage } from './overlay-geometry';
 import StageLabel from './StageLabel.vue';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
@@ -417,35 +419,14 @@ watch(actual, (next, previous) => {
             {{ wrongLabel }}<span class="sr-only"> {{ wrongText }}</span>
           </p>
           <!-- Toolbar in the image corner: delete corner points and still image. -->
-          <div
+          <ImageCornerButton
             v-if="showStill || !noPoints"
-            class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
-            role="toolbar"
-            :aria-label="t('cards.stage.toolbar')"
+            :label="t('cards.stage.deleteCorners')"
+            :title="t('cards.stage.deleteCornersTitle')"
+            @click="redetect"
           >
-            <button
-              type="button"
-              class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50"
-              :aria-label="t('cards.stage.deleteCorners')"
-              :title="t('cards.stage.deleteCornersTitle')"
-              @click="redetect"
-            >
-              <svg
-                class="size-[18px]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
-                />
-              </svg>
-            </button>
-          </div>
+            <path :d="TRASH_PATH" />
+          </ImageCornerButton>
         </div>
       </div>
       <slot name="side" />

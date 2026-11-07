@@ -70,7 +70,6 @@ function onSelect(event: Event): void {
       <button
         type="button"
         class="rounded border px-3 py-1 text-sm"
-        data-testid="reference-download"
         @click="references.downloadSelected()"
       >
         {{ t('reference.panel.download') }}

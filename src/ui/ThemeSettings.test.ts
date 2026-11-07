@@ -35,10 +35,10 @@ describe('ThemeSettings', () => {
 
   it('switches the appearance at once', async () => {
     const wrapper = mount(ThemeSettings);
-    await wrapper.get('[data-theme-option="dark"]').trigger('click');
+    await wrapper.get('[data-option="dark"]').trigger('click');
     expect(useThemeStore().preference).toBe('dark');
     expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(wrapper.get('[data-theme-option="dark"]').attributes('aria-checked')).toBe('true');
-    expect(wrapper.get('[data-theme-option="system"]').attributes('aria-checked')).toBe('false');
+    expect(wrapper.get('[data-option="dark"]').attributes('aria-checked')).toBe('true');
+    expect(wrapper.get('[data-option="system"]').attributes('aria-checked')).toBe('false');
   });
 });

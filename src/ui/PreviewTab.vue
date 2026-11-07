@@ -5,12 +5,12 @@ import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
-import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
 import { drawFrame } from '../camera/draw-frame';
 import { createCpuRenderer } from '../gl/cpu-renderer';
 import { createLutRenderer } from '../gl/lut-renderer';
 import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
+import { formatDecimal } from '../lang/format';
 import { applyLook, blendLuts } from '../look/look';
 import { useLookStore } from '../look/look-store';
 import { buildLut, identityLut } from '../lut/lut';
@@ -22,7 +22,6 @@ import {
   brightnessText,
   colorCards,
   deviationSummary,
-  oneDecimal,
   signedPoints,
   wedgeRows,
   worstPatches,
@@ -30,6 +29,7 @@ import {
 } from './gray-wedge';
 import ColorTiles from './ColorTiles.vue';
 import { imageMaxWidth as maxWidthFor } from './image-size';
+import ImageCornerButton from './ImageCornerButton.vue';
 import GrayWedge from './GrayWedge.vue';
 import { attachStream, captureFromVideo } from './video-bindings';
 import LookBar from './LookBar.vue';
@@ -65,14 +65,7 @@ const exposureGain = computed(() => result.value?.report.exposureGain ?? 1);
 
 // Color grid from the measured chromatic patches and the patches with the largest residual error.
 const tiles = computed(() =>
-  colorCards(
-    colorLayout,
-    NEUTRAL_IDS,
-    measurements.value,
-    model.value,
-    selected.value,
-    exposureGain.value,
-  ),
+  colorCards(measurements.value, model.value, selected.value, exposureGain.value),
 );
 const worst = computed(() =>
   result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
@@ -80,7 +73,7 @@ const worst = computed(() =>
 
 // Gray wedge from the measured neutral patches and what the correction changes per tonal range.
 const rows = computed(() =>
-  wedgeRows(NEUTRAL_IDS, measurements.value, model.value, selected.value, exposureGain.value),
+  wedgeRows(measurements.value, model.value, selected.value, exposureGain.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
 const emptyText = computed(() =>
@@ -275,12 +268,12 @@ watch(split, () => {
   stillChanged.value = true;
 });
 
-// The wipe over the image writes the divider position to the store.
 // Mean error before and after the correction while the report is available.
 const summary = computed(() =>
   result.value === null ? null : deviationSummary(result.value.report),
 );
 
+// The wipe over the image writes the divider position to the store.
 const splitModel = computed({
   get: () => split.value,
   set: (value: number) => {
@@ -331,7 +324,6 @@ const splitModel = computed({
               v-if="model === null || !hasSource"
               class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
               :style="{ aspectRatio: aspect }"
-              data-testid="preview-placeholder"
             >
               <svg
                 class="w-28 text-zinc-400"
@@ -396,40 +388,20 @@ const splitModel = computed({
                 :label="t('preview.divider', { left: leftLabel, right: rightLabel })"
                 :left-name="leftLabel"
               />
-              <!-- Toolbar in the image corner, where the card tabs have the trash: take a still
-                   image while the camera runs. The side column only describes, it holds no actions. -->
-              <div
+              <!-- Takes a still image while the camera runs, where the card tabs have the trash. -->
+              <ImageCornerButton
                 v-if="model !== null && isLive"
-                class="absolute right-0 top-0 z-10 flex overflow-hidden rounded-bl-lg border-b border-l border-zinc-500 bg-zinc-50 text-zinc-800"
-                role="toolbar"
-                :aria-label="t('preview.toolbar')"
+                :label="t('preview.capture')"
+                :title="t('preview.captureTitle')"
+                :disabled="!videoReady"
+                data-testid="preview-capture"
+                @click="capture"
               >
-                <button
-                  type="button"
-                  class="grid h-9 w-10 place-items-center hover:bg-zinc-800 hover:text-zinc-50 focus-visible:bg-zinc-800 focus-visible:text-zinc-50 disabled:pointer-events-none disabled:opacity-50"
-                  :aria-label="t('preview.capture')"
-                  :title="t('preview.captureTitle')"
-                  :disabled="!videoReady"
-                  data-testid="preview-capture"
-                  @click="capture"
-                >
-                  <svg
-                    class="size-[18px]"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-                    />
-                    <circle cx="12" cy="13" r="3.5" />
-                  </svg>
-                </button>
-              </div>
+                <path
+                  d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                />
+                <path d="M15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z" />
+              </ImageCornerButton>
             </div>
             <LookBar v-if="model !== null && hasSource" />
           </div>
@@ -484,7 +456,7 @@ const splitModel = computed({
               <p>
                 <template v-for="(patch, index) in worst" :key="patch.id">
                   <template v-if="index > 0"> · </template>{{ patch.id }}
-                  {{ oneDecimal(patch.deviation) }}
+                  {{ formatDecimal(patch.deviation) }}
                 </template>
               </p>
             </div>

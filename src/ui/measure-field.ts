@@ -61,12 +61,6 @@ export interface DetailRow {
   value: string;
 }
 
-// Heading of the measured values in the popup: the percentages are brightness values in the camera
-// image.
-export function detailCaption(): string {
-  return t('measure.caption');
-}
-
 function withTolerance(value: number, tolerance: number): string {
   return t('measure.withTolerance', {
     value: signed(value),
@@ -169,7 +163,7 @@ export function mainIssue(exposure: ExposureResult | null): Issue | null {
   return exposure.contrast > contrastTolerance ? highContrast() : null;
 }
 
-// Short hint below the field: what to change next about the camera or light.
+// Hint in the popup of the field: what to change next about the camera or light.
 export function fieldHint(exposure: ExposureResult | null): string {
   if (exposure === null) {
     return t('measure.noMeasurement');

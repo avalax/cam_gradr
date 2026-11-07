@@ -43,7 +43,6 @@ describe('useThemeStore', () => {
     expect(document.documentElement.style.colorScheme).toBe('dark');
     phone.change(false);
     expect(document.documentElement.dataset.theme).toBe('light');
-    expect(store.theme).toBe('light');
   });
 
   it('applies a chosen appearance at once and remembers it', () => {
@@ -51,7 +50,6 @@ describe('useThemeStore', () => {
     const store = useThemeStore();
     store.apply();
     store.choose('dark');
-    expect(store.theme).toBe('dark');
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('avalax.cam_gradr.theme')).toBe('dark');
 

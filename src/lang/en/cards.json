@@ -10,7 +10,6 @@
       "title": "The camera is off",
       "text": "Switch it on above with “Start camera”."
     },
-    "toolbar": "Image actions",
     "deleteCorners": "Delete corner points",
     "deleteCornersTitle": "Delete the corner points and detect the cards again",
     "autoHint": "Hold the cards where the subject will be and make sure they are fully visible. As soon as they are detected, the app captures the still image itself and turns the camera off."

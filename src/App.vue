@@ -25,14 +25,19 @@ import type { TabStatus } from './ui/tab-status';
 
 type TabKey = 'gray' | 'color' | 'preview' | 'export';
 
-// Each tab briefly states its result under its name; the preview names what lies left and right
-// of its divider, the export has a fixed text. The texts are only translated when displayed so
-// that a language change reaches them.
-const TABS: readonly { key: TabKey; label: () => string; hint: () => string }[] = [
-  { key: 'gray', label: () => t('app.tabs.gray'), hint: () => '' },
-  { key: 'color', label: () => t('app.tabs.color'), hint: () => '' },
-  { key: 'preview', label: () => t('app.tabs.preview'), hint: () => previewHint() },
-  { key: 'export', label: () => t('app.tabs.export'), hint: () => t('app.hints.export') },
+// Each tab briefly states its result under its name. The two measuring tabs show a status that
+// follows the result (light in the normal range, deviation after the correction), not mere editing;
+// the preview names what lies left and right of its divider, the export has a fixed text. The texts
+// are only translated when displayed so that a language change reaches them.
+const TABS: readonly { key: TabKey; label: () => string; summary: () => TabStatus | string }[] = [
+  { key: 'gray', label: () => t('app.tabs.gray'), summary: () => grayStatus(exposure.value) },
+  {
+    key: 'color',
+    label: () => t('app.tabs.color'),
+    summary: () => colorStatus(result.value?.report ?? null),
+  },
+  { key: 'preview', label: () => t('app.tabs.preview'), summary: previewHint },
+  { key: 'export', label: () => t('app.tabs.export'), summary: () => t('app.hints.export') },
 ];
 
 const { t } = useI18n();
@@ -61,17 +66,12 @@ const camera = useCameraStore();
 const { exposure } = storeToRefs(useChartStore());
 const { result } = storeToRefs(useSolveStore());
 
-// Status of the two measuring tabs: it follows the result (light in the normal range, deviation after
-// the correction), not mere editing.
-const statuses = computed<Partial<Record<TabKey, TabStatus>>>(() => ({
-  gray: grayStatus(exposure.value),
-  color: colorStatus(result.value?.report ?? null),
-}));
 const entries = computed(() =>
-  TABS.map((entry) => {
-    const status = statuses.value[entry.key] ?? null;
-    const hint = entry.hint();
-    return { key: entry.key, label: entry.label(), status, text: status?.text ?? hint };
+  TABS.map(({ key, label, summary }) => {
+    const shown = summary();
+    return typeof shown === 'string'
+      ? { key, label: label(), status: null, text: shown }
+      : { key, label: label(), status: shown, text: shown.text };
   }),
 );
 

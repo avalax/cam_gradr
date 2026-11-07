@@ -8,7 +8,7 @@ import { useProjectStore } from '../project/project-store';
 
 const { t } = useI18n();
 
-// The message about saving and loading sits above the content (ProjectStatus).
+// The message about saving and loading floats at the bottom of the page (ProjectStatus).
 const project = useProjectStore();
 // The still images show what the camera sees; the file then contains camera images.
 const withStills = ref(true);
