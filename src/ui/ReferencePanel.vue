@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
@@ -24,6 +25,15 @@ async function onFile(event: Event): Promise<void> {
 function onSelect(event: Event): void {
   references.select((event.target as HTMLSelectElement).value);
 }
+
+// Deleting the active set takes its button away (the bundled set that follows cannot be deleted):
+// the focus goes to the select of the active set, which stays.
+const select = useTemplateRef<HTMLSelectElement>('select');
+
+function remove(name: string): void {
+  select.value?.focus();
+  void references.remove(name);
+}
 </script>
 
 <template>
@@ -40,6 +50,7 @@ function onSelect(event: Event): void {
     <label class="flex flex-col gap-1 text-sm">
       {{ t('reference.panel.activeSet') }}
       <select
+        ref="select"
         :class="SELECT"
         :value="selected?.name"
         data-testid="reference-select"
@@ -66,7 +77,7 @@ function onSelect(event: Event): void {
           v-if="selected.name !== BUNDLED_NAME"
           type="button"
           :class="TEXT_BUTTON"
-          @click="references.remove(selected.name)"
+          @click="remove(selected.name)"
         >
           {{ t('reference.panel.delete') }}
         </button>

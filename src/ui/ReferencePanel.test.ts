@@ -14,8 +14,10 @@ import ReferencePanel from './ReferencePanel.vue';
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 
-async function mountLoaded() {
-  const wrapper = mount(ReferencePanel);
+async function mountLoaded(options: { attach?: boolean } = {}) {
+  const wrapper = mount(ReferencePanel, {
+    ...(options.attach === true && { attachTo: document.body }),
+  });
   await useReferenceStore().load();
   await flushPromises();
   return wrapper;
@@ -94,19 +96,25 @@ describe('ReferencePanel', () => {
   });
 
   it('switches between sets and deletes custom sets', async () => {
-    const wrapper = await mountLoaded();
+    const wrapper = await mountLoaded({ attach: true });
     await chooseFile(wrapper, 'a.json', dummyReferenceJson('Satz A'));
     await chooseFile(wrapper, 'b.json', dummyReferenceJson('Satz B'));
     expect(useReferenceStore().selected?.name).toBe('Satz B');
     await wrapper.get('[data-testid="reference-select"]').setValue('Satz A');
     expect(useReferenceStore().selected?.name).toBe('Satz A');
-    await button(wrapper, 'Satz löschen')?.trigger('click');
+    const remove = button(wrapper, 'Satz löschen');
+    (remove?.element as HTMLButtonElement).focus();
+    await remove?.trigger('click');
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
+    // The bundled set cannot be deleted, so the button went: the focus is on the select.
+    expect(button(wrapper, 'Satz löschen')).toBeUndefined();
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="reference-select"]').element);
     await vi.waitFor(() => {
       expect(wrapper.find('[data-testid="reference-removed"]').exists()).toBe(true);
     });
     expect(wrapper.get('[data-testid="reference-removed"]').text()).toContain('Satz A');
+    wrapper.unmount();
   });
 
   it('downloads the active set as a file', async () => {
