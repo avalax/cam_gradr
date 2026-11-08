@@ -61,7 +61,7 @@ file holds only the name of the reference set, not its values. As soon as a look
 "Include look LUTs" (checked by default) puts all imported look LUTs into the file, with the chosen one,
 its strength, the preview sides and the export choice. Loading such a project restores exactly that
 list, also in another browser; loading a project without look LUTs starts without any and removes the
-imported ones from the browser. Project files from versions before 2.0 can no longer be loaded.
+imported ones from the browser.
 
 ## Tips
 
