@@ -19,11 +19,11 @@ import type { Curve } from './pchip';
 
 // Correction model: one tone curve per channel (including white balance) on linear values, then
 // a 3×3 matrix whose rows sum to 1 (neutral stays neutral), then a hue table that turns and scales
-// the chroma per hue (see HUE_ORDER). Models saved before version 1.8 have no hue table.
+// the chroma per hue (see HUE_ORDER).
 export interface ColorModel {
   curves: readonly [Curve, Curve, Curve];
   matrix: readonly [Vec3, Vec3, Vec3];
-  hue?: readonly number[];
+  hue: readonly number[];
 }
 
 interface PatchError {
@@ -495,7 +495,7 @@ function refineHue(matrix: readonly [Vec3, Vec3, Vec3], goals: readonly Pair[]):
 }
 
 const evaluators = new WeakMap<
-  ColorModel,
+  Pick<ColorModel, 'curves'>,
   readonly [CurveFunction, CurveFunction, CurveFunction]
 >();
 
@@ -509,7 +509,9 @@ function curveLinear(
   return [fr(r), fg(g), fb(b)];
 }
 
-function curveFunctions(model: ColorModel): readonly [CurveFunction, CurveFunction, CurveFunction] {
+function curveFunctions(
+  model: Pick<ColorModel, 'curves'>,
+): readonly [CurveFunction, CurveFunction, CurveFunction] {
   let functions = evaluators.get(model);
   if (functions === undefined) {
     functions = model.curves.map((curve) => createPchip(curve)) as unknown as readonly [
@@ -636,8 +638,9 @@ export function targetLab(lab: Vec3, exposureGain: number): Vec3 {
   return xyzD50ToLab(linearSrgbToXyzD50(targetLinear(lab, exposureGain)));
 }
 
-// Mixes the curve outputs (linear) with the matrix, turns the hues with the hue table if there is
-// one, keeps the result inside the sRGB cube (see withinGamut) and returns the sRGB code.
+// Mixes the curve outputs (linear) with the matrix, turns the hues with the hue table (the matrix
+// fine-tuning fits without one), keeps the result inside the sRGB cube (see withinGamut) and returns
+// the sRGB code.
 function mixCode(matrix: readonly [Vec3, Vec3, Vec3], u: Vec3, table?: readonly number[]): Vec3 {
   const [a, b, c] = matrix;
   const mixed: Vec3 = [
@@ -721,8 +724,7 @@ export function fitColorModel(input: FitInput): FitResult {
     ),
   ) as unknown as ColorModel['curves'];
 
-  const draft: ColorModel = { curves, matrix: IDENTITY };
-  const functions = curveFunctions(draft);
+  const functions = curveFunctions({ curves });
   const pairs = all.map((sample): Pair => ({
     measured: sample.measured,
     corrected: curveLinear(functions, sample.linear),

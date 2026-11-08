@@ -19,7 +19,8 @@ export type LookMessage =
   | { kind: 'removed'; name: string }
   | { kind: 'loadFailed' }
   | { kind: 'saveFailed'; name: string }
-  | { kind: 'removeFailed' };
+  | { kind: 'removeFailed' }
+  | { kind: 'storeFailed' };
 
 // A file chosen in the dialog: its name and a way to read it.
 interface LookFile {
@@ -138,17 +139,25 @@ export const useLookStore = defineStore('look', () => {
     }
   }
 
-  // Takes over the look LUTs of a project file that this browser does not have yet and saves them;
-  // a look of the same name in the browser stays.
-  async function adopt(saved: readonly LookLut[]): Promise<void> {
-    const report: LookMessage[] = [];
-    const missing = saved.filter((entry) => find(entry.name) === null);
-    for (const look of missing) {
-      put(look);
-      await save(look, report);
-    }
-    if (report.length > 0) {
-      messages.value = report;
+  // Makes the look LUTs of a project file the whole list, also in the browser's storage: looks the
+  // file does not have are deleted, looks of the same name are replaced by the file's.
+  async function replaceAll(saved: readonly LookLut[]): Promise<void> {
+    looks.value = saved.toSorted(byName);
+    removed.value = null;
+    messages.value = [];
+    const keep = new Set(saved.map((look) => look.name));
+    try {
+      const stored = await storage().list();
+      for (const look of stored) {
+        if (!keep.has(look.name)) {
+          await storage().remove(look.name);
+        }
+      }
+      for (const look of saved) {
+        await storage().save(look);
+      }
+    } catch {
+      messages.value = [{ kind: 'storeFailed' }];
     }
   }
 
@@ -172,5 +181,5 @@ export const useLookStore = defineStore('look', () => {
     messages.value = [];
   }
 
-  return { looks, messages, find, load, importFiles, adopt, remove, undo, dismiss };
+  return { looks, messages, find, load, importFiles, replaceAll, remove, undo, dismiss };
 });

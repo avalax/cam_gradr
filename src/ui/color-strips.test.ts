@@ -3,22 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { labToSrgb } from '../color/lab';
 import { applyColorModel } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import { cssColor } from './color-css';
 import { NEUTRAL_SWATCH, buildStrips } from './color-strips';
 
-const IDENTITY: ColorModel = {
-  curves: [
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-  ],
-  matrix: [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-  ],
-};
+const IDENTITY = IDENTITY_MODEL;
 const BRIGHTEN: ColorModel = {
   ...IDENTITY,
   curves: [{ xs: [0, 1], ys: [0.2, 1] }, IDENTITY.curves[1], IDENTITY.curves[2]],

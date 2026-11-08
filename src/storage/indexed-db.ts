@@ -6,8 +6,8 @@ export interface NamedStorage<T extends { name: string }> {
   remove: (name: string) => Promise<void>;
 }
 
-// Version 1 only had the reference sets; version 2 added the look LUTs. The upgrade creates the
-// stores that are missing and leaves the existing ones with their entries untouched.
+// One store per kind. Opening creates the stores that are missing and leaves the existing ones with
+// their entries untouched.
 const STORES = ['references', 'looks'] as const;
 const VERSION = 2;
 

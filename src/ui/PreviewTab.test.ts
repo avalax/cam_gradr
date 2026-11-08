@@ -9,6 +9,7 @@ import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyReference } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
 import { syntheticFit, syntheticMeasurements } from '../test-support/synthetic-camera';
@@ -392,19 +393,7 @@ describe('PreviewTab', () => {
   it('calls tonal ranges neutral where the correction shifts no color', async () => {
     mockAnimation();
     mockContexts();
-    const identity = {
-      curves: [
-        { xs: [0, 1], ys: [0, 1] },
-        { xs: [0, 1], ys: [0, 1] },
-        { xs: [0, 1], ys: [0, 1] },
-      ],
-      matrix: [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-      ],
-    } as const;
-    useSolveStore().loadModel(identity as never);
+    useSolveStore().loadModel(IDENTITY_MODEL);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="view-grays"]').trigger('click');
     expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { I18nT, useI18n } from 'vue-i18n';
 
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { lookedLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
-import { CUBE_SIZES, formatCube } from '../lut/cube';
+import { CUBE_SIZES, DEFAULT_CUBE_SIZE, formatCube } from '../lut/cube';
 import { downloadFile } from '../lut/download';
+import { useExportStore } from '../lut/export-store';
 import { buildLut } from '../lut/lut';
 import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
@@ -24,8 +25,6 @@ const emit = defineEmits<{ goto: [tab: 'color' | 'preview'] }>();
 
 // What the file holds: the correction alone or with the look LUT chosen in the preview.
 const CONTENTS = ['plain', 'look'] as const;
-
-const DEFAULT_SIZE = 33;
 
 const { t } = useI18n();
 
@@ -61,18 +60,19 @@ const facts = computed(() => [
         : t('export.project.lookValue', { name: preview.look, strength: preview.strength }),
   },
 ]);
-const size = ref<number>(DEFAULT_SIZE);
-const content = ref<(typeof CONTENTS)[number]>('look');
+// Size and content are kept in a store, so that a project file can save them.
+const exportSettings = useExportStore();
+const { size, withLook } = storeToRefs(exportSettings);
 
 // The look goes into the file when it is chosen in the preview and the content asks for it.
 const chosen = computed(() => looks.find(preview.look));
 const exportLook = computed<ExportLook | null>(() =>
-  content.value === 'look' && chosen.value !== null
+  withLook.value && chosen.value !== null
     ? { name: chosen.value.name, strength: preview.strength }
     : null,
 );
 // The content the file really gets: without a look chosen in the preview it is the correction alone,
-// whatever `content` asks for.
+// whatever the setting asks for.
 const contained = computed(() => (exportLook.value === null ? 'plain' : 'look'));
 const contentOptions = computed(() =>
   CONTENTS.map((option) => ({
@@ -87,7 +87,7 @@ const sizeOptions = computed(() =>
   CUBE_SIZES.map((option) => ({
     key: String(option),
     value: option,
-    label: t(option === DEFAULT_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
+    label: t(option === DEFAULT_CUBE_SIZE ? 'export.lut.sizeDefault' : 'export.lut.sizeOption', {
       size: option,
     }),
   })),
@@ -154,7 +154,7 @@ function download(): void {
             :disabled="model === null"
             :aria-label="t('export.lut.content')"
             data-testid="export-content"
-            @choose="content = $event"
+            @choose="exportSettings.setWithLook($event === 'look')"
           />
           <ChoiceChips
             variant="segmented"
@@ -163,7 +163,7 @@ function download(): void {
             :disabled="model === null"
             :aria-label="t('export.lut.sizeLabel')"
             data-testid="export-size"
-            @choose="size = $event"
+            @choose="exportSettings.setSize($event)"
           />
         </div>
         <I18nT :keypath="lookLine" tag="p" class="text-xs text-zinc-700" data-testid="export-look">

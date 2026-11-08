@@ -5,14 +5,17 @@ import { t } from '../lang';
 import type { StillKey } from '../camera/camera-store';
 import { HUE_COEFFICIENTS } from '../solve/fit';
 import type { ColorModel } from '../solve/fit';
+import { CUBE_SIZES } from '../lut/cube';
+import type { CubeSize } from '../lut/cube';
 import { MAX_SIZE, MIN_SIZE } from '../lut/lut';
+import type { Side } from '../lut/preview-store';
 
 import { FRAME_ENCODING } from './frame-codec';
 import type { EncodedFrame } from './frame-codec';
 import { LOOK_ENCODING } from './look-codec';
 import type { EncodedLook } from './look-codec';
 
-export const PROJECT_FORMAT = 'cam_gradr-project/1';
+export const PROJECT_FORMAT = 'cam_gradr-project/2';
 
 // State of a card group: corner points set per card and measured camera values per field.
 interface ChartState {
@@ -22,9 +25,20 @@ interface ChartState {
   rotated: boolean;
 }
 
-interface PreviewLook {
-  name: string;
+// The look LUTs of a project with everything the preview and the export set for them ("Include look
+// LUTs"). A file without them loads as if there had never been a look LUT.
+export interface LookSettings {
+  // The look LUT the preview shows and the export lays over the correction, or none.
+  chosen: string | null;
+  // Strength in percent.
   strength: number;
+  // What the two sides of the preview start from.
+  left: Side;
+  right: Side;
+  // Whether the export lays the chosen look LUT over the correction.
+  inExport: boolean;
+  // All imported look LUTs with their data.
+  luts: EncodedLook[];
 }
 
 export interface Project {
@@ -34,16 +48,17 @@ export interface Project {
   color: ChartState & { reference: string | null };
   // The computed correction model; reference values (manufacturer data) are deliberately not saved.
   model: ColorModel | null;
-  // Preview settings: the divider and the chosen look LUT by name and strength (percent); files
-  // without a look have no entry.
-  preview: { split: number; look?: PreviewLook };
+  // Position of the preview's divider in percent.
+  preview: { split: number };
+  export: { size: CubeSize };
   // Still images per tab; missing in files that were saved without images.
   stills?: Partial<Record<StillKey, EncodedFrame>>;
-  // All imported look LUTs with their data ("Include look LUTs"); missing otherwise.
-  looks?: EncodedLook[];
+  looks?: LookSettings;
 }
 
 const STILL_KEYS: ReadonlySet<string> = new Set(['gray', 'color', 'preview']);
+const SIDES: ReadonlySet<unknown> = new Set<Side>(['camera', 'corrected']);
+const SIZES: ReadonlySet<unknown> = new Set<CubeSize>(CUBE_SIZES);
 const MAX_STILL_SIDE = 16_384;
 
 function isNumber(value: unknown): value is number {
@@ -142,12 +157,7 @@ function parseCurve(value: unknown, index: number): { xs: number[]; ys: number[]
   return { xs, ys };
 }
 
-// The hue table of the model; projects from before version 1.8 have none, and their correction stays
-// as it was.
-function parseHue(value: unknown): number[] | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
+function parseHue(value: unknown): number[] {
   if (!Array.isArray(value) || value.length !== HUE_COEFFICIENTS || !value.every(isNumber)) {
     throw new TypeError(t('project.errors.hueShape', { count: HUE_COEFFICIENTS }));
   }
@@ -166,12 +176,11 @@ function parseModel(value: unknown): ColorModel | null {
     throw new TypeError(t('project.errors.matrixRows'));
   }
   const [r1, r2, r3] = value.matrix.map((row) => triple(row, t('project.errors.matrixWhere')));
-  const model: ColorModel = {
+  return {
     curves: [c1, c2, c3] as unknown as ColorModel['curves'],
     matrix: [r1, r2, r3] as unknown as ColorModel['matrix'],
+    hue: parseHue(value.hue),
   };
-  const hue = parseHue(value.hue);
-  return hue === undefined ? model : { ...model, hue };
 }
 
 function parsePercent(value: unknown, name: string): number {
@@ -205,27 +214,54 @@ function parseLookData(value: unknown): EncodedLook {
   };
 }
 
-function parseLook(value: unknown): PreviewLook | undefined {
+// The fields of the look section and their kinds; the values themselves are checked after.
+type LookFields = Record<string, unknown> & {
+  chosen: string | null;
+  inExport: boolean;
+  luts: unknown[];
+};
+
+function hasLookFields(value: unknown): value is LookFields {
+  return (
+    isRecord(value) &&
+    (value.chosen === null || typeof value.chosen === 'string') &&
+    SIDES.has(value.left) &&
+    SIDES.has(value.right) &&
+    typeof value.inExport === 'boolean' &&
+    Array.isArray(value.luts)
+  );
+}
+
+function parseLooks(value: unknown): LookSettings | undefined {
   if (value === undefined) {
     return undefined;
   }
-  if (!isRecord(value) || typeof value.name !== 'string') {
-    throw new TypeError(t('project.errors.lookShape'));
+  if (!hasLookFields(value)) {
+    throw new TypeError(t('project.errors.looksShape'));
+  }
+  const luts = value.luts.map((entry) => parseLookData(entry));
+  const names = new Set(luts.map((lut) => lut.name));
+  if (names.size !== luts.length) {
+    throw new RangeError(t('project.errors.looksTwice'));
+  }
+  if (value.chosen !== null && !names.has(value.chosen)) {
+    throw new RangeError(t('project.errors.looksChosen', { name: value.chosen }));
   }
   return {
-    name: value.name,
+    chosen: value.chosen,
     strength: parsePercent(value.strength, t('project.errors.strengthName')),
+    left: value.left as Side,
+    right: value.right as Side,
+    inExport: value.inExport,
+    luts,
   };
 }
 
-function parseLooks(value: unknown): EncodedLook[] | undefined {
-  if (value === undefined) {
-    return undefined;
+function parseExport(value: unknown): { size: CubeSize } {
+  if (!isRecord(value) || !SIZES.has(value.size)) {
+    throw new TypeError(t('project.errors.exportSize', { sizes: CUBE_SIZES.join(', ') }));
   }
-  if (!Array.isArray(value)) {
-    throw new TypeError(t('project.errors.lookData'));
-  }
-  return value.map((entry) => parseLookData(entry));
+  return { size: value.size as CubeSize };
 }
 
 function parseStill(value: unknown, key: string): EncodedFrame {
@@ -269,7 +305,7 @@ function parseStills(value: unknown): Partial<Record<StillKey, EncodedFrame>> | 
   return stills;
 }
 
-// The parts of the file that may be missing: still images and look LUTs.
+// The parts that are only in the file when they were chosen: still images and look LUTs.
 function parseExtras(raw: Record<string, unknown>): Pick<Project, 'stills' | 'looks'> {
   const stills = parseStills(raw.stills);
   const looks = parseLooks(raw.looks);
@@ -299,17 +335,14 @@ export function parseProject(text: string): Project {
   if (!isRecord(raw.preview)) {
     throw new TypeError(t('project.errors.previewMissing'));
   }
-  const look = parseLook(raw.preview.look);
   return {
     format: PROJECT_FORMAT,
     savedAt: raw.savedAt,
     gray: parseChart(raw.gray, t('project.errors.chartGray'), grayLayout, GRAY_IDS),
     color: { ...color, reference },
     model: parseModel(raw.model),
-    preview: {
-      split: parsePercent(raw.preview.split, t('project.errors.splitName')),
-      ...(look !== undefined && { look }),
-    },
+    preview: { split: parsePercent(raw.preview.split, t('project.errors.splitName')) },
+    export: parseExport(raw.export),
     ...parseExtras(raw),
   };
 }

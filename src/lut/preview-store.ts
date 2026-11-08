@@ -7,6 +7,14 @@ export type Side = 'camera' | 'corrected';
 
 export const FULL_STRENGTH = 100;
 
+// The look settings without any look LUT: what a project saved without look LUTs restores.
+export const LOOK_DEFAULTS = {
+  look: null,
+  strength: FULL_STRENGTH,
+  left: 'camera',
+  right: 'corrected',
+} as const;
+
 function percent(value: number): number {
   return Math.round(Math.min(Math.max(value, 0), FULL_STRENGTH));
 }
@@ -15,10 +23,10 @@ function percent(value: number): number {
 // look LUT with its strength in percent, and what both sides start from.
 export const usePreviewStore = defineStore('preview', () => {
   const split = ref(50);
-  const look = ref<string | null>(null);
-  const strength = ref(FULL_STRENGTH);
-  const left = ref<Side>('camera');
-  const right = ref<Side>('corrected');
+  const look = ref<string | null>(LOOK_DEFAULTS.look);
+  const strength = ref<number>(LOOK_DEFAULTS.strength);
+  const left = ref<Side>(LOOK_DEFAULTS.left);
+  const right = ref<Side>(LOOK_DEFAULTS.right);
 
   function setSplit(value: number): void {
     split.value = Math.min(Math.max(value, 0), 100);

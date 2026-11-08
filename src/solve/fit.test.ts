@@ -15,6 +15,7 @@ import type { ReferenceSet } from '../reference/reference';
 import { cameraCode } from '../test-support/synthetic-camera';
 import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
+import { FLAT_HUE } from '../test-support/identity-model';
 
 import { applyColorModel, fitColorModel } from './fit';
 
@@ -133,10 +134,10 @@ describe('fitColorModel', () => {
       const [r, g, b] = code.map((value) => srgbToLinear(value));
       return 0.2126 * Number(r) + 0.7152 * Number(g) + 0.0722 * Number(b);
     };
-    const withoutTable = { curves: result.model.curves, matrix: result.model.matrix };
+    const withoutTable = { ...result.model, hue: FLAT_HUE };
 
     it('changes nothing the matrix already gets right', () => {
-      const table = result.model.hue ?? [];
+      const table = result.model.hue;
       expect(table).toHaveLength(10);
       expect(Math.max(...table.map((value) => Math.abs(value)))).toBeLessThan(0.05);
     });
@@ -155,7 +156,7 @@ describe('fitColorModel', () => {
         }),
       );
       const fit = fitColorModel({ measurements: skewed, reference });
-      const matrixOnly = { curves: fit.model.curves, matrix: fit.model.matrix };
+      const matrixOnly = { ...fit.model, hue: FLAT_HUE };
       const colorError = (model: typeof matrixOnly) => {
         const errors = fit.report.patches
           .filter((patch) => !patch.neutral)
@@ -240,6 +241,7 @@ describe('fitColorModel', () => {
         [0, 1, 0],
         [0, 0, 1],
       ],
+      hue: FLAT_HUE,
     } as const;
     const input: [number, number, number] = [
       linearToSrgb(0.1),
