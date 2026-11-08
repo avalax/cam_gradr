@@ -228,7 +228,6 @@ describe('useProjectStore', () => {
     await chooseWarm();
     usePreviewStore().setLeft('corrected');
     usePreviewStore().setRight('camera');
-    useExportStore().setWithLook(false);
     useExportStore().setSize(65);
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
@@ -240,7 +239,6 @@ describe('useProjectStore', () => {
       strength: 70,
       left: 'corrected',
       right: 'camera',
-      inExport: false,
       luts: ['Cold', 'Warm'],
     });
 
@@ -260,7 +258,7 @@ describe('useProjectStore', () => {
       'corrected',
       'camera',
     ]);
-    expect([useExportStore().withLook, useExportStore().size]).toEqual([false, 65]);
+    expect(useExportStore().size).toBe(65);
   });
 
   it('replaces a look LUT of the same name with the one from the file', async () => {
@@ -288,7 +286,6 @@ describe('useProjectStore', () => {
     setLookStorage(storage);
     await chooseWarm();
     usePreviewStore().setLeft('corrected');
-    useExportStore().setWithLook(false);
     const text = await workedState();
     expect(parseProject(text).looks).toBeUndefined();
     expect(parseProject(text).export).toEqual({ size: 33 });
@@ -306,7 +303,7 @@ describe('useProjectStore', () => {
       'camera',
       'corrected',
     ]);
-    expect([useExportStore().withLook, useExportStore().size]).toEqual([true, 33]);
+    expect(useExportStore().size).toBe(33);
   });
 
   it('rejects a file whose look LUT cannot be read and changes nothing', async () => {

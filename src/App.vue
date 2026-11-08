@@ -88,6 +88,7 @@ function onTabKey(event: KeyboardEvent, index: number): void {
 }
 
 const camera = useCameraStore();
+const cameraRuns = computed(() => camera.status === 'live' || camera.status === 'starting');
 const { exposure } = storeToRefs(useChartStore());
 const { result } = storeToRefs(useSolveStore());
 
@@ -192,7 +193,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="ml-auto flex items-center gap-2 pb-1">
-          <CameraToggle />
+          <!-- The export has no camera image: the switch only shows there while the camera runs. -->
+          <CameraToggle v-if="tab !== 'export' || cameraRuns" />
           <SettingsMenu />
         </div>
       </header>

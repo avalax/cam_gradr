@@ -73,11 +73,13 @@ describe('ExportTab', () => {
     ]);
     const wrapper = mount(ExportTab);
     expect(wrapper.findAll('[data-testid="lut-slice"]')).toHaveLength(8);
-    expect(wrapper.get('[data-testid="export-file-info"]').text()).toContain(
-      '33 × 33 × 33 · ca. 970 KB',
+    expect(wrapper.get('[data-testid="export-file-info"]').text()).toBe(
+      '33 × 33 × 33 Stützstellen',
     );
     await wrapper.get('[data-testid="export-size"] [data-option="65"]').trigger('click');
-    expect(wrapper.get('[data-testid="export-file-info"]').text()).toContain('65 × 65 × 65');
+    expect(wrapper.get('[data-testid="export-file-info"]').text()).toBe(
+      '65 × 65 × 65 Stützstellen',
+    );
     const facts = wrapper.get('[data-testid="project-facts"]').text();
     expect(facts).toContain('8 Eckpunkte · 0 Felder');
     expect(facts).toContain('Kurven + Matrix');
@@ -101,11 +103,15 @@ describe('ExportTab', () => {
     expect(download).not.toHaveBeenCalled();
   });
 
-  it('offers sizes 17, 33 and 65 with 33 as default', () => {
+  it('offers sizes 17, 33 and 65 with 33 as default, each with its file size and purpose', () => {
     computeModel();
     const wrapper = mount(ExportTab);
     const radios = wrapper.findAll('[data-testid="export-size"] [role="radio"]');
-    expect(radios.map((radio) => radio.text())).toEqual(['17³', '33³ Standard', '65³']);
+    expect(radios.map((radio) => radio.text())).toEqual([
+      '17³ca. 133 KBfür ältere Geräte',
+      '33³ca. 970 KBStandard',
+      '65³ca. 7,4 MBam genauesten',
+    ]);
     expect(radios.map((radio) => radio.attributes('aria-checked'))).toEqual([
       'false',
       'true',
@@ -115,19 +121,12 @@ describe('ExportTab', () => {
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
 
-  it('downloads the selected size with the look LUT chosen in the preview, or only the correction', async () => {
+  it('downloads the selected size with the look LUT the preview shows, or only the correction', async () => {
     computeModel();
     await chooseInvert();
     usePreviewStore().setStrength(70);
     const wrapper = mount(ExportTab);
-    const checked = () =>
-      wrapper
-        .findAll('[data-testid="export-content"] [role="radio"]')
-        .map((radio) => radio.attributes('aria-checked'));
-    expect(checked()).toEqual(['false', 'true']);
-    expect(wrapper.get('[data-testid="export-look"]').text()).toBe(
-      'Look-LUT „Invert“ mit 70 %, eingestellt in der Vorschau.',
-    );
+    expect(wrapper.find('[data-testid="export-content"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="project-facts"]').text()).toContain('Invert · 70 %');
     // The smallest size keeps the test fast.
     await wrapper.get('[data-testid="export-size"] [data-option="17"]').trigger('click');
@@ -140,11 +139,9 @@ describe('ExportTab', () => {
     expect(looked.title).toBe('cam_gradr + Invert 70 %');
     expect(content).toContain('# Look LUT: Invert.cube, strength 70 %');
 
-    await wrapper.get('[data-testid="export-content"] [data-option="plain"]').trigger('click');
-    expect(checked()).toEqual(['true', 'false']);
-    expect(wrapper.get('[data-testid="export-look"]').text()).toBe(
-      'Die LUT enthält nur die Farbkorrektur.',
-    );
+    // Without a look in the preview the file holds the correction alone.
+    usePreviewStore().setLook(null);
+    await wrapper.vm.$nextTick();
     await wrapper.get('[data-testid="export-download"]').trigger('click');
     const [plainName, plainContent] = download.mock.calls[1] as [string, string, string];
     expect(plainName).toBe('cam_gradr-17.cube');
@@ -157,23 +154,5 @@ describe('ExportTab', () => {
     // The look moved the colors 70 % of the way towards their inverse.
     const first = Number(plain.lut.data[0]);
     expect(looked.lut.data[0]).toBeCloseTo(first + 0.7 * (1 - 2 * first), 4);
-  });
-
-  it('points to the preview for a look LUT and goes there', async () => {
-    computeModel();
-    const wrapper = mount(ExportTab);
-    expect(
-      wrapper.get('[data-testid="export-content"] [data-option="look"]').attributes('disabled'),
-    ).toBeDefined();
-    expect(wrapper.get('[data-testid="export-look"]').text()).toBe(
-      'Eine Look-LUT wählst du in der Vorschau.',
-    );
-    await wrapper.get('[data-testid="export-look"] button').trigger('click');
-    expect(wrapper.emitted('goto')).toEqual([['preview']]);
-
-    await chooseInvert();
-    await wrapper.vm.$nextTick();
-    await wrapper.get('[data-testid="export-look"] button').trigger('click');
-    expect(wrapper.emitted('goto')).toEqual([['preview'], ['preview']]);
   });
 });

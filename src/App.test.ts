@@ -177,6 +177,16 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
   });
 
+  it('shows the camera switch in the export only while the camera runs', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    await tabs(wrapper)[3]?.trigger('click');
+    expect(wrapper.find('[data-testid="camera-toggle"]').exists()).toBe(false);
+    await useCameraStore().start();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera stoppen');
+  });
+
   it('keeps the camera running when switching tabs', async () => {
     const api = installFakeCamera();
     const wrapper = mountApp();

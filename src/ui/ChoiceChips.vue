@@ -3,18 +3,27 @@ import { computed, useTemplateRef } from 'vue';
 
 import { rovingTarget } from './roving';
 
-// A choice as a row of radio buttons: chips (language, appearance, resolution) or one segmented
-// control (the content and size of the export; `compact` fills a narrow band in small type, as the
-// view of the preview's side column). `key` tells the options apart (`selected` is the key of the
+// A choice as a row of radio buttons: chips (language, appearance, resolution), one segmented control
+// (`compact` fills a narrow band in small type, as the view of the preview's side column) or cards
+// that also show a detail and a hint (the sizes of the export). `key` tells the options apart (`selected` is the key of the
 // chosen one), `lang` names the language of a label for screen readers, and an option can be locked
 // on its own. The label of the group (aria-label or aria-labelledby) and a test id go to the group.
 // As a WAI-ARIA radio group it is one stop of the Tab key; the arrow keys choose the next option.
 const props = withDefaults(
   defineProps<{
-    options: readonly { key: string; value: T; label: string; lang?: string; disabled?: boolean }[];
+    options: readonly {
+      key: string;
+      value: T;
+      label: string;
+      lang?: string;
+      disabled?: boolean;
+      // Only shown by the cards: beside the label, and in a line below it.
+      detail?: string;
+      hint?: string;
+    }[];
     selected: string;
     disabled?: boolean;
-    variant?: 'chips' | 'segmented';
+    variant?: 'chips' | 'segmented' | 'cards';
     compact?: boolean;
   }>(),
   { disabled: false, variant: 'chips', compact: false },
@@ -36,6 +45,14 @@ const STYLES = {
     option: 'border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500',
     on: 'bg-zinc-800 text-zinc-50',
     off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
+  },
+  // The chosen card has a border of 2 px; the others have 1 px and a margin of 1 px, so that the cards
+  // keep their size.
+  cards: {
+    group: 'grid grid-cols-3 gap-2',
+    option: 'rounded-lg px-3 py-1.5 text-left leading-snug disabled:opacity-50',
+    on: 'border-2 border-zinc-800 bg-white dark:bg-zinc-100',
+    off: 'm-px border border-zinc-300 bg-zinc-50 enabled:hover:bg-zinc-200',
   },
   compact: {
     group: 'flex w-full overflow-hidden rounded border border-zinc-500 text-[11px] font-semibold',
@@ -89,7 +106,14 @@ function onKey(event: KeyboardEvent, index: number): void {
       @click="emit('choose', option.value)"
       @keydown="onKey($event, index)"
     >
-      {{ option.label }}
+      <template v-if="variant === 'cards'">
+        <span class="flex items-baseline justify-between gap-2">
+          <span class="text-[15px] font-semibold">{{ option.label }}</span>
+          <span class="text-xs text-zinc-600">{{ option.detail }}</span>
+        </span>
+        <span class="block text-xs text-zinc-500">{{ option.hint }}</span>
+      </template>
+      <template v-else>{{ option.label }}</template>
     </button>
   </div>
 </template>

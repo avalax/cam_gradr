@@ -52,7 +52,7 @@
     "lookData": "Die gespeicherten Look-LUTs sind ungültig",
     "lookUnreadable": "Die gespeicherte Look-LUT „{name}“ lässt sich nicht lesen",
     "lookWrongSize": "Die gespeicherte Look-LUT „{name}“ hat nicht die angegebene Größe",
-    "looksShape": "Look-LUTs: erwartet werden chosen, strength, left, right, inExport und luts",
+    "looksShape": "Look-LUTs: erwartet werden chosen, strength, left, right und luts",
     "looksTwice": "Look-LUTs: ein Name kommt mehrfach vor",
     "looksChosen": "Look-LUTs: die gewählte LUT „{name}“ fehlt",
     "exportSize": "Export: die Größe muss einer der Werte {sizes} sein"

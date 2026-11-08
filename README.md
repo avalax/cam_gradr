@@ -44,8 +44,8 @@ Everything runs in your browser. Images and measurements never leave your comput
    right one between the look over the correction and the look alone on the camera image.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual). With a look LUT chosen in
-   the preview, the file holds correction and look at the set strength; "Correction only" leaves the look
-   out. The file name and the first lines of the file name the look and its strength.
+   the preview, the file holds correction and look at the set strength; with "No look LUT" it holds the
+   correction alone. The file name and the first lines of the file name the look and its strength.
 
 You can switch between the tabs at any time. Below each name is a short result with four bars: green
 means good (light in the normal range, or a mean deviation of at most 2 after the correction), yellow

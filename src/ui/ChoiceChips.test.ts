@@ -52,6 +52,20 @@ describe('ChoiceChips', () => {
     expect(wrapper.get('[role="radiogroup"]').classes()).toContain('opacity-50');
   });
 
+  it('shows cards with a detail and a hint', () => {
+    const options = SIZES.map((option, index) => ({
+      ...option,
+      detail: `${String(index + 1)} MB`,
+      hint: index === 0 ? 'klein' : 'groß',
+    }));
+    const wrapper = mount(ChoiceChips, {
+      props: { options, selected: 'large', variant: 'cards' },
+    });
+    const radios = wrapper.findAll('[role="radio"]');
+    expect(radios.map((radio) => radio.text())).toEqual(['Klein1 MBklein', 'Groß2 MBgroß']);
+    expect(radios[1]?.classes()).toContain('border-2');
+  });
+
   it('locks all options while disabled', () => {
     const wrapper = mount(ChoiceChips, {
       props: { options: SIZES, selected: 'small', disabled: true },
