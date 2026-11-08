@@ -21,7 +21,7 @@ import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
 import ChoiceChips from './ChoiceChips.vue';
 import { LINK_BUTTON } from './control-styles';
-import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth, previewImage } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, imageWidth, previewImage } from './image-size';
 import LookBar from './LookBar.vue';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
@@ -141,14 +141,16 @@ function download(): void {
 </script>
 
 <template>
-  <!-- On the grid of the other tabs: the LUT where their image is (it ends where the image ends),
-       the project where their side column and their text column are (11 rem, a gap of 1.5 rem and
-       21 rem). -->
-  <section class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_33.5rem]">
-    <!-- Invisible, under the LUT card: gives the export the height of the preview. -->
+  <!-- On the grid of the other tabs: the LUT where their image is (as wide as the image), the
+       project where their side column and their text column are (11 rem, a gap of 1.5 rem and
+       21 rem). On a wide but short window both stay together and the free room collects at the right
+       edge, as on the other tabs. -->
+  <section class="grid gap-3 lg:grid-cols-[minmax(0,max-content)_33.5rem] lg:justify-start">
+    <!-- Invisible, under the LUT card: gives the export the height of the preview and the width of
+         its image. -->
     <div
       :class="[IMAGE_BLOCK, 'invisible col-start-1 row-start-1']"
-      :style="{ maxWidth: imageMaxWidth(previewArea.aspect) }"
+      :style="{ width: imageWidth(previewArea.aspect) }"
       aria-hidden="true"
       data-testid="export-sizer"
     >
@@ -156,9 +158,10 @@ function download(): void {
       <div :style="{ aspectRatio: previewArea.aspect }"></div>
       <LookBar v-if="previewArea.shown" />
     </div>
-    <!-- Without color correction you see what you would get: same layout, but grayed out. -->
+    <!-- Without color correction you see what you would get: same layout, but grayed out. Its own
+         content does not widen the column (inline size containment): the copy above sets it. -->
     <article
-      class="col-start-1 row-start-1 flex min-w-0 flex-col gap-2 rounded-lg border p-3"
+      class="col-start-1 row-start-1 flex min-w-0 flex-col gap-2 rounded-lg border p-3 [contain:inline-size]"
       :class="
         model === null ? 'border-dashed border-zinc-300 bg-zinc-100' : 'border-zinc-300 bg-zinc-50'
       "

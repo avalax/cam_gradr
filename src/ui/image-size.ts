@@ -9,21 +9,30 @@ const PAGE_CHROME_REM = 12;
 const LOOK_BAR_REM = 5.25;
 const IMAGE_CHROME_REM = PAGE_CHROME_REM + LOOK_BAR_REM;
 
-// Maximum image width: it should fit on one screen with everything around it
-// (width = height × aspect ratio).
-export function imageMaxWidth(aspect: number): string {
+// Width of the image: as wide as the height that fits on one screen with everything around it allows
+// (width = height × aspect ratio). The image block takes it as its width with `max-w-full`, so that
+// a narrow window still shrinks it to its track.
+export function imageWidth(aspect: number): string {
   return `calc((100vh - ${String(IMAGE_CHROME_REM)}rem) * ${String(aspect)})`;
 }
 
-// The frame of the image area on the tabs with a camera image, and of its invisible copy that gives
-// the export the same height. In the dark appearance the image lies on its own surface with an
-// edge; the band above the image sits flush at its top, as the bands of the side columns do.
-export const IMAGE_BLOCK =
-  'min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:px-2.5 dark:pb-2.5';
+// The columns of a tab with a camera image: the image with its side column, then the text. The first
+// column is as wide as the image row needs and no wider, so that on a wide but short window image,
+// side column and text stay together and the free room collects at the right edge; on a narrow or
+// tall window it shrinks to the room there is and the image fills its track.
+export const TAB_COLUMNS =
+  'lg:grid lg:grid-cols-[minmax(0,max-content)_21rem] lg:items-start lg:justify-start lg:gap-6';
 
-// The image and the narrow column beside it, as one grid on every tab with a camera image: the
-// column sits at the same place on all of them, where the export has its project card, also when the
-// window height makes the image narrower than its track.
+// The frame of the image area on the tabs with a camera image, and of its invisible copy that gives
+// the export the same height and width; its width is imageWidth. In the dark appearance the image
+// lies on its own surface with an edge; the band above the image sits flush at its top, as the bands
+// of the side columns do.
+export const IMAGE_BLOCK =
+  'min-w-0 max-w-full dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:px-2.5 dark:pb-2.5';
+
+// The image and the narrow column beside it, as one grid on every tab with a camera image. The
+// column follows the image right away: the row is as wide as the image (TAB_COLUMNS), and the export
+// puts its project card at the same place.
 export const IMAGE_ROW = 'grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3';
 
 // The band above the image: its corners follow the edge of the dark surface.

@@ -6,6 +6,7 @@ import { useChartStore } from '../chart/chart-store';
 import { grayLayout } from '../chart/layouts';
 
 import CardStage from './CardStage.vue';
+import { TAB_COLUMNS } from './image-size';
 import MeasureField from './MeasureField.vue';
 
 const chart = useChartStore();
@@ -15,7 +16,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
+  <section :class="TAB_COLUMNS">
     <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
       <p class="text-sm text-zinc-700">
         {{ t('cards.gray.intro') }}

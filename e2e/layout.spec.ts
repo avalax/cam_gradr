@@ -41,10 +41,18 @@ test.describe('Layout', () => {
     expect(exportHeight).not.toBe(heights[0]);
     await app.openTab('Graukarten');
     expect(Math.abs((await app.panelHeight()) - exportHeight)).toBeLessThanOrEqual(1);
-    // There the image is narrower than its track: the column beside it keeps its place on every tab,
-    // where the export has its project card.
+    // There the window height makes the image narrower than the room there is: image, side column
+    // and text stay together (the column 12 px after the image), the free room collects at the right
+    // edge, and the export puts its project card where the side column is.
+    const besideImage = async (column: string): Promise<number> => {
+      const image = await app.page.getByTestId('image-block').boundingBox();
+      const side = await app.page.getByTestId(column).boundingBox();
+      return (side?.x ?? 0) - (image?.x ?? 0) - (image?.width ?? 0);
+    };
+    expect(Math.abs((await besideImage('measure-field')) - 12)).toBeLessThanOrEqual(1);
     const grayColumn = await app.page.getByTestId('measure-field').boundingBox();
     await app.openTab('Vorschau');
+    expect(Math.abs((await besideImage('preview-side')) - 12)).toBeLessThanOrEqual(1);
     expect(await app.page.getByTestId('preview-side').boundingBox()).toEqual(grayColumn);
     await app.openTab('Export');
     const projectCard = await app.page

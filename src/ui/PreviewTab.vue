@@ -30,7 +30,13 @@ import {
 import ChoiceChips from './ChoiceChips.vue';
 import ColorTiles from './ColorTiles.vue';
 import { CAMERA_SWITCH_ID, focusById } from './focus';
-import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageMaxWidth as maxWidthFor } from './image-size';
+import {
+  IMAGE_BAND,
+  IMAGE_BLOCK,
+  IMAGE_ROW,
+  TAB_COLUMNS,
+  imageWidth as widthFor,
+} from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import GrayWedge from './GrayWedge.vue';
@@ -168,7 +174,7 @@ const band = computed(() =>
 );
 const showImage = computed(() => model.value !== null && hasSource.value);
 const aspect = ref(16 / 9);
-const maxWidth = computed(() => maxWidthFor(aspect.value));
+const width = computed(() => widthFor(aspect.value));
 
 const renderer = shallowRef<LutRenderer | null>(null);
 const stopLoop = shallowRef<(() => void) | null>(null);
@@ -308,7 +314,7 @@ const splitModel = computed({
 </script>
 
 <template>
-  <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
+  <section :class="TAB_COLUMNS">
     <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
       <p class="text-sm text-zinc-700">
         {{ t('preview.intro') }}
@@ -329,7 +335,7 @@ const splitModel = computed({
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
       <div :class="IMAGE_ROW">
-        <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ maxWidth: maxWidth }">
+        <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ width }">
           <div class="relative">
             <!-- The video only serves as an image source and stays invisible. -->
             <video

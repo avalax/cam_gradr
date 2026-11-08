@@ -13,6 +13,7 @@ import { useSolveStore } from '../solve/solve-store';
 
 import CardStage from './CardStage.vue';
 import ColorWipe from './ColorWipe.vue';
+import { TAB_COLUMNS } from './image-size';
 import { hasReferenceSet, referenceLabel } from './reference-label';
 import ResultReport from './ResultReport.vue';
 
@@ -47,7 +48,7 @@ function grayCheck(current: FitResult) {
 
 <template>
   <section class="space-y-4">
-    <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
+    <div :class="TAB_COLUMNS">
       <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
         <p class="text-sm text-zinc-700">
           {{ t('color.intro') }}

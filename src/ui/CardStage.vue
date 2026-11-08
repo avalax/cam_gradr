@@ -21,7 +21,7 @@ import type { ChartLayout, Corners } from '../chart/types';
 
 import { CAMERA_SWITCH_ID, focusById } from './focus';
 import { TRASH_PATH } from './icons';
-import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageMaxWidth as maxWidthFor } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageWidth as widthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import { buildShapes, clientToImage } from './overlay-geometry';
@@ -104,7 +104,7 @@ const handles = computed(() =>
 );
 // Image and buttons should fit on one screen together: the image height is limited to the window
 // height minus header, hint line and button bar (width = height × aspect ratio).
-const imageMaxWidth = computed(() => maxWidthFor(size.value.width / size.value.height));
+const imageWidth = computed(() => widthFor(size.value.width / size.value.height));
 
 function imagePoint(event: PointerEvent | MouseEvent) {
   const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -289,7 +289,7 @@ watch(actual, (next, previous) => {
 
 <template>
   <div :class="IMAGE_ROW">
-    <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ maxWidth: imageMaxWidth }">
+    <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ width: imageWidth }">
       <StageLabel :state="stage" :class="IMAGE_BAND" data-testid="stage-label" />
       <div class="relative" data-testid="stage-image">
         <!-- Placeholder the size of the image while the camera is off and there is no still image. -->

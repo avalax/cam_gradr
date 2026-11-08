@@ -263,12 +263,16 @@ export class AppPage {
   // already running).
   async captureColorCards(): Promise<void> {
     // After the automatic capture the camera is off: choose the scene first, then start, so that
-    // the search does not find the old cards.
+    // the search does not find the old cards. Started that way, the camera shows the color cards
+    // from its first image; waiting for them in the video could miss them, because the app may find
+    // and capture them and switch the camera off before the probe looks. A camera that already runs
+    // shows the old scene until the new image arrives.
     await setScene(this.page, 'colors');
-    if ((await this.cameraSwitch.getAttribute('aria-checked')) !== 'true') {
+    if ((await this.cameraSwitch.getAttribute('aria-checked')) === 'true') {
+      await this.showCards('colors');
+    } else {
       await this.startSearch();
     }
-    await this.showCards('colors');
     await this.captureStill();
     await this.expectCorners();
   }
