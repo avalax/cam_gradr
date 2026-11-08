@@ -103,10 +103,10 @@ async function applyCorrection(project: Project): Promise<string | null> {
     // With reference values available, the error report can be recomputed.
     solve.compute({ measurements: project.color.measurements, reference });
   }
-  // Otherwise the saved model applies, never one from before; it also steps in when the calculation
-  // fails.
+  // Otherwise the saved model applies, never one from before, with the name of the set it was
+  // fitted with; it also steps in when the calculation fails.
   if (!recompute || (solve.model === null && project.model !== null)) {
-    solve.loadModel(project.model);
+    solve.loadModel(project.model, name);
   }
   const missing = name !== null && reference?.name !== name;
   return missing ? name : null;
@@ -125,11 +125,14 @@ async function decodeStills(project: Project): Promise<Stills | null> {
 }
 
 // Reads the current working state from the stores. Corner points belong to a still image: without still
-// images in the file they are not saved.
+// images in the file they are not saved. The reference is the set the correction was fitted with, so
+// that a correction loaded without its set keeps naming it; without a correction it is the active
+// set, which the measurements are computed with on loading.
 function snapshot(withCorners: boolean): Project {
   const gray = useChartStore().committed();
   const color = useColorChartStore().committed();
   const preview = usePreviewStore();
+  const solve = useSolveStore();
   return {
     format: PROJECT_FORMAT,
     savedAt: new Date().toISOString(),
@@ -142,9 +145,9 @@ function snapshot(withCorners: boolean): Project {
       corners: withCorners ? color.points : {},
       measurements: { ...color.measurements },
       rotated: color.rotated,
-      reference: useReferenceStore().selectedName,
+      reference: solve.model === null ? useReferenceStore().selectedName : solve.referenceName,
     },
-    model: useSolveStore().model,
+    model: solve.model,
     preview: { split: preview.split },
     export: { size: useExportStore().size },
   };

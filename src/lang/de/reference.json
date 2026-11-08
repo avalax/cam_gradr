@@ -1,4 +1,8 @@
 {
+  "names": {
+    "bundled": "Spyder Checkr 48 (inoffizielle Transkription)",
+    "missing": "{name} (fehlt)"
+  },
   "panel": {
     "sourceBefore": "Der mitgelieferte Satz „{name}“ stammt aus dem Blogbeitrag",
     "sourceAfter": "und ist keine Datei von Datacolor. Abweichungen zur eigenen Karte sind möglich. Er wird beim Start immer geladen; alle Sätze bleiben nur lokal im Browser.",

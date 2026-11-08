@@ -13,6 +13,7 @@ import { useSolveStore } from '../solve/solve-store';
 
 import CardStage from './CardStage.vue';
 import ColorWipe from './ColorWipe.vue';
+import { fittedReferenceLabel, referenceLabel } from './reference-label';
 import ResultReport from './ResultReport.vue';
 
 const { t } = useI18n();
@@ -24,8 +25,11 @@ const { still } = storeToRefs(useCameraStore());
 // Without a still image of this tab (live image or no image at all) there is nothing to compare yet.
 const live = computed(() => still.value === null);
 const { ready, measurements } = storeToRefs(chart);
-const { selected } = storeToRefs(references);
-const { result, error: solveError, model } = storeToRefs(solve);
+const { selected, sets } = storeToRefs(references);
+const { result, error: solveError, model, referenceName } = storeToRefs(solve);
+// A correction without a report (loaded from a project) names the set it was fitted with, not the
+// active one, which may be another.
+const withoutReport = computed(() => model.value !== null && result.value === null);
 
 // Check against the gray cards from step 1 (for a calculated correction, empty without measured
 // gray cards), at the exposure of the color shot.
@@ -55,10 +59,17 @@ watch([measurements, selected], () => {
         <p class="text-sm text-zinc-700">
           {{ t('color.intro') }}
         </p>
-        <p v-if="selected !== null" class="text-sm text-zinc-700" data-testid="reference-active">
+        <p v-if="withoutReport" class="text-sm text-zinc-700" data-testid="reference-active">
+          {{ t('color.referenceNoReport', { name: fittedReferenceLabel(referenceName, sets) }) }}
+        </p>
+        <p
+          v-else-if="selected !== null"
+          class="text-sm text-zinc-700"
+          data-testid="reference-active"
+        >
           {{
             t('color.referenceActive', {
-              name: selected.name,
+              name: referenceLabel(selected.name),
               count: Object.keys(selected.patches).length,
             })
           }}

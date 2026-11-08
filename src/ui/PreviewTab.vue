@@ -282,10 +282,15 @@ watch(split, () => {
   stillChanged = true;
 });
 
-// Mean error before and after the correction while the report is available.
-const summary = computed(() =>
-  result.value === null ? null : deviationSummary(result.value.report),
-);
+// Mean error before and after the correction while the report is available; a correction without a
+// report (loaded from a project whose reference set is missing) says so, as under the color cards'
+// divider.
+const summary = computed(() => {
+  if (result.value !== null) {
+    return deviationSummary(result.value.report);
+  }
+  return model.value === null ? null : t('color.wipe.noReport');
+});
 
 // The wipe over the image writes the divider position to the store.
 const splitModel = computed({

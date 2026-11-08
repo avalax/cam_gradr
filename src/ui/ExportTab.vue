@@ -25,6 +25,7 @@ import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth, previewImage } from './image-si
 import LookBar from './LookBar.vue';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
+import { fittedReferenceLabel } from './reference-label';
 import StageLabel from './StageLabel.vue';
 
 const emit = defineEmits<{ goto: [tab: 'color'] }>();
@@ -39,8 +40,8 @@ const SIZE_HINTS = {
 const { t } = useI18n();
 
 const solve = useSolveStore();
-const { model } = storeToRefs(solve);
-const { selected } = storeToRefs(useReferenceStore());
+const { model, referenceName } = storeToRefs(solve);
+const { selected, sets } = storeToRefs(useReferenceStore());
 const gray = useChartStore();
 const color = useColorChartStore();
 const preview = usePreviewStore();
@@ -61,7 +62,15 @@ const facts = computed(() => [
     label: t('export.project.correction'),
     value: model.value === null ? '–' : t('export.project.correctionValue'),
   },
-  { label: t('export.project.reference'), value: selected.value?.name ?? '–' },
+  // The set the file names: the one the correction was fitted with (marked while it is missing), or
+  // without a correction the active one.
+  {
+    label: t('export.project.reference'),
+    value: fittedReferenceLabel(
+      model.value === null ? (selected.value?.name ?? null) : referenceName.value,
+      sets.value,
+    ),
+  },
   {
     label: t('export.project.look'),
     value:
@@ -159,9 +168,12 @@ function download(): void {
           {{ t('export.lut.gotoColor') }}
         </button>
       </p>
-      <!-- The slices take the room the card has (it is as tall as the other tabs), as large as fits
-           in width and height; they never make the card taller. -->
-      <div class="min-h-24 flex-1 [container-type:size]">
+      <!-- The slices take the room the card has (it is as tall as the preview), as large as fits in
+           width and height; they never make the card taller. The box starts from a basis of 6 rem
+           rather than only a minimum height: where it gets no more than that (narrow windows),
+           Chrome otherwise measures the container units against a height of 0 and the slices
+           shrink to dots. -->
+      <div class="min-h-24 flex-[1_1_6rem] [container-type:size]">
         <LutSlices
           class="one-row:w-[min(100cqw,calc(400cqh_+_1.5rem))] two-rows:w-[min(100cqw,calc(200cqh_+_0.5rem))]"
           :model="model"

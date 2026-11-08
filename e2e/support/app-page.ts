@@ -76,6 +76,11 @@ export class AppPage {
     return Math.round(box?.height ?? 0);
   }
 
+  // How far the page reaches below the window (0 or less: it fits).
+  async pageOverflow(): Promise<number> {
+    return this.page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  }
+
   // Opens the preview and turns the camera on if it is off, so that there is a live image.
   async openPreviewWithImage(): Promise<void> {
     await this.openTab('Vorschau');

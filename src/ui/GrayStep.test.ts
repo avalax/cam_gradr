@@ -156,10 +156,10 @@ describe('GrayStep', () => {
     expect(wrapper.text()).not.toContain('Die Kamera ist aus');
   });
 
-  it('limits the image width so image and buttons fit on one screen', async () => {
+  it('limits the image width so that the image fits on one screen, with room for the look bar', async () => {
     const wrapper = await mountLive();
     const style = wrapper.get('div.min-w-0.flex-1').attributes('style');
-    expect(style).toContain('max-width: calc((100vh - 12rem) * 1.77');
+    expect(style).toContain('max-width: calc((100vh - 17.25rem) * 1.77');
   });
 
   it('binds stream and existing still image on mount', async () => {

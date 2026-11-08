@@ -338,13 +338,43 @@ describe('useProjectStore', () => {
     setActivePinia(createPinia());
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
     // A correction from before does not stay.
-    useSolveStore().loadModel(IDENTITY_MODEL);
+    useSolveStore().loadModel(IDENTITY_MODEL, 'Vorher');
     const project = useProjectStore();
     await project.load(text);
 
     expect(useSolveStore().model).toEqual(parseProject(text).model);
     expect(useSolveStore().result).toBeNull();
+    expect(useSolveStore().referenceName).toBe('Mein Satz');
     expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
+  });
+
+  it('keeps naming the missing set of a loaded correction when saving again', async () => {
+    const text = await workedState();
+    setActivePinia(createPinia());
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
+    await useProjectStore().load(text);
+    // The active set is the bundled one, but the correction was fitted with "Mein Satz".
+    expect(useReferenceStore().selectedName).not.toBe('Mein Satz');
+    await useProjectStore().save();
+    const again = (download.mock.calls.at(-1) as [string, string, string])[1];
+    expect(parseProject(again).color.reference).toBe('Mein Satz');
+
+    // Loaded once more, the file still brings the saved correction, not one from the active set.
+    setActivePinia(createPinia());
+    await useProjectStore().load(again);
+    expect(useSolveStore().model).toEqual(parseProject(text).model);
+    expect(useSolveStore().result).toBeNull();
+    await useProjectStore().save();
+    const third = (download.mock.calls.at(-1) as [string, string, string])[1];
+    expect(parseProject(third).color.reference).toBe('Mein Satz');
+  });
+
+  it('names the active set when there is no correction yet', async () => {
+    await useReferenceStore().load();
+    await useProjectStore().save();
+    const saved = (download.mock.calls.at(-1) as [string, string, string])[1];
+    expect(parseProject(saved).color.reference).toBe(useReferenceStore().selectedName);
+    expect(parseProject(saved).model).toBeNull();
   });
 
   it('loads a project without reference and without model', async () => {
@@ -353,12 +383,13 @@ describe('useProjectStore', () => {
     raw.color.reference = null;
     raw.model = null;
     setActivePinia(createPinia());
-    useSolveStore().loadModel(IDENTITY_MODEL);
+    useSolveStore().loadModel(IDENTITY_MODEL, 'Vorher');
     const project = useProjectStore();
     await project.load(JSON.stringify(raw));
 
     expect(project.notice).toBeNull();
     expect(useSolveStore().model).toBeNull();
+    expect(useSolveStore().referenceName).toBeNull();
   });
 
   it('falls back to the saved model when the recomputation is not possible', async () => {

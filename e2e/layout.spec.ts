@@ -88,10 +88,7 @@ test.describe('Layout', () => {
           const image = await app.image.boundingBox();
           expect(image?.y).toBeGreaterThan(0);
           expect((image?.y ?? 0) + (image?.height ?? 0)).toBeLessThanOrEqual(height);
-          const overflow = await app.page.evaluate(
-            () => document.documentElement.scrollHeight - window.innerHeight,
-          );
-          expect(overflow).toBeLessThanOrEqual(0);
+          expect(await app.pageOverflow()).toBeLessThanOrEqual(0);
           expect(image?.width).toBeGreaterThan(minImageWidth);
         },
         `${String(width)}×${String(height)}`,

@@ -190,17 +190,17 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <div
-        class="space-y-3 rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white dark:bg-zinc-100 p-3"
-      >
-        <ProjectStatus />
-
+      <div class="rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white dark:bg-zinc-100 p-3">
         <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
           <GrayStep v-if="tab === 'gray'" />
           <ColorStep v-else-if="tab === 'color'" />
           <PreviewTab v-else-if="tab === 'preview'" />
           <ExportTab v-else @goto="openTab" />
         </div>
+
+        <!-- The message floats at the bottom of the window; after the panel in the order of the Tab
+             key, so that it does not stand between the tabs and what they show. -->
+        <ProjectStatus />
       </div>
     </div>
 

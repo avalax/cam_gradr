@@ -7,6 +7,7 @@ import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { useReferenceStore } from '../reference/reference-store';
 
 import { LINK_BUTTON, SELECT, TEXT_BUTTON } from './control-styles';
+import { referenceLabel } from './reference-label';
 
 const { t } = useI18n();
 const references = useReferenceStore();
@@ -39,7 +40,7 @@ function remove(name: string): void {
 <template>
   <div class="space-y-3">
     <p class="text-xs text-zinc-600" data-testid="reference-source">
-      {{ t('reference.panel.sourceBefore', { name: BUNDLED_NAME }) }}
+      {{ t('reference.panel.sourceBefore', { name: referenceLabel(BUNDLED_NAME) }) }}
       <a :href="BUNDLED_SOURCE_URL" :class="LINK_BUTTON" target="_blank" rel="noopener noreferrer"
         >bartneck.de</a
       >
@@ -57,7 +58,7 @@ function remove(name: string): void {
         @change="onSelect"
       >
         <option v-for="set in sets" :key="set.name" :value="set.name">
-          {{ set.name }}
+          {{ referenceLabel(set.name) }}
         </option>
       </select>
     </label>

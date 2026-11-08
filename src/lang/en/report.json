@@ -6,7 +6,7 @@
   "maxError": "Largest deviation (ΔE2000)",
   "neutralMean": "Neutral patches ({count}), mean",
   "colorMean": "Color patches ({count}), mean",
-  "indistinct": "The camera can hardly tell the brightest neutral patches ({patches}) apart: their highlights are compressed or clipped. The correction cannot compensate for this. Better turn off the camera automatics (HDR, light correction, auto exposure) and set the exposure manually.",
+  "indistinct": "The camera can hardly tell the brightest neutral patches ({patches}) apart: their highlights are compressed or clipped. The correction cannot compensate for this. Better switch off the camera automatics (HDR, light correction, auto exposure) and set the exposure manually.",
   "grayTitle": "Check with the gray cards",
   "grayIntro": "The large patches of the gray cards are not part of the calculation. Their deviation from the nominal value (ΔE2000, before → after) shows independently whether the correction is also right there.",
   "gray50": "Gray card 50%",

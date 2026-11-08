@@ -77,13 +77,16 @@ describe('useLookStore', () => {
     expect(store.messages).toHaveLength(1);
   });
 
-  it('warns about conversions from camera log curves', async () => {
+  it('warns about conversions from camera log curves instead of naming them as imported', async () => {
     const store = useLookStore();
     await store.importFiles([file('SLOG 3 S CINETONE_REC709.cube'), file('Warm.cube')]);
+    expect(store.looks.map((look) => look.name)).toEqual(['SLOG 3 S CINETONE_REC709', 'Warm']);
     expect(store.messages).toEqual([
-      { kind: 'imported', names: ['SLOG 3 S CINETONE_REC709', 'Warm'] },
+      { kind: 'imported', names: ['Warm'] },
       { kind: 'logConversion', name: 'SLOG 3 S CINETONE_REC709' },
     ]);
+    await store.importFiles([file('LogC to Rec709.cube')]);
+    expect(store.messages).toEqual([{ kind: 'logConversion', name: 'LogC to Rec709' }]);
   });
 
   it('deletes a look and brings it back with undo, chosen as before', async () => {

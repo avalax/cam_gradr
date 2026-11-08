@@ -103,6 +103,7 @@ describe('LookBar', () => {
       configurable: true,
       value: [
         new File([IDENTITY_CUBE], 'Warm.cube'),
+        new File([IDENTITY_CUBE], 'Cold.cube'),
         new File(['x'], 'notes.txt'),
         new File([IDENTITY_CUBE], 'SLOG 3 S CINETONE_REC709.cube'),
       ],
@@ -113,13 +114,15 @@ describe('LookBar', () => {
     });
     await flushPromises();
     expect(useLookStore().looks.map((look) => look.name)).toEqual([
+      'Cold',
       'SLOG 3 S CINETONE_REC709',
       'Warm',
     ]);
     const messages = wrapper.get('[data-testid="look-messages"]');
+    // The log conversion gets its warning instead of a place in the line of imported looks.
     expect(messages.text()).toContain('2 Look-LUTs importiert');
     expect(messages.get('[role="alert"]').text()).toContain('„notes.txt“ wurde nicht importiert');
-    expect(messages.text()).toContain('sieht nach einer Umwandlung aus Log aus');
+    expect(messages.text()).toContain('sieht nach einer Log-Umwandlung aus');
     expect((input.element as HTMLInputElement).value).toBe('');
 
     await press(wrapper, 'look-remove-again');
@@ -128,7 +131,7 @@ describe('LookBar', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="look-select"]').element);
     await wrapper.get('[data-testid="look-undo"]').trigger('click');
     await vi.waitFor(() => {
-      expect(useLookStore().looks).toHaveLength(2);
+      expect(useLookStore().looks).toHaveLength(3);
     });
     wrapper.unmount();
   });

@@ -9,7 +9,7 @@
     "close": "Dismiss message"
   },
   "notice": {
-    "missingReference": "The reference set “{name}” is not available; import it in the settings to see the report. Preview and export use the saved model.",
+    "missingReference": "The reference set “{name}” is not available; import it in the settings to see the report. Preview and export use the saved correction.",
     "lookRemoved": "An imported look LUT that the project does not contain was removed from the browser.",
     "looksRemoved": "{count} imported look LUTs that the project does not contain were removed from the browser."
   },

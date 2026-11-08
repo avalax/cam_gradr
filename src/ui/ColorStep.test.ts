@@ -13,6 +13,7 @@ import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { bothCards, cardCorners } from '../test-support/cards';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
 import { cameraCode, syntheticMeasurements } from '../test-support/synthetic-camera';
 
@@ -50,6 +51,19 @@ describe('ColorStep', () => {
     );
     expect(wrapper.text()).toContain('Halte beide Farbkarten ruhig dorthin, wo das Motiv steht');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
+  });
+
+  it('names the missing set of a loaded correction without a report instead of the active one', async () => {
+    const wrapper = mount(ColorStep);
+    await useReferenceStore().load();
+    useSolveStore().loadModel(IDENTITY_MODEL, 'Fehlender Satz');
+    await flushPromises();
+    const sentence = wrapper.get('[data-testid="reference-active"]').text();
+    expect(sentence).toContain('Referenzsatz „Fehlender Satz (fehlt)“');
+    expect(sentence).not.toContain(BUNDLED_NAME);
+    expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
+      'Ohne Bericht (Referenz fehlt)',
+    );
   });
 
   it('shows no reference info before the references are loaded', () => {

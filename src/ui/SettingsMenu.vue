@@ -13,6 +13,7 @@ import CameraControls from './CameraControls.vue';
 import { CHEVRON_PATH } from './icons';
 import LanguageSettings from './LanguageSettings.vue';
 import LineIcon from './LineIcon.vue';
+import { referenceLabel } from './reference-label';
 import ReferencePanel from './ReferencePanel.vue';
 import ThemeSettings from './ThemeSettings.vue';
 
@@ -53,7 +54,8 @@ const cameraSummary = computed(() => {
 });
 const summaries = computed<Record<Section, string>>(() => ({
   camera: cameraSummary.value,
-  reference: selected.value?.name ?? t('settings.bundledSet'),
+  reference:
+    selected.value === null ? t('settings.bundledSet') : referenceLabel(selected.value.name),
   language: languageSummary.value,
   theme: themeSummary.value,
 }));

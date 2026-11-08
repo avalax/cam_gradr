@@ -7,6 +7,7 @@ import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
 import { usePreviewStore } from './lut/preview-store';
+import { useProjectStore } from './project/project-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
@@ -209,6 +210,16 @@ describe('App', () => {
     // The link went with the export: the focus is on the tab that opened.
     expect(document.activeElement?.id).toBe('tab-color');
     wrapper.unmount();
+  });
+
+  it('puts the floating project message after the panel in the order of the Tab key', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    useProjectStore().notice = 'Hinweis';
+    await flushPromises();
+    const panel = wrapper.get('[role="tabpanel"]').element;
+    const message = wrapper.get('[data-testid="project-message"]').element;
+    expect(panel.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('loads the bundled reference set at startup', async () => {

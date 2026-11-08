@@ -1,4 +1,8 @@
 {
+  "names": {
+    "bundled": "Spyder Checkr 48 (unofficial transcription)",
+    "missing": "{name} (missing)"
+  },
   "panel": {
     "sourceBefore": "The bundled set “{name}” comes from the blog post",
     "sourceAfter": "and is not a file from Datacolor. Deviations from your own chart are possible. It is always loaded at startup; all sets stay local in the browser.",

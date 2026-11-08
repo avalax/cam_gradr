@@ -105,14 +105,20 @@ export const useLookStore = defineStore('look', () => {
         problems.push({ kind: 'rejected', file: file.name, reason: (error as Error).message });
       }
     }
+    // A look that looks like a log conversion gets the warning instead of the line that names the
+    // imported looks, so that the messages keep to the room of two lines under the bar.
     const report: LookMessage[] = [];
     const last = imported.at(-1);
     if (last !== undefined) {
       usePreviewStore().setLook(last.name);
-      report.push({ kind: 'imported', names: imported.map((look) => look.name) });
-      const conversions = imported.filter((entry) => isLogConversion(entry.name));
+      const plain = imported.filter((entry) => !isLogConversion(entry.name));
+      if (plain.length > 0) {
+        report.push({ kind: 'imported', names: plain.map((look) => look.name) });
+      }
       report.push(
-        ...conversions.map((look) => ({ kind: 'logConversion', name: look.name }) as const),
+        ...imported
+          .filter((entry) => isLogConversion(entry.name))
+          .map((look) => ({ kind: 'logConversion', name: look.name }) as const),
       );
     }
     removed.value = null;

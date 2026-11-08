@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { setLocale } from '../lang';
+import { useReferenceStore } from '../reference/reference-store';
 
 import SettingsMenu from './SettingsMenu.vue';
 
@@ -60,6 +62,13 @@ describe('SettingsMenu', () => {
     expect(camera.text()).toContain('Standardkamera · 1280 × 720');
     expect(reference.text()).toContain('Mitgelieferter Satz');
     expect(wrapper.find('[data-testid="reference-select"]').exists()).toBe(false);
+    // Once loaded, the bundled set shows under its label in the language of the app.
+    await useReferenceStore().load();
+    await flushPromises();
+    expect(reference.text()).toContain('Spyder Checkr 48 (inoffizielle Transkription)');
+    setLocale('en');
+    await flushPromises();
+    expect(reference.text()).toContain('Spyder Checkr 48 (unofficial transcription)');
     wrapper.unmount();
   });
 

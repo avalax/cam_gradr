@@ -1,10 +1,13 @@
 import type { Stills } from '../camera/camera-store';
 import type { Resolution } from '../camera/types';
 
-// Height (in rem) of everything except the image: page header and spacing. Gray cards, color
-// cards and preview share the same value so the image is the same size and in the same place
-// on every page.
-const IMAGE_CHROME_REM = 12;
+// Height (in rem) of everything except the image: page header and spacing, and the look bar with
+// its two lines of messages under the image of the preview. Gray cards, color cards and preview share
+// the same value so the image is the same size and in the same place on every page, and the preview
+// fits the window with its look bar; on a short window the image of every tab gets smaller.
+const PAGE_CHROME_REM = 12;
+const LOOK_BAR_REM = 5.25;
+const IMAGE_CHROME_REM = PAGE_CHROME_REM + LOOK_BAR_REM;
 
 // Maximum image width: it should fit on one screen with everything around it
 // (width = height × aspect ratio).

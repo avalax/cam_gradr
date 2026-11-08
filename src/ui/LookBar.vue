@@ -167,21 +167,22 @@ function text(message: LookMessage): string {
       <p v-if="message.kind === 'rejected'" class="text-red-700 dark:text-red-400" role="alert">
         {{ text(message) }}
       </p>
-      <div
+      <!-- A warning with its action inline, like the undo link, so that it fits the two lines. -->
+      <p
         v-else-if="message.kind === 'logConversion'"
-        class="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+        class="text-amber-800 dark:text-amber-300"
         role="status"
       >
-        <p>{{ text(message) }}</p>
+        {{ text(message) }}
         <button
           type="button"
-          class="mt-1.5 rounded border border-current px-2 py-0.5 hover:bg-amber-200 dark:hover:bg-amber-900"
+          :class="LINK_BUTTON"
           data-testid="look-remove-again"
           @click="remove(message.name)"
         >
           {{ t('look.messages.removeAgain') }}
         </button>
-      </div>
+      </p>
       <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
         {{ text(message) }}
         <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="undo">

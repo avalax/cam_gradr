@@ -1,6 +1,7 @@
 {
   "intro": "Dieser Tab berechnet die Farbkorrektur. Halte die beiden Farbkarten dorthin, wo das Motiv steht: Die App erkennt sie selbst und nimmt ein Standbild auf. Prüfe die Eckpunkte und ziehe sie bei Bedarf zurecht. Die Farbkorrektur wird dann automatisch berechnet und bei jeder Änderung der Eckpunkte neu.",
   "referenceActive": "Referenzwerte: {name} ({count} Felder). Den Satz wechselst oder importierst du in den Einstellungen oben rechts.",
+  "referenceNoReport": "Die Korrektur stammt aus einem Projekt und wurde mit dem Referenzsatz „{name}“ berechnet. Für den Bericht importierst du diesen Satz in den Einstellungen oben rechts.",
   "idle": "Halte beide Farbkarten ruhig dorthin, wo das Motiv steht. Die Größe im Bild ist egal.",
   "wipe": {
     "liveCaption": "Vergleich nach der Aufnahme",

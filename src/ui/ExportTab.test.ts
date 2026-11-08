@@ -5,10 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore } from '../chart/chart-store';
+import { BUNDLED_NAME } from '../reference/bundled';
+import { useReferenceStore } from '../reference/reference-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
 import { parseCube } from '../test-support/cube-parse';
 import { dummyReference } from '../test-support/dummy-reference';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
@@ -102,6 +105,17 @@ describe('ExportTab', () => {
     expect(sizer().find('[data-testid="look-bar"]').exists()).toBe(true);
   });
 
+  it('names the set the correction was fitted with, marked while it is missing', async () => {
+    await useReferenceStore().load();
+    const wrapper = mount(ExportTab);
+    const facts = () => wrapper.get('[data-testid="project-facts"]').text();
+    // Without a correction the file names the active set.
+    expect(facts()).toContain(`Referenz${BUNDLED_NAME}`);
+    useSolveStore().loadModel(IDENTITY_MODEL, 'Fehlender Satz');
+    await wrapper.vm.$nextTick();
+    expect(facts()).toContain('ReferenzFehlender Satz (fehlt)');
+  });
+
   it('leads to the color cards via the link', async () => {
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
@@ -124,10 +138,11 @@ describe('ExportTab', () => {
     computeModel();
     const wrapper = mount(ExportTab);
     const radios = wrapper.findAll('[data-testid="export-size"] [role="radio"]');
+    // The unit never breaks from its number (a non-breaking space).
     expect(radios.map((radio) => radio.text())).toEqual([
-      '17³ca. 133 KBfür ältere Geräte',
-      '33³ca. 970 KBStandard',
-      '65³ca. 7,4 MBam genauesten',
+      '17³ca. 133\u{A0}KBfür ältere Geräte',
+      '33³ca. 970\u{A0}KBStandard',
+      '65³ca. 7,4\u{A0}MBam genauesten',
     ]);
     expect(radios.map((radio) => radio.attributes('aria-checked'))).toEqual([
       'false',

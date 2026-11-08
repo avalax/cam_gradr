@@ -19,6 +19,7 @@ describe('useSolveStore', () => {
     store.compute({ measurements, reference });
     expect(store.error).toBeNull();
     expect(store.result?.report.meanAfter).toBeLessThan(store.result?.report.meanBefore ?? 0);
+    expect(store.referenceName).toBe(reference.name);
   });
 
   it('reports too few measurements and discards an old result', () => {
@@ -27,6 +28,7 @@ describe('useSolveStore', () => {
     store.compute({ measurements: {}, reference });
     expect(store.result).toBeNull();
     expect(store.model).toBeNull();
+    expect(store.referenceName).toBeNull();
     expect(store.error).toContain('Zu wenige Messwerte');
   });
 
@@ -38,10 +40,14 @@ describe('useSolveStore', () => {
     store.compute({ measurements: {}, reference });
     expect(store.model).toBeNull();
     if (model !== null) {
-      store.loadModel(model);
+      store.loadModel(model, 'Fehlender Satz');
     }
     expect(store.model).toBe(model);
+    expect(store.referenceName).toBe('Fehlender Satz');
     expect(store.result).toBeNull();
     expect(store.error).toBeNull();
+    // Without a model there is no set it was fitted with.
+    store.loadModel(null, 'Fehlender Satz');
+    expect(store.referenceName).toBeNull();
   });
 });

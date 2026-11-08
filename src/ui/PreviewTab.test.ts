@@ -351,7 +351,7 @@ describe('PreviewTab', () => {
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(2);
-    useSolveStore().loadModel({ ...syntheticFit().model });
+    useSolveStore().loadModel({ ...syntheticFit().model }, null);
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(3);
@@ -368,7 +368,7 @@ describe('PreviewTab', () => {
     computeModel();
     mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
-    useSolveStore().loadModel({ ...syntheticFit().model });
+    useSolveStore().loadModel({ ...syntheticFit().model }, null);
     await flushPromises();
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
     // A failed calculation leaves no model.
@@ -430,11 +430,14 @@ describe('PreviewTab', () => {
   it('calls tonal ranges neutral where the correction shifts no color', async () => {
     mockAnimation();
     mockContexts();
-    useSolveStore().loadModel(IDENTITY_MODEL);
+    useSolveStore().loadModel(IDENTITY_MODEL, null);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
     expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');
-    expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
+    // A correction without a report says so in the band, as under the color cards' divider.
+    expect(wrapper.get('[data-testid="preview-summary"]').text()).toBe(
+      'Ohne Bericht (Referenz fehlt)',
+    );
   });
 
   it('says without a measurement that color cards are missing for the views', async () => {
