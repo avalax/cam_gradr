@@ -15,7 +15,7 @@
   },
   "errors": {
     "invalidJson": "The file is not valid JSON",
-    "unknownFormat": "Unknown format, expected \"{format}\". Project files from before version 2.0 can no longer be loaded.",
+    "unknownFormat": "Unknown format, expected \"{format}\".",
     "savedAt": "The time of saving is missing",
     "triple": "{where}: 3 numbers expected",
     "pointXY": "{where}: a corner point needs x and y",

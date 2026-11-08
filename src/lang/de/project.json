@@ -15,7 +15,7 @@
   },
   "errors": {
     "invalidJson": "Die Datei ist kein gültiges JSON",
-    "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\". Projektdateien von vor Version 2.0 lassen sich nicht mehr laden.",
+    "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\".",
     "savedAt": "Der Zeitpunkt der Sicherung fehlt",
     "triple": "{where}: erwartet werden 3 Zahlen",
     "pointXY": "{where}: ein Eckpunkt braucht x und y",
