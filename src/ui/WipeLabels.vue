@@ -42,8 +42,7 @@ const CAMERA_DOT = 'bg-zinc-400 dark:bg-zinc-500';
 const CORRECTED_DOT = 'bg-emerald-700 dark:bg-emerald-400';
 const HALF = 'flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-1 py-1.5';
 // A switchable half looks like the label it is and only shows on hover or focus that it reacts.
-const BUTTON =
-  'cursor-pointer hover:bg-zinc-300 focus-visible:outline-2 focus-visible:-outline-offset-2';
+const BUTTON = 'focus-ring-inset cursor-pointer hover:bg-zinc-300';
 
 // Text for screen readers: what the side shows and what a click shows.
 function described(name: string, tip: string | undefined): string {

@@ -48,6 +48,22 @@ describe('MeasureField', () => {
     );
   });
 
+  it('opens the details on hover and keyboard focus, not on a click, and closes them with Escape', async () => {
+    const wrapper = mount(MeasureField, { props: { exposure } });
+    const field = wrapper.get('[data-testid="measure-field"]');
+    const details = () => wrapper.find('[data-testid="measure-details"]');
+    expect(details().classes()).toEqual(
+      expect.arrayContaining(['hidden', 'group-hover:block', 'group-focus-visible:block']),
+    );
+    await field.trigger('keydown', { key: 'Escape' });
+    expect(details().exists()).toBe(false);
+    await field.trigger('focusout');
+    expect(details().exists()).toBe(true);
+    await field.trigger('keydown', { key: 'Escape' });
+    await field.trigger('mouseleave');
+    expect(details().exists()).toBe(true);
+  });
+
   it('shows English texts and follows a language switch', async () => {
     setLocale('en');
     const wrapper = mount(MeasureField, { props: { exposure } });

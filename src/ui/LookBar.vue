@@ -7,8 +7,9 @@ import { useLookStore } from '../look/look-store';
 import type { LookMessage } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 
+import { LINK_BUTTON } from './control-styles';
+import IconButton from './IconButton.vue';
 import { TRASH_PATH } from './icons';
-import LineIcon from './LineIcon.vue';
 import LookPicker from './LookPicker.vue';
 
 const { t } = useI18n();
@@ -100,17 +101,16 @@ function text(message: LookMessage): string {
         data-testid="look-file"
         @change="onFiles"
       />
-      <button
+      <IconButton
         v-if="current !== null"
-        type="button"
-        class="grid size-[26px] shrink-0 place-items-center rounded border border-zinc-500 bg-white text-zinc-800 hover:border-red-700 hover:text-red-700 dark:bg-zinc-100"
-        :aria-label="t('look.remove', { name: current.name })"
-        :title="t('look.remove', { name: current.name })"
+        size="sm"
+        class="border border-zinc-500 bg-white dark:bg-zinc-100"
+        :label="t('look.remove', { name: current.name })"
         data-testid="look-remove"
         @click="looks.remove(current.name)"
       >
-        <LineIcon class="size-[15px]"><path :d="TRASH_PATH" /></LineIcon>
-      </button>
+        <path :d="TRASH_PATH" />
+      </IconButton>
     </div>
 
     <div
@@ -139,8 +139,12 @@ function text(message: LookMessage): string {
     </div>
   </div>
 
-  <div class="mt-1.5 flex flex-col gap-1.5 text-xs leading-snug" data-testid="look-messages">
-    <p v-if="list.length === 0 && messages.length === 0" class="text-slate-600 dark:text-slate-400">
+  <!-- Room for two lines, as long as the hint, so that a message does not move what lies below. -->
+  <div
+    class="mt-1.5 flex min-h-[2lh] flex-col gap-1.5 text-xs leading-snug"
+    data-testid="look-messages"
+  >
+    <p v-if="list.length === 0 && messages.length === 0" class="text-zinc-600">
       {{ t('look.hint') }}
     </p>
     <template v-for="(message, index) in messages" :key="index">
@@ -155,33 +159,20 @@ function text(message: LookMessage): string {
         <p>{{ text(message) }}</p>
         <button
           type="button"
-          class="mt-1.5 rounded border border-current px-2 py-0.5"
+          class="mt-1.5 rounded border border-current px-2 py-0.5 hover:bg-amber-200 dark:hover:bg-amber-900"
           data-testid="look-remove-again"
           @click="looks.remove(message.name)"
         >
           {{ t('look.messages.removeAgain') }}
         </button>
       </div>
-      <p
-        v-else-if="message.kind === 'removed'"
-        class="text-slate-600 dark:text-slate-400"
-        role="status"
-      >
+      <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
         {{ text(message) }}
-        <button
-          type="button"
-          class="font-semibold text-zinc-900 underline"
-          data-testid="look-undo"
-          @click="looks.undo()"
-        >
+        <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="looks.undo()">
           {{ t('look.messages.undo') }}
         </button>
       </p>
-      <p
-        v-else-if="message.kind === 'imported'"
-        class="text-slate-600 dark:text-slate-400"
-        role="status"
-      >
+      <p v-else-if="message.kind === 'imported'" class="text-zinc-600" role="status">
         {{ text(message) }}
       </p>
       <p v-else class="text-amber-800 dark:text-amber-300" role="status">

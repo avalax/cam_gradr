@@ -83,6 +83,11 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-canvas"]').attributes('style')).toContain(
       'display: none',
     );
+    // Without an image the band says what the camera does, as on the card tabs.
+    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
+    expect(wrapper.find('[data-testid="preview-source"]').exists()).toBe(false);
+    // The icon of the placeholder has no circle: the tests count the corner points as circles.
+    expect(wrapper.find('circle').exists()).toBe(false);
   });
 
   it('points to camera or still image without an image source', () => {
@@ -91,7 +96,17 @@ describe('PreviewTab', () => {
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('Kamera');
+    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('„Kamera starten“');
+  });
+
+  it('shows a camera error on the image', async () => {
+    mockAnimation();
+    mockContexts();
+    installFakeCamera({ open: () => Promise.reject(new Error('x')) });
+    const wrapper = mount(PreviewTab);
+    await useCameraStore().start();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="camera-error"]').text()).toContain('nicht gestartet');
   });
 
   it('captures a still image in the live view and then switches the camera off', async () => {
@@ -110,6 +125,8 @@ describe('PreviewTab', () => {
 
     await camera.start();
     await flushPromises();
+    // A badge on the image says live image or still image, as the band of the card tabs does.
+    expect(wrapper.get('[data-testid="preview-source"]').text()).toBe('Livebild');
     expect(take().attributes('aria-label')).toBe('Standbild aufnehmen');
     expect(take().attributes('disabled')).toBeDefined();
     await wrapper.get('video').trigger('loadeddata');
@@ -120,6 +137,7 @@ describe('PreviewTab', () => {
     expect(camera.status).toBe('idle');
     expect(camera.still).not.toBeNull();
     expect(take().exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-source"]').text()).toBe('Standbild');
     await camera.start();
     await flushPromises();
     expect(camera.still).toBeNull();
@@ -366,8 +384,12 @@ describe('PreviewTab', () => {
     expect(
       wrapper.get('[data-testid="color-tiles"]').findAll('[data-patch]').length,
     ).toBeGreaterThan(0);
-    expect(wrapper.get('[data-testid="view-colors"]').attributes('aria-pressed')).toBe('true');
-    expect(wrapper.get('[data-testid="view-grays"]').attributes('aria-pressed')).toBe('false');
+    expect(
+      wrapper.get('[data-testid="preview-view"] [data-option="colors"]').attributes('aria-checked'),
+    ).toBe('true');
+    expect(
+      wrapper.get('[data-testid="preview-view"] [data-option="grays"]').attributes('aria-checked'),
+    ).toBe('false');
     expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="worst-patches"]').text()).toContain('Größte Abweichung');
   });
@@ -378,14 +400,16 @@ describe('PreviewTab', () => {
     computeModel();
     useColorChartStore().measurements = measurements;
     const wrapper = mount(PreviewTab);
-    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="view-grays"]').attributes('aria-pressed')).toBe('true');
+    expect(
+      wrapper.get('[data-testid="preview-view"] [data-option="grays"]').attributes('aria-checked'),
+    ).toBe('true');
     expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('Schatten');
     expect(wrapper.get('[data-testid="preview-summary"]').text()).toContain('Ø Abweichung');
     expect(wrapper.find('[data-testid="preview-side-empty"]').exists()).toBe(false);
-    await wrapper.get('[data-testid="view-colors"]').trigger('click');
+    await wrapper.get('[data-testid="preview-view"] [data-option="colors"]').trigger('click');
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
   });
@@ -395,7 +419,7 @@ describe('PreviewTab', () => {
     mockContexts();
     useSolveStore().loadModel(IDENTITY_MODEL);
     const wrapper = mount(PreviewTab);
-    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
     expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');
     expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
   });
@@ -406,22 +430,21 @@ describe('PreviewTab', () => {
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
-    await wrapper.get('[data-testid="view-grays"]').trigger('click');
+    await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
     expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain('Farbkarten');
   });
 
-  it('shows only the hint and no result without a correction, in both views', async () => {
+  it('leaves the column empty without a correction, in both views: the image says what is missing', async () => {
     mockAnimation();
     mockContexts();
     const wrapper = mount(PreviewTab);
-    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain(
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain(
       'Noch keine Korrektur',
     );
-    await wrapper.get('[data-testid="view-grays"]').trigger('click');
-    expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain(
-      'Noch keine Korrektur',
-    );
+    expect(wrapper.find('[data-testid="preview-side-empty"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
+    expect(wrapper.find('[data-testid="preview-side-empty"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="zone-changes"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
   });

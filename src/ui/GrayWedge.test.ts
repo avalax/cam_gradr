@@ -20,7 +20,7 @@ describe('GrayWedge', () => {
     const wrapper = mount(GrayWedge, { props: { rows } });
     expect(wrapper.text()).toContain('Soll');
     expect(wrapper.text()).toContain('Kamera');
-    expect(wrapper.text()).toContain('korr.');
+    expect(wrapper.text()).toContain('Korrigiert');
     for (const key of ['target', 'camera', 'corrected']) {
       expect(wrapper.findAll(`[data-column="${key}"] [data-patch]`)).toHaveLength(2);
     }

@@ -7,10 +7,11 @@ import { useCameraStore } from '../camera/camera-store';
 
 const { t } = useI18n();
 const camera = useCameraStore();
-const { status, errorMessage } = storeToRefs(camera);
+const { status } = storeToRefs(camera);
 
-// "On" also applies while starting or after an error: a click then switches it off.
-const isOn = computed(() => status.value !== 'idle');
+// "On" while the camera starts or runs. After an error it is off, as the image says: a click starts
+// it again. The error itself is shown in the image area of the tab, not here.
+const isOn = computed(() => status.value === 'live' || status.value === 'starting');
 const label = computed(() => {
   if (status.value === 'starting') {
     return t('camera.toggle.starting');
@@ -21,11 +22,11 @@ const label = computed(() => {
 // Green to start, yellow while starting, red to stop.
 const buttonClass = computed(() => {
   if (status.value === 'starting') {
-    return 'border-amber-500 bg-amber-400 text-slate-900';
+    return 'border-amber-500 bg-amber-400 text-zinc-950 hover:bg-amber-500';
   }
   return isOn.value
-    ? 'border-red-700 bg-red-700 text-white'
-    : 'border-emerald-700 bg-emerald-700 text-white';
+    ? 'border-red-700 bg-red-700 text-white hover:bg-red-800'
+    : 'border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800';
 });
 
 function toggle(): void {
@@ -38,22 +39,17 @@ function toggle(): void {
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
-    <button
-      type="button"
-      role="switch"
-      :aria-label="t('camera.toggle.label')"
-      class="rounded border px-3 py-1 text-sm"
-      :class="buttonClass"
-      :aria-checked="isOn"
-      :data-status="status"
-      data-testid="camera-toggle"
-      @click="toggle"
-    >
-      {{ label }}
-    </button>
-    <p v-if="status === 'error'" class="text-sm text-red-700 dark:text-red-400" role="alert">
-      {{ errorMessage }}
-    </p>
-  </div>
+  <button
+    type="button"
+    role="switch"
+    :aria-label="t('camera.toggle.label')"
+    class="rounded border px-3 py-1 text-sm"
+    :class="buttonClass"
+    :aria-checked="isOn"
+    :data-status="status"
+    data-testid="camera-toggle"
+    @click="toggle"
+  >
+    {{ label }}
+  </button>
 </template>

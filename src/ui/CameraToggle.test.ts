@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { installFakeCamera } from '../test-support/media';
@@ -55,15 +55,18 @@ describe('CameraToggle', () => {
     await starting;
   });
 
-  it('shows start errors and can then be switched off', async () => {
-    installFakeCamera({ open: () => Promise.reject(new Error('x')) });
+  it('counts a start error as off and starts again with the next click', async () => {
+    const api = installFakeCamera({ open: vi.fn(() => Promise.reject(new Error('x'))) });
     const wrapper = mount(CameraToggle);
     await toggle(wrapper).trigger('click');
     await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toContain('nicht gestartet');
     expect(toggle(wrapper).attributes('data-status')).toBe('error');
-    await toggle(wrapper).trigger('click');
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(toggle(wrapper).attributes('aria-checked')).toBe('false');
     expect(toggle(wrapper).text()).toBe('Kamera starten');
+    // The message belongs to the image area of the tab, not to the switch.
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    await toggle(wrapper).trigger('click');
+    await flushPromises();
+    expect(api.open).toHaveBeenCalledTimes(2);
   });
 });

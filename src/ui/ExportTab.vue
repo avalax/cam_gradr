@@ -18,6 +18,7 @@ import { exportFileName, exportNotes, exportTitle } from './export-file';
 import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
 import ChoiceChips from './ChoiceChips.vue';
+import { LINK_BUTTON } from './control-styles';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
 
@@ -129,110 +130,116 @@ function download(): void {
 </script>
 
 <template>
-  <section class="flex max-w-5xl flex-1 flex-col gap-4">
-    <div class="grid flex-1 gap-3 lg:grid-cols-[1.3fr_1fr]">
-      <!-- Without color correction you see what you would get: same layout, but grayed out. -->
-      <article
-        class="flex flex-col gap-2 rounded-lg border p-3"
-        :class="
-          model === null
-            ? 'border-dashed border-zinc-300 bg-zinc-100'
-            : 'border-zinc-300 bg-zinc-50'
-        "
-        aria-labelledby="lut-heading"
-      >
-        <h2 id="lut-heading" class="text-sm font-semibold">{{ t('export.lut.heading') }}</h2>
-        <I18nT keypath="export.lut.description" tag="p" class="text-xs text-zinc-600">
-          <template #file><code>.cube</code></template>
-        </I18nT>
-        <!-- Content and size in one row, so that the export stays as tall as the other tabs. -->
-        <div class="flex flex-wrap gap-2">
-          <ChoiceChips
-            variant="segmented"
-            :options="contentOptions"
-            :selected="contained"
-            :disabled="model === null"
-            :aria-label="t('export.lut.content')"
-            data-testid="export-content"
-            @choose="exportSettings.setWithLook($event === 'look')"
-          />
-          <ChoiceChips
-            variant="segmented"
-            :options="sizeOptions"
-            :selected="String(size)"
-            :disabled="model === null"
-            :aria-label="t('export.lut.sizeLabel')"
-            data-testid="export-size"
-            @choose="exportSettings.setSize($event)"
-          />
-        </div>
-        <I18nT :keypath="lookLine" tag="p" class="text-xs text-zinc-700" data-testid="export-look">
-          <template #name>{{ exportLook?.name }}</template>
-          <template #strength>{{ exportLook?.strength }}</template>
-          <template #preview>
-            <button type="button" class="underline" @click="emit('goto', 'preview')">
-              {{ t('export.lut.previewLink') }}
-            </button>
-          </template>
-        </I18nT>
-        <LutSlices :model="model" :look="sliceLook" />
-        <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
-          <strong>{{ t('export.lut.noModelTitle') }}</strong> {{ t('export.lut.noModelText') }}
-          <button type="button" class="underline" @click="emit('goto', 'color')">
-            {{ t('export.lut.gotoColor') }}
+  <!-- On the grid of the other tabs: the LUT where their image is (it ends where the image ends),
+       the project where their side column and their text column are (11 rem, a gap of 1.5 rem and
+       21 rem). -->
+  <section class="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_33.5rem]">
+    <!-- Without color correction you see what you would get: same layout, but grayed out. -->
+    <article
+      class="flex min-w-0 flex-col gap-2 rounded-lg border p-3"
+      :class="
+        model === null ? 'border-dashed border-zinc-300 bg-zinc-100' : 'border-zinc-300 bg-zinc-50'
+      "
+      aria-labelledby="lut-heading"
+    >
+      <h2 id="lut-heading" class="text-sm font-semibold">{{ t('export.lut.heading') }}</h2>
+      <I18nT keypath="export.lut.description" tag="p" class="text-xs text-zinc-600">
+        <template #file><code>.cube</code></template>
+      </I18nT>
+      <!-- Content and size in one row, so that the export stays as tall as the other tabs. -->
+      <div class="flex flex-wrap gap-2">
+        <ChoiceChips
+          variant="segmented"
+          :options="contentOptions"
+          :selected="contained"
+          :disabled="model === null"
+          :aria-label="t('export.lut.content')"
+          data-testid="export-content"
+          @choose="exportSettings.setWithLook($event === 'look')"
+        />
+        <ChoiceChips
+          variant="segmented"
+          :options="sizeOptions"
+          :selected="String(size)"
+          :disabled="model === null"
+          :aria-label="t('export.lut.sizeLabel')"
+          data-testid="export-size"
+          @choose="exportSettings.setSize($event)"
+        />
+      </div>
+      <I18nT :keypath="lookLine" tag="p" class="text-xs text-zinc-700" data-testid="export-look">
+        <template #name>{{ exportLook?.name }}</template>
+        <template #strength>{{ exportLook?.strength }}</template>
+        <template #preview>
+          <button type="button" :class="LINK_BUTTON" @click="emit('goto', 'preview')">
+            {{ t('export.lut.previewLink') }}
           </button>
-        </p>
-        <div
-          class="mt-auto flex flex-wrap items-center gap-3 rounded-lg border border-zinc-300 bg-white dark:bg-zinc-100 p-3"
+        </template>
+      </I18nT>
+      <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
+        <span class="block font-semibold">{{ t('export.lut.noModelTitle') }}</span>
+        {{ t('export.lut.noModelText') }}
+        <button type="button" :class="LINK_BUTTON" @click="emit('goto', 'color')">
+          {{ t('export.lut.gotoColor') }}
+        </button>
+      </p>
+      <!-- The slices take the room the card has (it is as tall as the other tabs), as large as fits
+           in width and height; they never make the card taller. -->
+      <div class="min-h-24 flex-1 [container-type:size]">
+        <LutSlices class="w-[min(100cqw,calc(400cqh_+_1.5rem))]" :model="model" :look="sliceLook" />
+      </div>
+      <div
+        class="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-300 bg-white dark:bg-zinc-100 p-3"
+      >
+        <span
+          aria-hidden="true"
+          class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white dark:bg-zinc-100 pb-0.5 text-[8px] font-bold"
+          >.cube</span
         >
-          <span
-            aria-hidden="true"
-            class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white dark:bg-zinc-100 pb-0.5 text-[8px] font-bold"
-            >.cube</span
-          >
-          <div class="text-sm">
-            <p class="font-semibold">{{ fileName }}</p>
-            <p class="text-xs text-zinc-500" data-testid="export-file-info">{{ fileInfo }}</p>
-          </div>
-          <button
-            type="button"
-            class="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm text-white disabled:bg-zinc-300 disabled:text-zinc-500"
-            :disabled="model === null"
-            data-testid="export-download"
-            @click="download"
-          >
-            {{ t('export.lut.download', { file: fileName }) }}
-          </button>
+        <div class="min-w-0 text-sm">
+          <p id="export-file-name" class="truncate font-semibold">{{ fileName }}</p>
+          <p class="text-xs text-zinc-500" data-testid="export-file-info">{{ fileInfo }}</p>
         </div>
-      </article>
+        <!-- The file name stands beside the button, so it is not repeated in the button. -->
+        <button
+          type="button"
+          class="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm text-white enabled:hover:bg-emerald-800 disabled:bg-zinc-300 disabled:text-zinc-500"
+          :disabled="model === null"
+          aria-describedby="export-file-name"
+          data-testid="export-download"
+          @click="download"
+        >
+          {{ t('export.lut.download') }}
+        </button>
+      </div>
+    </article>
 
-      <article
-        class="flex flex-col gap-2 rounded-lg border border-zinc-300 bg-zinc-50 p-3"
-        aria-labelledby="project-heading"
-      >
-        <h2 id="project-heading" class="text-sm font-semibold">
-          {{ t('export.project.heading') }}
-        </h2>
-        <I18nT keypath="export.project.description" tag="p" class="text-xs text-zinc-600">
-          <template #file><code>.json</code></template>
-        </I18nT>
-        <dl class="text-sm" data-testid="project-facts">
-          <div
-            v-for="fact in facts"
-            :key="fact.label"
-            class="flex justify-between gap-3 border-b border-dashed border-zinc-300 py-1.5 text-xs"
-          >
-            <dt class="text-zinc-500">{{ fact.label }}</dt>
-            <dd class="text-right">{{ fact.value }}</dd>
-          </div>
-        </dl>
-        <p v-if="looks.looks.length > 0" class="text-[11px] leading-snug text-zinc-500">
-          {{ t('export.project.lookNote') }}
-        </p>
-        <div class="mt-auto pt-1">
-          <ProjectBar />
+    <article
+      class="flex min-w-0 flex-col gap-2 rounded-lg border border-zinc-300 bg-zinc-50 p-3"
+      aria-labelledby="project-heading"
+    >
+      <h2 id="project-heading" class="text-sm font-semibold">
+        {{ t('export.project.heading') }}
+      </h2>
+      <I18nT keypath="export.project.description" tag="p" class="text-xs text-zinc-600">
+        <template #file><code>.json</code></template>
+      </I18nT>
+      <dl class="text-sm" data-testid="project-facts">
+        <div
+          v-for="fact in facts"
+          :key="fact.label"
+          class="flex justify-between gap-3 border-b border-dashed border-zinc-300 py-1.5 text-xs"
+        >
+          <dt class="text-zinc-500">{{ fact.label }}</dt>
+          <dd class="text-right">{{ fact.value }}</dd>
         </div>
-      </article>
-    </div>
+      </dl>
+      <p v-if="looks.looks.length > 0" class="text-[11px] leading-snug text-zinc-500">
+        {{ t('export.project.lookNote') }}
+      </p>
+      <div class="mt-auto pt-1">
+        <ProjectBar />
+      </div>
+    </article>
   </section>
 </template>

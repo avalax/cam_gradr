@@ -6,9 +6,11 @@ import type { ExposureResult } from '../chart/exposure';
 
 import type { Edge } from './measure-field';
 import { detailRows, fieldHint, fieldPosition, mainIssue, okBox } from './measure-field';
+import { usePopupDismiss } from './popup-dismiss';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
 const { t } = useI18n();
+const { dismissed, onKey, reset } = usePopupDismiss();
 
 // The message sits at the edge of the field the measurement deviates towards: dark line with gray label.
 const EDGE_CLASSES: Readonly<Record<Edge, string>> = {
@@ -54,12 +56,16 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
 <template>
   <!-- Measuring field as tall as the camera image: brightness vertically, contrast horizontally; details on hover or keyboard focus. -->
   <div class="flex w-44 shrink-0 flex-col self-stretch">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the details closes them with Escape -->
     <div
-      class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500 outline-offset-2 focus-visible:outline"
+      class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500"
       tabindex="0"
       role="img"
       :aria-label="t('measure.aria', { hint })"
       data-testid="measure-field"
+      @keydown="onKey"
+      @mouseleave="reset"
+      @focusout="reset"
     >
       <div class="absolute inset-0 overflow-hidden rounded-[inherit]">
         <div class="flex h-full flex-col">
@@ -99,19 +105,21 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
         data-testid="measure-marker"
       ></div>
 
+      <!-- Opens on hover and after keyboard focus, not after a click; Escape closes it. -->
       <div
-        class="pointer-events-none absolute right-full top-0 z-10 mr-3 hidden w-80 rounded bg-slate-900 p-3 text-sm text-white shadow-lg group-focus:block group-hover:block"
+        v-if="!dismissed"
+        class="pointer-events-none absolute right-full top-0 z-10 mr-3 hidden w-80 rounded bg-zinc-950 p-3 text-sm text-white shadow-lg group-hover:block group-focus-visible:block"
         role="tooltip"
         data-testid="measure-details"
       >
         <p class="font-medium" data-testid="measure-hint">{{ hint }}</p>
         <!-- The percentages are brightness values in the camera image. -->
-        <p v-if="rows.length > 0" class="mt-2 text-xs text-slate-300">
+        <p v-if="rows.length > 0" class="mt-2 text-xs text-white/70">
           {{ t('measure.caption') }}
         </p>
         <dl v-if="rows.length > 0" class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
           <template v-for="row in rows" :key="row.label">
-            <dt class="text-slate-300">{{ row.label }}</dt>
+            <dt class="text-white/70">{{ row.label }}</dt>
             <dd>{{ row.value }}</dd>
           </template>
         </dl>

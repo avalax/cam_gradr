@@ -52,14 +52,10 @@ watch([measurements, selected], () => {
   <section class="space-y-4">
     <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
       <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-        <p class="text-sm text-slate-700 dark:text-slate-300">
+        <p class="text-sm text-zinc-700">
           {{ t('color.intro') }}
         </p>
-        <p
-          v-if="selected !== null"
-          class="text-sm text-slate-700 dark:text-slate-300"
-          data-testid="reference-active"
-        >
+        <p v-if="selected !== null" class="text-sm text-zinc-700" data-testid="reference-active">
           {{
             t('color.referenceActive', {
               name: selected.name,

@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 
 import { useProjectStore } from '../project/project-store';
 
+import IconButton from './IconButton.vue';
+
 const { t } = useI18n();
 const project = useProjectStore();
 const { error, notice } = storeToRefs(project);
@@ -27,21 +29,20 @@ const { error, notice } = storeToRefs(project);
       </p>
       <p
         v-if="notice !== null"
-        class="text-sm text-slate-700 dark:text-slate-300"
+        class="text-sm text-zinc-700"
         role="status"
         data-testid="project-notice"
       >
         {{ notice }}
       </p>
     </div>
-    <button
-      type="button"
-      class="rounded px-1.5 text-zinc-500 hover:bg-zinc-100"
-      :aria-label="t('project.status.close')"
+    <IconButton
+      size="sm"
+      :label="t('project.status.close')"
       data-testid="project-message-close"
       @click="project.dismiss()"
     >
-      ✕
-    </button>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </IconButton>
   </div>
 </template>

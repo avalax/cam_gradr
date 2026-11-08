@@ -93,7 +93,7 @@ describe('parseProject', () => {
     rejects((raw) => (raw.format = 'anderes/1'), 'Unbekanntes Format');
     // Files from before version 2.0 are named in the message.
     rejects((raw) => (raw.format = 'cam_gradr-project/1'), 'vor Version 2.0');
-    rejects((raw) => delete raw.savedAt, 'Zeitpunkt der Sicherung fehlt');
+    rejects((raw) => delete raw.savedAt, 'Zeitpunkt des Speicherns fehlt');
   });
 
   it('rejects faulty chart sections', () => {

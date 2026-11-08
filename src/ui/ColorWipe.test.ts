@@ -45,9 +45,38 @@ describe('ColorWipe', () => {
     expect(trigger.attributes('tabindex')).toBe('0');
     const popup = wrapper.get('[data-testid="color-wipe-popup"]');
     expect(popup.attributes('role')).toBe('tooltip');
-    expect(popup.classes()).toContain('hidden');
-    expect(popup.classes()).toContain('group-hover:block');
+    // Hidden until hover or keyboard focus; within the height of the column, never above it.
+    expect(popup.classes()).toEqual(
+      expect.arrayContaining([
+        'hidden',
+        'group-hover:flex',
+        'group-focus-within:flex',
+        'max-h-full',
+      ]),
+    );
     expect(popup.get('[data-testid="inhalt"]').text()).toBe('Ergebnis');
+  });
+
+  it('closes the result with Escape until the pointer or the focus leaves', async () => {
+    const wrapper = mount(ColorWipe, {
+      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report },
+      slots: { details: '<p>Ergebnis</p>' },
+    });
+    const trigger = wrapper.get('[data-testid="color-wipe-result"]');
+    const popup = () => wrapper.find('[data-testid="color-wipe-popup"]');
+    await trigger.trigger('keydown', { key: 'Enter' });
+    expect(popup().exists()).toBe(true);
+    await trigger.trigger('keydown', { key: 'Escape' });
+    expect(popup().exists()).toBe(false);
+    await trigger.trigger('mouseleave');
+    expect(popup().exists()).toBe(true);
+    await trigger.trigger('keydown', { key: 'Escape' });
+    await trigger.trigger('focusout');
+    expect(popup().exists()).toBe(true);
+    // A click does not focus the trigger, so the result closes when the pointer leaves.
+    const mousedown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    trigger.element.dispatchEvent(mousedown);
+    expect(mousedown.defaultPrevented).toBe(true);
   });
 
   it('has no popup and is not focusable without a report or without content', () => {

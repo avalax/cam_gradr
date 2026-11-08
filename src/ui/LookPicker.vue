@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 
+import { CHEVRON_PATH } from './icons';
+import LineIcon from './LineIcon.vue';
+
 // Choosing the look LUT, as a select-only combobox (WAI-ARIA): unlike the browser's own select, every
 // step with the arrow keys applies the look at once, also while the list is open; Escape goes back to
 // the look from before. The last entry is an action, it only runs on Enter or a click.
@@ -135,23 +138,14 @@ watch(active, async (index) => {
       aria-controls="look-list"
       :aria-expanded="open"
       :aria-activedescendant="open ? `look-option-${String(active)}` : undefined"
-      class="flex w-full min-w-0 items-center gap-1 rounded border border-zinc-800 bg-white px-1.5 py-0.5 text-left dark:bg-zinc-100"
+      class="flex w-full min-w-0 items-center gap-1 rounded border border-zinc-800 bg-white px-1.5 py-0.5 text-left hover:bg-zinc-200 dark:bg-zinc-100"
       data-testid="look-select"
       @click="toggle"
       @keydown="onKey"
       @blur="close"
     >
       <span class="min-w-0 flex-1 truncate">{{ shown }}</span>
-      <svg
-        class="size-3 shrink-0"
-        viewBox="0 0 12 12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.6"
-        aria-hidden="true"
-      >
-        <path d="M2.5 4.5 6 8l3.5-3.5" />
-      </svg>
+      <LineIcon class="size-3.5 shrink-0"><path :d="CHEVRON_PATH" /></LineIcon>
     </button>
     <ul
       v-if="open"

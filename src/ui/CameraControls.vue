@@ -8,6 +8,7 @@ import { RESOLUTIONS } from '../camera/types';
 import type { Resolution } from '../camera/types';
 
 import { cameraName } from './camera-name';
+import { SELECT } from './control-styles';
 import ChoiceChips from './ChoiceChips.vue';
 
 const { t } = useI18n();
@@ -37,7 +38,7 @@ function onDevice(event: Event): void {
     <label class="flex flex-col gap-1 text-sm">
       {{ t('camera.controls.camera') }}
       <select
-        class="rounded-md border border-zinc-400 bg-white dark:bg-zinc-100 p-1.5"
+        :class="SELECT"
         :value="selectedDeviceId ?? ''"
         :disabled="isStarting"
         @change="onDevice"

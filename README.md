@@ -27,10 +27,10 @@ Everything runs in your browser. Images and measurements never leave your comput
    shows brightness (vertical) and contrast (horizontal). Change the light or the camera and start the
    camera again until the dot sits in the framed window in the middle; hover the field for details.
 3. **Color cards: calculate the correction.** Without changing the light or the camera, hold both color
-   cards in the same place. The correction is calculated by itself. A wipe slider compares the camera
+   cards in the same place. The correction is calculated by itself. A divider compares the camera
    colors with the corrected ones, and the label below gives the mean deviation before and after (hover
    it for each patch).
-4. **Preview: check the result.** The camera image with the original left and the corrected image right
+4. **Preview: check the result.** The camera image on the left and the corrected image on the right
    of a divider that you drag or move with the arrow keys; with the camera off it shows the still image
    of the color cards. The side column shows each colored patch as target, camera and corrected and
    names the largest deviations; switched to the grays it shows the gray ramp and how shadows, midtones

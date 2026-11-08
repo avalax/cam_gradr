@@ -7,7 +7,7 @@
     "cameraLayer": "Farben der Kamera",
     "correctedLayer": "Farben nach der Korrektur",
     "defaultValue": "{id} (Standardwert)",
-    "divider": "Wischer: Farben der Kamera links, korrigierte rechts",
+    "divider": "Trennlinie: links Farben der Kamera, rechts korrigierte",
     "noCorrection": "Noch keine Korrektur"
   },
   "wrong": "Das sind keine Farbkarten. Halte die beiden Farbkarten in die Kamera.",

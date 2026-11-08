@@ -1,5 +1,6 @@
 {
   "stage": {
+    "labelOff": "Kamera aus",
     "labelLive": "Livebild",
     "labelStill": "Standbild",
     "starting": {
@@ -8,7 +9,7 @@
     },
     "off": {
       "title": "Die Kamera ist aus",
-      "text": "Schalte sie oben mit „Kamera“ ein."
+      "text": "Schalte sie oben mit „{button}“ ein."
     },
     "deleteCorners": "Eckpunkte löschen",
     "deleteCornersTitle": "Eckpunkte löschen und die Karten neu erkennen",

@@ -16,12 +16,9 @@ const slices = computed(() =>
 </script>
 
 <template>
-  <!-- Four slices through the LUT; without color correction, gray patches stand in. -->
-  <div
-    class="grid grid-cols-[repeat(4,minmax(0,5rem))] gap-2"
-    data-testid="lut-slices"
-    :data-ready="slices !== null"
-  >
+  <!-- Four slices through the LUT; without color correction, gray patches stand in. The width comes
+       from the caller, the slices are square. -->
+  <div class="grid grid-cols-4 gap-2" data-testid="lut-slices" :data-ready="slices !== null">
     <template v-if="slices !== null">
       <div
         v-for="(colors, index) in slices"

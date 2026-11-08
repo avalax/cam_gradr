@@ -6,12 +6,8 @@
     "export": "Export"
   },
   "hints": {
-    "preview": "Original / corrected",
-    "export": ".cube, project",
-    "previewLook": "Original / look LUT",
-    "previewLookCorrected": "Corrected / look LUT",
-    "previewLookOnly": "Original / look LUT only",
-    "previewLookOnlyCorrected": "Corrected / look LUT only"
+    "preview": "{left} / {right}",
+    "export": ".cube, project"
   },
   "tablist": "Sections",
   "imageToolbar": "Image actions",

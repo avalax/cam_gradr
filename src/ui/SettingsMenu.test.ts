@@ -152,9 +152,20 @@ describe('SettingsMenu', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await wrapper.vm.$nextTick();
     expect(panel(wrapper).exists()).toBe(false);
-    expect(wrapper.get('[data-testid="settings-button"]').attributes('aria-expanded')).toBe(
-      'false',
-    );
+    const gear = wrapper.get('[data-testid="settings-button"]');
+    expect(gear.attributes('aria-expanded')).toBe('false');
+    // The keyboard goes on from the gear instead of from the start of the page.
+    expect(document.activeElement).toBe(gear.element);
+    wrapper.unmount();
+  });
+
+  it('turns the chevron of the open section', async () => {
+    const wrapper = mountAttached();
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    const chevron = (section: string) =>
+      wrapper.get(`[data-testid="section-${section}"] svg`).classes();
+    expect(chevron('camera')).toContain('rotate-180');
+    expect(chevron('reference')).not.toContain('rotate-180');
     wrapper.unmount();
   });
 

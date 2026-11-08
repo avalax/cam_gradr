@@ -20,6 +20,8 @@ import StatusGauge from './ui/StatusGauge.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
 import { trackHeight } from './ui/panel-height';
+import { previewSides } from './ui/preview-sides';
+import { rovingTarget } from './ui/roving';
 import { colorStatus, grayStatus } from './ui/tab-status';
 import type { TabStatus } from './ui/tab-status';
 
@@ -28,16 +30,33 @@ type TabKey = 'gray' | 'color' | 'preview' | 'export';
 // Each tab briefly states its result under its name. The two measuring tabs show a status that
 // follows the result (light in the normal range, deviation after the correction), not mere editing;
 // the preview names what lies left and right of its divider, the export has a fixed text. The texts
-// are only translated when displayed so that a language change reaches them.
-const TABS: readonly { key: TabKey; label: () => string; summary: () => TabStatus | string }[] = [
-  { key: 'gray', label: () => t('app.tabs.gray'), summary: () => grayStatus(exposure.value) },
+// are only translated when displayed so that a language change reaches them. Each tab is at least as
+// wide as its longest text, so that the tabs do not move when a text changes.
+const TABS: readonly {
+  key: TabKey;
+  width: string;
+  label: () => string;
+  summary: () => TabStatus | string;
+}[] = [
+  {
+    key: 'gray',
+    width: 'min-w-40',
+    label: () => t('app.tabs.gray'),
+    summary: () => grayStatus(exposure.value),
+  },
   {
     key: 'color',
+    width: 'min-w-40',
     label: () => t('app.tabs.color'),
     summary: () => colorStatus(result.value?.report ?? null),
   },
-  { key: 'preview', label: () => t('app.tabs.preview'), summary: previewHint },
-  { key: 'export', label: () => t('app.tabs.export'), summary: () => t('app.hints.export') },
+  { key: 'preview', width: 'min-w-44', label: () => t('app.tabs.preview'), summary: previewHint },
+  {
+    key: 'export',
+    width: 'min-w-24',
+    label: () => t('app.tabs.export'),
+    summary: () => t('app.hints.export'),
+  },
 ];
 
 const { t } = useI18n();
@@ -45,33 +64,39 @@ const { t } = useI18n();
 const preview = usePreviewStore();
 const looks = useLookStore();
 
-// The hint names what lies left and right of the divider.
-const PREVIEW_HINTS = {
-  camera: { corrected: 'app.hints.previewLook', camera: 'app.hints.previewLookOnly' },
-  corrected: {
-    corrected: 'app.hints.previewLookCorrected',
-    camera: 'app.hints.previewLookOnlyCorrected',
-  },
-} as const;
-
+// The hint names what lies left and right of the divider, with the names of the preview's labels.
 function previewHint(): string {
-  if (looks.find(preview.look) === null) {
-    return t('app.hints.preview');
-  }
-  return t(PREVIEW_HINTS[preview.left][preview.right]);
+  const sides = previewSides(looks.find(preview.look) !== null, preview.left, preview.right);
+  return t('app.hints.preview', { left: sides.leftName, right: sides.rightName });
 }
 
 const tab = ref<TabKey>('gray');
+
+// The tabs as a WAI-ARIA tablist: one stop of the Tab key, the arrow keys move to the neighboring
+// tab and open it, Home and End to the first and the last.
+const tablist = useTemplateRef<HTMLElement>('tablist');
+const TAB_ENABLED = TABS.map(() => true);
+
+function onTabKey(event: KeyboardEvent, index: number): void {
+  const next = rovingTarget(event.key, index, TAB_ENABLED, false);
+  if (next !== null) {
+    event.preventDefault();
+    const target = tablist.value?.children[next] as HTMLButtonElement | undefined;
+    target?.focus();
+    target?.click();
+  }
+}
+
 const camera = useCameraStore();
 const { exposure } = storeToRefs(useChartStore());
 const { result } = storeToRefs(useSolveStore());
 
 const entries = computed(() =>
-  TABS.map(({ key, label, summary }) => {
+  TABS.map(({ key, width, label, summary }) => {
     const shown = summary();
     return typeof shown === 'string'
-      ? { key, label: label(), status: null, text: shown }
-      : { key, label: label(), status: shown, text: shown.text };
+      ? { key, width, label: label(), status: null, text: shown }
+      : { key, width, label: label(), status: shown, text: shown.text };
   }),
 );
 
@@ -125,24 +150,32 @@ onBeforeUnmount(() => {
       <header class="flex flex-wrap items-end gap-x-3 gap-y-2">
         <h1 class="pb-1.5 text-xl font-semibold">{{ APP_NAME }}</h1>
 
-        <div role="tablist" :aria-label="t('app.tablist')" class="ml-2 flex flex-wrap gap-1">
+        <div
+          ref="tablist"
+          role="tablist"
+          :aria-label="t('app.tablist')"
+          class="ml-2 flex flex-wrap gap-1"
+        >
           <button
-            v-for="entry in entries"
+            v-for="(entry, index) in entries"
             :id="`tab-${entry.key}`"
             :key="entry.key"
             type="button"
             role="tab"
             class="relative flex items-center gap-2 rounded-t-lg border border-b-0 px-3 pb-1.5 pt-1 text-left text-sm leading-tight"
-            :class="
+            :class="[
+              entry.width,
               tab === entry.key
                 ? 'z-10 -mb-px border-zinc-800 bg-white dark:bg-zinc-100 text-zinc-900'
-                : 'border-zinc-400 bg-zinc-100 text-zinc-700 hover:bg-zinc-50'
-            "
+                : 'border-zinc-400 bg-zinc-100 text-zinc-700 hover:bg-zinc-200',
+            ]"
+            :tabindex="tab === entry.key ? 0 : -1"
             :aria-label="entry.label"
             :aria-describedby="`tab-hint-${entry.key}`"
             :aria-selected="tab === entry.key"
             :aria-controls="`panel-${entry.key}`"
             @click="tab = entry.key"
+            @keydown="onTabKey($event, index)"
           >
             <StatusGauge
               v-if="entry.status !== null"
@@ -185,7 +218,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <footer class="text-xs text-slate-500 dark:text-slate-400">
+    <footer class="text-xs text-zinc-500">
       {{ t('app.footer', { id: APP_ID, version: APP_VERSION }) }}
     </footer>
   </main>

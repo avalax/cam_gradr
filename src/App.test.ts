@@ -49,26 +49,21 @@ describe('App', () => {
     expect(wrapper.get('footer').text()).toContain(`Version ${APP_VERSION}`);
   });
 
-  it('names in the preview tab what lies left and right of the divider', async () => {
+  it('names in the preview tab what lies left and right of the divider, as its labels do', async () => {
     installFakeCamera();
     const wrapper = mountApp();
     const preview = () => tabs(wrapper)[2]?.text();
-    expect(preview()).toContain('Original / korrigiert');
+    expect(preview()).toContain('Kamera / Korrigiert');
     await importLooks(cubeFile('Warm.cube'));
     await flushPromises();
-    expect(preview()).toContain('Original / Look-LUT');
+    expect(preview()).toContain('Kamera / Korrigiert + Look-LUT');
     usePreviewStore().setLeft('corrected');
-    await flushPromises();
-    expect(preview()).toContain('Korrigiert / Look-LUT');
     usePreviewStore().setRight('camera');
     await flushPromises();
-    expect(preview()).toContain('Korrigiert / nur Look-LUT');
-    usePreviewStore().setLeft('camera');
-    await flushPromises();
-    expect(preview()).toContain('Original / nur Look-LUT');
+    expect(preview()).toContain('Korrigiert / Kamera + Look-LUT');
     usePreviewStore().setLook(null);
     await flushPromises();
-    expect(preview()).toContain('Original / korrigiert');
+    expect(preview()).toContain('Kamera / Korrigiert');
   });
 
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
@@ -154,6 +149,22 @@ describe('App', () => {
     expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
     expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-gray');
     expect(all[0]?.attributes('aria-describedby')).toBe('tab-hint-gray');
+  });
+
+  it('moves between the tabs with the arrow keys as one stop of the Tab key', async () => {
+    installFakeCamera();
+    const wrapper = mountApp();
+    const stops = () => tabs(wrapper).map((tab) => tab.attributes('tabindex'));
+    expect(stops()).toEqual(['0', '-1', '-1', '-1']);
+    await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowLeft' });
+    expect(tabs(wrapper)[3]?.attributes('aria-selected')).toBe('true');
+    expect(stops()).toEqual(['-1', '-1', '-1', '0']);
+    await tabs(wrapper)[3]?.trigger('keydown', { key: 'Home' });
+    expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
+    // Up and down keep scrolling the page, other keys do nothing either.
+    await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowDown' });
+    await tabs(wrapper)[0]?.trigger('keydown', { key: 'a' });
+    expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
   });
 
   it('switches between the tabs without conditions', async () => {

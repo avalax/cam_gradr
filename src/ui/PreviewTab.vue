@@ -27,10 +27,15 @@ import {
   worstPatches,
   zoneChanges,
 } from './gray-wedge';
+import ChoiceChips from './ChoiceChips.vue';
 import ColorTiles from './ColorTiles.vue';
 import { imageMaxWidth as maxWidthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
+import ImageMessages from './ImageMessages.vue';
 import GrayWedge from './GrayWedge.vue';
+import { previewSides } from './preview-sides';
+import StageLabel from './StageLabel.vue';
+import { stageState } from './stage-state';
 import { attachStream, captureFromVideo } from './video-bindings';
 import LookBar from './LookBar.vue';
 import WipeDivider from './WipeDivider.vue';
@@ -53,11 +58,12 @@ const { measurements } = storeToRefs(useColorChartStore());
 const { selected } = storeToRefs(useReferenceStore());
 
 // Side column view: colors first, switchable to the grayscale.
+type View = 'colors' | 'grays';
 const viewOptions = computed(() => [
-  { key: 'colors', label: t('preview.viewColors') } as const,
-  { key: 'grays', label: t('preview.viewGrays') } as const,
+  { key: 'colors', value: 'colors' as const, label: t('preview.viewColors') },
+  { key: 'grays', value: 'grays' as const, label: t('preview.viewGrays') },
 ]);
-const view = ref<'colors' | 'grays'>('colors');
+const view = ref<View>('colors');
 const WORST_COUNT = 3;
 
 // The targets at the exposure of the shot, like in the report (without a report at the reference's).
@@ -76,9 +82,6 @@ const rows = computed(() =>
   wedgeRows(measurements.value, model.value, selected.value, exposureGain.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
-const emptyText = computed(() =>
-  t(model.value === null ? 'preview.emptyNoModel' : 'preview.emptyNoCards'),
-);
 // Colors of the dots in front of the channels.
 const CAST_COLORS = {
   red: '#b45353',
@@ -98,9 +101,11 @@ const correctedLut = computed(() =>
 );
 const IDENTITY = identityLut(PREVIEW_LUT_SIZE);
 const chosenLook = computed(() => (model.value === null ? null : looks.find(lookName.value)));
+// What the sides show and how they are named, with the same names as the hint of the tab.
+const sides = computed(() => previewSides(chosenLook.value !== null, left.value, right.value));
 // With a look the right side lays it over the correction or, without correction, over the camera
 // image (the identity).
-const rightCamera = computed(() => chosenLook.value !== null && right.value === 'camera');
+const rightCamera = computed(() => sides.value.rightCamera);
 const rightBase = computed(() => (rightCamera.value ? IDENTITY : correctedLut.value));
 // The chosen look LUT in full over its base. The strength only mixes the two, so that the slider
 // follows without delay.
@@ -115,19 +120,15 @@ const lut = computed(() =>
     : blendLuts(rightBase.value, fullLookLut.value, strength.value / FULL_STRENGTH),
 );
 // With a look the left side can show the correction instead of the camera image.
-const leftCorrected = computed(() => chosenLook.value !== null && left.value === 'corrected');
+const leftCorrected = computed(() => sides.value.leftCorrected);
 const leftLut = computed(() => (leftCorrected.value ? correctedLut.value : null));
-const leftLabel = computed(() =>
-  t(leftCorrected.value ? 'preview.labelCorrected' : 'preview.labelCamera'),
+const leftLabel = computed(() => sides.value.leftName);
+// The label of the look's side adds its strength.
+const rightLabel = computed(() =>
+  chosenLook.value === null
+    ? sides.value.rightName
+    : t('preview.labelStrength', { name: sides.value.rightName, strength: strength.value }),
 );
-const rightLabel = computed(() => {
-  if (chosenLook.value === null) {
-    return t('preview.labelCorrected');
-  }
-  return t(rightCamera.value ? 'preview.labelLookCamera' : 'preview.labelLook', {
-    strength: strength.value,
-  });
-});
 // A click on a label switches what its side starts from (only with a look).
 const leftTip = computed(() =>
   t(leftCorrected.value ? 'preview.switchToCamera' : 'preview.switchToCorrected'),
@@ -149,6 +150,10 @@ const shownStill = computed(
   () => still.value ?? (isLive.value ? null : (camera.allStills().color ?? null)),
 );
 const hasSource = computed(() => isLive.value || shownStill.value !== null);
+// What the preview shows, as in the band of the card tabs: a badge on the image while there is one,
+// otherwise the band above the placeholder.
+const stage = computed(() => stageState(shownStill.value !== null, isLive.value));
+const showImage = computed(() => model.value !== null && hasSource.value);
 const aspect = ref(16 / 9);
 const maxWidth = computed(() => maxWidthFor(aspect.value));
 
@@ -284,8 +289,8 @@ const splitModel = computed({
 
 <template>
   <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
-    <aside class="space-y-4 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-      <p class="text-sm text-slate-700 dark:text-slate-300">
+    <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
+      <p class="text-sm text-zinc-700">
         {{ t('preview.intro') }}
       </p>
       <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
@@ -293,7 +298,7 @@ const splitModel = computed({
       </p>
       <p
         v-if="renderer !== null"
-        class="text-xs text-slate-600 dark:text-slate-400"
+        class="text-xs text-zinc-600"
         data-testid="preview-renderer"
         :data-renderer="renderer.kind"
       >
@@ -319,50 +324,10 @@ const splitModel = computed({
               playsinline
               @loadeddata="videoReady = true"
             ></video>
-            <!-- Placeholder the size of the image while there is nothing to show. -->
-            <div
-              v-if="model === null || !hasSource"
-              class="flex w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
-              :style="{ aspectRatio: aspect }"
-            >
-              <svg
-                class="w-28 text-zinc-400"
-                viewBox="0 0 96 60"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <rect x="2" y="2" width="92" height="56" rx="5" />
-                <path
-                  d="M3 56 L3 3 H47 V56 Z"
-                  fill="currentColor"
-                  fill-opacity="0.25"
-                  stroke="none"
-                />
-                <path d="M48 2 V58" stroke-width="3" />
-                <circle cx="48" cy="30" r="5" fill="currentColor" stroke="none" />
-              </svg>
-              <p
-                v-if="model === null"
-                class="max-w-xs text-sm leading-snug"
-                data-testid="preview-no-model"
-              >
-                <span class="block font-semibold text-zinc-800">{{
-                  t('preview.noModelTitle')
-                }}</span>
-                {{ t('preview.noModelText') }}
-              </p>
-              <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
-                <span class="block font-semibold text-zinc-800">{{
-                  t('preview.noSourceTitle')
-                }}</span>
-                {{ t('preview.noSourceText') }}
-              </p>
-            </div>
-            <!-- Names the two sides above the image, as above the color cards' wipe. -->
+            <!-- The band above the image names the two sides, as above the color cards' wipe; without
+                 an image it says what the camera does, as on the card tabs. -->
             <WipeLabels
-              v-if="model !== null && hasSource"
+              v-if="showImage"
               :split="splitModel"
               :left-label="leftLabel"
               :right-label="rightLabel"
@@ -375,19 +340,74 @@ const splitModel = computed({
               data-testid="preview-labels"
               @switch="switchSide"
             />
+            <StageLabel v-else :state="stage" class="rounded-t" data-testid="stage-label" />
             <div class="relative">
+              <!-- Placeholder the size of the image while there is nothing to show. -->
+              <div
+                v-if="!showImage"
+                class="flex w-full flex-col items-center justify-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+                :style="{ aspectRatio: aspect }"
+              >
+                <svg
+                  class="w-28 text-zinc-400"
+                  viewBox="0 0 96 60"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="2" width="92" height="56" rx="5" />
+                  <path
+                    d="M3 56 L3 3 H47 V56 Z"
+                    fill="currentColor"
+                    fill-opacity="0.25"
+                    stroke="none"
+                  />
+                  <path d="M48 2 V58" stroke-width="3" />
+                  <!-- The grip of the divider as a path: the tests count the corner points as circles. -->
+                  <path
+                    d="M43 30a5 5 0 1 0 10 0a5 5 0 1 0-10 0z"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                </svg>
+                <p
+                  v-if="model === null"
+                  class="max-w-xs text-sm leading-snug"
+                  data-testid="preview-no-model"
+                >
+                  <span class="block font-semibold text-zinc-800">{{
+                    t('preview.noModelTitle')
+                  }}</span>
+                  {{ t('preview.noModelText') }}
+                </p>
+                <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
+                  <span class="block font-semibold text-zinc-800">{{
+                    t('preview.noSourceTitle')
+                  }}</span>
+                  {{ t('preview.noSourceText', { button: t('camera.toggle.start') }) }}
+                </p>
+              </div>
               <canvas
-                v-show="model !== null && hasSource"
+                v-show="showImage"
                 ref="canvas"
                 class="w-full bg-black"
                 data-testid="preview-canvas"
               ></canvas>
+              <!-- Live image or still image, as in the band of the card tabs. -->
+              <StageLabel
+                v-if="showImage"
+                :state="stage"
+                variant="badge"
+                data-testid="preview-source"
+              />
               <WipeDivider
-                v-if="model !== null && hasSource"
+                v-if="showImage"
                 v-model="splitModel"
                 :label="t('preview.divider', { left: leftLabel, right: rightLabel })"
                 :left-name="leftLabel"
               />
+              <ImageMessages :error="camera.errorMessage" :hint="null" />
               <!-- Takes a still image while the camera runs, where the card tabs have the trash. -->
               <ImageCornerButton
                 v-if="model !== null && isLive"
@@ -403,46 +423,36 @@ const splitModel = computed({
                 <path d="M15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z" />
               </ImageCornerButton>
             </div>
-            <LookBar v-if="model !== null && hasSource" />
+            <LookBar v-if="showImage" />
           </div>
         </div>
 
+        <!-- Without a correction the placeholder says what is missing; the column stays empty. -->
         <div
           class="flex w-44 shrink-0 flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
           data-testid="preview-side"
         >
-          <div
-            class="flex gap-1 border-b-(length:--band-line) border-zinc-700 bg-zinc-200 p-1.5"
-            role="group"
-            :aria-label="t('preview.viewLabel')"
-          >
-            <button
-              v-for="option in viewOptions"
-              :key="option.key"
-              type="button"
-              class="flex-1 rounded border px-1 py-1 text-[11px] font-semibold"
-              :class="
-                view === option.key
-                  ? 'border-zinc-800 bg-zinc-800 text-zinc-50'
-                  : 'border-zinc-500 bg-zinc-50 text-zinc-800'
-              "
-              :aria-pressed="view === option.key"
-              :data-testid="`view-${option.key}`"
-              @click="view = option.key"
-            >
-              {{ option.label }}
-            </button>
+          <div class="border-b-(length:--band-line) border-zinc-700 bg-zinc-200 p-1.5">
+            <ChoiceChips
+              variant="segmented"
+              compact
+              :options="viewOptions"
+              :selected="view"
+              :aria-label="t('preview.viewLabel')"
+              data-testid="preview-view"
+              @choose="view = $event"
+            />
           </div>
           <div v-if="view === 'colors'" class="flex min-h-0 flex-1 flex-col gap-2 p-2">
             <div v-if="tiles.length > 0" class="min-h-24 flex-1">
               <ColorTiles :cards="tiles" />
             </div>
             <p
-              v-else
+              v-else-if="model !== null"
               class="text-[11px] leading-snug text-zinc-600"
               data-testid="preview-side-empty"
             >
-              {{ emptyText }}
+              {{ t('preview.emptyNoCards') }}
             </p>
             <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
               {{ t('preview.tilesLegend') }}
@@ -466,26 +476,29 @@ const splitModel = computed({
               <GrayWedge :rows="rows" />
             </div>
             <p
-              v-else
+              v-else-if="model !== null"
               class="text-[11px] leading-snug text-zinc-600"
               data-testid="preview-side-empty"
             >
-              {{ emptyText }}
+              {{ t('preview.emptyNoCards') }}
             </p>
             <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
               <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
                 <dt class="font-semibold">{{ zone.name }}</dt>
-                <!-- Room for three lines, so the gray wedge keeps its size when the texts change. -->
+                <!-- Room for three lines, so the gray wedge keeps its size when the texts change. A
+                     channel with its value never breaks apart. -->
                 <dd class="min-h-[3lh]">
                   {{ brightnessText(zone.brighter) }}
                   <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
                   <template v-for="cast in zone.casts" :key="cast.key">
                     ·
-                    <i
-                      class="inline-block size-2 rounded-full"
-                      :style="{ background: CAST_COLORS[cast.key] }"
-                    ></i>
-                    {{ cast.channel }} {{ signedPoints(cast.points) }}
+                    <span class="whitespace-nowrap">
+                      <i
+                        class="inline-block size-2 rounded-full"
+                        :style="{ background: CAST_COLORS[cast.key] }"
+                      ></i>
+                      {{ cast.channel }} {{ signedPoints(cast.points) }}
+                    </span>
                   </template>
                 </dd>
               </div>

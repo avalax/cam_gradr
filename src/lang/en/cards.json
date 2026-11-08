@@ -1,5 +1,6 @@
 {
   "stage": {
+    "labelOff": "Camera off",
     "labelLive": "Live image",
     "labelStill": "Still image",
     "starting": {
@@ -8,7 +9,7 @@
     },
     "off": {
       "title": "The camera is off",
-      "text": "Switch it on above with “Start camera”."
+      "text": "Switch it on above with “{button}”."
     },
     "deleteCorners": "Delete corner points",
     "deleteCornersTitle": "Delete the corner points and detect the cards again",

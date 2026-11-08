@@ -34,12 +34,13 @@ describe('ExportTab', () => {
 
   it('asks for a color correction first, but shows what you get', () => {
     const wrapper = mount(ExportTab);
-    expect(wrapper.get('[data-testid="export-no-model"]').text()).toContain(
-      'Noch keine Farbkorrektur',
-    );
+    expect(wrapper.get('[data-testid="export-no-model"]').text()).toContain('Noch keine Korrektur');
+    // The button only says what it does; the file name beside it describes it.
     const download = wrapper.get('[data-testid="export-download"]');
     expect(download.attributes('disabled')).toBeDefined();
-    expect(download.text()).toContain('cam_gradr-33.cube');
+    expect(download.text()).toBe('Herunterladen');
+    const name = wrapper.get(`#${String(download.attributes('aria-describedby'))}`);
+    expect(name.text()).toBe('cam_gradr-33.cube');
     expect(
       wrapper.get('[data-testid="export-size"] [data-option="17"]').attributes('disabled'),
     ).toBeDefined();
@@ -110,7 +111,7 @@ describe('ExportTab', () => {
       'true',
       'false',
     ]);
-    expect(wrapper.get('[data-testid="export-download"]').text()).toContain('cam_gradr-33.cube');
+    expect(wrapper.get('#export-file-name').text()).toBe('cam_gradr-33.cube');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
 
