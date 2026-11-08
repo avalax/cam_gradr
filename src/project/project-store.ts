@@ -72,12 +72,13 @@ function applyCharts(project: Project, withStills: boolean): void {
 }
 
 // The look LUTs of the file become the whole list, and the preview and the export get their settings
-// back; a file without look LUTs loads as if there had never been one.
+// back; a file without look LUTs loads as if there had never been one. Returns how many look LUTs
+// left the browser.
 async function applyLooks(
   settings: LookSettings | undefined,
   luts: readonly LookLut[],
-): Promise<void> {
-  await useLookStore().replaceAll(luts);
+): Promise<number> {
+  const gone = await useLookStore().replaceAll(luts);
   const { chosen, strength, left, right, inExport } = settings ?? NO_LOOKS;
   const preview = usePreviewStore();
   preview.setLook(chosen);
@@ -85,6 +86,7 @@ async function applyLooks(
   preview.setLeft(left);
   preview.setRight(right);
   useExportStore().setWithLook(inExport);
+  return gone;
 }
 
 // Recomputes the correction with the selected reference set or uses the saved model.
@@ -98,11 +100,14 @@ async function applyCorrection(project: Project): Promise<string | null> {
     references.select(name);
   }
   const reference = references.selected;
-  if (reference !== null && reference.name === name) {
+  const recompute = reference !== null && reference.name === name;
+  if (recompute) {
     // With reference values available, the error report can be recomputed.
     solve.compute({ measurements: project.color.measurements, reference });
   }
-  if (solve.model === null && project.model !== null) {
+  // Otherwise the saved model applies, never one from before; it also steps in when the calculation
+  // fails.
+  if (!recompute || (solve.model === null && project.model !== null)) {
     solve.loadModel(project.model);
   }
   const missing = name !== null && reference?.name !== name;
@@ -213,10 +218,18 @@ export const useProjectStore = defineStore('project', () => {
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
-    await applyLooks(read.project.looks, read.luts);
-    // There are no success messages; only a missing reference set deserves a notice.
-    notice.value =
-      missing === null ? null : t('project.notice.missingReference', { name: missing });
+    const gone = await applyLooks(read.project.looks, read.luts);
+    // There are no success messages; a missing reference set and look LUTs that left the browser
+    // deserve a notice.
+    const notices = [
+      missing === null ? null : t('project.notice.missingReference', { name: missing }),
+      gone === 0
+        ? null
+        : t(gone === 1 ? 'project.notice.lookRemoved' : 'project.notice.looksRemoved', {
+            count: gone,
+          }),
+    ].filter((entry) => entry !== null);
+    notice.value = notices.length === 0 ? null : notices.join(' ');
   }
 
   // Lets the user choose a project file in the system dialog and loads it.

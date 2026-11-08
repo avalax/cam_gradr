@@ -13,6 +13,7 @@ import { setReferenceStorage, useReferenceStore } from '../reference/reference-s
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { INVERT_CUBE, cubeFile, emptyLookStorage } from '../test-support/look-cubes';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
@@ -270,10 +271,16 @@ describe('useProjectStore', () => {
     const text = (download.mock.calls.at(-1) as [string, string, string])[1];
     const looks = useLookStore();
     const saved = looks.find('Warm');
-    await looks.importFiles([cubeFile('Warm.cube', INVERT_CUBE)]);
+    await looks.importFiles([cubeFile('Warm.cube', INVERT_CUBE), cubeFile('Blue.cube')]);
     expect(looks.find('Warm')?.lut.data).not.toEqual(saved?.lut.data);
-    await useProjectStore().load(text);
+    const project = useProjectStore();
+    await project.load(text);
     expect(looks.find('Warm')?.lut.data).toEqual(saved?.lut.data);
+    // Blue is not in the project.
+    expect(looks.find('Blue')).toBeNull();
+    expect(project.notice).toBe(
+      'Eine importierte Look-LUT, die das Projekt nicht enthält, wurde aus dem Browser entfernt.',
+    );
   });
 
   it('loads a project saved without look LUTs as if there had never been one', async () => {
@@ -287,7 +294,9 @@ describe('useProjectStore', () => {
     expect(parseProject(text).export).toEqual({ size: 33 });
 
     useExportStore().setSize(65);
+    await useLookStore().importFiles([cubeFile('Cold.cube')]);
     await useProjectStore().load(text);
+    expect(useProjectStore().notice).toContain('2 importierte Look-LUTs');
     expect(useLookStore().looks).toEqual([]);
     expect(await storage.list()).toEqual([]);
     const preview = usePreviewStore();
@@ -331,10 +340,12 @@ describe('useProjectStore', () => {
     const text = await workedState();
     setActivePinia(createPinia());
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
+    // A correction from before does not stay.
+    useSolveStore().loadModel(IDENTITY_MODEL);
     const project = useProjectStore();
     await project.load(text);
 
-    expect(useSolveStore().model).not.toBeNull();
+    expect(useSolveStore().model).toEqual(parseProject(text).model);
     expect(useSolveStore().result).toBeNull();
     expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
   });
@@ -345,6 +356,7 @@ describe('useProjectStore', () => {
     raw.color.reference = null;
     raw.model = null;
     setActivePinia(createPinia());
+    useSolveStore().loadModel(IDENTITY_MODEL);
     const project = useProjectStore();
     await project.load(JSON.stringify(raw));
 

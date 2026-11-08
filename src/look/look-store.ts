@@ -140,17 +140,20 @@ export const useLookStore = defineStore('look', () => {
   }
 
   // Makes the look LUTs of a project file the whole list, also in the browser's storage: looks the
-  // file does not have are deleted, looks of the same name are replaced by the file's.
-  async function replaceAll(saved: readonly LookLut[]): Promise<void> {
+  // file does not have are deleted, looks of the same name are replaced by the file's. Returns how
+  // many were deleted.
+  async function replaceAll(saved: readonly LookLut[]): Promise<number> {
     looks.value = saved.toSorted(byName);
     removed.value = null;
     messages.value = [];
     const keep = new Set(saved.map((look) => look.name));
+    let gone = 0;
     try {
       const stored = await storage().list();
       for (const look of stored) {
         if (!keep.has(look.name)) {
           await storage().remove(look.name);
+          gone += 1;
         }
       }
       for (const look of saved) {
@@ -159,6 +162,7 @@ export const useLookStore = defineStore('look', () => {
     } catch {
       messages.value = [{ kind: 'storeFailed' }];
     }
+    return gone;
   }
 
   // Brings the last deleted look back, chosen again if it was chosen before.

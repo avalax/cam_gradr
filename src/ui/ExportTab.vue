@@ -226,7 +226,9 @@ function download(): void {
             <dd class="text-right">{{ fact.value }}</dd>
           </div>
         </dl>
-        <p class="text-[11px] leading-snug text-zinc-500">{{ t('export.project.lookNote') }}</p>
+        <p v-if="looks.looks.length > 0" class="text-[11px] leading-snug text-zinc-500">
+          {{ t('export.project.lookNote') }}
+        </p>
         <div class="mt-auto pt-1">
           <ProjectBar />
         </div>

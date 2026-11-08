@@ -24,8 +24,8 @@ export const useSolveStore = defineStore('solve', () => {
     }
   }
 
-  // Adopts a saved model (from a project) without a report.
-  function loadModel(next: ColorModel): void {
+  // Adopts a saved model (from a project) without a report; null means there is none.
+  function loadModel(next: ColorModel | null): void {
     result.value = null;
     model.value = next;
     error.value = null;

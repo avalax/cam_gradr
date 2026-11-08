@@ -154,7 +154,7 @@ describe('useLookStore', () => {
     await store.remove('Blue');
     // The project's Warm replaces the browser's, Blue goes; no undo is left over.
     const warm = parseLookCube('Warm.cube', INVERT_CUBE);
-    await store.replaceAll([warm, look('Cold')]);
+    expect(await store.replaceAll([warm, look('Cold')])).toBe(0);
     expect(store.looks.map((entry) => entry.name)).toEqual(['Cold', 'Warm']);
     expect(store.find('Warm')).toBe(warm);
     expect(store.messages).toEqual([]);
@@ -168,7 +168,7 @@ describe('useLookStore', () => {
     expect(stored.find((entry) => entry.name === 'Warm')?.lut.data).toEqual(warm.lut.data);
 
     // A project without look LUTs empties the list.
-    await store.replaceAll([]);
+    expect(await store.replaceAll([])).toBe(2);
     expect(store.looks).toEqual([]);
     expect(await storage.list()).toEqual([]);
   });

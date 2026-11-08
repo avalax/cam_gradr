@@ -30,6 +30,6 @@
     "reference": "Reference",
     "look": "Look LUT",
     "lookValue": "{name} · {strength} %",
-    "lookNote": "With “Include look LUTs” the file holds all imported look LUTs, and loading puts them into the browser if they are missing there; otherwise the project keeps only the name and strength of the chosen one."
+    "lookNote": "With “Include look LUTs” the file holds all imported look LUTs with the choice, strength and export setting. Loading replaces the list in the browser with them; a project without look LUTs empties it."
   }
 }
