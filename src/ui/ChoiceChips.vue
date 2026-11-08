@@ -32,7 +32,8 @@ const emit = defineEmits<{ choose: [value: T] }>();
 
 const group = useTemplateRef<HTMLElement>('group');
 
-// Hover only reaches options that can be chosen.
+// Hover only reaches options that can be chosen. The segmented controls clip their corners, so their
+// options draw the focus ring inside.
 const STYLES = {
   chips: {
     group: 'flex flex-wrap gap-1.5',
@@ -42,7 +43,8 @@ const STYLES = {
   },
   segmented: {
     group: 'inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm',
-    option: 'border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500',
+    option:
+      'focus-ring-inset border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500',
     on: 'bg-zinc-800 text-zinc-50',
     off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
   },
@@ -56,7 +58,7 @@ const STYLES = {
   },
   compact: {
     group: 'flex w-full overflow-hidden rounded border border-zinc-500 text-[11px] font-semibold',
-    option: 'flex-1 border-zinc-500 px-1 py-1 [&:not(:first-child)]:border-l',
+    option: 'focus-ring-inset flex-1 border-zinc-500 px-1 py-1 [&:not(:first-child)]:border-l',
     on: 'bg-zinc-800 text-zinc-50',
     off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
   },

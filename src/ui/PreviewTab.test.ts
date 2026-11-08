@@ -7,6 +7,7 @@ import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
+import { cameraSwitchStandIn } from '../test-support/camera-switch';
 import { dummyReference } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
@@ -73,7 +74,7 @@ describe('PreviewTab', () => {
     vi.restoreAllMocks();
   });
 
-  it('asks for a computed color correction first', () => {
+  it('asks for a computed color correction first', async () => {
     mockAnimation();
     mockContexts();
     const wrapper = mount(PreviewTab);
@@ -83,8 +84,14 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-canvas"]').attributes('style')).toContain(
       'display: none',
     );
-    // Without an image the band says what the camera does, as on the card tabs.
-    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
+    // Without a correction the band names what is missing, also while the camera runs: the preview
+    // shows no camera image then.
+    const band = wrapper.get('[data-testid="stage-label"]');
+    expect(band.text()).toBe('Noch keine Korrektur');
+    expect(band.attributes('data-state')).toBe('off');
+    await useCameraStore().start();
+    await flushPromises();
+    expect(band.text()).toBe('Noch keine Korrektur');
     expect(wrapper.find('[data-testid="preview-source"]').exists()).toBe(false);
     // The icon of the placeholder has no circle: the tests count the corner points as circles.
     expect(wrapper.find('circle').exists()).toBe(false);
@@ -97,6 +104,8 @@ describe('PreviewTab', () => {
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('„Kamera starten“');
+    // Without an image the band says what the camera does, as on the card tabs.
+    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
   });
 
   it('shows a camera error on the image', async () => {
@@ -131,12 +140,16 @@ describe('PreviewTab', () => {
     expect(take().attributes('disabled')).toBeDefined();
     await wrapper.get('video').trigger('loadeddata');
     expect(take().attributes('disabled')).toBeUndefined();
+    const cameraSwitch = cameraSwitchStandIn();
     await take().trigger('click');
     await flushPromises();
     expect(capture).toHaveBeenCalledTimes(1);
     expect(camera.status).toBe('idle');
     expect(camera.still).not.toBeNull();
     expect(take().exists()).toBe(false);
+    // The button left with the live image: the focus is on the camera switch.
+    expect(document.activeElement).toBe(cameraSwitch);
+    cameraSwitch.remove();
     expect(wrapper.get('[data-testid="preview-source"]').text()).toBe('Standbild');
     await camera.start();
     await flushPromises();

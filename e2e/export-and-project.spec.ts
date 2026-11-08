@@ -10,7 +10,8 @@ import { colorPatchCenter } from './support/synthetic-cards';
 // Acceptance test of the user story:
 // "As a user I export the correction as a LUT file and save my work as a project."
 // The file formats, the LUT sizes, faulty files, missing reference sets and the file dialogs of
-// Chrome and Edge are covered by the unit tests; here real downloads, file inputs and reloads count.
+// Chrome and Edge are covered by the unit tests; here real downloads, file inputs and reloads count,
+// and that the export is as tall as the preview with its look bar, which only a browser lays out.
 // The browser locale is de-DE by default, so the assertions check the German interface.
 
 const TOLERANCE = 7 / 255;
@@ -24,7 +25,11 @@ test.describe('Export and project', () => {
     // parallel on a busy machine it can need more than the usual time limit.
     test.slow();
     await app.computeColorModel();
+    await app.openTab('Vorschau');
+    await expect(app.page.getByTestId('look-bar')).toBeVisible();
+    const previewHeight = await app.panelHeight();
     await app.openTab('Export');
+    expect(Math.abs((await app.panelHeight()) - previewHeight)).toBeLessThanOrEqual(1);
     const { fileName, text: cubeText } = await app.download(
       app.page.getByTestId('export-download'),
     );

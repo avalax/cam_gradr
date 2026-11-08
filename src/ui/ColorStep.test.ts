@@ -48,7 +48,7 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       `${BUNDLED_NAME} (48 Felder)`,
     );
-    expect(wrapper.text()).toContain('Beide Farbkarten ruhig dorthin halten, wo das Motiv steht');
+    expect(wrapper.text()).toContain('Halte beide Farbkarten ruhig dorthin, wo das Motiv steht');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 

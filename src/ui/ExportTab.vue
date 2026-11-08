@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { I18nT, useI18n } from 'vue-i18n';
 
+import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { lookedLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
@@ -20,8 +21,11 @@ import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
 import ChoiceChips from './ChoiceChips.vue';
 import { LINK_BUTTON } from './control-styles';
+import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth, previewImage } from './image-size';
+import LookBar from './LookBar.vue';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
+import StageLabel from './StageLabel.vue';
 
 const emit = defineEmits<{ goto: [tab: 'color'] }>();
 
@@ -90,6 +94,19 @@ const sliceLook = computed(() =>
 const fileName = computed(() => exportFileName(size.value, exportLook.value));
 const fileInfo = computed(() => t('export.lut.points', { size: size.value }));
 
+// The export is as tall as the preview: an invisible copy of the preview's image area (band, image
+// and, while the preview has an image, the look bar) follows the same rules as the image of the
+// other tabs, so the height follows the window and never depends on the tab opened before.
+const camera = useCameraStore();
+const previewArea = computed(() =>
+  previewImage({
+    corrected: model.value !== null,
+    live: camera.status === 'live',
+    stills: camera.allStills(),
+    actual: camera.actual,
+  }),
+);
+
 function download(): void {
   const current = model.value;
   if (current !== null) {
@@ -111,10 +128,21 @@ function download(): void {
   <!-- On the grid of the other tabs: the LUT where their image is (it ends where the image ends),
        the project where their side column and their text column are (11 rem, a gap of 1.5 rem and
        21 rem). -->
-  <section class="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_33.5rem]">
+  <section class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_33.5rem]">
+    <!-- Invisible, under the LUT card: gives the export the height of the preview. -->
+    <div
+      :class="[IMAGE_BLOCK, 'invisible col-start-1 row-start-1']"
+      :style="{ maxWidth: imageMaxWidth(previewArea.aspect) }"
+      aria-hidden="true"
+      data-testid="export-sizer"
+    >
+      <StageLabel state="off" :class="IMAGE_BAND" />
+      <div :style="{ aspectRatio: previewArea.aspect }"></div>
+      <LookBar v-if="previewArea.shown" />
+    </div>
     <!-- Without color correction you see what you would get: same layout, but grayed out. -->
     <article
-      class="flex min-w-0 flex-col gap-2 rounded-lg border p-3"
+      class="col-start-1 row-start-1 flex min-w-0 flex-col gap-2 rounded-lg border p-3"
       :class="
         model === null ? 'border-dashed border-zinc-300 bg-zinc-100' : 'border-zinc-300 bg-zinc-50'
       "
@@ -166,7 +194,7 @@ function download(): void {
           <!-- The file name stands beside the button, so it is not repeated in the button. -->
           <button
             type="button"
-            class="ml-auto rounded bg-emerald-700 px-3 py-1 text-sm text-white enabled:hover:bg-emerald-800 disabled:bg-zinc-300 disabled:text-zinc-500"
+            class="ml-auto rounded border border-emerald-700 bg-emerald-700 px-3 py-1 text-sm text-white enabled:hover:bg-emerald-800 disabled:border-zinc-300 disabled:bg-zinc-300 disabled:text-zinc-500"
             :disabled="model === null"
             aria-describedby="export-file-name"
             data-testid="export-download"

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { colorLayout } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import type { FitResult } from '../solve/fit';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import ColorWipe from './ColorWipe.vue';
 
@@ -116,6 +117,14 @@ describe('ColorWipe', () => {
     expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
       'Ø Abweichung 18,4 → 8,0',
     );
+  });
+
+  it('says that a correction loaded without its reference set has no report', () => {
+    const wrapper = mountWipe({ model: IDENTITY_MODEL });
+    expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
+      'Ohne Bericht (Referenz fehlt)',
+    );
+    expect(wrapper.get('[data-testid="color-wipe-result"]').attributes('tabindex')).toBeUndefined();
   });
 
   it('fades in the corrected layer right of the line and follows the wipe', async () => {

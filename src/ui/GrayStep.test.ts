@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCameraStore } from '../camera/camera-store';
 import type { Frame } from '../camera/frame';
 import { useChartStore } from '../chart/chart-store';
+import { cameraSwitchStandIn } from '../test-support/camera-switch';
 import { bothCards } from '../test-support/cards';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
 
@@ -199,7 +200,9 @@ describe('GrayStep', () => {
     await flushPromises();
     expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(true);
     expect(wrapper.findAll('polygon')).toHaveLength(0);
-    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain('Beide Graukarten');
+    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain(
+      'Halte beide Graukarten',
+    );
     // The band is there before the camera starts, so the image never moves; the hint names the
     // button as it is labelled.
     expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
@@ -479,12 +482,17 @@ describe('GrayStep', () => {
     useCameraStore().still = stillFrame(0.5);
     await flushPromises();
     placeAll();
+    const cameraSwitch = cameraSwitchStandIn();
     await resetButton(wrapper)?.trigger('click');
     expect(useChartStore().points).toEqual({});
     expect(useCameraStore().still).toBeNull();
     expect(wrapper.findAll('polygon[data-shape]')).toHaveLength(0);
     // The camera is already running: no new start.
     expect(useCameraStore().status).toBe('live');
+    // The trash left with the still image: the focus is on the camera switch.
+    expect(resetButton(wrapper)).toBeUndefined();
+    expect(document.activeElement).toBe(cameraSwitch);
+    cameraSwitch.remove();
   });
 
   it('switches the camera back on with “Eckpunkte löschen” when it is off', async () => {

@@ -54,9 +54,14 @@ const layers = computed(() =>
 // While the live image runs, the corrected layer and the divider would show nothing meaningful.
 const shownLayers = computed(() => (props.live ? layers.value.slice(0, 1) : layers.value));
 
-const summary = computed(() =>
-  props.report === null ? t('color.wipe.noCorrection') : deviationSummary(props.report),
-);
+// A correction without a report (loaded from a project whose reference set is missing) says so: its
+// colors are corrected, only the deviations are unknown.
+const summary = computed(() => {
+  if (props.report !== null) {
+    return deviationSummary(props.report);
+  }
+  return t(props.model === null ? 'color.wipe.noCorrection' : 'color.wipe.noReport');
+});
 </script>
 
 <template>
@@ -111,8 +116,9 @@ const summary = computed(() =>
          appears as a popup beside the column, like the details on the gray cards' measuring
          field. It stays within the height of the column, so it never covers the tabs; it starts at
          the bottom, where the trigger is, so that the pointer can move into it to scroll. The Tab
-         key also moves into it to scroll; a click does not focus the trigger, so it does not keep
-         the result open once the pointer leaves. Escape closes it. -->
+         key also moves into it to scroll (its ring is drawn inside, where it shows on the dark
+         popup over the image); a click does not focus the trigger, so it does not keep the result
+         open once the pointer leaves. Escape closes it. -->
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the result closes it with Escape -->
     <div
       class="group rounded-b-[7px]"
@@ -136,7 +142,7 @@ const summary = computed(() =>
         data-testid="color-wipe-popup"
       >
         <div
-          class="min-h-0 w-[min(36rem,calc(100vw-14rem))] overflow-auto rounded bg-zinc-950 p-3 text-sm text-white shadow-lg"
+          class="focus-ring-inset min-h-0 w-[min(36rem,calc(100vw-14rem))] overflow-auto rounded bg-zinc-950 p-3 text-sm text-white shadow-lg"
         >
           <slot name="details" />
         </div>

@@ -32,7 +32,7 @@
   },
   "labelLook": "Corrected + look LUT",
   "labelLookCamera": "Camera + look LUT",
-  "labelStrength": "{name} {strength} %",
+  "labelStrength": "{name} {strength}%",
   "switchToCorrected": "Click: show corrected",
   "switchToCamera": "Click: show camera image",
   "switchLookCamera": "Click: look LUT without correction",

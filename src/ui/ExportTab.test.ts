@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useCameraStore } from '../camera/camera-store';
 import { useChartStore } from '../chart/chart-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
@@ -83,6 +84,22 @@ describe('ExportTab', () => {
     const facts = wrapper.get('[data-testid="project-facts"]').text();
     expect(facts).toContain('8 Eckpunkte · 0 Felder');
     expect(facts).toContain('Kurven + Matrix');
+  });
+
+  it('is as tall as the preview: an invisible copy of its image area, with the look bar while it has an image', async () => {
+    const wrapper = mount(ExportTab);
+    const sizer = () => wrapper.get('[data-testid="export-sizer"]');
+    expect(sizer().attributes('aria-hidden')).toBe('true');
+    expect(sizer().classes()).toContain('invisible');
+    expect(sizer().attributes('style')).toContain(`* ${String(16 / 9)})`);
+    expect(sizer().find('[data-testid="look-bar"]').exists()).toBe(false);
+
+    // With a correction and the still image of the color cards the preview has an image.
+    computeModel();
+    useCameraStore().restoreStills({ color: { width: 4, height: 3, data: new Float32Array(36) } });
+    await wrapper.vm.$nextTick();
+    expect(sizer().attributes('style')).toContain(`* ${String(4 / 3)})`);
+    expect(sizer().find('[data-testid="look-bar"]').exists()).toBe(true);
   });
 
   it('leads to the color cards via the link', async () => {

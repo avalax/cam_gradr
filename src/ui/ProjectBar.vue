@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useLookStore } from '../look/look-store';
+import { useExportStore } from '../lut/export-store';
 import { fileDialogs } from '../project/project-file';
 import { useProjectStore } from '../project/project-store';
 
@@ -12,14 +14,16 @@ const { t } = useI18n();
 
 // The message about saving and loading floats at the bottom of the page (ProjectStatus).
 const project = useProjectStore();
-// The still images show what the camera sees; the file then contains camera images.
-const withStills = ref(true);
-// The imported look LUTs go along, so that the project also works in another browser; the file
-// then contains the LUTs, which matters when passing it on. The checkbox shows as soon as one is
-// imported.
-const withLooks = ref(true);
+// What the file includes is kept in the export store, so that it survives a switch to another tab.
+// The checkbox for the look LUTs shows as soon as one is imported.
+const settings = useExportStore();
+const { withStills, withLooks } = storeToRefs(settings);
 const looks = useLookStore();
 const anyLook = computed(() => looks.looks.length > 0);
+
+function checked(event: Event): boolean {
+  return (event.target as HTMLInputElement).checked;
+}
 
 async function save(): Promise<void> {
   await project.save({ withStills: withStills.value, withLooks: anyLook.value && withLooks.value });
@@ -50,11 +54,23 @@ async function onFile(event: Event): Promise<void> {
 <template>
   <div class="flex flex-col gap-2">
     <label class="flex items-start gap-2 text-xs text-zinc-600">
-      <input v-model="withStills" type="checkbox" class="mt-0.5" data-testid="project-stills" />
+      <input
+        type="checkbox"
+        class="mt-0.5 accent-emerald-700"
+        :checked="withStills"
+        data-testid="project-stills"
+        @change="settings.setWithStills(checked($event))"
+      />
       <span>{{ t('project.bar.stills') }}</span>
     </label>
     <label v-if="anyLook" class="flex items-start gap-2 text-xs text-zinc-600">
-      <input v-model="withLooks" type="checkbox" class="mt-0.5" data-testid="project-looks" />
+      <input
+        type="checkbox"
+        class="mt-0.5 accent-emerald-700"
+        :checked="withLooks"
+        data-testid="project-looks"
+        @change="settings.setWithLooks(checked($event))"
+      />
       <span>{{ t('project.bar.looks') }}</span>
     </label>
     <div class="flex flex-wrap items-center gap-2">

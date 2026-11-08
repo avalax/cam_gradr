@@ -24,6 +24,13 @@ async function options(wrapper: VueWrapper): Promise<string[]> {
   return texts;
 }
 
+// Focuses a button of the bar and activates it, as the keyboard does.
+async function press(wrapper: VueWrapper, testId: string): Promise<void> {
+  const button = wrapper.get(`[data-testid="${testId}"]`);
+  (button.element as HTMLButtonElement).focus();
+  await button.trigger('click');
+}
+
 // Chooses an entry of the picker with the mouse.
 async function pick(wrapper: VueWrapper, text: string): Promise<void> {
   await wrapper.get('[data-testid="look-select"]').trigger('click');
@@ -90,7 +97,7 @@ describe('LookBar', () => {
   });
 
   it('imports the chosen files and reports what happened', async () => {
-    const wrapper = mount(LookBar);
+    const wrapper = mount(LookBar, { attachTo: document.body });
     const input = wrapper.get('[data-testid="look-file"]');
     Object.defineProperty(input.element, 'files', {
       configurable: true,
@@ -115,17 +122,19 @@ describe('LookBar', () => {
     expect(messages.text()).toContain('sieht nach einer Umwandlung aus Log aus');
     expect((input.element as HTMLInputElement).value).toBe('');
 
-    await wrapper.get('[data-testid="look-remove-again"]').trigger('click');
+    await press(wrapper, 'look-remove-again');
     await flushPromises();
     expect(messages.text()).toContain('Look-LUT „SLOG 3 S CINETONE_REC709“ lokal gelöscht.');
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="look-select"]').element);
     await wrapper.get('[data-testid="look-undo"]').trigger('click');
     await vi.waitFor(() => {
       expect(useLookStore().looks).toHaveLength(2);
     });
+    wrapper.unmount();
   });
 
   it('names a single imported look and deletes the chosen one with the trash icon', async () => {
-    const wrapper = mount(LookBar);
+    const wrapper = mount(LookBar, { attachTo: document.body });
     const input = wrapper.get('[data-testid="look-file"]');
     Object.defineProperty(input.element, 'files', {
       configurable: true,
@@ -137,10 +146,19 @@ describe('LookBar', () => {
     });
     await flushPromises();
     expect(wrapper.text()).toContain('„Warm“ importiert und lokal im Browser gespeichert.');
-    await wrapper.get('[data-testid="look-remove"]').trigger('click');
+    const picker = wrapper.get('[data-testid="look-select"]').element;
+    await press(wrapper, 'look-remove');
     await flushPromises();
     expect(useLookStore().looks).toEqual([]);
     expect(usePreviewStore().look).toBeNull();
+    // The trash went with the look, the undo link goes with its message: the focus stays in the
+    // bar, on the picker.
+    expect(document.activeElement).toBe(picker);
+    await press(wrapper, 'look-undo');
+    await flushPromises();
+    expect(usePreviewStore().look).toBe('Warm');
+    expect(document.activeElement).toBe(picker);
+    wrapper.unmount();
   });
 
   it('takes no file when the dialog was cancelled', async () => {

@@ -6,7 +6,7 @@
   "percent": "{value}%",
   "points": "{value} points",
   "target": "{level} (target {target})",
-  "tolerance": "Tolerance ±{value}",
+  "tolerance": "tolerance ±{value}",
   "withTolerance": "{value} ({tolerance})",
   "rows": {
     "card18": "18% card",

@@ -5,7 +5,7 @@
     "sizeLabel": "LUT size (grid points per axis)",
     "sizeOption": "{size}³",
     "noModelTitle": "No correction yet",
-    "noModelText": "Compute it in the “Color cards” tab or load a project.",
+    "noModelText": "Calculate it in the “Color cards” tab or load a project.",
     "gotoColor": "Go to color cards",
     "download": "Download",
     "sizeKb": "about {value} KB",
@@ -25,6 +25,6 @@
     "correctionValue": "Curves + matrix + hue table",
     "reference": "Reference",
     "look": "Look LUT",
-    "lookValue": "{name} · {strength} %"
+    "lookValue": "{name} · {strength}%"
   }
 }

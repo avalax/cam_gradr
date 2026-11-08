@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
 
+import { CAMERA_SWITCH_ID } from './focus';
+
 const { t } = useI18n();
 const camera = useCameraStore();
 const { status } = storeToRefs(camera);
@@ -40,6 +42,7 @@ function toggle(): void {
 
 <template>
   <button
+    :id="CAMERA_SWITCH_ID"
     type="button"
     role="switch"
     :aria-label="t('camera.toggle.label')"

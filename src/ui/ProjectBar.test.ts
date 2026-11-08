@@ -50,6 +50,12 @@ describe('ProjectBar', () => {
     await box.setValue(false);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(save).toHaveBeenLastCalledWith({ withStills: false, withLooks: false });
+    // The choice survives a switch to another tab, which mounts the bar anew.
+    wrapper.unmount();
+    const again = mount(ProjectBar);
+    expect((again.get('[data-testid="project-stills"]').element as HTMLInputElement).checked).toBe(
+      false,
+    );
   });
 
   it('offers to save the look LUTs along as soon as one is imported', async () => {
@@ -69,6 +75,11 @@ describe('ProjectBar', () => {
     await box.setValue(false);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(save).toHaveBeenLastCalledWith({ withStills: true, withLooks: false });
+    wrapper.unmount();
+    const again = mount(ProjectBar);
+    expect((again.get('[data-testid="project-looks"]').element as HTMLInputElement).checked).toBe(
+      false,
+    );
   });
 
   it('saves the project', async () => {

@@ -8,6 +8,7 @@ import type { LookMessage } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 
 import { LINK_BUTTON } from './control-styles';
+import { focusById } from './focus';
 import IconButton from './IconButton.vue';
 import { TRASH_PATH } from './icons';
 import LookPicker from './LookPicker.vue';
@@ -40,6 +41,20 @@ async function onFiles(event: Event): Promise<void> {
   // The same files should be selectable again.
   input.value = '';
   await looks.importFiles(chosen.map((entry) => ({ name: entry.name, text: () => entry.text() })));
+}
+
+// Deleting a look or undoing it removes the button that did it (the trash goes with the chosen look,
+// the message with its link is replaced): the focus goes to the picker, which stays.
+const PICKER_ID = 'look-select';
+
+function remove(name: string): void {
+  focusById(PICKER_ID);
+  void looks.remove(name);
+}
+
+function undo(): void {
+  focusById(PICKER_ID);
+  void looks.undo();
 }
 
 function onStrength(event: Event): void {
@@ -82,7 +97,7 @@ function text(message: LookMessage): string {
     data-testid="look-bar"
   >
     <div class="flex min-w-0 items-center gap-1.5">
-      <label for="look-select" class="font-semibold">{{ t('look.label') }}</label>
+      <label :for="PICKER_ID" class="font-semibold">{{ t('look.label') }}</label>
       <LookPicker
         v-model="chosen"
         :names="names"
@@ -101,13 +116,14 @@ function text(message: LookMessage): string {
         data-testid="look-file"
         @change="onFiles"
       />
+      <!-- As high as the picker and with its edge, so the bar keeps its height with and without it. -->
       <IconButton
         v-if="current !== null"
         size="sm"
-        class="border border-zinc-500 bg-white dark:bg-zinc-100"
+        class="border border-zinc-800 bg-white dark:bg-zinc-100"
         :label="t('look.remove', { name: current.name })"
         data-testid="look-remove"
-        @click="looks.remove(current.name)"
+        @click="remove(current.name)"
       >
         <path :d="TRASH_PATH" />
       </IconButton>
@@ -161,14 +177,14 @@ function text(message: LookMessage): string {
           type="button"
           class="mt-1.5 rounded border border-current px-2 py-0.5 hover:bg-amber-200 dark:hover:bg-amber-900"
           data-testid="look-remove-again"
-          @click="looks.remove(message.name)"
+          @click="remove(message.name)"
         >
           {{ t('look.messages.removeAgain') }}
         </button>
       </div>
       <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
         {{ text(message) }}
-        <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="looks.undo()">
+        <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="undo">
           {{ t('look.messages.undo') }}
         </button>
       </p>

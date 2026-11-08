@@ -8,7 +8,8 @@
     "correctedLayer": "Colors after correction",
     "defaultValue": "{id} (default value)",
     "divider": "Divider: camera colors on the left, corrected on the right",
-    "noCorrection": "No correction yet"
+    "noCorrection": "No correction yet",
+    "noReport": "No report (reference missing)"
   },
   "wrong": "These are not color cards. Hold both color cards in front of the camera.",
   "wrongLabel": "Not color cards"

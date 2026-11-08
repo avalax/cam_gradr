@@ -71,6 +71,10 @@ describe('colorStatus', () => {
     expect(colorStatus(null)).toEqual({ level: 'off', fill: 0, text: 'Noch nicht berechnet' });
   });
 
+  it('says that a correction without a report has no report', () => {
+    expect(colorStatus(null, true)).toEqual({ level: 'off', fill: 0, text: 'Ohne Bericht' });
+  });
+
   it('is green up to a mean deviation of 2', () => {
     expect(colorStatus({ meanBefore: 5.1, meanAfter: 0.4 })).toEqual({
       level: 'ok',

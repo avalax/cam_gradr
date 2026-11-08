@@ -19,8 +19,9 @@ import type { ChartStore } from '../chart/chart-store';
 import { detectOutlines, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
+import { CAMERA_SWITCH_ID, focusById } from './focus';
 import { TRASH_PATH } from './icons';
-import { imageMaxWidth as maxWidthFor } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth as maxWidthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import { buildShapes, clientToImage } from './overlay-geometry';
@@ -132,13 +133,15 @@ function drawStill(frame: Frame | null): void {
 }
 
 // Discards corner points and still image and turns the camera on if it is off (the automation
-// turns it off after the capture): the search starts over in the live image.
+// turns it off after the capture): the search starts over in the live image. The trash leaves with
+// the still image, so the focus goes to the camera switch, which can end the search.
 function redetect(): void {
   props.store.reset();
   camera.clearStill();
   if (!isLive.value) {
     void camera.start();
   }
+  focusById(CAMERA_SWITCH_ID);
 }
 
 // Not shown anywhere, so plain variables: the consecutive hits and the cards of the last search.
@@ -286,13 +289,8 @@ watch(actual, (next, previous) => {
 
 <template>
   <div class="flex items-stretch gap-3">
-    <!-- In the dark appearance the image lies on its own surface with an edge. -->
-    <div
-      data-testid="image-block"
-      class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
-      :style="{ maxWidth: imageMaxWidth }"
-    >
-      <StageLabel :state="stage" class="rounded-t" data-testid="stage-label" />
+    <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ maxWidth: imageMaxWidth }">
+      <StageLabel :state="stage" :class="IMAGE_BAND" data-testid="stage-label" />
       <div class="relative" data-testid="stage-image">
         <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
         <div

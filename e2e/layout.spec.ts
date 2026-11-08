@@ -15,20 +15,16 @@ test.describe('Layout', () => {
     await app.open();
     const boxes: unknown[] = [];
     const heights: number[] = [];
-    const panelHeight = async (): Promise<number> => {
-      const box = await app.page.getByRole('tabpanel').boundingBox();
-      return Math.round(box?.height ?? 0);
-    };
     for (const [tab, column] of Object.entries(SIDE_COLUMNS)) {
       await app.openTab(tab as keyof typeof SIDE_COLUMNS);
-      heights.push(await panelHeight());
+      heights.push(await app.panelHeight());
       boxes.push(
         await app.page.getByTestId('image-block').first().boundingBox(),
         await app.page.getByTestId(column).boundingBox(),
       );
     }
     await app.openTab('Export');
-    heights.push(await panelHeight());
+    heights.push(await app.panelHeight());
     expect(boxes[0]).not.toBeNull();
     for (const [index, box] of boxes.entries()) {
       expect(box).toEqual(boxes[index % 2]);
@@ -37,6 +33,14 @@ test.describe('Layout', () => {
     for (const height of heights) {
       expect(Math.abs(height - (heights[0] ?? 0))).toBeLessThanOrEqual(1);
     }
+
+    // The export follows the window as the image does, also when the window changes while the export
+    // is open: on a wide, low window the height limits the image.
+    await app.page.setViewportSize({ width: 1920, height: 720 });
+    const exportHeight = await app.panelHeight();
+    expect(exportHeight).not.toBe(heights[0]);
+    await app.openTab('Graukarten');
+    expect(Math.abs((await app.panelHeight()) - exportHeight)).toBeLessThanOrEqual(1);
   });
 
   test('The image keeps its size while the camera starts and captures, and fits on one screen', async ({

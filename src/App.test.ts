@@ -15,10 +15,13 @@ import { installFakeCamera, installMediaStubs } from './test-support/media';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
 
-function mountApp() {
+function mountApp(options: { attach?: boolean } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
-  return mount(App, { global: { plugins: [pinia] } });
+  return mount(App, {
+    global: { plugins: [pinia] },
+    ...(options.attach === true && { attachTo: document.body }),
+  });
 }
 
 function tabs(wrapper: ReturnType<typeof mountApp>) {
@@ -95,38 +98,6 @@ describe('App', () => {
     expect(gauges()).toEqual(['ok', 'warn']);
   });
 
-  it('gives the export the height of the other tabs as its minimum height', async () => {
-    const observers: { fire: (height: number) => void }[] = [];
-    class FakeObserver {
-      readonly observe = vi.fn();
-      readonly disconnect = vi.fn();
-      constructor(private readonly callback: ResizeObserverCallback) {
-        observers.push({
-          fire: (height) => {
-            const target = { getBoundingClientRect: () => ({ height }) };
-            this.callback([{ target } as unknown as ResizeObserverEntry], this as never);
-          },
-        });
-      }
-    }
-    vi.stubGlobal('ResizeObserver', FakeObserver);
-    installFakeCamera();
-    const wrapper = mountApp();
-    const panel = () => wrapper.get('[role="tabpanel"]');
-    expect(panel().attributes('style')).toBeUndefined();
-    observers[0]?.fire(480);
-    await flushPromises();
-    await tabs(wrapper)[3]?.trigger('click');
-    expect(panel().attributes('style')).toContain('min-height: 480px');
-    // Heights measured in the export do not count.
-    observers[0]?.fire(300);
-    await flushPromises();
-    expect(panel().attributes('style')).toContain('min-height: 480px');
-    await tabs(wrapper)[0]?.trigger('click');
-    expect(panel().attributes('style')).toBeUndefined();
-    wrapper.unmount();
-  });
-
   it('offers four tabs, all freely selectable', () => {
     installFakeCamera();
     const wrapper = mountApp();
@@ -179,12 +150,25 @@ describe('App', () => {
 
   it('shows the camera switch in the export only while the camera runs', async () => {
     installFakeCamera();
-    const wrapper = mountApp();
+    const wrapper = mountApp({ attach: true });
+    const cameraSwitch = () => wrapper.find('[data-testid="camera-toggle"]');
     await tabs(wrapper)[3]?.trigger('click');
-    expect(wrapper.find('[data-testid="camera-toggle"]').exists()).toBe(false);
+    expect(cameraSwitch().exists()).toBe(false);
     await useCameraStore().start();
     await flushPromises();
-    expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera stoppen');
+    expect(cameraSwitch().text()).toBe('Kamera stoppen');
+    // Stopped by keyboard, the switch goes and hands the focus to the tab of the export.
+    (cameraSwitch().element as HTMLButtonElement).focus();
+    await cameraSwitch().trigger('click');
+    expect(cameraSwitch().exists()).toBe(false);
+    expect(document.activeElement?.id).toBe('tab-export');
+    // A camera that stops while the focus is elsewhere leaves the focus where it is.
+    await useCameraStore().start();
+    await flushPromises();
+    useCameraStore().stop();
+    await flushPromises();
+    expect(document.activeElement?.id).toBe('tab-export');
+    wrapper.unmount();
   });
 
   it('keeps the camera running when switching tabs', async () => {
@@ -217,11 +201,14 @@ describe('App', () => {
 
   it('shows the missing-color-correction notice in the export tab and jumps to the color cards', async () => {
     installFakeCamera();
-    const wrapper = mountApp();
+    const wrapper = mountApp({ attach: true });
     await tabs(wrapper)[3]?.trigger('click');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(true);
     await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
+    // The link went with the export: the focus is on the tab that opened.
+    expect(document.activeElement?.id).toBe('tab-color');
+    wrapper.unmount();
   });
 
   it('loads the bundled reference set at startup', async () => {

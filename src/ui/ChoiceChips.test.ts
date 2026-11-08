@@ -107,4 +107,14 @@ describe('ChoiceChips', () => {
     expect(wrapper.get('[role="radiogroup"]').classes()).toContain('w-full');
     expect(wrapper.get('[role="radio"]').classes()).toContain('flex-1');
   });
+
+  it('draws the focus ring inside the segmented controls, which clip their corners', () => {
+    for (const compact of [false, true]) {
+      const wrapper = mount(ChoiceChips, {
+        props: { options: SIZES, selected: 'small', variant: 'segmented', compact },
+      });
+      expect(wrapper.get('[role="radiogroup"]').classes()).toContain('overflow-hidden');
+      expect(wrapper.get('[role="radio"]').classes()).toContain('focus-ring-inset');
+    }
+  });
 });

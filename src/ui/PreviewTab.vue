@@ -29,7 +29,8 @@ import {
 } from './gray-wedge';
 import ChoiceChips from './ChoiceChips.vue';
 import ColorTiles from './ColorTiles.vue';
-import { imageMaxWidth as maxWidthFor } from './image-size';
+import { CAMERA_SWITCH_ID, focusById } from './focus';
+import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth as maxWidthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import GrayWedge from './GrayWedge.vue';
@@ -151,8 +152,14 @@ const shownStill = computed(
 );
 const hasSource = computed(() => isLive.value || shownStill.value !== null);
 // What the preview shows, as in the band of the card tabs: a badge on the image while there is one,
-// otherwise the band above the placeholder.
+// otherwise the band above the placeholder. Without a correction the camera shows nothing here, so
+// the band names what is missing instead of a live image it does not show.
 const stage = computed(() => stageState(shownStill.value !== null, isLive.value));
+const band = computed(() =>
+  model.value === null
+    ? { state: 'off' as const, label: t('preview.noModelTitle') }
+    : { state: stage.value, label: null },
+);
 const showImage = computed(() => model.value !== null && hasSource.value);
 const aspect = ref(16 / 9);
 const maxWidth = computed(() => maxWidthFor(aspect.value));
@@ -194,11 +201,13 @@ function currentSource(): { image: RenderSource; width: number; height: number }
 }
 
 // After the capture the app turns the camera off (as after the automatic capture). A new
-// camera start discards the still image and shows the live image again.
+// camera start discards the still image and shows the live image again. The button leaves with the
+// live image, so the focus goes to the camera switch.
 async function capture(): Promise<void> {
   await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
   if (still.value !== null) {
     camera.stop();
+    focusById(CAMERA_SWITCH_ID);
   }
 }
 
@@ -309,12 +318,7 @@ const splitModel = computed({
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
       <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3">
-        <!-- In the dark appearance the image lies on its own surface with an edge. -->
-        <div
-          data-testid="image-block"
-          class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
-          :style="{ maxWidth: maxWidth }"
-        >
+        <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ maxWidth: maxWidth }">
           <div class="relative">
             <!-- The video only serves as an image source and stays invisible. -->
             <video
@@ -325,7 +329,8 @@ const splitModel = computed({
               @loadeddata="videoReady = true"
             ></video>
             <!-- The band above the image names the two sides, as above the color cards' wipe; without
-                 an image it says what the camera does, as on the card tabs. -->
+                 an image it says what the camera does, as on the card tabs, or that the correction is
+                 missing. -->
             <WipeLabels
               v-if="showImage"
               :split="splitModel"
@@ -336,11 +341,17 @@ const splitModel = computed({
               :switchable="chosenLook !== null"
               :left-tip="leftTip"
               :right-tip="rightTip"
-              class="rounded-t"
+              :class="IMAGE_BAND"
               data-testid="preview-labels"
               @switch="switchSide"
             />
-            <StageLabel v-else :state="stage" class="rounded-t" data-testid="stage-label" />
+            <StageLabel
+              v-else
+              :state="band.state"
+              :label="band.label"
+              :class="IMAGE_BAND"
+              data-testid="stage-label"
+            />
             <div class="relative">
               <!-- Placeholder the size of the image while there is nothing to show. -->
               <div
