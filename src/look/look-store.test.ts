@@ -64,10 +64,11 @@ describe('useLookStore', () => {
       file('Ok.cube'),
     ]);
     expect(store.looks.map((entry) => entry.name)).toEqual(['Ok']);
-    expect(store.messages[0]).toEqual({ kind: 'imported', names: ['Ok'] });
-    expect(store.messages[1]).toMatchObject({ kind: 'rejected', file: 'notes.txt' });
-    expect(store.messages[1]).toHaveProperty('reason', 'Nur .cube-Dateien sind möglich.');
-    expect(store.messages[2]).toMatchObject({ kind: 'rejected', file: 'broken.cube' });
+    // The errors come first: the room under the bar shows two lines.
+    expect(store.messages[0]).toMatchObject({ kind: 'rejected', file: 'notes.txt' });
+    expect(store.messages[0]).toHaveProperty('reason', 'Nur .cube-Dateien sind möglich.');
+    expect(store.messages[1]).toMatchObject({ kind: 'rejected', file: 'broken.cube' });
+    expect(store.messages[2]).toEqual({ kind: 'imported', names: ['Ok'] });
   });
 
   it('chooses nothing when no file was valid', async () => {
@@ -82,8 +83,8 @@ describe('useLookStore', () => {
     await store.importFiles([file('SLOG 3 S CINETONE_REC709.cube'), file('Warm.cube')]);
     expect(store.looks.map((look) => look.name)).toEqual(['SLOG 3 S CINETONE_REC709', 'Warm']);
     expect(store.messages).toEqual([
-      { kind: 'imported', names: ['Warm'] },
       { kind: 'logConversion', name: 'SLOG 3 S CINETONE_REC709' },
+      { kind: 'imported', names: ['Warm'] },
     ]);
     await store.importFiles([file('LogC to Rec709.cube')]);
     expect(store.messages).toEqual([{ kind: 'logConversion', name: 'LogC to Rec709' }]);
@@ -142,8 +143,8 @@ describe('useLookStore', () => {
     await store.importFiles([file('Warm.cube')]);
     expect(store.looks).toHaveLength(1);
     expect(store.messages).toEqual([
-      { kind: 'imported', names: ['Warm'] },
       { kind: 'saveFailed', name: 'Warm' },
+      { kind: 'imported', names: ['Warm'] },
     ]);
     await store.remove('Warm');
     expect(store.messages).toEqual([{ kind: 'removeFailed' }]);

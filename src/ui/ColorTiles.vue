@@ -23,7 +23,7 @@ const stripes = computed(() =>
   <div
     class="flex size-full flex-col gap-1.5"
     role="img"
-    :aria-label="t('wedge.tilesAria')"
+    :aria-label="t(hasTarget ? 'wedge.tilesAria' : 'wedge.tilesAriaNoTarget')"
     data-testid="color-tiles"
   >
     <div

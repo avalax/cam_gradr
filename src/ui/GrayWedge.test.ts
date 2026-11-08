@@ -46,6 +46,9 @@ describe('GrayWedge', () => {
     });
     expect(wrapper.find('[data-column="target"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('Soll');
+    expect(wrapper.get('[data-testid="gray-wedge"]').attributes('aria-label')).toBe(
+      'Graustufen der Farbkarten: Kamera und nach der Korrektur',
+    );
     expect(wrapper.findAll('[data-column]')).toHaveLength(2);
   });
 });

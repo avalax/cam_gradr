@@ -12,7 +12,7 @@
     "importedOne": "„{name}“ importiert und lokal im Browser gespeichert.",
     "importedMany": "{count} Look-LUTs importiert und lokal im Browser gespeichert.",
     "rejected": "„{file}“ wurde nicht importiert: {reason}",
-    "logConversion": "„{name}“ sieht nach einer Log-Umwandlung aus (S\u2011Log, LogC, V\u2011Log\u00a0…): Das Webcam-Bild würde zu dunkel und zu hart. Nimm eine Look-LUT für Rec.709-Eingang.",
+    "logConversion": "„{name}“ ist wohl für Log\u2011Material (S\u2011Log, LogC\u00a0…) und macht das Webcam-Bild zu dunkel.",
     "removeAgain": "Wieder löschen",
     "removed": "Look-LUT „{name}“ lokal gelöscht.",
     "undo": "Rückgängig",

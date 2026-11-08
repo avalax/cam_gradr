@@ -105,24 +105,25 @@ export const useLookStore = defineStore('look', () => {
         problems.push({ kind: 'rejected', file: file.name, reason: (error as Error).message });
       }
     }
-    // A look that looks like a log conversion gets the warning instead of the line that names the
-    // imported looks, so that the messages keep to the room of two lines under the bar.
-    const report: LookMessage[] = [];
+    // A look that looks like a log conversion gets the warning instead of a place in the line that
+    // names the imported looks. Errors and warnings come first, that line last: the room under the
+    // bar shows two lines, and what needs attention has to be in them.
+    const warnings: LookMessage[] = [];
+    const plain: string[] = [];
+    for (const look of imported) {
+      if (isLogConversion(look.name)) {
+        warnings.push({ kind: 'logConversion', name: look.name });
+      } else {
+        plain.push(look.name);
+      }
+    }
     const last = imported.at(-1);
     if (last !== undefined) {
       usePreviewStore().setLook(last.name);
-      const plain = imported.filter((entry) => !isLogConversion(entry.name));
-      if (plain.length > 0) {
-        report.push({ kind: 'imported', names: plain.map((look) => look.name) });
-      }
-      report.push(
-        ...imported
-          .filter((entry) => isLogConversion(entry.name))
-          .map((look) => ({ kind: 'logConversion', name: look.name }) as const),
-      );
     }
+    const report: LookMessage[] = plain.length > 0 ? [{ kind: 'imported', names: plain }] : [];
     removed.value = null;
-    messages.value = [...report, ...problems];
+    messages.value = [...problems, ...warnings, ...report];
   }
 
   async function remove(name: string): Promise<void> {

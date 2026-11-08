@@ -22,7 +22,7 @@ const columns = computed(() => [
     class="grid size-full gap-[3px]"
     :style="{ gridTemplateColumns: `repeat(${String(columns.length)}, minmax(0, 1fr))` }"
     role="img"
-    :aria-label="t('wedge.grayAria')"
+    :aria-label="t(hasTarget ? 'wedge.grayAria' : 'wedge.grayAriaNoTarget')"
     data-testid="gray-wedge"
   >
     <div v-for="column in columns" :key="column.key" class="flex min-h-0 flex-col gap-0.5">

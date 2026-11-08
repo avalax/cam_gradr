@@ -122,7 +122,11 @@ describe('LookBar', () => {
     // The log conversion gets its warning instead of a place in the line of imported looks.
     expect(messages.text()).toContain('2 Look-LUTs importiert');
     expect(messages.get('[role="alert"]').text()).toContain('„notes.txt“ wurde nicht importiert');
-    expect(messages.text()).toContain('sieht nach einer Log-Umwandlung aus');
+    // Errors and warnings first, with the action at the start of the warning.
+    const lines = messages.findAll('p').map((line) => line.text());
+    expect(lines[0]).toContain('„notes.txt“ wurde nicht importiert');
+    expect(lines[1]).toMatch(/^Wieder löschen · „SLOG 3 S CINETONE_REC709“ ist wohl für Log/);
+    expect(lines[2]).toContain('2 Look-LUTs importiert');
     expect((input.element as HTMLInputElement).value).toBe('');
 
     await press(wrapper, 'look-remove-again');

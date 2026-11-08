@@ -156,7 +156,8 @@ function text(message: LookMessage): string {
   </div>
 
   <!-- Exactly two lines, as long as the hint: more messages at once (an import with a warning and a
-       rejected file) scroll inside, so that they never make the preview taller than the window. -->
+       rejected file) scroll inside, so that they never make the preview taller than the window. The
+       store puts errors and warnings first, so that they and their actions are in these lines. -->
   <div
     class="mt-1.5 flex h-[2lh] flex-col overflow-y-auto text-xs leading-snug"
     data-testid="look-messages"
@@ -168,13 +169,13 @@ function text(message: LookMessage): string {
       <p v-if="message.kind === 'rejected'" class="text-red-700 dark:text-red-400" role="alert">
         {{ text(message) }}
       </p>
-      <!-- A warning with its action inline, like the undo link, so that it fits the two lines. -->
+      <!-- A warning with its action at the start, so that the action shows in the first line even
+           where the text needs more than the room has. -->
       <p
         v-else-if="message.kind === 'logConversion'"
         class="text-amber-800 dark:text-amber-300"
         role="status"
       >
-        {{ text(message) }}
         <button
           type="button"
           :class="LINK_BUTTON"
@@ -183,6 +184,7 @@ function text(message: LookMessage): string {
         >
           {{ t('look.messages.removeAgain') }}
         </button>
+        · {{ text(message) }}
       </p>
       <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
         {{ text(message) }}

@@ -49,10 +49,11 @@ const STYLES = {
     off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
   },
   // The chosen card has a border of 2 px; the others have 1 px and a margin of 1 px, so that the cards
-  // keep their size.
+  // keep their size. The group is a size container, so that all cards put their detail beside or
+  // below the label together; the content starts at the top of every card, also where a hint wraps.
   cards: {
-    group: 'grid grid-cols-3 gap-2',
-    option: 'rounded-lg px-3 py-1.5 text-left leading-snug disabled:opacity-50',
+    group: '@container grid grid-cols-3 gap-2',
+    option: 'flex flex-col rounded-lg px-3 py-1.5 text-left leading-snug disabled:opacity-50',
     on: 'border-2 border-zinc-800 bg-white dark:bg-zinc-100',
     off: 'm-px border border-zinc-300 bg-zinc-50 enabled:hover:bg-zinc-200',
   },
@@ -108,9 +109,10 @@ function onKey(event: KeyboardEvent, index: number): void {
       @click="emit('choose', option.value)"
       @keydown="onKey($event, index)"
     >
-      <!-- On a narrow card the detail drops below the label as one piece. -->
+      <!-- The detail stands beside the label where the group has room for it on every card (28 rem),
+           otherwise below it on every card, as one piece. -->
       <template v-if="variant === 'cards'">
-        <span class="flex flex-wrap items-baseline justify-between gap-x-2">
+        <span class="flex flex-col @md:flex-row @md:items-baseline @md:justify-between @md:gap-2">
           <span class="text-[15px] font-semibold">{{ option.label }}</span>
           <span class="whitespace-nowrap text-xs text-zinc-600">{{ option.detail }}</span>
         </span>
