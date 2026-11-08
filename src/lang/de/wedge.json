@@ -1,7 +1,7 @@
 {
   "target": "Soll",
   "camera": "Kamera",
-  "corrected": "korr.",
+  "corrected": "Korrigiert",
   "grayAria": "Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur",
   "tilesAria": "Farbfelder: Soll, Kamera und nach der Korrektur",
   "deviationSummary": "Ø Abweichung {before} → {after}",

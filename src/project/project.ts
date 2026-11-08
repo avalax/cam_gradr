@@ -26,7 +26,8 @@ interface ChartState {
 }
 
 // The look LUTs of a project with everything the preview and the export set for them ("Include look
-// LUTs"). A file without them loads as if there had never been a look LUT.
+// LUTs"). A file without them loads as if there had never been a look LUT. The export takes what the
+// preview shows, so it needs nothing of its own here.
 export interface LookSettings {
   // The look LUT the preview shows and the export lays over the correction, or none.
   chosen: string | null;
@@ -35,8 +36,6 @@ export interface LookSettings {
   // What the two sides of the preview start from.
   left: Side;
   right: Side;
-  // Whether the export lays the chosen look LUT over the correction.
-  inExport: boolean;
   // All imported look LUTs with their data.
   luts: EncodedLook[];
 }
@@ -217,7 +216,6 @@ function parseLookData(value: unknown): EncodedLook {
 // The fields of the look section and their kinds; the values themselves are checked after.
 type LookFields = Record<string, unknown> & {
   chosen: string | null;
-  inExport: boolean;
   luts: unknown[];
 };
 
@@ -227,7 +225,6 @@ function hasLookFields(value: unknown): value is LookFields {
     (value.chosen === null || typeof value.chosen === 'string') &&
     SIDES.has(value.left) &&
     SIDES.has(value.right) &&
-    typeof value.inExport === 'boolean' &&
     Array.isArray(value.luts)
   );
 }
@@ -252,7 +249,6 @@ function parseLooks(value: unknown): LookSettings | undefined {
     strength: parsePercent(value.strength, t('project.errors.strengthName')),
     left: value.left as Side,
     right: value.right as Side,
-    inExport: value.inExport,
     luts,
   };
 }

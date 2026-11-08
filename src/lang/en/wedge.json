@@ -1,7 +1,7 @@
 {
   "target": "Target",
   "camera": "Camera",
-  "corrected": "corr.",
+  "corrected": "Corrected",
   "grayAria": "Gray levels of the color cards: target, camera and after correction",
   "tilesAria": "Color patches: target, camera and after correction",
   "deviationSummary": "Ø deviation {before} → {after}",

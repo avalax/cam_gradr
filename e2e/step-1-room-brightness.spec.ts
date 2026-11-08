@@ -30,14 +30,19 @@ test.describe('Gray cards', () => {
     await expect(app.page.locator('canvas').first()).toBeVisible();
     await expect(app.page.getByTestId('measure-marker')).toBeVisible();
 
-    // The details of the measuring field appear only on hover or keyboard focus.
+    // The details of the measuring field appear only on hover or keyboard focus, and Escape closes
+    // them. The field comes right after the trash of the image in the order of the Tab key.
     await expect(app.details).toBeHidden();
     await app.expectVerdict('im Normalbereich');
     await expect(app.details).toContainText('Lichter');
     await app.page.mouse.move(0, 0);
     await expect(app.details).toBeHidden();
-    await app.scale.focus();
+    await app.page.getByRole('toolbar').getByRole('button').focus();
+    await app.page.keyboard.press('Tab');
+    await expect(app.scale).toBeFocused();
     await expect(app.details).toBeVisible();
+    await app.page.keyboard.press('Escape');
+    await expect(app.details).toBeHidden();
 
     // A corner point follows the pointer; the image is drawn smaller than the camera delivers it.
     const corner = app.page.locator('svg circle').first();

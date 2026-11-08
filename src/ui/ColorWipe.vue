@@ -9,6 +9,7 @@ import type { ColorModel, FitResult } from '../solve/fit';
 
 import { buildStrips } from './color-strips';
 import { byRowThenColumn, deviationSummary } from './gray-wedge';
+import { usePopupDismiss } from './popup-dismiss';
 import WipeDivider from './WipeDivider.vue';
 import WipeLabels from './WipeLabels.vue';
 
@@ -26,6 +27,7 @@ const props = defineProps<{
 
 // Position of the divider: camera colors on the left, corrected ones on the right.
 const split = ref(50);
+const { dismissed, onKey, reset } = usePopupDismiss();
 
 // The cards are stacked, each with four columns.
 const cards = computed(() =>
@@ -106,11 +108,20 @@ const summary = computed(() =>
     </div>
 
     <!-- The summary is also the trigger: on hover or keyboard focus the color correction result
-              appears as a popup (like the details on the gray cards' measuring field). -->
+         appears as a popup beside the column, like the details on the gray cards' measuring
+         field. It stays within the height of the column, so it never covers the tabs; it starts at
+         the bottom, where the trigger is, so that the pointer can move into it to scroll. The Tab
+         key also moves into it to scroll; a click does not focus the trigger, so it does not keep
+         the result open once the pointer leaves. Escape closes it. -->
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the result closes it with Escape -->
     <div
-      class="group relative rounded-b-[7px] outline-offset-2 focus-visible:outline"
+      class="group rounded-b-[7px]"
       :tabindex="report === null ? undefined : 0"
       data-testid="color-wipe-result"
+      @keydown="onKey"
+      @mousedown.prevent
+      @mouseleave="reset"
+      @focusout="reset"
     >
       <p
         class="rounded-b-[7px] border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
@@ -119,13 +130,13 @@ const summary = computed(() =>
         {{ summary }}
       </p>
       <div
-        v-if="report !== null && $slots.details"
-        class="absolute bottom-0 right-full z-20 hidden pr-3 group-focus-within:block group-hover:block"
+        v-if="report !== null && $slots.details && !dismissed"
+        class="absolute bottom-0 right-full z-20 hidden max-h-full flex-col pr-3 group-hover:flex group-focus-within:flex"
         role="tooltip"
         data-testid="color-wipe-popup"
       >
         <div
-          class="max-h-[min(30rem,calc(100vh-17rem))] w-[min(36rem,calc(100vw-14rem))] overflow-auto rounded bg-slate-900 p-3 text-sm text-white shadow-lg"
+          class="min-h-0 w-[min(36rem,calc(100vw-14rem))] overflow-auto rounded bg-zinc-950 p-3 text-sm text-white shadow-lg"
         >
           <slot name="details" />
         </div>

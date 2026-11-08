@@ -7,9 +7,10 @@ import type { ColorModel } from '../solve/fit';
 
 import { cssColor } from './color-css';
 
-// Blue fractions of the four slices through the color cube (one red-green field each at fixed
-// blue).
-const BLUE_LEVELS = [0.15, 0.4, 0.65, 0.9] as const;
+// Blue fractions of the eight slices through the color cube (one red-green field each at fixed
+// blue), evenly spread. Where the export has room for one row only, it shows every second one.
+const SLICES = 8;
+const BLUE_LEVELS = Array.from({ length: SLICES }, (_, index) => (index + 0.5) / SLICES);
 
 // The look LUT over the correction, with its strength (0..1).
 export interface SliceLook {
@@ -17,7 +18,7 @@ export interface SliceLook {
   amount: number;
 }
 
-// The LUT as four small color fields: each field shows which colors the correction (and the look
+// The LUT as eight small color fields: each field shows which colors the correction (and the look
 // over it) maps the red-green plane to at a fixed blue fraction (green at the top, red on the
 // right).
 export function lutSlices(

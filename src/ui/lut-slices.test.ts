@@ -19,13 +19,13 @@ describe('lutSlices', () => {
     const [none] = lutSlices(identity, 2, { lut: invert, amount: 0 });
     expect(none).toEqual(plain);
     expect(full).not.toEqual(plain);
-    // Top left is green at a blue fraction of 0.15; inverted it turns magenta.
-    expect(full?.[0]).toBe(cssColor([1, 0, 0.85]));
+    // Top left is green at a blue fraction of 1/16; inverted it turns magenta.
+    expect(full?.[0]).toBe(cssColor([1, 0, 1 - 1 / 16]));
   });
 
-  it('returns four slices with cells × cells colors each', () => {
+  it('returns eight slices with cells × cells colors each', () => {
     const slices = lutSlices(identity, 4);
-    expect(slices).toHaveLength(4);
+    expect(slices).toHaveLength(8);
     for (const slice of slices) {
       expect(slice).toHaveLength(16);
     }
@@ -33,7 +33,7 @@ describe('lutSlices', () => {
 
   it('shows black with the blue share at bottom left and yellow at top right for the identity', () => {
     const [first] = lutSlices(identity, 4);
-    // Bottom left: red 0, green 0, blue 0.15 (share 38 of 255).
+    // Bottom left: red 0, green 0, blue 1/16 (share 16 of 255).
     const bottomLeft = first?.[12] ?? '';
     expect(bottomLeft).toMatch(/^rgb\(0, 0, \d+\)$/);
     // Top right: red 1, green 1.

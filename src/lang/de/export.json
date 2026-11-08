@@ -4,32 +4,27 @@
     "description": "Die Farbkorrektur als {file}-Datei. Größere LUTs sind genauer, manche Geräte nehmen nur 17³ oder 33³ an (siehe Handbuch).",
     "sizeLabel": "Größe der LUT (Stützstellen je Achse)",
     "sizeOption": "{size}³",
-    "sizeDefault": "{size}³ Standard",
-    "noModelTitle": "Noch keine Farbkorrektur.",
+    "noModelTitle": "Noch keine Korrektur",
     "noModelText": "Berechne sie im Tab „Farbkarten“ oder lade ein Projekt.",
     "gotoColor": "Zu den Farbkarten",
-    "download": "{file} herunterladen",
+    "download": "Herunterladen",
     "sizeKb": "ca. {value} KB",
     "sizeMb": "ca. {value} MB",
-    "content": "Inhalt der LUT",
-    "contentPlain": "Nur Korrektur",
-    "contentLook": "Korrektur + Look-LUT",
-    "lookLine": "Look-LUT „{name}“ mit {strength} %, eingestellt in der {preview}.",
-    "previewLink": "Vorschau",
-    "plainLine": "Die LUT enthält nur die Farbkorrektur.",
-    "noLook": "Eine Look-LUT wählst du in der {preview}."
+    "hintSmall": "für ältere Geräte",
+    "hintDefault": "Standard",
+    "hintLarge": "am genauesten",
+    "points": "{size} × {size} × {size} Stützstellen"
   },
   "project": {
-    "heading": "Projekt sichern",
+    "heading": "Projekt speichern",
     "description": "Zum Weiterarbeiten ohne neue Aufnahme, als {file}. Das steckt darin:",
     "corners": "{corners} Eckpunkte · {fields} Felder",
     "gray": "Graukarten",
     "color": "Farbkarten",
     "correction": "Korrektur",
-    "correctionValue": "Kurven + Matrix",
+    "correctionValue": "Kurven + Matrix + Farbton-Tabelle",
     "reference": "Referenz",
     "look": "Look-LUT",
-    "lookValue": "{name} · {strength} %",
-    "lookNote": "Mit „Look-LUTs mitspeichern“ stecken alle importierten Look-LUTs samt Auswahl, Stärke und Export-Einstellung in der Datei. Beim Laden ersetzen sie die Liste im Browser; ein Projekt ohne Look-LUTs leert sie."
+    "lookValue": "{name} · {strength} %"
   }
 }

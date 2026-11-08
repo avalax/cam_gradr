@@ -41,7 +41,7 @@ const tiles = computed(() =>
 <template>
   <section class="space-y-3" data-testid="report">
     <h3 class="text-base font-semibold">{{ t('report.title') }}</h3>
-    <dl class="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
+    <dl class="grid grid-cols-[minmax(0,2fr)_1fr_1fr] gap-x-4 gap-y-1 text-sm">
       <dt class="font-medium"></dt>
       <dt class="font-medium">{{ t('report.before') }}</dt>
       <dt class="font-medium">{{ t('report.after') }}</dt>
@@ -72,7 +72,7 @@ const tiles = computed(() =>
 
     <section v-if="grayRows.length > 0" class="space-y-1 text-sm" data-testid="gray-check">
       <h4 class="font-medium">{{ t('report.grayTitle') }}</h4>
-      <p class="text-xs text-slate-300">
+      <p class="text-xs text-white/70">
         {{ t('report.grayIntro') }}
       </p>
       <ul>
@@ -91,7 +91,7 @@ const tiles = computed(() =>
       </p>
     </section>
 
-    <p class="text-xs text-slate-300">
+    <p class="text-xs text-white/70">
       {{ t('report.tileHelp') }}
     </p>
 
@@ -99,7 +99,7 @@ const tiles = computed(() =>
       <li
         v-for="tile in tiles"
         :key="tile.id"
-        class="rounded border border-slate-600 p-1 text-center text-[10px]"
+        class="rounded border border-white/20 p-1 text-center text-[10px]"
         :data-testid="`tile-${tile.id}`"
         :title="
           t('report.tileTitle', {

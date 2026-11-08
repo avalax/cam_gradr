@@ -27,10 +27,10 @@ Everything runs in your browser. Images and measurements never leave your comput
    shows brightness (vertical) and contrast (horizontal). Change the light or the camera and start the
    camera again until the dot sits in the framed window in the middle; hover the field for details.
 3. **Color cards: calculate the correction.** Without changing the light or the camera, hold both color
-   cards in the same place. The correction is calculated by itself. A wipe slider compares the camera
+   cards in the same place. The correction is calculated by itself. A divider compares the camera
    colors with the corrected ones, and the label below gives the mean deviation before and after (hover
    it for each patch).
-4. **Preview: check the result.** The camera image with the original left and the corrected image right
+4. **Preview: check the result.** The camera image on the left and the corrected image on the right
    of a divider that you drag or move with the arrow keys; with the camera off it shows the still image
    of the color cards. The side column shows each colored patch as target, camera and corrected and
    names the largest deviations; switched to the grays it shows the gray ramp and how shadows, midtones
@@ -44,8 +44,8 @@ Everything runs in your browser. Images and measurements never leave your comput
    right one between the look over the correction and the look alone on the camera image.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual). With a look LUT chosen in
-   the preview, the file holds correction and look at the set strength; "Correction only" leaves the look
-   out. The file name and the first lines of the file name the look and its strength.
+   the preview, the file holds correction and look at the set strength; with "No look LUT" it holds the
+   correction alone. The file name and the first lines of the file name the look and its strength.
 
 You can switch between the tabs at any time. Below each name is a short result with four bars: green
 means good (light in the normal range, or a mean deviation of at most 2 after the correction), yellow

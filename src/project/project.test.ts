@@ -49,7 +49,6 @@ function withLooks(): Project {
       strength: 70,
       left: 'corrected',
       right: 'camera',
-      inExport: false,
       luts: [WARM, { ...WARM, name: 'Cold' }],
     },
   };
@@ -91,7 +90,7 @@ describe('parseProject', () => {
     expect(() => parseProject('{kaputt')).toThrow('kein gültiges JSON');
     expect(() => parseProject('[]')).toThrow('Unbekanntes Format');
     rejects((raw) => (raw.format = 'anderes/1'), 'Unbekanntes Format');
-    rejects((raw) => delete raw.savedAt, 'Zeitpunkt der Sicherung fehlt');
+    rejects((raw) => delete raw.savedAt, 'Zeitpunkt des Speicherns fehlt');
   });
 
   it('rejects faulty chart sections', () => {
@@ -174,10 +173,6 @@ describe('parseProject', () => {
     );
     rejects(
       looksOf((looks) => delete looks.right),
-      'erwartet werden chosen, strength',
-    );
-    rejects(
-      looksOf((looks) => (looks.inExport = 'yes')),
       'erwartet werden chosen, strength',
     );
     rejects(

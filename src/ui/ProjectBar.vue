@@ -6,6 +6,8 @@ import { useLookStore } from '../look/look-store';
 import { fileDialogs } from '../project/project-file';
 import { useProjectStore } from '../project/project-store';
 
+import { TEXT_BUTTON } from './control-styles';
+
 const { t } = useI18n();
 
 // The message about saving and loading floats at the bottom of the page (ProjectStatus).
@@ -56,17 +58,10 @@ async function onFile(event: Event): Promise<void> {
       <span>{{ t('project.bar.looks') }}</span>
     </label>
     <div class="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        class="rounded border border-zinc-800 bg-white dark:bg-zinc-100 px-3 py-1 text-sm"
-        data-testid="project-save"
-        @click="save"
-      >
+      <button type="button" :class="TEXT_BUTTON" data-testid="project-save" @click="save">
         {{ t('project.bar.save') }}
       </button>
-      <label
-        class="cursor-pointer rounded border border-zinc-800 bg-white dark:bg-zinc-100 px-3 py-1 text-sm focus-within:outline focus-within:outline-2"
-      >
+      <label :class="[TEXT_BUTTON, 'focus-ring-within']">
         {{ t('project.bar.load') }}
         <input
           type="file"

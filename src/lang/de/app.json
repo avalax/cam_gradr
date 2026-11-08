@@ -6,12 +6,8 @@
     "export": "Export"
   },
   "hints": {
-    "preview": "Original / korrigiert",
-    "export": ".cube, Projekt",
-    "previewLook": "Original / Look-LUT",
-    "previewLookCorrected": "Korrigiert / Look-LUT",
-    "previewLookOnly": "Original / nur Look-LUT",
-    "previewLookOnlyCorrected": "Korrigiert / nur Look-LUT"
+    "preview": "{left} / {right}",
+    "export": ".cube, Projekt"
   },
   "tablist": "Bereiche",
   "imageToolbar": "Bildaktionen",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
@@ -10,6 +10,7 @@ import { useReferenceStore } from '../reference/reference-store';
 
 import { cameraName } from './camera-name';
 import CameraControls from './CameraControls.vue';
+import { CHEVRON_PATH } from './icons';
 import LanguageSettings from './LanguageSettings.vue';
 import LineIcon from './LineIcon.vue';
 import ReferencePanel from './ReferencePanel.vue';
@@ -29,6 +30,7 @@ type Section = (typeof SECTIONS)[number]['key'];
 const { t } = useI18n();
 
 const open = ref(false);
+const gear = useTemplateRef<HTMLButtonElement>('gear');
 // Expanded section; when collapsed, a short summary of the state is shown on the right.
 const section = ref<Section | null>('camera');
 
@@ -63,9 +65,12 @@ function onPointerDown(event: PointerEvent): void {
   }
 }
 
+// Escape closes the menu and gives the focus back to the gear, so that the keyboard does not lose
+// its place with the panel.
 function onKeyDown(event: KeyboardEvent): void {
   if (open.value && event.key === 'Escape') {
     open.value = false;
+    gear.value?.focus();
   }
 }
 
@@ -83,8 +88,9 @@ onBeforeUnmount(() => {
 <template>
   <div class="relative" data-settings-root>
     <button
+      ref="gear"
       type="button"
-      class="grid place-items-center rounded border px-[7px] py-[5px]"
+      class="grid place-items-center rounded border border-zinc-800 px-[7px] py-[5px] hover:bg-zinc-200"
       :aria-label="t('settings.title')"
       aria-haspopup="dialog"
       :aria-expanded="open"
@@ -112,7 +118,7 @@ onBeforeUnmount(() => {
         <h2 :id="`${entry.key}-heading`">
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+            class="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-200"
             :aria-expanded="section === entry.key"
             :aria-controls="`${entry.key}-body`"
             :data-testid="`section-${entry.key}`"
@@ -122,9 +128,12 @@ onBeforeUnmount(() => {
             <small class="ml-auto truncate text-[11px] font-normal text-zinc-500">{{
               summaries[entry.key]
             }}</small>
-            <span aria-hidden="true" class="text-zinc-500">{{
-              section === entry.key ? '⌃' : '⌄'
-            }}</span>
+            <LineIcon
+              class="size-4 shrink-0 text-zinc-500"
+              :class="{ 'rotate-180': section === entry.key }"
+            >
+              <path :d="CHEVRON_PATH" />
+            </LineIcon>
           </button>
         </h2>
         <div v-if="section === entry.key" :id="`${entry.key}-body`" class="px-3 pb-3">

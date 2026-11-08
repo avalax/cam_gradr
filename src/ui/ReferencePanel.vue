@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n';
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { useReferenceStore } from '../reference/reference-store';
 
+import { LINK_BUTTON, SELECT, TEXT_BUTTON } from './control-styles';
+
 const { t } = useI18n();
 const references = useReferenceStore();
 const { sets, selected, error, warning, lastSaved, lastRemoved } = storeToRefs(references);
@@ -25,18 +27,20 @@ function onSelect(event: Event): void {
 </script>
 
 <template>
-  <div class="space-y-2">
-    <p class="text-xs text-slate-600 dark:text-slate-400" data-testid="reference-source">
+  <div class="space-y-3">
+    <p class="text-xs text-zinc-600" data-testid="reference-source">
       {{ t('reference.panel.sourceBefore', { name: BUNDLED_NAME }) }}
-      <a :href="BUNDLED_SOURCE_URL" class="underline" target="_blank" rel="noopener noreferrer"
+      <a :href="BUNDLED_SOURCE_URL" :class="LINK_BUTTON" target="_blank" rel="noopener noreferrer"
         >bartneck.de</a
       >
       {{ t('reference.panel.sourceAfter') }}
     </p>
-    <label class="flex flex-col text-sm">
+    <!-- Select and buttons as in the camera section; the file input hides behind its button, as in
+         the export, so it speaks the language of the app instead of the browser's. -->
+    <label class="flex flex-col gap-1 text-sm">
       {{ t('reference.panel.activeSet') }}
       <select
-        class="rounded border p-1"
+        :class="SELECT"
         :value="selected?.name"
         data-testid="reference-select"
         @change="onSelect"
@@ -46,47 +50,39 @@ function onSelect(event: Event): void {
         </option>
       </select>
     </label>
-    <label
-      class="flex cursor-pointer flex-col gap-1 rounded-md border-[1.5px] border-dashed border-zinc-400 bg-zinc-50 p-2 text-sm text-zinc-600 focus-within:outline focus-within:outline-2"
-    >
-      {{ t('reference.panel.import') }}
-      <input
-        type="file"
-        accept=".json,.csv,application/json,text/csv"
-        class="text-sm"
-        data-testid="reference-file"
-        @change="onFile"
-      />
-    </label>
-    <div v-if="selected !== null" class="flex flex-wrap gap-2">
-      <button
-        v-if="selected.name !== BUNDLED_NAME"
-        type="button"
-        class="rounded border px-3 py-1 text-sm"
-        @click="references.remove(selected.name)"
-      >
-        {{ t('reference.panel.delete') }}
-      </button>
-      <button
-        type="button"
-        class="rounded border px-3 py-1 text-sm"
-        @click="references.downloadSelected()"
-      >
-        {{ t('reference.panel.download') }}
-      </button>
+    <div class="flex flex-wrap gap-2">
+      <label :class="[TEXT_BUTTON, 'focus-ring-within']">
+        {{ t('reference.panel.import') }}
+        <input
+          type="file"
+          accept=".json,.csv,application/json,text/csv"
+          class="sr-only"
+          data-testid="reference-file"
+          @change="onFile"
+        />
+      </label>
+      <template v-if="selected !== null">
+        <button
+          v-if="selected.name !== BUNDLED_NAME"
+          type="button"
+          :class="TEXT_BUTTON"
+          @click="references.remove(selected.name)"
+        >
+          {{ t('reference.panel.delete') }}
+        </button>
+        <button type="button" :class="TEXT_BUTTON" @click="references.downloadSelected()">
+          {{ t('reference.panel.download') }}
+        </button>
+      </template>
     </div>
     <p
       v-if="selected !== null && lastSaved === selected.name"
-      class="text-xs text-slate-600 dark:text-slate-400"
+      class="text-xs text-zinc-600"
       data-testid="reference-saved"
     >
       {{ t('reference.panel.saved') }}
     </p>
-    <p
-      v-if="lastRemoved !== null"
-      class="text-xs text-slate-600 dark:text-slate-400"
-      data-testid="reference-removed"
-    >
+    <p v-if="lastRemoved !== null" class="text-xs text-zinc-600" data-testid="reference-removed">
       {{ t('reference.panel.removed', { name: lastRemoved }) }}
     </p>
     <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">

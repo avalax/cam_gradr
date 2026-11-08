@@ -200,6 +200,22 @@ describe('GrayStep', () => {
     expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(true);
     expect(wrapper.findAll('polygon')).toHaveLength(0);
     expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain('Beide Graukarten');
+    // The band is there before the camera starts, so the image never moves; the hint names the
+    // button as it is labelled.
+    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
+    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain('„Kamera starten“');
+  });
+
+  it('shows a camera error on the image, where the camera image would be', async () => {
+    installFakeCamera({ open: () => Promise.reject(new Error('x')) });
+    const wrapper = mount(GrayStep);
+    expect(wrapper.find('[data-testid="camera-error"]').exists()).toBe(false);
+    await useCameraStore().start();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="stage-image"] [role="alert"]').text()).toContain(
+      'nicht gestartet',
+    );
+    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
   });
 
   describe('search with held state', () => {

@@ -7,7 +7,7 @@ import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { t } from '../lang';
 import type { LookLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
-import { EXPORT_DEFAULTS, useExportStore } from '../lut/export-store';
+import { useExportStore } from '../lut/export-store';
 import { LOOK_DEFAULTS, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
@@ -31,7 +31,6 @@ const NO_LOOKS: Omit<LookSettings, 'luts'> = {
   strength: LOOK_DEFAULTS.strength,
   left: LOOK_DEFAULTS.left,
   right: LOOK_DEFAULTS.right,
-  inExport: EXPORT_DEFAULTS.withLook,
 };
 
 // Checks the file and unpacks its still images and look LUTs before anything in the state changes.
@@ -79,13 +78,12 @@ async function applyLooks(
   luts: readonly LookLut[],
 ): Promise<number> {
   const gone = await useLookStore().replaceAll(luts);
-  const { chosen, strength, left, right, inExport } = settings ?? NO_LOOKS;
+  const { chosen, strength, left, right } = settings ?? NO_LOOKS;
   const preview = usePreviewStore();
   preview.setLook(chosen);
   preview.setStrength(strength);
   preview.setLeft(left);
   preview.setRight(right);
-  useExportStore().setWithLook(inExport);
   return gone;
 }
 
@@ -160,7 +158,6 @@ async function lookSettings(): Promise<LookSettings> {
     strength: preview.strength,
     left: preview.left,
     right: preview.right,
-    inExport: useExportStore().withLook,
     luts: await Promise.all(useLookStore().looks.map((look) => encodeLook(look))),
   };
 }

@@ -61,7 +61,7 @@ function onKey(event: KeyboardEvent): void {
   <!-- Wipe: the divider can be dragged or moved by keyboard. -->
   <div
     ref="area"
-    class="absolute inset-0 cursor-ew-resize touch-none select-none outline-offset-2 focus-visible:outline"
+    class="focus-ring-inset absolute inset-0 cursor-ew-resize touch-none select-none"
     tabindex="0"
     role="slider"
     aria-orientation="horizontal"
