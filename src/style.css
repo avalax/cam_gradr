@@ -9,6 +9,11 @@
    around (white surfaces, error red, the green dot). */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
+/* The LUT slices of the export in their box (a size container): two rows where it is at most 2.5
+   times as wide as tall, so that the slices of two rows stay nearly as large as those of one. */
+@custom-variant one-row (@container (aspect-ratio > 5 / 2));
+@custom-variant two-rows (@container (aspect-ratio <= 5 / 2));
+
 :root {
   --page-bg: #fff;
   --page-fg: #18181b;

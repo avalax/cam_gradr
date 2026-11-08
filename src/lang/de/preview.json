@@ -1,5 +1,5 @@
 {
-  "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Links der Trennlinie siehst du das Kamerabild, rechts das korrigierte Bild. Die Trennlinie kannst du im Bild ziehen oder mit den Pfeiltasten verschieben. Mit dem Kamera-Symbol oben rechts im Bild nimmst du ein Standbild auf; die Kamera geht dann aus.",
+  "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Was links und rechts der Trennlinie zu sehen ist, steht über dem Bild: ohne Look-LUT das Kamerabild und das korrigierte Bild; mit Look-LUT wechselt ein Klick auf eine Beschriftung, was die Seite zeigt. Die Trennlinie kannst du im Bild ziehen oder mit den Pfeiltasten verschieben. Mit dem Kamera-Symbol oben rechts im Bild nimmst du ein Standbild auf; die Kamera geht dann aus.",
   "capture": "Standbild aufnehmen",
   "captureTitle": "Standbild aufnehmen und Kamera ausschalten",
   "rendererWebgl": "Darstellung: Grafikkarte (WebGL2)",

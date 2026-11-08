@@ -1,9 +1,9 @@
 {
   "bar": {
-    "stills": "Standbilder mitspeichern (die Datei enthält dann Kamerabilder)",
+    "stills": "Standbilder mitspeichern",
     "save": "Projekt speichern",
     "load": "Projekt laden",
-    "looks": "Look-LUTs mitspeichern: alle importierten LUTs mit Auswahl, Stärke und Export. Ohne sie lädt das Projekt ganz ohne Look-LUTs."
+    "looks": "Look-LUTs mitspeichern"
   },
   "status": {
     "close": "Meldung schließen"

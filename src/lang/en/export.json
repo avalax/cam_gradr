@@ -29,7 +29,6 @@
     "correctionValue": "Curves + matrix + hue table",
     "reference": "Reference",
     "look": "Look LUT",
-    "lookValue": "{name} · {strength} %",
-    "lookNote": "With “Include look LUTs” the file holds all imported look LUTs with the choice, strength and export setting. Loading replaces the list in the browser with them; a project without look LUTs empties it."
+    "lookValue": "{name} · {strength} %"
   }
 }

@@ -1,9 +1,9 @@
 {
   "bar": {
-    "stills": "Include still images (the file will then contain camera images)",
+    "stills": "Include still images",
     "save": "Save project",
     "load": "Load project",
-    "looks": "Include look LUTs: all imported LUTs with the choice, strength and export. Without them the project loads without any look LUT."
+    "looks": "Include look LUTs"
   },
   "status": {
     "close": "Dismiss message"

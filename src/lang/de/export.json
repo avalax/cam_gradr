@@ -29,7 +29,6 @@
     "correctionValue": "Kurven + Matrix + Farbton-Tabelle",
     "reference": "Referenz",
     "look": "Look-LUT",
-    "lookValue": "{name} · {strength} %",
-    "lookNote": "Mit „Look-LUTs mitspeichern“ stecken alle importierten Look-LUTs samt Auswahl, Stärke und Export-Einstellung in der Datei. Beim Laden ersetzen sie die Liste im Browser; ein Projekt ohne Look-LUTs leert sie."
+    "lookValue": "{name} · {strength} %"
   }
 }

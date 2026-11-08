@@ -48,7 +48,7 @@ describe('ExportTab', () => {
 
   it('shows gray slices and an empty project list without a correction', () => {
     const wrapper = mount(ExportTab);
-    expect(wrapper.findAll('[data-testid="lut-slice-empty"]')).toHaveLength(4);
+    expect(wrapper.findAll('[data-testid="lut-slice-empty"]')).toHaveLength(8);
     const facts = wrapper.get('[data-testid="project-facts"]');
     expect(facts.text()).toContain('Graukarten–');
     expect(facts.text()).toContain('Korrektur–');
@@ -72,7 +72,7 @@ describe('ExportTab', () => {
       ],
     ]);
     const wrapper = mount(ExportTab);
-    expect(wrapper.findAll('[data-testid="lut-slice"]')).toHaveLength(4);
+    expect(wrapper.findAll('[data-testid="lut-slice"]')).toHaveLength(8);
     expect(wrapper.get('[data-testid="export-file-info"]').text()).toContain(
       '33 × 33 × 33 · ca. 970 KB',
     );

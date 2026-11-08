@@ -186,7 +186,11 @@ function download(): void {
       <!-- The slices take the room the card has (it is as tall as the other tabs), as large as fits
            in width and height; they never make the card taller. -->
       <div class="min-h-24 flex-1 [container-type:size]">
-        <LutSlices class="w-[min(100cqw,calc(400cqh_+_1.5rem))]" :model="model" :look="sliceLook" />
+        <LutSlices
+          class="one-row:w-[min(100cqw,calc(400cqh_+_1.5rem))] two-rows:w-[min(100cqw,calc(200cqh_+_0.5rem))]"
+          :model="model"
+          :look="sliceLook"
+        />
       </div>
       <div
         class="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-300 bg-white dark:bg-zinc-100 p-3"
@@ -234,9 +238,6 @@ function download(): void {
           <dd class="text-right">{{ fact.value }}</dd>
         </div>
       </dl>
-      <p v-if="looks.looks.length > 0" class="text-[11px] leading-snug text-zinc-500">
-        {{ t('export.project.lookNote') }}
-      </p>
       <div class="mt-auto pt-1">
         <ProjectBar />
       </div>
