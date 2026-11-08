@@ -18,7 +18,8 @@
     "undo": "Undo",
     "loadFailed": "Saved look LUTs could not be loaded.",
     "saveFailed": "“{name}” could not be saved locally and only applies to this session.",
-    "removeFailed": "The look LUT could not be deleted locally."
+    "removeFailed": "The look LUT could not be deleted locally.",
+    "storeFailed": "The look LUTs of the project could not be saved locally and only apply to this session."
   },
   "errors": {
     "notCube": "Only .cube files are possible.",

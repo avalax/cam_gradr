@@ -57,9 +57,11 @@ still image, the old one comes back. Cards held upside down are recognized.
 
 **Projects:** In the Export tab, "Save project" and "Load project" keep your work as a JSON file, with
 the still images if "Include still images" stays checked. Saving suggests the file you loaded last. The
-file holds only the name of the reference set, not its values, and the name and strength of the chosen
-look LUT. As soon as a look LUT is imported, "Include look LUTs" (checked by default) puts all imported
-look LUTs into the file as well; loading the project in another browser then brings them along.
+file holds only the name of the reference set, not its values. As soon as a look LUT is imported,
+"Include look LUTs" (checked by default) puts all imported look LUTs into the file, with the chosen one,
+its strength, the preview sides and the export choice. Loading such a project restores exactly that
+list, also in another browser; loading a project without look LUTs starts without any and removes the
+imported ones from the browser.
 
 ## Tips
 

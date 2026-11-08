@@ -6,7 +6,7 @@ import { usePreviewStore } from '../lut/preview-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { failingStorage } from '../test-support/failing-storage';
-import { IDENTITY_CUBE, cubeFile as file } from '../test-support/look-cubes';
+import { IDENTITY_CUBE, INVERT_CUBE, cubeFile as file } from '../test-support/look-cubes';
 
 import { parseLookCube } from './look';
 import type { LookLut } from './look';
@@ -148,22 +148,37 @@ describe('useLookStore', () => {
     expect(store.messages).toEqual([{ kind: 'saveFailed', name: 'Warm' }]);
   });
 
-  it('takes over looks from a project file, keeps its own and reports storage problems', async () => {
+  it('makes the look LUTs of a project the whole list, also in the browser storage', async () => {
     const store = useLookStore();
-    await store.importFiles([file('Warm.cube')]);
-    const own = store.find('Warm');
-    await store.adopt([look('Warm'), look('Cold')]);
-    expect(store.find('Warm')).toBe(own);
+    await store.importFiles([file('Warm.cube'), file('Blue.cube')]);
+    await store.remove('Blue');
+    // The project's Warm replaces the browser's, Blue goes; no undo is left over.
+    const warm = parseLookCube('Warm.cube', INVERT_CUBE);
+    expect(await store.replaceAll([warm, look('Cold')])).toBe(0);
     expect(store.looks.map((entry) => entry.name)).toEqual(['Cold', 'Warm']);
+    expect(store.find('Warm')).toBe(warm);
+    expect(store.messages).toEqual([]);
+    await store.undo();
+    expect(store.find('Blue')).toBeNull();
     const stored = await storage.list();
     expect(stored.map((entry) => entry.name).toSorted((a, b) => a.localeCompare(b))).toEqual([
       'Cold',
       'Warm',
     ]);
+    expect(stored.find((entry) => entry.name === 'Warm')?.lut.data).toEqual(warm.lut.data);
 
+    // A project without look LUTs empties the list.
+    expect(await store.replaceAll([])).toBe(2);
+    expect(store.looks).toEqual([]);
+    expect(await storage.list()).toEqual([]);
+  });
+
+  it('keeps the look LUTs of a project for the session when the browser cannot store them', async () => {
+    const store = useLookStore();
     setLookStorage(failingStorage());
-    await store.adopt([look('Blue')]);
-    expect(store.messages).toEqual([{ kind: 'saveFailed', name: 'Blue' }]);
+    await store.replaceAll([look('Cold')]);
+    expect(store.looks.map((entry) => entry.name)).toEqual(['Cold']);
+    expect(store.messages).toEqual([{ kind: 'storeFailed' }]);
   });
 
   it('uses the IndexedDB storage of the browser unless replaced', async () => {

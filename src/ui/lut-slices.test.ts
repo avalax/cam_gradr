@@ -3,22 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { ColorModel } from '../solve/fit';
 import { parseLookCube } from '../look/look';
 import { INVERT_CUBE } from '../test-support/look-cubes';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import { cssColor } from './color-css';
 import { cubeSizeText, lutSlices } from './lut-slices';
 
-const identity: ColorModel = {
-  curves: [
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-  ],
-  matrix: [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-  ],
-};
+const identity = IDENTITY_MODEL;
 
 const invert = parseLookCube('Invert.cube', INVERT_CUBE);
 

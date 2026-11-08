@@ -2,22 +2,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
-import type { ColorModel } from '../solve/fit';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import LutSlices from './LutSlices.vue';
 
-const model: ColorModel = {
-  curves: [
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-  ],
-  matrix: [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-  ],
-};
+const model = IDENTITY_MODEL;
 
 describe('LutSlices', () => {
   it('shows four gray fields without a correction', () => {

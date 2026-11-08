@@ -7,7 +7,8 @@ import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { t } from '../lang';
 import type { LookLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
-import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
+import { EXPORT_DEFAULTS, useExportStore } from '../lut/export-store';
+import { LOOK_DEFAULTS, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
@@ -15,14 +16,23 @@ import { decodeFrame, encodeFrame } from './frame-codec';
 import { openProjectFile, saveProjectFile } from './project-file';
 import type { FileDialogs, ProjectFile } from './project-file';
 import { PROJECT_FORMAT, parseProject, serializeProject } from './project';
-import type { Project } from './project';
+import type { LookSettings, Project } from './project';
 import { decodeLook, encodeLook } from './look-codec';
 
 interface ReadProject {
   project: Project;
   stills: Stills | null;
-  looks: LookLut[];
+  luts: LookLut[];
 }
+
+// What a project without look LUTs restores: no look, and the defaults of preview and export.
+const NO_LOOKS: Omit<LookSettings, 'luts'> = {
+  chosen: LOOK_DEFAULTS.look,
+  strength: LOOK_DEFAULTS.strength,
+  left: LOOK_DEFAULTS.left,
+  right: LOOK_DEFAULTS.right,
+  inExport: EXPORT_DEFAULTS.withLook,
+};
 
 // Checks the file and unpacks its still images and look LUTs before anything in the state changes.
 async function readProject(text: string): Promise<ReadProject> {
@@ -30,7 +40,7 @@ async function readProject(text: string): Promise<ReadProject> {
   return {
     project,
     stills: await decodeStills(project),
-    looks: await Promise.all((project.looks ?? []).map((look) => decodeLook(look))),
+    luts: await Promise.all((project.looks?.luts ?? []).map((look) => decodeLook(look))),
   };
 }
 
@@ -44,8 +54,8 @@ function applyStills(stills: Stills | null): void {
   }
 }
 
-// Restores corner points, measurements and the preview's divider line. Corner points only apply together
-// with a still image; files without still images (including older ones) bring none.
+// Restores corner points, measurements, the preview's divider line and the export size. Corner points
+// only apply together with a still image; files without still images bring none.
 function applyCharts(project: Project, withStills: boolean): void {
   useChartStore().restore({
     points: withStills ? project.gray.corners : {},
@@ -57,20 +67,26 @@ function applyCharts(project: Project, withStills: boolean): void {
     measurements: project.color.measurements,
     rotated: project.color.rotated,
   });
-  const preview = usePreviewStore();
-  preview.setSplit(project.preview.split);
-  preview.setLook(project.preview.look?.name ?? null);
-  preview.setStrength(project.preview.look?.strength ?? FULL_STRENGTH);
+  usePreviewStore().setSplit(project.preview.split);
+  useExportStore().setSize(project.export.size);
 }
 
-// Takes over the look LUTs saved in the file that this browser does not have yet, and returns the
-// name of the chosen look LUT if it is still missing.
-async function missingLook(project: Project, saved: readonly LookLut[]): Promise<string | null> {
-  const looks = useLookStore();
-  await looks.load();
-  await looks.adopt(saved);
-  const name = project.preview.look?.name;
-  return name === undefined || looks.find(name) !== null ? null : name;
+// The look LUTs of the file become the whole list, and the preview and the export get their settings
+// back; a file without look LUTs loads as if there had never been one. Returns how many look LUTs
+// left the browser.
+async function applyLooks(
+  settings: LookSettings | undefined,
+  luts: readonly LookLut[],
+): Promise<number> {
+  const gone = await useLookStore().replaceAll(luts);
+  const { chosen, strength, left, right, inExport } = settings ?? NO_LOOKS;
+  const preview = usePreviewStore();
+  preview.setLook(chosen);
+  preview.setStrength(strength);
+  preview.setLeft(left);
+  preview.setRight(right);
+  useExportStore().setWithLook(inExport);
+  return gone;
 }
 
 // Recomputes the correction with the selected reference set or uses the saved model.
@@ -84,11 +100,14 @@ async function applyCorrection(project: Project): Promise<string | null> {
     references.select(name);
   }
   const reference = references.selected;
-  if (reference !== null && reference.name === name) {
+  const recompute = reference !== null && reference.name === name;
+  if (recompute) {
     // With reference values available, the error report can be recomputed.
     solve.compute({ measurements: project.color.measurements, reference });
   }
-  if (solve.model === null && project.model !== null) {
+  // Otherwise the saved model applies, never one from before; it also steps in when the calculation
+  // fails.
+  if (!recompute || (solve.model === null && project.model !== null)) {
     solve.loadModel(project.model);
   }
   const missing = name !== null && reference?.name !== name;
@@ -128,19 +147,22 @@ function snapshot(withCorners: boolean): Project {
       reference: useReferenceStore().selectedName,
     },
     model: useSolveStore().model,
-    preview: {
-      split: preview.split,
-      ...(preview.look !== null && { look: { name: preview.look, strength: preview.strength } }),
-    },
+    preview: { split: preview.split },
+    export: { size: useExportStore().size },
   };
 }
 
-// Adds all imported look LUTs with their data.
-async function attachLooks(project: Project): Promise<void> {
-  const { looks } = useLookStore();
-  if (looks.length > 0) {
-    project.looks = await Promise.all(looks.map((look) => encodeLook(look)));
-  }
+// All imported look LUTs with their data and what the preview and the export set for them.
+async function lookSettings(): Promise<LookSettings> {
+  const preview = usePreviewStore();
+  return {
+    chosen: preview.look,
+    strength: preview.strength,
+    left: preview.left,
+    right: preview.right,
+    inExport: useExportStore().withLook,
+    luts: await Promise.all(useLookStore().looks.map((look) => encodeLook(look))),
+  };
 }
 
 export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
@@ -159,7 +181,7 @@ export const useProjectStore = defineStore('project', () => {
     const withStills = options?.withStills === true;
     const project = snapshot(withStills);
     if (options?.withLooks === true) {
-      await attachLooks(project);
+      project.looks = await lookSettings();
     }
     if (withStills) {
       const stills: NonNullable<Project['stills']> = {};
@@ -196,11 +218,16 @@ export const useProjectStore = defineStore('project', () => {
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
-    const look = await missingLook(read.project, read.looks);
-    // There are no success messages; only a missing reference set or look LUT deserves a notice.
+    const gone = await applyLooks(read.project.looks, read.luts);
+    // There are no success messages; a missing reference set and look LUTs that left the browser
+    // deserve a notice.
     const notices = [
       missing === null ? null : t('project.notice.missingReference', { name: missing }),
-      look === null ? null : t('project.notice.missingLook', { name: look }),
+      gone === 0
+        ? null
+        : t(gone === 1 ? 'project.notice.lookRemoved' : 'project.notice.looksRemoved', {
+            count: gone,
+          }),
     ].filter((entry) => entry !== null);
     notice.value = notices.length === 0 ? null : notices.join(' ');
   }

@@ -27,6 +27,31 @@ function sample(): Project {
     color: { corners: {}, measurements, rotated: false, reference: 'Mein Satz' },
     model,
     preview: { split: 25 },
+    export: { size: 65 },
+  };
+}
+
+const WARM = {
+  name: 'Warm',
+  size: 2,
+  min: [0, 0, 0] as const,
+  max: [1, 1, 1] as const,
+  encoding: 'f32le-deflate-base64' as const,
+  data: 'eJw=',
+};
+
+// The sample with its look LUTs and their settings.
+function withLooks(): Project {
+  return {
+    ...sample(),
+    looks: {
+      chosen: 'Warm',
+      strength: 70,
+      left: 'corrected',
+      right: 'camera',
+      inExport: false,
+      luts: [WARM, { ...WARM, name: 'Cold' }],
+    },
   };
 }
 
@@ -53,14 +78,6 @@ describe('parseProject', () => {
     expect(project.color.reference).toBeNull();
   });
 
-  it('reads older files with strength and ignores it', () => {
-    const raw = JSON.parse(serializeProject(sample())) as Record<string, any>;
-    raw.preview = { strength: 60, split: 25 };
-    const project = parseProject(JSON.stringify(raw));
-    expect(project.preview).toEqual({ split: 25 });
-    expect(serializeProject(project)).not.toContain('strength');
-  });
-
   it('saves no reference values, only their name', () => {
     const text = serializeProject(sample());
     expect(text).toContain('"reference": "Mein Satz"');
@@ -74,7 +91,6 @@ describe('parseProject', () => {
     expect(() => parseProject('{kaputt')).toThrow('kein gültiges JSON');
     expect(() => parseProject('[]')).toThrow('Unbekanntes Format');
     rejects((raw) => (raw.format = 'anderes/1'), 'Unbekanntes Format');
-    // Every version since 1.0.0 writes the time of saving.
     rejects((raw) => delete raw.savedAt, 'Zeitpunkt der Sicherung fehlt');
   });
 
@@ -120,12 +136,7 @@ describe('parseProject', () => {
     rejects((raw) => (raw.model.hue = [1, 2]), 'Farbton-Tabelle braucht 10 Zahlen');
     rejects((raw) => (raw.model.hue = 'x'), 'Farbton-Tabelle braucht 10 Zahlen');
     rejects((raw) => (raw.model.hue[3] = null), 'Farbton-Tabelle braucht 10 Zahlen');
-  });
-
-  it('reads models from before the hue table without one', () => {
-    const raw = structuredClone(sample()) as unknown as { model: Record<string, unknown> };
-    delete raw.model.hue;
-    expect(parseProject(JSON.stringify(raw)).model?.hue).toBeUndefined();
+    rejects((raw) => delete raw.model.hue, 'Farbton-Tabelle braucht 10 Zahlen');
   });
 
   it('rejects faulty preview settings', () => {
@@ -134,56 +145,70 @@ describe('parseProject', () => {
     rejects((raw) => (raw.preview.split = 'x'), 'Trennlinie muss zwischen 0 und 100');
   });
 
-  it('reads and writes the chosen look LUT by name and strength, never its data', () => {
-    const project = { ...sample(), preview: { split: 25, look: { name: 'Warm', strength: 70 } } };
-    const text = serializeProject(project);
-    expect(parseProject(text)).toEqual(project);
-    expect(JSON.parse(text).preview).toEqual({ split: 25, look: { name: 'Warm', strength: 70 } });
+  it('rejects an export size that cannot be chosen', () => {
+    rejects((raw) => delete raw.export, 'einer der Werte 17, 33, 65');
+    rejects((raw) => (raw.export.size = 64), 'einer der Werte 17, 33, 65');
   });
 
-  it('reads the look LUTs saved along', () => {
-    const looks = [
-      {
-        name: 'Warm',
-        size: 2,
-        min: [0, 0, 0] as const,
-        max: [1, 1, 1] as const,
-        encoding: 'f32le-deflate-base64' as const,
-        data: 'eJw=',
-      },
-    ];
-    const project: Project = { ...sample(), looks };
+  it('reads and writes the look LUTs with their settings', () => {
+    const project = withLooks();
     expect(parseProject(serializeProject(project))).toEqual(project);
+    const none = { ...project, looks: { ...project.looks, chosen: null } } as Project;
+    expect(parseProject(serializeProject(none)).looks?.chosen).toBeNull();
+  });
+
+  it('rejects faulty look settings', () => {
+    const looksOf =
+      (change: (looks: Record<string, any>) => void) => (raw: Record<string, any>) => {
+        raw.looks = structuredClone(withLooks().looks);
+        change(raw.looks as Record<string, any>);
+      };
+    rejects((raw) => (raw.looks = []), 'erwartet werden chosen, strength');
+    rejects(
+      looksOf((looks) => (looks.chosen = 5)),
+      'erwartet werden chosen, strength',
+    );
+    rejects(
+      looksOf((looks) => (looks.left = 'left')),
+      'erwartet werden chosen, strength',
+    );
+    rejects(
+      looksOf((looks) => delete looks.right),
+      'erwartet werden chosen, strength',
+    );
+    rejects(
+      looksOf((looks) => (looks.inExport = 'yes')),
+      'erwartet werden chosen, strength',
+    );
+    rejects(
+      looksOf((looks) => (looks.luts = 'Warm')),
+      'erwartet werden chosen, strength',
+    );
+    rejects(
+      looksOf((looks) => (looks.strength = 101)),
+      'Stärke der Look-LUT muss zwischen 0 und 100',
+    );
+    // The chosen look LUT is always among those saved, and every name is there only once.
+    rejects(
+      looksOf((looks) => (looks.chosen = 'Blue')),
+      'gewählte LUT „Blue“ fehlt',
+    );
+    rejects(
+      looksOf((looks) => (looks.luts[1].name = 'Warm')),
+      'Name kommt mehrfach vor',
+    );
   });
 
   it('rejects broken look LUTs', () => {
-    const look = {
-      name: 'Warm',
-      size: 2,
-      min: [0, 0, 0],
-      max: [1, 1, 1],
-      encoding: 'f32le-deflate-base64',
-      data: '',
+    const lutOf = (change: Record<string, unknown>) => (raw: Record<string, any>) => {
+      raw.looks = { ...withLooks().looks, chosen: null, luts: [{ ...WARM, ...change }] };
     };
-    const withLook = (change: Record<string, unknown>) => (raw: Record<string, any>) => {
-      raw.looks = [{ ...look, ...change }];
-    };
-    rejects(withLook({ name: 5 }), 'gespeicherten Look-LUTs sind ungültig');
-    rejects(withLook({ encoding: 'png' }), 'gespeicherten Look-LUTs sind ungültig');
-    rejects(withLook({ data: 5 }), 'gespeicherten Look-LUTs sind ungültig');
-    rejects(withLook({ size: 1 }), 'gespeicherten Look-LUTs sind ungültig');
-    rejects(withLook({ size: 130 }), 'gespeicherten Look-LUTs sind ungültig');
-    rejects(withLook({ min: [0, 0] }), 'erwartet werden 3 Zahlen');
-    rejects((raw) => (raw.looks = 'Warm'), 'ungültig');
-  });
-
-  it('rejects a faulty look LUT', () => {
-    rejects((raw) => (raw.preview.look = 'Warm'), 'braucht name und strength');
-    rejects((raw) => (raw.preview.look = { strength: 50 }), 'braucht name und strength');
-    rejects(
-      (raw) => (raw.preview.look = { name: 'Warm', strength: 101 }),
-      'Stärke der Look-LUT muss zwischen 0 und 100',
-    );
+    rejects(lutOf({ name: 5 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(lutOf({ encoding: 'png' }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(lutOf({ data: 5 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(lutOf({ size: 1 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(lutOf({ size: 130 }), 'gespeicherten Look-LUTs sind ungültig');
+    rejects(lutOf({ min: [0, 0] }), 'erwartet werden 3 Zahlen');
   });
 });
 

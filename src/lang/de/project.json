@@ -3,18 +3,19 @@
     "stills": "Standbilder mitspeichern (die Datei enthält dann Kamerabilder)",
     "save": "Projekt speichern",
     "load": "Projekt laden",
-    "looks": "Look-LUTs mitspeichern (die Datei enthält dann alle importierten LUTs)"
+    "looks": "Look-LUTs mitspeichern: alle importierten LUTs mit Auswahl, Stärke und Export. Ohne sie lädt das Projekt ganz ohne Look-LUTs."
   },
   "status": {
     "close": "Meldung schließen"
   },
   "notice": {
     "missingReference": "Der Referenzsatz „{name}“ ist nicht vorhanden; importiere ihn in den Einstellungen, um den Bericht zu sehen. Vorschau und Export nutzen das gespeicherte Modell.",
-    "missingLook": "Die Look-LUT „{name}“ ist in diesem Browser nicht gespeichert; importiere sie in der Vorschau. Bis dahin zeigen Vorschau und Export die Korrektur ohne Look-LUT."
+    "lookRemoved": "Eine importierte Look-LUT, die das Projekt nicht enthält, wurde aus dem Browser entfernt.",
+    "looksRemoved": "{count} importierte Look-LUTs, die das Projekt nicht enthält, wurden aus dem Browser entfernt."
   },
   "errors": {
     "invalidJson": "Die Datei ist kein gültiges JSON",
-    "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\"",
+    "unknownFormat": "Unbekanntes Format, erwartet wird \"{format}\".",
     "savedAt": "Der Zeitpunkt der Sicherung fehlt",
     "triple": "{where}: erwartet werden 3 Zahlen",
     "pointXY": "{where}: ein Eckpunkt braucht x und y",
@@ -47,10 +48,13 @@
     "frameWrongSize": "Ein Standbild in der Datei hat nicht die angegebene Größe",
     "saveFailed": "Das Projekt ließ sich nicht speichern: {reason}",
     "openFailed": "Die Projektdatei ließ sich nicht öffnen: {reason}",
-    "lookShape": "Vorschau: die Look-LUT braucht name und strength",
     "strengthName": "Stärke der Look-LUT",
     "lookData": "Die gespeicherten Look-LUTs sind ungültig",
     "lookUnreadable": "Die gespeicherte Look-LUT „{name}“ lässt sich nicht lesen",
-    "lookWrongSize": "Die gespeicherte Look-LUT „{name}“ hat nicht die angegebene Größe"
+    "lookWrongSize": "Die gespeicherte Look-LUT „{name}“ hat nicht die angegebene Größe",
+    "looksShape": "Look-LUTs: erwartet werden chosen, strength, left, right, inExport und luts",
+    "looksTwice": "Look-LUTs: ein Name kommt mehrfach vor",
+    "looksChosen": "Look-LUTs: die gewählte LUT „{name}“ fehlt",
+    "exportSize": "Export: die Größe muss einer der Werte {sizes} sein"
   }
 }

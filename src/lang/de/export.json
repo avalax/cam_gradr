@@ -30,6 +30,6 @@
     "reference": "Referenz",
     "look": "Look-LUT",
     "lookValue": "{name} · {strength} %",
-    "lookNote": "Mit „Look-LUTs mitspeichern“ stecken alle importierten Look-LUTs in der Datei und kommen beim Laden in den Browser, falls sie dort fehlen; sonst merkt sich das Projekt nur Name und Stärke der gewählten."
+    "lookNote": "Mit „Look-LUTs mitspeichern“ stecken alle importierten Look-LUTs samt Auswahl, Stärke und Export-Einstellung in der Datei. Beim Laden ersetzen sie die Liste im Browser; ein Projekt ohne Look-LUTs leert sie."
   }
 }

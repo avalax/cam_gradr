@@ -3,18 +3,19 @@
     "stills": "Include still images (the file will then contain camera images)",
     "save": "Save project",
     "load": "Load project",
-    "looks": "Include look LUTs (the file will then contain all imported LUTs)"
+    "looks": "Include look LUTs: all imported LUTs with the choice, strength and export. Without them the project loads without any look LUT."
   },
   "status": {
     "close": "Dismiss message"
   },
   "notice": {
     "missingReference": "The reference set “{name}” is not available; import it in the settings to see the report. Preview and export use the saved model.",
-    "missingLook": "The look LUT “{name}” is not saved in this browser; import it in the preview. Until then preview and export show the correction without the look LUT."
+    "lookRemoved": "An imported look LUT that the project does not contain was removed from the browser.",
+    "looksRemoved": "{count} imported look LUTs that the project does not contain were removed from the browser."
   },
   "errors": {
     "invalidJson": "The file is not valid JSON",
-    "unknownFormat": "Unknown format, expected \"{format}\"",
+    "unknownFormat": "Unknown format, expected \"{format}\".",
     "savedAt": "The time of saving is missing",
     "triple": "{where}: 3 numbers expected",
     "pointXY": "{where}: a corner point needs x and y",
@@ -47,10 +48,13 @@
     "frameWrongSize": "A still image in the file does not have the stated size",
     "saveFailed": "The project could not be saved: {reason}",
     "openFailed": "The project file could not be opened: {reason}",
-    "lookShape": "Preview: the look LUT needs name and strength",
     "strengthName": "strength of the look LUT",
     "lookData": "The saved look LUTs are invalid",
     "lookUnreadable": "The saved look LUT “{name}” cannot be read",
-    "lookWrongSize": "The saved look LUT “{name}” does not have the stated size"
+    "lookWrongSize": "The saved look LUT “{name}” does not have the stated size",
+    "looksShape": "Look LUTs: expected chosen, strength, left, right, inExport and luts",
+    "looksTwice": "Look LUTs: a name occurs more than once",
+    "looksChosen": "Look LUTs: the chosen LUT “{name}” is missing",
+    "exportSize": "Export: the size must be one of {sizes}"
   }
 }

@@ -5,6 +5,8 @@ import type { Lut } from './lut';
 
 // Allowed export sizes; 33 is a good default, 17 and 65 are common on some devices.
 export const CUBE_SIZES = [17, 33, 65] as const;
+export type CubeSize = (typeof CUBE_SIZES)[number];
+export const DEFAULT_CUBE_SIZE: CubeSize = 33;
 
 const DECIMALS = 6;
 

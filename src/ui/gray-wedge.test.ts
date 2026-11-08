@@ -4,6 +4,7 @@ import { labToSrgb } from '../color/lab';
 import { NEUTRAL_IDS, colorLayout } from '../chart/layouts';
 import { applyColorModel, targetLab } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import { cssColor } from './color-css';
 import {
@@ -17,18 +18,7 @@ import {
   zoneChanges,
 } from './gray-wedge';
 
-const IDENTITY: ColorModel = {
-  curves: [
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-    { xs: [0, 1], ys: [0, 1] },
-  ],
-  matrix: [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-  ],
-};
+const IDENTITY = IDENTITY_MODEL;
 // The red channel is raised (black 0 → 0.3 in linear light); green and blue stay.
 const RED_LIFT: ColorModel = {
   ...IDENTITY,
@@ -155,7 +145,13 @@ describe('zoneChanges', () => {
 
   it('makes green and blue weaker in the process', () => {
     const [shadows] = zoneChanges(RED_LIFT);
-    expect(shadows?.casts.slice(1).map((cast) => cast.channel)).toEqual(['Grün', 'Blau']);
+    // Green and blue lose the same: their order among themselves is open.
+    expect(
+      shadows?.casts
+        .slice(1)
+        .map((cast) => cast.channel)
+        .toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['Blau', 'Grün']);
     expect(shadows?.casts.slice(1).every((cast) => cast.points < 0)).toBe(true);
   });
 
