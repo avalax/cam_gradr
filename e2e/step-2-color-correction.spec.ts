@@ -25,7 +25,9 @@ test.describe('Color cards', () => {
     await select.selectOption('Saved list');
     await app.closeSettings();
     await app.openTab('Farbkarten');
-    await expect(app.page.getByTestId('reference-active')).toContainText('Saved list (48 Felder)');
+    await expect(app.page.getByTestId('reference-active')).toContainText(
+      '„Saved list“ mit 48 Feldern',
+    );
 
     await app.openSettings('reference');
     await app.button('Satz löschen').click();

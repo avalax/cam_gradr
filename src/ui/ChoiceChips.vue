@@ -108,10 +108,11 @@ function onKey(event: KeyboardEvent, index: number): void {
       @click="emit('choose', option.value)"
       @keydown="onKey($event, index)"
     >
+      <!-- On a narrow card the detail drops below the label as one piece. -->
       <template v-if="variant === 'cards'">
-        <span class="flex items-baseline justify-between gap-2">
+        <span class="flex flex-wrap items-baseline justify-between gap-x-2">
           <span class="text-[15px] font-semibold">{{ option.label }}</span>
-          <span class="text-xs text-zinc-600">{{ option.detail }}</span>
+          <span class="whitespace-nowrap text-xs text-zinc-600">{{ option.detail }}</span>
         </span>
         <span class="block text-xs text-zinc-500">{{ option.hint }}</span>
       </template>

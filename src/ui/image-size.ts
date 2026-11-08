@@ -21,6 +21,11 @@ export function imageMaxWidth(aspect: number): string {
 export const IMAGE_BLOCK =
   'min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:px-2.5 dark:pb-2.5';
 
+// The image and the narrow column beside it, as one grid on every tab with a camera image: the
+// column sits at the same place on all of them, where the export has its project card, also when the
+// window height makes the image narrower than its track.
+export const IMAGE_ROW = 'grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3';
+
 // The band above the image: its corners follow the edge of the dark surface.
 export const IMAGE_BAND = 'rounded-t dark:rounded-t-[7px]';
 

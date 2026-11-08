@@ -1,18 +1,22 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
+import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
-import { useChartStore } from './chart/chart-store';
+import { useChartStore, useColorChartStore } from './chart/chart-store';
 import { usePreviewStore } from './lut/preview-store';
 import { useProjectStore } from './project/project-store';
 import { BUNDLED_NAME } from './reference/bundled';
-import { useReferenceStore } from './reference/reference-store';
+import { setReferenceStorage, useReferenceStore } from './reference/reference-store';
+import { createIndexedDbStorage } from './storage/indexed-db';
 import { useSolveStore } from './solve/solve-store';
+import { dummyReferenceJson } from './test-support/dummy-reference';
 import { cubeFile, importLooks } from './test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
+import { syntheticMeasurements } from './test-support/synthetic-camera';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
 
@@ -220,6 +224,25 @@ describe('App', () => {
     const panel = wrapper.get('[role="tabpanel"]').element;
     const message = wrapper.get('[data-testid="project-message"]').element;
     expect(panel.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('recomputes the correction on any tab when a reference set is imported', async () => {
+    installFakeCamera();
+    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'app', 'references'));
+    const wrapper = mountApp();
+    // The stores of this app, before other mounted apps of this file take over the active pinia.
+    const chart = useColorChartStore();
+    const references = useReferenceStore();
+    const solve = useSolveStore();
+    await flushPromises();
+    // Measurements as a project without still images brings them, while the gray cards are open.
+    chart.restore({ points: {}, measurements: syntheticMeasurements(), rotated: false });
+    await references.importFile('a.json', dummyReferenceJson('Mein Satz'));
+    await flushPromises();
+    expect(solve.result).not.toBeNull();
+    expect(solve.referenceName).toBe('Mein Satz');
+    wrapper.unmount();
+    setReferenceStorage(null);
   });
 
   it('loads the bundled reference set at startup', async () => {

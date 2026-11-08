@@ -155,9 +155,10 @@ function text(message: LookMessage): string {
     </div>
   </div>
 
-  <!-- Room for two lines, as long as the hint, so that a message does not move what lies below. -->
+  <!-- Exactly two lines, as long as the hint: more messages at once (an import with a warning and a
+       rejected file) scroll inside, so that they never make the preview taller than the window. -->
   <div
-    class="mt-1.5 flex min-h-[2lh] flex-col gap-1.5 text-xs leading-snug"
+    class="mt-1.5 flex h-[2lh] flex-col overflow-y-auto text-xs leading-snug"
     data-testid="look-messages"
   >
     <p v-if="list.length === 0 && messages.length === 0" class="text-zinc-600">

@@ -1,7 +1,7 @@
 {
   "intro": "This tab calculates the color correction. Hold both color cards where the subject will be: the app detects them on its own and takes a still image. Check the corner points and drag them into place if needed. The color correction is then calculated automatically, and again whenever the corner points change.",
-  "referenceActive": "Reference values: {name} ({count} patches). You can switch or import the set in the settings at the top right.",
-  "referenceNoReport": "The correction comes from a project and was calculated with the reference set “{name}”. To see the report, import that set in the settings at the top right.",
+  "referenceActive": "Reference values: “{name}” with {count} patches. You can switch or import the set in the settings at the top right.",
+  "referenceMissing": "The correction comes from a project and was calculated with the reference set “{name}” (missing). To see the report, import that set in the settings at the top right.",
   "idle": "Hold both color cards steady where the subject will be. The size in the image does not matter.",
   "wipe": {
     "liveCaption": "Compare after the capture",

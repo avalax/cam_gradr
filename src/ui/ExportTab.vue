@@ -47,13 +47,23 @@ const color = useColorChartStore();
 const preview = usePreviewStore();
 const looks = useLookStore();
 
-// What the project file contains: per card pair the corner points and measured patches.
+// The settings of the export: the size (a project file saves it) and what the project file
+// includes, both kept in a store.
+const exportSettings = useExportStore();
+const { size, withStills, withLooks } = storeToRefs(exportSettings);
+
+// What the project file contains, as the checkboxes below set it: per card pair the corner points
+// (only with the still images they belong to) and the measured patches, and the look LUT only with
+// the look LUTs.
 function chartFacts(state: { points: Record<number, unknown[]>; measurements: object }): string {
-  const corners = Object.values(state.points).reduce((sum, list) => sum + list.length, 0);
+  const corners = withStills.value
+    ? Object.values(state.points).reduce((sum, list) => sum + list.length, 0)
+    : 0;
   const fields = Object.keys(state.measurements).length;
-  return corners === 0 && fields === 0
-    ? '–'
-    : t('export.project.corners', { corners: String(corners), fields: String(fields) });
+  if (corners === 0) {
+    return fields === 0 ? '–' : t('export.project.fields', { fields: String(fields) });
+  }
+  return t('export.project.corners', { corners: String(corners), fields: String(fields) });
 }
 const facts = computed(() => [
   { label: t('export.project.gray'), value: chartFacts(gray.committed()) },
@@ -74,14 +84,11 @@ const facts = computed(() => [
   {
     label: t('export.project.look'),
     value:
-      preview.look === null
+      preview.look === null || !withLooks.value
         ? '–'
         : t('export.project.lookValue', { name: preview.look, strength: preview.strength }),
   },
 ]);
-// The size is kept in a store, so that a project file can save it.
-const exportSettings = useExportStore();
-const { size } = storeToRefs(exportSettings);
 
 // The file takes the look LUT the preview shows, at its strength.
 const chosen = computed(() => looks.find(preview.look));

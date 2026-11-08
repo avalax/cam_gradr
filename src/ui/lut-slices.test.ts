@@ -55,8 +55,8 @@ describe('lutSlices', () => {
 
 describe('cubeSizeText', () => {
   it('estimates the file size of the three sizes', () => {
-    expect(cubeSizeText(17)).toBe('ca. 133\u{A0}KB');
-    expect(cubeSizeText(33)).toBe('ca. 970\u{A0}KB');
-    expect(cubeSizeText(65)).toBe('ca. 7,4\u{A0}MB');
+    expect(cubeSizeText(17)).toBe('ca.\u{A0}133\u{A0}KB');
+    expect(cubeSizeText(33)).toBe('ca.\u{A0}970\u{A0}KB');
+    expect(cubeSizeText(65)).toBe('ca.\u{A0}7,4\u{A0}MB');
   });
 });

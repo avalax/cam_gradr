@@ -30,7 +30,7 @@ import {
 import ChoiceChips from './ChoiceChips.vue';
 import ColorTiles from './ColorTiles.vue';
 import { CAMERA_SWITCH_ID, focusById } from './focus';
-import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth as maxWidthFor } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageMaxWidth as maxWidthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import GrayWedge from './GrayWedge.vue';
@@ -52,7 +52,7 @@ const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
 const { stream, status, still } = storeToRefs(camera);
-const { model, result } = storeToRefs(solve);
+const { model, result, referenceName } = storeToRefs(solve);
 const { split, look: lookName, strength, left, right } = storeToRefs(preview);
 const looks = useLookStore();
 const { measurements } = storeToRefs(useColorChartStore());
@@ -69,10 +69,16 @@ const WORST_COUNT = 3;
 
 // The targets at the exposure of the shot, like in the report (without a report at the reference's).
 const exposureGain = computed(() => result.value?.report.exposureGain ?? 1);
+// The targets come from the set the correction was fitted with; while that set is missing (a
+// correction loaded from a project) the tiles and the wedge show no targets rather than another
+// set's.
+const fittedReference = computed(() =>
+  selected.value?.name === referenceName.value ? selected.value : null,
+);
 
 // Color grid from the measured chromatic patches and the patches with the largest residual error.
 const tiles = computed(() =>
-  colorCards(measurements.value, model.value, selected.value, exposureGain.value),
+  colorCards(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
 const worst = computed(() =>
   result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
@@ -80,7 +86,7 @@ const worst = computed(() =>
 
 // Gray wedge from the measured neutral patches and what the correction changes per tonal range.
 const rows = computed(() =>
-  wedgeRows(measurements.value, model.value, selected.value, exposureGain.value),
+  wedgeRows(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
 // Colors of the dots in front of the channels.
@@ -322,7 +328,7 @@ const splitModel = computed({
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
-      <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3">
+      <div :class="IMAGE_ROW">
         <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ maxWidth: maxWidth }">
           <div class="relative">
             <!-- The video only serves as an image source and stays invisible. -->
@@ -471,7 +477,9 @@ const splitModel = computed({
               {{ t('preview.emptyNoCards') }}
             </p>
             <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              {{ t('preview.tilesLegend') }}
+              {{
+                t(fittedReference === null ? 'preview.tilesLegendNoTarget' : 'preview.tilesLegend')
+              }}
             </p>
             <div
               v-if="worst.length > 0"

@@ -41,6 +41,16 @@ test.describe('Layout', () => {
     expect(exportHeight).not.toBe(heights[0]);
     await app.openTab('Graukarten');
     expect(Math.abs((await app.panelHeight()) - exportHeight)).toBeLessThanOrEqual(1);
+    // There the image is narrower than its track: the column beside it keeps its place on every tab,
+    // where the export has its project card.
+    const grayColumn = await app.page.getByTestId('measure-field').boundingBox();
+    await app.openTab('Vorschau');
+    expect(await app.page.getByTestId('preview-side').boundingBox()).toEqual(grayColumn);
+    await app.openTab('Export');
+    const projectCard = await app.page
+      .getByRole('article', { name: 'Projekt speichern' })
+      .boundingBox();
+    expect(Math.abs((projectCard?.x ?? 0) - (grayColumn?.x ?? -1))).toBeLessThanOrEqual(1);
   });
 
   test('The image keeps its size while the camera starts and captures, and fits on one screen', async ({

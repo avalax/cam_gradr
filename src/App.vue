@@ -8,6 +8,7 @@ import { useChartStore } from './chart/chart-store';
 import { useLookStore } from './look/look-store';
 import { usePreviewStore } from './lut/preview-store';
 import { useReferenceStore } from './reference/reference-store';
+import { recomputeOnChange } from './solve/recompute';
 import { useSolveStore } from './solve/solve-store';
 import CameraToggle from './ui/CameraToggle.vue';
 import ColorStep from './ui/ColorStep.vue';
@@ -107,6 +108,9 @@ const entries = computed(() =>
       : { key, width, label: label(), status: shown, text: shown.text };
   }),
 );
+
+// The correction follows the color measurements and the reference set on every tab.
+recomputeOnChange();
 
 // The bundled reference set, the locally saved sets and the look LUTs are available from the start.
 onMounted(() => {

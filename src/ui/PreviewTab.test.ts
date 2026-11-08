@@ -6,9 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import { usePreviewStore } from '../lut/preview-store';
+import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 import { cameraSwitchStandIn } from '../test-support/camera-switch';
-import { dummyReference } from '../test-support/dummy-reference';
+import { dummyReference, dummyReferenceJson } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
@@ -405,6 +406,26 @@ describe('PreviewTab', () => {
     ).toBe('false');
     expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="worst-patches"]').text()).toContain('Größte Abweichung');
+  });
+
+  it('shows targets only from the set the correction was fitted with', async () => {
+    mockAnimation();
+    mockContexts();
+    const references = useReferenceStore();
+    await references.importFile('mein.json', dummyReferenceJson('Mein Satz'));
+    useColorChartStore().measurements = measurements;
+    useSolveStore().compute({ measurements, reference: references.selected ?? reference });
+    const wrapper = mount(PreviewTab);
+    const stripes = () =>
+      new Set(wrapper.findAll('[data-stripe]').map((stripe) => stripe.attributes('data-stripe')));
+    expect(stripes().has('target')).toBe(true);
+    expect(wrapper.text()).toContain('Jedes Feld: Soll, Kamera, korrigiert');
+
+    // A correction loaded with a set that is missing here: no targets from the active set.
+    useSolveStore().loadModel(syntheticFit().model, 'Fehlender Satz');
+    await flushPromises();
+    expect(stripes().has('target')).toBe(false);
+    expect(wrapper.text()).toContain('Jedes Feld: Kamera, korrigiert');
   });
 
   it('switches to the gray wedge with the tonal ranges and the result, and back to colors', async () => {

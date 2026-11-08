@@ -21,7 +21,7 @@ import type { ChartLayout, Corners } from '../chart/types';
 
 import { CAMERA_SWITCH_ID, focusById } from './focus';
 import { TRASH_PATH } from './icons';
-import { IMAGE_BAND, IMAGE_BLOCK, imageMaxWidth as maxWidthFor } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageMaxWidth as maxWidthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import { buildShapes, clientToImage } from './overlay-geometry';
@@ -288,7 +288,7 @@ watch(actual, (next, previous) => {
 </script>
 
 <template>
-  <div class="flex items-stretch gap-3">
+  <div :class="IMAGE_ROW">
     <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ maxWidth: imageMaxWidth }">
       <StageLabel :state="stage" :class="IMAGE_BAND" data-testid="stage-label" />
       <div class="relative" data-testid="stage-image">

@@ -7,6 +7,7 @@ import { useCameraStore } from '../camera/camera-store';
 import { useChartStore } from '../chart/chart-store';
 import { BUNDLED_NAME } from '../reference/bundled';
 import { useReferenceStore } from '../reference/reference-store';
+import { useExportStore } from '../lut/export-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
 import { parseCube } from '../test-support/cube-parse';
@@ -116,6 +117,26 @@ describe('ExportTab', () => {
     expect(facts()).toContain('ReferenzFehlender Satz (fehlt)');
   });
 
+  it('lists what the project file contains as its checkboxes set it', async () => {
+    computeModel();
+    await chooseInvert();
+    useChartStore().restore({
+      points: { 3: [{ x: 1, y: 2 }] },
+      measurements: { G18: [0.46, 0.46, 0.46], G50: [0.74, 0.74, 0.74] },
+      rotated: false,
+    });
+    const wrapper = mount(ExportTab);
+    const facts = () => wrapper.get('[data-testid="project-facts"]').text();
+    expect(facts()).toContain('Graukarten1 Eckpunkte · 2 Felder');
+    expect(facts()).toContain('Look-LUTInvert · 100 %');
+    // Without still images no corner points, without look LUTs no look.
+    useExportStore().setWithStills(false);
+    useExportStore().setWithLooks(false);
+    await wrapper.vm.$nextTick();
+    expect(facts()).toContain('Graukarten2 Felder');
+    expect(facts()).toContain('Look-LUT–');
+  });
+
   it('leads to the color cards via the link', async () => {
     const wrapper = mount(ExportTab);
     await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
@@ -138,11 +159,11 @@ describe('ExportTab', () => {
     computeModel();
     const wrapper = mount(ExportTab);
     const radios = wrapper.findAll('[data-testid="export-size"] [role="radio"]');
-    // The unit never breaks from its number (a non-breaking space).
+    // The file size never breaks apart (non-breaking spaces).
     expect(radios.map((radio) => radio.text())).toEqual([
-      '17³ca. 133\u{A0}KBfür ältere Geräte',
-      '33³ca. 970\u{A0}KBStandard',
-      '65³ca. 7,4\u{A0}MBam genauesten',
+      '17³ca.\u{A0}133\u{A0}KBfür ältere Geräte',
+      '33³ca.\u{A0}970\u{A0}KBStandard',
+      '65³ca.\u{A0}7,4\u{A0}MBam genauesten',
     ]);
     expect(radios.map((radio) => radio.attributes('aria-checked'))).toEqual([
       'false',

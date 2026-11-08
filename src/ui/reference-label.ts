@@ -8,6 +8,11 @@ export function referenceLabel(name: string): string {
   return name === BUNDLED_NAME ? t('reference.names.bundled') : name;
 }
 
+// Whether the browser has the set of this name.
+export function hasReferenceSet(name: string, sets: readonly { name: string }[]): boolean {
+  return sets.some((set) => set.name === name);
+}
+
 // The set a correction was fitted with, marked while the browser does not have it (a correction
 // loaded from a project whose set is missing here); a dash without one.
 export function fittedReferenceLabel(
@@ -18,7 +23,5 @@ export function fittedReferenceLabel(
     return '–';
   }
   const label = referenceLabel(name);
-  return sets.some((set) => set.name === name)
-    ? label
-    : t('reference.names.missing', { name: label });
+  return hasReferenceSet(name, sets) ? label : t('reference.names.missing', { name: label });
 }

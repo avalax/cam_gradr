@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useCameraStore } from '../camera/camera-store';
@@ -13,7 +13,7 @@ import { useSolveStore } from '../solve/solve-store';
 
 import CardStage from './CardStage.vue';
 import ColorWipe from './ColorWipe.vue';
-import { fittedReferenceLabel, referenceLabel } from './reference-label';
+import { hasReferenceSet, referenceLabel } from './reference-label';
 import ResultReport from './ResultReport.vue';
 
 const { t } = useI18n();
@@ -24,12 +24,16 @@ const solve = useSolveStore();
 const { still } = storeToRefs(useCameraStore());
 // Without a still image of this tab (live image or no image at all) there is nothing to compare yet.
 const live = computed(() => still.value === null);
-const { ready, measurements } = storeToRefs(chart);
+const { measurements } = storeToRefs(chart);
 const { selected, sets } = storeToRefs(references);
 const { result, error: solveError, model, referenceName } = storeToRefs(solve);
-// A correction without a report (loaded from a project) names the set it was fitted with, not the
-// active one, which may be another.
-const withoutReport = computed(() => model.value !== null && result.value === null);
+// A correction without a report whose set the browser does not have (loaded from a project) names
+// that set, marked as missing, instead of the active one.
+const missingSet = computed(() => {
+  const name = referenceName.value;
+  const withoutReport = model.value !== null && result.value === null;
+  return withoutReport && name !== null && !hasReferenceSet(name, sets.value) ? name : null;
+});
 
 // Check against the gray cards from step 1 (for a calculated correction, empty without measured
 // gray cards), at the exposure of the color shot.
@@ -37,19 +41,8 @@ function grayCheck(current: FitResult) {
   return checkGrayCards(current.model, grayChart.measurements, current.report.exposureGain);
 }
 
-function compute(): void {
-  if (selected.value !== null) {
-    solve.compute({ measurements: measurements.value, reference: selected.value });
-  }
-}
-
-// The correction is recalculated on every change: new corner points (and thus new measurements)
-// or a different reference set.
-watch([measurements, selected], () => {
-  if (ready.value && Object.keys(measurements.value).length > 0) {
-    compute();
-  }
-});
+// The correction itself is recalculated on every change of the measurements or the reference set,
+// on any tab (src/solve/recompute.ts, started by the app).
 </script>
 
 <template>
@@ -59,8 +52,8 @@ watch([measurements, selected], () => {
         <p class="text-sm text-zinc-700">
           {{ t('color.intro') }}
         </p>
-        <p v-if="withoutReport" class="text-sm text-zinc-700" data-testid="reference-active">
-          {{ t('color.referenceNoReport', { name: fittedReferenceLabel(referenceName, sets) }) }}
+        <p v-if="missingSet !== null" class="text-sm text-zinc-700" data-testid="reference-active">
+          {{ t('color.referenceMissing', { name: referenceLabel(missingSet) }) }}
         </p>
         <p
           v-else-if="selected !== null"

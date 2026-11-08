@@ -16,6 +16,7 @@
   "viewGrays": "Grays",
   "emptyNoCards": "This view needs measured color cards.",
   "tilesLegend": "Each patch: target, camera, corrected (from left to right).",
+  "tilesLegendNoTarget": "Each patch: camera, corrected (from left to right).",
   "worstTitle": "Largest deviation",
   "neutral": ", neutral",
   "pointsLegend": "Points on the 0–100 scale: + color gets stronger, − weaker.",
