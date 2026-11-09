@@ -14,30 +14,30 @@ const invert = parseLookCube('Invert.cube', INVERT_CUBE);
 
 describe('lutSlices', () => {
   it('shows the look over the correction at its strength', () => {
-    const [plain] = lutSlices(identity, 2, null);
-    const [full] = lutSlices(identity, 2, { lut: invert, amount: 1 });
-    const [none] = lutSlices(identity, 2, { lut: invert, amount: 0 });
+    const [plain] = lutSlices(identity, null);
+    const [full] = lutSlices(identity, { lut: invert, amount: 1 });
+    const [none] = lutSlices(identity, { lut: invert, amount: 0 });
     expect(none).toEqual(plain);
     expect(full).not.toEqual(plain);
     // Top left is green at a blue fraction of 1/16; inverted it turns magenta.
     expect(full?.[0]).toBe(cssColor([1, 0, 1 - 1 / 16]));
   });
 
-  it('returns eight slices with cells × cells colors each', () => {
-    const slices = lutSlices(identity, 4, null);
+  it('returns eight slices with 8 × 8 colors each', () => {
+    const slices = lutSlices(identity, null);
     expect(slices).toHaveLength(8);
     for (const slice of slices) {
-      expect(slice).toHaveLength(16);
+      expect(slice).toHaveLength(64);
     }
   });
 
   it('shows black with the blue share at bottom left and yellow at top right for the identity', () => {
-    const [first] = lutSlices(identity, 4, null);
+    const [first] = lutSlices(identity, null);
     // Bottom left: red 0, green 0, blue 1/16 (share 16 of 255).
-    const bottomLeft = first?.[12] ?? '';
+    const bottomLeft = first?.[56] ?? '';
     expect(bottomLeft).toMatch(/^rgb\(0, 0, \d+\)$/);
     // Top right: red 1, green 1.
-    expect(first?.[3]).toMatch(/^rgb\(255, 255, \d+\)$/);
+    expect(first?.[7]).toMatch(/^rgb\(255, 255, \d+\)$/);
   });
 
   it('passes corrections on: a red cast in the model colors the patches', () => {
@@ -49,7 +49,7 @@ describe('lutSlices', () => {
         [0, 0, 1],
       ],
     };
-    expect(lutSlices(tinted, 2, null)).not.toEqual(lutSlices(identity, 2, null));
+    expect(lutSlices(tinted, null)).not.toEqual(lutSlices(identity, null));
   });
 });
 

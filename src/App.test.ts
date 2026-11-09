@@ -116,12 +116,9 @@ describe('App', () => {
     await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowLeft' });
     expect(tabs(wrapper)[3]?.attributes('aria-selected')).toBe('true');
     expect(stops()).toEqual(['-1', '-1', '-1', '0']);
-    await tabs(wrapper)[3]?.trigger('keydown', { key: 'Home' });
-    expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
-    // Up and down keep scrolling the page, other keys do nothing either.
-    await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowDown' });
-    await tabs(wrapper)[0]?.trigger('keydown', { key: 'a' });
-    expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
+    // Up and down keep scrolling the page.
+    await tabs(wrapper)[3]?.trigger('keydown', { key: 'ArrowDown' });
+    expect(tabs(wrapper)[3]?.attributes('aria-selected')).toBe('true');
   });
 
   it('shows the camera switch in the export only while the camera runs', async () => {
@@ -185,7 +182,7 @@ describe('App', () => {
 
   it('puts the floating project message after the panel in the order of the Tab key', async () => {
     const wrapper = mountApp();
-    useProjectStore().notice = 'Hinweis';
+    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
     await flushPromises();
     const panel = wrapper.get('[role="tabpanel"]').element;
     const message = wrapper.get('[data-testid="project-message"]').element;

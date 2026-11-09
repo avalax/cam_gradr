@@ -104,8 +104,10 @@ function text(message: LookMessage): string {
     :aria-label="t('look.label')"
     data-testid="look-bar"
   >
-    <div class="flex min-w-0 items-center gap-1.5">
-      <label :for="PICKER_ID" class="font-semibold">{{ t('look.label') }}</label>
+    <!-- The picker group starts from a fixed width, so that the name of the look does not decide
+         whether the bar takes a second line (the preview and the export would jump with it). -->
+    <div class="flex min-w-0 flex-[1_1_13rem] items-center gap-1.5">
+      <label :for="PICKER_ID" class="shrink-0 font-semibold">{{ t('look.label') }}</label>
       <LookPicker
         v-model="chosen"
         :names="names"

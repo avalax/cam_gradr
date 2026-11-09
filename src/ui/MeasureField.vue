@@ -34,12 +34,11 @@ const BANDS = [
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
 
-const box = OK_BOX;
 const boxStyle = {
-  left: `${String(box.left)}%`,
-  top: `${String(box.top)}%`,
-  width: `${String(box.width)}%`,
-  height: `${String(box.height)}%`,
+  left: `${String(OK_BOX.left)}%`,
+  top: `${String(OK_BOX.top)}%`,
+  width: `${String(OK_BOX.width)}%`,
+  height: `${String(OK_BOX.height)}%`,
 };
 const hint = computed(() => fieldHint(props.exposure));
 const issue = computed(() => mainIssue(props.exposure));

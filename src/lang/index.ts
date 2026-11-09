@@ -1,3 +1,4 @@
+import { watch } from 'vue';
 import { createI18n } from 'vue-i18n';
 
 import enApp from './en/app.json' with { type: 'json' };
@@ -113,6 +114,12 @@ export const i18n = createI18n({
 
 // Translates outside of components (stores, helpers, error messages).
 export const t = i18n.global.t;
+
+// Calls `callback` at every language switch, for a text that was put together in the language of
+// the moment and cannot be translated again. At once, so that it never meets a newer text.
+export function onLocaleChange(callback: () => void): void {
+  watch(i18n.global.locale, callback, { flush: 'sync' });
+}
 
 // Switches the language of the whole app, including the `lang` attribute of the page.
 export function setLocale(locale: Locale): void {

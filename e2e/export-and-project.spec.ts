@@ -68,7 +68,7 @@ test.describe('Export and project', () => {
 
     // The preview corrects the live image again; patch 5H lies right of the divider, corrected.
     await app.openPreviewWithImage();
-    await app.showCards('colors');
+    await app.showColorCards();
     const { x, y } = colorPatchCenter('5H');
     const expected = labToSrgb(dummyLab('5H')).map((value) => Math.round(value * 255));
     await app.expectPreviewColor(x, y, expected, 7);

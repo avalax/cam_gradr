@@ -1,7 +1,15 @@
-import { t } from '../lang';
-
-type CameraErrorCode =
-  'unsupported' | 'permission-denied' | 'not-found' | 'in-use' | 'unsatisfiable' | 'unknown';
+// What went wrong with the camera: the key of its text in the language files (camera.errors),
+// which is translated when shown, so that it follows a language switch.
+export type CameraErrorCode =
+  | 'unsupported'
+  | 'permissionDenied'
+  | 'notFound'
+  | 'inUse'
+  | 'unsatisfiable'
+  | 'unknown'
+  | 'notReady'
+  | 'noCanvas'
+  | 'captureFailed';
 
 export class CameraError extends Error {
   readonly code: CameraErrorCode;
@@ -14,23 +22,13 @@ export class CameraError extends Error {
 }
 
 const NAME_TO_CODE: Readonly<Record<string, CameraErrorCode>> = {
-  NotAllowedError: 'permission-denied',
-  SecurityError: 'permission-denied',
-  NotFoundError: 'not-found',
-  NotReadableError: 'in-use',
-  AbortError: 'in-use',
+  NotAllowedError: 'permissionDenied',
+  SecurityError: 'permissionDenied',
+  NotFoundError: 'notFound',
+  NotReadableError: 'inUse',
+  AbortError: 'inUse',
   OverconstrainedError: 'unsatisfiable',
   ConstraintNotSatisfiedError: 'unsatisfiable',
-};
-
-// Each text is looked up when needed, so a language switch applies to the next error.
-const MESSAGES: Readonly<Record<CameraErrorCode, () => string>> = {
-  unsupported: () => t('camera.errors.unsupported'),
-  'permission-denied': () => t('camera.errors.permissionDenied'),
-  'not-found': () => t('camera.errors.notFound'),
-  'in-use': () => t('camera.errors.inUse'),
-  unsatisfiable: () => t('camera.errors.unsatisfiable'),
-  unknown: () => t('camera.errors.unknown'),
 };
 
 export function toCameraError(error: unknown): CameraError {
@@ -39,8 +37,4 @@ export function toCameraError(error: unknown): CameraError {
   }
   const name = error instanceof Error ? error.name : '';
   return new CameraError(NAME_TO_CODE[name] ?? 'unknown', { cause: error });
-}
-
-export function describeCameraError(error: CameraError): string {
-  return MESSAGES[error.code]();
 }

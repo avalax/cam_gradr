@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { i18n } from '../lang';
 import { grayFrame } from '../test-support/frames';
 
 import { CameraError } from './camera-error';
@@ -56,7 +57,7 @@ describe('useCameraStore', () => {
 
   it('reports errors and releases the camera', async () => {
     const api = fakeApi({
-      open: vi.fn().mockRejectedValue(new CameraError('permission-denied')),
+      open: vi.fn().mockRejectedValue(new CameraError('permissionDenied')),
     });
     const store = useCameraStore();
     await store.start();
@@ -132,32 +133,23 @@ describe('useCameraStore', () => {
     expect(store.errorMessage).toBeNull();
   });
 
-  it('reports errors during capture', async () => {
+  it('reports errors during capture in the language shown', async () => {
     fakeApi();
     const store = useCameraStore();
-    const failing = {
+    const failing = (thrown: Error) => ({
       grab: () => {
-        throw new Error('Canvas kaputt');
+        throw thrown;
       },
       nextFrame: () => Promise.resolve(),
-    };
-    await store.captureStill(failing);
-    expect(store.errorMessage).toBe('Canvas kaputt');
+    });
+    await store.captureStill(failing(new CameraError('noCanvas')));
+    expect(store.errorMessage).toBe('Canvas-Kontext nicht verfügbar.');
     expect(store.still).toBeNull();
-  });
-
-  it('uses a default message for non-Error failures', async () => {
-    fakeApi();
-    const store = useCameraStore();
-    const failing = {
-      grab: () => {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw 'kaputt';
-      },
-      nextFrame: () => Promise.resolve(),
-    };
-    await store.captureStill(failing);
-    expect(store.errorMessage).toBe('Aufnahme fehlgeschlagen.');
+    i18n.global.locale.value = 'en';
+    expect(store.errorMessage).toBe('Canvas context not available.');
+    // What the browser throws is a failed capture.
+    await store.captureStill(failing(new DOMException('', 'SecurityError')));
+    expect(store.errorMessage).toBe('Capture failed.');
   });
 
   it('discards the still image on clearing and on every camera start', async () => {
@@ -247,7 +239,7 @@ describe('useCameraStore', () => {
     });
 
     it('returns the previous still image even after a start error', async () => {
-      fakeApi({ open: vi.fn().mockRejectedValue(new CameraError('permission-denied')) });
+      fakeApi({ open: vi.fn().mockRejectedValue(new CameraError('permissionDenied')) });
       const store = useCameraStore();
       const old = grayFrame(1, 1, 0.2);
       store.still = old;

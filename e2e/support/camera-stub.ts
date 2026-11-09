@@ -8,16 +8,16 @@ const FRAME_RATE = 30;
 
 interface Options {
   scenes: Record<string, Scene>;
-  initial: string;
   redrawMs: number;
   frameRate: number;
 }
 
-// Runs in the browser and must therefore be completely self-contained.
-function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void {
-  const first = scenes[initial];
+// Runs in the browser and must therefore be completely self-contained. The camera starts with the
+// gray cards.
+function installInPage({ scenes, redrawMs, frameRate }: Options): void {
+  const first = scenes.gray;
   if (first === undefined) {
-    throw new Error('Unknown scene.');
+    throw new Error('The scenes lack the gray cards.');
   }
   const canvas = document.createElement('canvas');
   canvas.width = first.width;
@@ -93,11 +93,9 @@ export async function installSyntheticCamera(
   scenes: Record<string, Scene> = Object.fromEntries(
     SCENE_NAMES.map((name) => [name, sceneFor(name)]),
   ),
-  initial = 'gray',
 ): Promise<void> {
   await page.addInitScript(installInPage, {
     scenes,
-    initial,
     redrawMs: REDRAW_MS,
     frameRate: FRAME_RATE,
   });

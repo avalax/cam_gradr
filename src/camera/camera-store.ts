@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
 import { t } from '../lang';
 
 import { createBrowserCamera } from './browser-camera';
 import { captureAveraged } from './capture';
 import type { FrameGrabber } from './capture';
-import { describeCameraError, toCameraError } from './camera-error';
+import { CameraError, toCameraError } from './camera-error';
+import type { CameraErrorCode } from './camera-error';
 import type { Frame } from './frame';
 import { DEFAULT_RESOLUTION } from './types';
 import type { CameraApi, CameraSession, Resolution, VideoDevice } from './types';
@@ -29,7 +30,11 @@ export const useCameraStore = defineStore('camera', () => {
   const selectedDeviceId = ref<string | null>(null);
   const resolution = ref<Resolution>(DEFAULT_RESOLUTION);
   const status = ref<'idle' | 'starting' | 'live' | 'error'>('idle');
-  const errorMessage = ref<string | null>(null);
+  // What went wrong last; its text is translated when read, so that it follows a language switch.
+  const errorCode = ref<CameraErrorCode | null>(null);
+  const errorMessage = computed(() =>
+    errorCode.value === null ? null : t(`camera.errors.${errorCode.value}`),
+  );
   const stream = shallowRef<MediaStream | null>(null);
   const actual = ref<Resolution | null>(null);
   const still = shallowRef<Frame | null>(null);
@@ -66,7 +71,7 @@ export const useCameraStore = defineStore('camera', () => {
     held.value = still.value ?? held.value;
     still.value = null;
     status.value = 'starting';
-    errorMessage.value = null;
+    errorCode.value = null;
     try {
       session = await holder.api.open(selectedDeviceId.value, resolution.value);
       stream.value = session.stream;
@@ -77,7 +82,7 @@ export const useCameraStore = defineStore('camera', () => {
       status.value = 'live';
     } catch (error) {
       release();
-      errorMessage.value = describeCameraError(toCameraError(error));
+      errorCode.value = toCameraError(error).code;
       status.value = 'error';
       settle();
     }
@@ -144,14 +149,14 @@ export const useCameraStore = defineStore('camera', () => {
   }
 
   async function captureStill(grabber: FrameGrabber): Promise<void> {
-    errorMessage.value = null;
+    errorCode.value = null;
     try {
       still.value = await captureAveraged(grabber);
       // The new still image replaces the held one.
       held.value = null;
     } catch (error) {
-      errorMessage.value =
-        error instanceof Error ? error.message : t('camera.errors.captureFailed');
+      // The grabber names what it lacked; anything else (the browser) is a failed capture.
+      errorCode.value = error instanceof CameraError ? error.code : 'captureFailed';
     }
   }
 
@@ -160,6 +165,7 @@ export const useCameraStore = defineStore('camera', () => {
     selectedDeviceId,
     resolution,
     status,
+    errorCode,
     errorMessage,
     stream,
     actual,

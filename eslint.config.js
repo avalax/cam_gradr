@@ -168,7 +168,9 @@ export default tseslint.config(
       'security/detect-non-literal-fs-filename': 'off',
       'playwright/expect-expect': [
         'error',
-        { assertFunctionNames: ['expect', 'expectVerdict', 'expectPatch', 'expectPreviewColor'] },
+        {
+          assertFunctionNames: ['expect', 'expectNormalLight', 'expectPatch', 'expectPreviewColor'],
+        },
       ],
     },
   },

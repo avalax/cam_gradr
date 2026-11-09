@@ -16,13 +16,20 @@ import {
   parseLookCube,
   sampleLook,
 } from './look';
-import type { LookLut } from './look';
+import type { LookLut, LookProblem } from './look';
 
 // The value lines of the inverting look, for files with other headers.
 const INVERT_LINES = INVERT_CUBE.split('\n').slice(1);
 
 function cube(...header: string[]): string {
   return [...header, ...INVERT_LINES].join('\n');
+}
+
+// Checks that the parser rejects the text with this problem.
+function rejects(text: string, key: LookProblem['key'], params: LookProblem['params'] = {}) {
+  expect(() => parseLookCube('a.cube', text)).toThrow(
+    expect.objectContaining({ problem: { key, params } }),
+  );
 }
 
 function invertLook(): LookLut {
@@ -66,38 +73,37 @@ describe('parseLookCube', () => {
   });
 
   it('rejects 1D LUTs', () => {
-    expect(() => parseLookCube('a.cube', 'LUT_1D_SIZE 1024\n0 0 0')).toThrow('1D-LUT');
+    rejects('LUT_1D_SIZE 1024\n0 0 0', 'oneDimensional');
   });
 
   it('rejects files without a 3D size, also when the values come first', () => {
-    expect(() => parseLookCube('a.cube', 'TITLE "x"')).toThrow('LUT_3D_SIZE fehlt');
-    expect(() => parseLookCube('a.cube', cube())).toThrow('LUT_3D_SIZE fehlt');
+    rejects('TITLE "x"', 'noSize');
+    rejects(cube(), 'noSize');
   });
 
   it('rejects sizes outside 2 to 129', () => {
-    expect(() => parseLookCube('a.cube', 'LUT_3D_SIZE 1')).toThrow('LUT_3D_SIZE 1');
-    expect(() => parseLookCube('a.cube', 'LUT_3D_SIZE 130')).toThrow('2 bis 129');
-    expect(() => parseLookCube('a.cube', 'LUT_3D_SIZE 2.5')).toThrow('2.5');
-    expect(() => parseLookCube('a.cube', 'LUT_3D_SIZE')).toThrow('undefined');
+    const range = { min: 2, max: 129 };
+    rejects('LUT_3D_SIZE 1', 'size', { size: '1', ...range });
+    rejects('LUT_3D_SIZE 130', 'size', { size: '130', ...range });
+    rejects('LUT_3D_SIZE 2.5', 'size', { size: '2.5', ...range });
+    rejects('LUT_3D_SIZE', 'size', { size: 'undefined', ...range });
   });
 
   it('names the line with broken numbers', () => {
-    const broken = ['LUT_3D_SIZE 2', '0 0 0', '1 x 0'].join('\n');
-    expect(() => parseLookCube('a.cube', broken)).toThrow('Zeile 3');
-    expect(() => parseLookCube('a.cube', 'DOMAIN_MIN 0 0')).toThrow('Zeile 1');
-    expect(() => parseLookCube('a.cube', 'LUT_3D_INPUT_RANGE 0')).toThrow('Zeile 1');
+    rejects(['LUT_3D_SIZE 2', '0 0 0', '1 x 0'].join('\n'), 'numbers', { line: 3 });
+    rejects('DOMAIN_MIN 0 0', 'numbers', { line: 1 });
+    rejects('LUT_3D_INPUT_RANGE 0', 'numbers', { line: 1 });
   });
 
   it('rejects too few or too many value lines', () => {
     const few = ['LUT_3D_SIZE 2', ...INVERT_LINES.slice(1)].join('\n');
-    expect(() => parseLookCube('a.cube', few)).toThrow('Erwartet werden 8 Werte-Zeilen');
+    rejects(few, 'count', { expected: 8, actual: 7 });
     const many = [...cube('LUT_3D_SIZE 2').split('\n'), '0 0 0'].join('\n');
-    expect(() => parseLookCube('a.cube', many)).toThrow('die Datei hat 9');
+    rejects(many, 'count', { expected: 8, actual: 9 });
   });
 
   it('rejects an empty input range', () => {
-    const text = cube('DOMAIN_MIN 0 0.5 0', 'DOMAIN_MAX 1 0.5 1', 'LUT_3D_SIZE 2');
-    expect(() => parseLookCube('a.cube', text)).toThrow('DOMAIN_MIN');
+    rejects(cube('DOMAIN_MIN 0 0.5 0', 'DOMAIN_MAX 1 0.5 1', 'LUT_3D_SIZE 2'), 'domain');
   });
 });
 

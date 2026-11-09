@@ -23,6 +23,7 @@
   },
   "errors": {
     "notCube": "Nur .cube-Dateien sind möglich.",
+    "unreadable": "Die Datei lässt sich nicht lesen.",
     "oneDimensional": "Die Datei enthält eine 1D-LUT (LUT_1D_SIZE). Eine Look-LUT muss eine 3D-LUT sein (LUT_3D_SIZE).",
     "noSize": "LUT_3D_SIZE fehlt vor den Werten, die Datei ist keine 3D-LUT.",
     "size": "LUT_3D_SIZE {size} wird nicht unterstützt ({min} bis {max}).",

@@ -22,7 +22,7 @@ describe('ProjectStatus', () => {
 
   it('shows the project hint floating and closes it with the cross', async () => {
     const wrapper = mount(ProjectStatus);
-    useProjectStore().notice = 'Der Referenzsatz fehlt.';
+    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
     await wrapper.vm.$nextTick();
     expect(wrapper.get('[data-testid="project-message"]').classes()).toContain('fixed');
     expect(wrapper.get('[data-testid="project-notice"]').text()).toContain('Referenzsatz');
@@ -45,13 +45,13 @@ describe('ProjectStatus', () => {
     };
 
     save.focus();
-    useProjectStore().notice = 'Der Referenzsatz fehlt.';
+    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
     await wrapper.vm.$nextTick();
     await close();
     expect(document.activeElement).toBe(save);
 
     // The button that had the focus went with its tab: the focus goes to the open tab.
-    useProjectStore().error = 'Unbekanntes Format';
+    useProjectStore().failure = { key: 'invalid', text: 'Unbekanntes Format' };
     await wrapper.vm.$nextTick();
     save.remove();
     await close();
@@ -59,7 +59,7 @@ describe('ProjectStatus', () => {
 
     // Nothing had the focus: the open tab as well.
     tab.blur();
-    useProjectStore().notice = 'Der Referenzsatz fehlt.';
+    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
     await wrapper.vm.$nextTick();
     await close();
     expect(document.activeElement).toBe(tab);

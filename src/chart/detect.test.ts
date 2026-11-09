@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Frame } from '../camera/frame';
+import { grayFrame } from '../test-support/frames';
 
 import { detectOutlines, sameCards } from './detect';
 import type { Corners, Point } from './types';
@@ -53,8 +54,7 @@ function drawCard(frame: Frame, x0: number, y0: number, w: number, h: number, o:
 }
 
 function scene(draw: (frame: Frame) => void): Frame {
-  const data = new Float32Array(SIZE.width * SIZE.height * 3).fill(BACKGROUND);
-  const frame = { ...SIZE, data };
+  const frame = grayFrame(SIZE.width, SIZE.height, BACKGROUND);
   draw(frame);
   return frame;
 }
@@ -167,7 +167,7 @@ describe('detectOutlines with all cards', () => {
   it('works on a downscaled copy for larger images', () => {
     const width = 1280;
     const height = 720;
-    const frame = { width, height, data: new Float32Array(width * height * 3).fill(BACKGROUND) };
+    const frame = grayFrame(width, height, BACKGROUND);
     drawCard(frame, 300, 100, 340, 520);
     expectCard(detectAll(frame, 1)?.[0], 300, 100, 340, 520);
   });
@@ -319,7 +319,7 @@ const BOXES: readonly Box[] = [
 ];
 
 function fineScene(paint: (frame: Frame, box: Box) => void, surround = 0.6): Frame {
-  const frame = { width: 1280, height: 720, data: new Float32Array(1280 * 720 * 3).fill(surround) };
+  const frame = grayFrame(1280, 720, surround);
   for (const box of BOXES) {
     paint(frame, box);
     cover(frame, { x: box.x + 30, y: box.y + 30, w: box.w - 60, h: box.h - 60 }, 0.8);

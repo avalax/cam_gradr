@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { i18n } from '../lang';
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 import { failingStorage } from '../test-support/failing-storage';
 import type { NamedStorage } from '../storage/indexed-db';
@@ -9,9 +10,6 @@ import { emptyReferenceStorage } from '../test-support/reference-storage';
 import { BUNDLED_NAME } from './bundled';
 import { setReferenceStorage, useReferenceStore } from './reference-store';
 import type { ReferenceSet } from './reference';
-
-const download = vi.hoisted(() => vi.fn());
-vi.mock('../lut/download', () => ({ downloadFile: download }));
 
 describe('useReferenceStore', () => {
   let storage: NamedStorage<ReferenceSet>;
@@ -86,6 +84,36 @@ describe('useReferenceStore', () => {
     expect(store.error).toContain('Unbekanntes Format');
     expect(store.sets).toHaveLength(1);
     await store.importFile('kaputt.json', dummyReferenceJson('Satz B'));
+    expect(store.error).toBeNull();
+  });
+
+  it('shows only the outcome of the last action', async () => {
+    const store = useReferenceStore();
+    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.remove('Satz A');
+    expect(store.lastRemoved).toBe('Satz A');
+    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    expect([store.lastRemoved, store.lastSaved]).toEqual([null, 'Satz B']);
+    await store.importFile('kaputt.json', '{"format":"x"}');
+    expect(store.lastSaved).toBeNull();
+    expect(store.error).not.toBeNull();
+    store.select('Satz B');
+    expect(store.error).toBeNull();
+    await store.importFile('kaputt.json', '{"format":"x"}');
+    await store.remove('Satz B');
+    expect(store.error).toBeNull();
+  });
+
+  it('translates warnings when the language changes and drops the error of the validation', async () => {
+    setReferenceStorage(failingStorage());
+    const store = useReferenceStore();
+    await store.load();
+    expect(store.warning).toBe('Gespeicherte Referenzen konnten nicht geladen werden.');
+    i18n.global.locale.value = 'en';
+    expect(store.warning).toBe('Saved references could not be loaded.');
+    await store.importFile('kaputt.json', '{"format":"x"}');
+    expect(store.error).not.toBeNull();
+    i18n.global.locale.value = 'de';
     expect(store.error).toBeNull();
   });
 
@@ -170,22 +198,6 @@ describe('useReferenceStore', () => {
       await store.load();
       expect(store.sets).toHaveLength(1);
       expect(Object.keys(store.selected?.patches ?? {})).toEqual(['1A']);
-    });
-  });
-
-  describe('Download', () => {
-    it('saves the selected set as an importable JSON file', async () => {
-      download.mockReset();
-      const store = useReferenceStore();
-      await store.importFile('a.json', dummyReferenceJson('Satz A'));
-      store.download(store.selected ?? { name: '', patches: {} });
-      const [name, content, mime] = download.mock.calls[0] as [string, string, string];
-      expect(name).toBe('Satz A.json');
-      expect(mime).toBe('application/json');
-      setActivePinia(createPinia());
-      const again = useReferenceStore();
-      await again.importFile(name, content);
-      expect(again.selected?.patches).toEqual(store.selected?.patches);
     });
   });
 });

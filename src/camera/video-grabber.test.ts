@@ -29,14 +29,16 @@ describe('createVideoGrabber.grab', () => {
     const canvas: CanvasLike = { width: 0, height: 0, getContext: () => null };
     for (const size of [{ videoWidth: 0 }, { videoHeight: 0 }]) {
       expect(() => createVideoGrabber(fakeVideo(size), () => canvas).grab()).toThrow(
-        'noch nicht bereit',
+        expect.objectContaining({ code: 'notReady' }),
       );
     }
   });
 
   it('throws when no 2D context is available', () => {
     const canvas: CanvasLike = { width: 0, height: 0, getContext: () => null };
-    expect(() => createVideoGrabber(fakeVideo(), () => canvas).grab()).toThrow('Canvas-Kontext');
+    expect(() => createVideoGrabber(fakeVideo(), () => canvas).grab()).toThrow(
+      expect.objectContaining({ code: 'noCanvas' }),
+    );
   });
 });
 

@@ -12,7 +12,7 @@ function clamp(value: number): number {
   return Math.min(Math.max(value, 0), 100);
 }
 
-export interface Position {
+interface Position {
   left: number;
   top: number;
 }
@@ -26,7 +26,7 @@ export function fieldPosition(exposure: ExposureResult): Position {
   };
 }
 
-export interface Box extends Position {
+interface Box extends Position {
   width: number;
   height: number;
 }
@@ -49,7 +49,7 @@ function signed(value: number): string {
   return t('measure.points', { value: formatSigned(value * 100, 0) });
 }
 
-export interface DetailRow {
+interface DetailRow {
   label: string;
   value: string;
 }
@@ -90,7 +90,7 @@ export type Edge = 'top' | 'bottom' | 'left' | 'right';
 
 // Most important message: it sits on the edge of the field towards which the measurement deviates,
 // and names the next step together with the hint.
-export interface Issue {
+interface Issue {
   edge: Edge;
   label: string;
   hint: string;

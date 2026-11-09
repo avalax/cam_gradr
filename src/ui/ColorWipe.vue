@@ -135,7 +135,7 @@ const summary = computed(() => {
         {{ summary }}
       </p>
       <div
-        v-if="report !== null && $slots.details && !dismissed"
+        v-if="report !== null && !dismissed"
         class="absolute bottom-0 left-0 right-[11rem] z-20 hidden max-h-full flex-col items-end pr-3 group-hover:flex group-focus-within:flex"
         role="tooltip"
         data-testid="color-wipe-popup"

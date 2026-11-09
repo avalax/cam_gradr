@@ -87,11 +87,7 @@ function remove(name: string): void {
         </button>
       </template>
     </div>
-    <p
-      v-if="selected !== null && lastSaved === selected.name"
-      class="text-xs text-zinc-600"
-      data-testid="reference-saved"
-    >
+    <p v-if="lastSaved !== null" class="text-xs text-zinc-600" data-testid="reference-saved">
       {{ t('reference.panel.saved') }}
     </p>
     <p v-if="lastRemoved !== null" class="text-xs text-zinc-600" data-testid="reference-removed">

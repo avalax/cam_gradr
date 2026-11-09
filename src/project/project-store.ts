@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef } from 'vue';
+import { computed, shallowRef } from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
 import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import { t } from '../lang';
+import { onLocaleChange, t } from '../lang';
 import type { LookLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
 import { useExportStore } from '../lut/export-store';
@@ -169,16 +169,46 @@ export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 
 // Saving and loading the working state as a JSON file (without the manufacturers' reference values).
 export const useProjectStore = defineStore('project', () => {
-  const error = ref<string | null>(null);
-  const notice = ref<string | null>(null);
+  // What the message over the page says: the key of a text in the language files with its values,
+  // translated when read, so that it follows a language switch. The validation of a file is the
+  // exception: it puts its text together deep in the parser, in the language of the moment, so
+  // that text goes away with a switch. `reason` is the browser's own text.
+  type ProjectFailure =
+    { key: 'saveFailed' | 'openFailed'; reason: string } | { key: 'invalid'; text: string };
+  type ProjectNotice =
+    | { key: 'missingReference'; name: string }
+    | { key: 'lookRemoved' | 'looksRemoved'; count: number };
+
+  const failure = shallowRef<ProjectFailure | null>(null);
+  const notices = shallowRef<ProjectNotice[]>([]);
   // The file that was loaded or saved last: saving suggests it again.
   const file = shallowRef<ProjectFile | null>(null);
+
+  const error = computed(() => {
+    const current = failure.value;
+    if (current === null) {
+      return null;
+    }
+    return current.key === 'invalid'
+      ? current.text
+      : t(`project.errors.${current.key}`, { reason: current.reason });
+  });
+  const notice = computed(() =>
+    notices.value.length === 0
+      ? null
+      : notices.value.map((entry) => t(`project.notice.${entry.key}`, entry)).join(' '),
+  );
+
+  onLocaleChange(() => {
+    if (failure.value?.key === 'invalid') {
+      failure.value = null;
+    }
+  });
 
   // Saves the working state; with `withStills` the tabs' still images are included in the file, with
   // `withLooks` the imported look LUTs.
   async function save(options: { withStills: boolean; withLooks: boolean }): Promise<void> {
-    error.value = null;
-    notice.value = null;
+    dismiss();
     const { withStills } = options;
     const project = snapshot(withStills);
     if (options.withLooks) {
@@ -197,22 +227,22 @@ export const useProjectStore = defineStore('project', () => {
         file.value = saved;
       }
     } catch (error_) {
-      error.value = t('project.errors.saveFailed', { reason: (error_ as Error).message });
+      failure.value = { key: 'saveFailed', reason: (error_ as Error).message };
     }
   }
 
   // Applies a project file; with a faulty file the previous state is kept. `source` is the file it
   // came from, which saving suggests afterwards.
   async function load(text: string, source: ProjectFile): Promise<void> {
-    notice.value = null;
+    notices.value = [];
     let read: ReadProject;
     try {
       read = await readProject(text);
     } catch (error_) {
-      error.value = (error_ as Error).message;
+      failure.value = { key: 'invalid', text: (error_ as Error).message };
       return;
     }
-    error.value = null;
+    failure.value = null;
     file.value = source;
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
@@ -220,15 +250,14 @@ export const useProjectStore = defineStore('project', () => {
     const gone = await applyLooks(read.project.looks, read.luts);
     // There are no success messages; a missing reference set and look LUTs that left the browser
     // deserve a notice.
-    const notices = [
-      missing === null ? null : t('project.notice.missingReference', { name: missing }),
-      gone === 0
-        ? null
-        : t(gone === 1 ? 'project.notice.lookRemoved' : 'project.notice.looksRemoved', {
-            count: gone,
-          }),
-    ].filter((entry) => entry !== null);
-    notice.value = notices.length === 0 ? null : notices.join(' ');
+    const found: ProjectNotice[] = [];
+    if (missing !== null) {
+      found.push({ key: 'missingReference', name: missing });
+    }
+    if (gone > 0) {
+      found.push({ key: gone === 1 ? 'lookRemoved' : 'looksRemoved', count: gone });
+    }
+    notices.value = found;
   }
 
   // Lets the user choose a project file in the system dialog and loads it.
@@ -239,15 +268,15 @@ export const useProjectStore = defineStore('project', () => {
         await load(picked.text, picked.file);
       }
     } catch (error_) {
-      error.value = t('project.errors.openFailed', { reason: (error_ as Error).message });
+      failure.value = { key: 'openFailed', reason: (error_ as Error).message };
     }
   }
 
   // Dismisses the message.
   function dismiss(): void {
-    error.value = null;
-    notice.value = null;
+    failure.value = null;
+    notices.value = [];
   }
 
-  return { error, notice, save, load, open, dismiss };
+  return { failure, notices, error, notice, save, load, open, dismiss };
 });

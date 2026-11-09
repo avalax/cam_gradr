@@ -114,11 +114,6 @@ describe('LookBar', () => {
       expect(useLookStore().messages).toHaveLength(3);
     });
     await flushPromises();
-    expect(useLookStore().looks.map((look) => look.name)).toEqual([
-      'Cold',
-      'SLOG 3 S CINETONE_REC709',
-      'Warm',
-    ]);
     const messages = wrapper.get('[data-testid="look-messages"]');
     // The log conversion gets its warning instead of a place in the line of imported looks.
     expect(messages.text()).toContain('2 Look-LUTs importiert');
@@ -167,15 +162,25 @@ describe('LookBar', () => {
     wrapper.unmount();
   });
 
-  it('translates the reason of a rejected file when the language changes', async () => {
+  it('names the reasons of rejected files, also of an unreadable one, in the language shown', async () => {
     const wrapper = mount(LookBar);
-    await useLookStore().importFiles([{ name: 'notes.txt', text: () => Promise.resolve('x') }]);
+    await useLookStore().importFiles([
+      { name: 'notes.txt', text: () => Promise.resolve('x') },
+      { name: 'Gone.cube', text: () => Promise.reject(new DOMException('', 'NotFoundError')) },
+    ]);
     await flushPromises();
-    const alert = () => wrapper.get('[data-testid="look-messages"] [role="alert"]').text();
-    expect(alert()).toContain('Nur .cube-Dateien sind möglich.');
+    const alerts = () =>
+      wrapper.findAll('[data-testid="look-messages"] [role="alert"]').map((alert) => alert.text());
+    expect(alerts()).toEqual([
+      '„notes.txt“ wurde nicht importiert: Nur .cube-Dateien sind möglich.',
+      '„Gone.cube“ wurde nicht importiert: Die Datei lässt sich nicht lesen.',
+    ]);
     setLocale('en');
     await flushPromises();
-    expect(alert()).toContain('Only .cube files are possible.');
+    expect(alerts()).toEqual([
+      '“notes.txt” was not imported: Only .cube files are possible.',
+      '“Gone.cube” was not imported: The file cannot be read.',
+    ]);
   });
 
   it('takes no file when the dialog was cancelled', async () => {

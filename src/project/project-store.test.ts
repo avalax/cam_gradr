@@ -1,16 +1,14 @@
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import type { Rgb } from '../chart/types';
-import type { LookLut } from '../look/look';
-import { setLookStorage, useLookStore } from '../look/look-store';
+import { i18n } from '../lang';
+import { useLookStore } from '../look/look-store';
 import { useExportStore } from '../lut/export-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { fakeHandle, installedDialogs } from '../test-support/file-dialogs';
@@ -200,7 +198,7 @@ describe('useProjectStore', () => {
     const text = await workedState();
     // New, empty state as after reloading the page; the reference set stays stored.
     setActivePinia(createPinia());
-    useCameraStore().still = { width: 1, height: 1, data: new Float32Array(3) };
+    useCameraStore().still = grayFrame(1, 1);
     const project = useProjectStore();
     await project.load(text, FILE);
 
@@ -239,8 +237,7 @@ describe('useProjectStore', () => {
     });
 
     setActivePinia(createPinia());
-    const other = createIndexedDbStorage<LookLut>(new IDBFactory(), 'other', 'looks');
-    setLookStorage(other);
+    const other = emptyLookStorage();
     const project = useProjectStore();
     await project.load(text, FILE);
     expect(project.notice).toBeNull();
@@ -278,8 +275,7 @@ describe('useProjectStore', () => {
   });
 
   it('loads a project saved without look LUTs as if there had never been one', async () => {
-    const storage = createIndexedDbStorage<LookLut>(new IDBFactory(), 'mine', 'looks');
-    setLookStorage(storage);
+    const storage = emptyLookStorage();
     await chooseWarm();
     usePreviewStore().setLeft('corrected');
     const text = await workedState();
@@ -323,10 +319,18 @@ describe('useProjectStore', () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}', FILE);
     expect(project.error).not.toBeNull();
-    project.notice = 'Hinweis';
+    project.notices = [{ key: 'missingReference', name: 'Mein Satz' }];
     project.dismiss();
     expect(project.error).toBeNull();
     expect(project.notice).toBeNull();
+  });
+
+  it('drops the text of the validation when the language changes', async () => {
+    const project = useProjectStore();
+    await project.load('{"format":"x"}', FILE);
+    expect(project.error).toContain('Unbekanntes Format');
+    i18n.global.locale.value = 'en';
+    expect(project.error).toBeNull();
   });
 
   it('uses the saved model when the reference set is missing, and points that out', async () => {
@@ -342,6 +346,8 @@ describe('useProjectStore', () => {
     expect(useSolveStore().result).toBeNull();
     expect(useSolveStore().referenceName).toBe('Mein Satz');
     expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
+    i18n.global.locale.value = 'en';
+    expect(project.notice).toContain('The reference set “Mein Satz” is not available');
   });
 
   it('keeps naming the missing set of a loaded correction when saving again', async () => {
@@ -508,5 +514,7 @@ describe('the project file that saving suggests', () => {
     expect(project.error).toBe('Die Projektdatei ließ sich nicht öffnen: No access');
     await project.save(PLAIN);
     expect(project.error).toBe('Das Projekt ließ sich nicht speichern: Disk full');
+    i18n.global.locale.value = 'en';
+    expect(project.error).toBe('The project could not be saved: Disk full');
   });
 });

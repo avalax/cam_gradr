@@ -6,7 +6,6 @@ import type { Locator, Page } from '@playwright/test';
 import { dummyReferenceJson } from '../../src/test-support/dummy-reference';
 
 import { setScene, showScene } from './camera-stub';
-import type { SceneName } from './synthetic-cards';
 
 // Page object of the app: wraps operating and reading the interface for the acceptance tests.
 export class AppPage {
@@ -21,11 +20,11 @@ export class AppPage {
     this.details = page.getByTestId('measure-details');
   }
 
-  // Hovers over the measuring field and checks the text of the detail display.
-  async expectVerdict(text: string | RegExp): Promise<void> {
+  // Hovers over the measuring field and checks that its details find the light normal.
+  async expectNormalLight(): Promise<void> {
     await this.scale.hover();
     await expect(this.details).toBeVisible();
-    await expect(this.details).toContainText(text);
+    await expect(this.details).toContainText('im Normalbereich');
   }
 
   async open(): Promise<void> {
@@ -113,9 +112,9 @@ export class AppPage {
     await expect(this.page.getByTestId('report')).toBeHidden();
   }
 
-  // Holds other cards in front of the camera (e.g. the color cards after step 1).
-  async showCards(scene: SceneName): Promise<void> {
-    await showScene(this.page, scene);
+  // Holds the color cards in front of the running camera (after step 1).
+  async showColorCards(): Promise<void> {
+    await showScene(this.page, 'colors');
   }
 
   // Gray cards complete: camera on, cards are detected and captured, then on to the color cards.
@@ -124,7 +123,7 @@ export class AppPage {
     await this.startGrayStage();
     await this.captureStill();
     await this.expectCorners();
-    await this.expectVerdict('im Normalbereich');
+    await this.expectNormalLight();
     await this.openTab('Farbkarten');
     await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
   }
@@ -221,15 +220,15 @@ export class AppPage {
     }
   }
 
-  // Opens the gear menu if it is still closed and expands the requested section (the sections are
-  // an accordion, only one is open at a time).
-  async openSettings(section: 'camera' | 'reference'): Promise<void> {
+  // Opens the gear menu if it is still closed and expands its section of the reference values (the
+  // sections are an accordion, only one is open at a time).
+  async openReferenceSettings(): Promise<void> {
     const panel = this.page.getByTestId('settings-panel');
     if (!(await panel.isVisible())) {
       await this.page.getByTestId('settings-button').click();
     }
     await expect(panel).toBeVisible();
-    const header = this.page.getByTestId(`section-${section}`);
+    const header = this.page.getByTestId('section-reference');
     if ((await header.getAttribute('aria-expanded')) !== 'true') {
       await header.click();
     }
@@ -251,7 +250,7 @@ export class AppPage {
 
   // Imports a reference file (JSON) via the file field in the gear menu (the menu stays open).
   async importReference(content: string): Promise<void> {
-    await this.openSettings('reference');
+    await this.openReferenceSettings();
     await this.page.getByTestId('reference-file').setInputFiles({
       name: 'reference.json',
       mimeType: 'application/json',
@@ -269,7 +268,7 @@ export class AppPage {
     // shows the old scene until the new image arrives.
     await setScene(this.page, 'colors');
     if ((await this.cameraSwitch.getAttribute('aria-checked')) === 'true') {
-      await this.showCards('colors');
+      await this.showColorCards();
     } else {
       await this.startSearch();
     }

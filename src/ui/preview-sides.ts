@@ -6,7 +6,7 @@ import type { Side } from '../lut/preview-store';
 // the camera image or the correction, and the right side lays the look over the correction or over
 // the camera image. The labels above the preview and the hint of its tab use the same names; only the
 // labels add the strength of the look.
-export interface PreviewSides {
+interface PreviewSides {
   leftCorrected: boolean;
   rightCamera: boolean;
   leftName: string;

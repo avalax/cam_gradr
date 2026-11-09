@@ -25,7 +25,7 @@ const LIVE = { width: 640, height: 360 };
 // Two portrait cards with a dark frame and light patches on a calm background.
 function twoCardFrame(shift = 0): Frame {
   const { width, height } = LIVE;
-  const frame = { width, height, data: new Float32Array(width * height * 3).fill(0.6) };
+  const frame = grayFrame(width, height, 0.6);
   for (const x0 of [100 + shift, 380 + shift]) {
     for (let y = 50; y < 300; y++) {
       for (let x = x0; x < x0 + 160; x++) {

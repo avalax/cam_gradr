@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
-import { t } from '../lang';
+import { onLocaleChange, t } from '../lang';
 import { APP_ID } from '../ui/app-info';
 import { downloadFile } from '../lut/download';
 import { createIndexedDbStorage } from '../storage/indexed-db';
@@ -26,12 +26,31 @@ function storage(): NamedStorage<ReferenceSet> {
 export const useReferenceStore = defineStore('reference', () => {
   const sets = ref<ReferenceSet[]>([]);
   const selectedName = ref<string | null>(null);
+  // Why the imported file is no reference set. The validation puts the text together deep in the
+  // parser, in the language of the moment, so it cannot follow a language switch and goes away
+  // with it.
   const error = ref<string | null>(null);
-  const warning = ref<string | null>(null);
+  // A problem of the local storage: the key of its text, translated when read.
+  const warningKey = ref<'loadFailed' | 'saveFailed' | 'removeFailed' | null>(null);
+  const warning = computed(() =>
+    warningKey.value === null ? null : t(`reference.warnings.${warningKey.value}`),
+  );
   // Name of the set that was last saved locally successfully.
   const lastSaved = ref<string | null>(null);
   // Name of the set that was last deleted from local storage successfully.
   const lastRemoved = ref<string | null>(null);
+
+  onLocaleChange(() => {
+    error.value = null;
+  });
+
+  // Each action shows only its own outcome.
+  function clearOutcome(): void {
+    error.value = null;
+    warningKey.value = null;
+    lastSaved.value = null;
+    lastRemoved.value = null;
+  }
 
   const selected = computed(
     () => sets.value.find((set) => set.name === selectedName.value) ?? null,
@@ -49,7 +68,7 @@ export const useReferenceStore = defineStore('reference', () => {
         ...local,
       ];
     } catch {
-      warning.value = t('reference.warnings.loadFailed');
+      warningKey.value = 'loadFailed';
     }
     if (sets.value.every((set) => set.name !== BUNDLED_NAME)) {
       sets.value = [bundledReference(), ...sets.value];
@@ -59,8 +78,7 @@ export const useReferenceStore = defineStore('reference', () => {
 
   // Reads a file, validates it and saves it locally (a set of the same name is replaced).
   async function importFile(fileName: string, text: string): Promise<void> {
-    error.value = null;
-    warning.value = null;
+    clearOutcome();
     try {
       const set = parseReferenceFile(fileName, text);
       sets.value = [...sets.value.filter((existing) => existing.name !== set.name), set];
@@ -69,7 +87,7 @@ export const useReferenceStore = defineStore('reference', () => {
         await storage().save(set);
         lastSaved.value = set.name;
       } catch {
-        warning.value = t('reference.warnings.saveFailed');
+        warningKey.value = 'saveFailed';
       }
     } catch (error_) {
       // The validation throws only Error objects with an understandable message.
@@ -84,11 +102,13 @@ export const useReferenceStore = defineStore('reference', () => {
 
   function select(name: string): void {
     if (sets.value.some((set) => set.name === name)) {
+      clearOutcome();
       selectedName.value = name;
     }
   }
 
   async function remove(name: string): Promise<void> {
+    clearOutcome();
     sets.value = sets.value.filter((set) => set.name !== name);
     if (selectedName.value === name) {
       selectedName.value = sets.value[0]?.name ?? null;
@@ -97,7 +117,7 @@ export const useReferenceStore = defineStore('reference', () => {
       await storage().remove(name);
       lastRemoved.value = name;
     } catch {
-      warning.value = t('reference.warnings.removeFailed');
+      warningKey.value = 'removeFailed';
     }
   }
 
@@ -106,6 +126,7 @@ export const useReferenceStore = defineStore('reference', () => {
     selectedName,
     selected,
     error,
+    warningKey,
     warning,
     lastSaved,
     lastRemoved,

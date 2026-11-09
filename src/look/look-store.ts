@@ -6,8 +6,8 @@ import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { APP_ID } from '../ui/app-info';
 
-import { isCubeFile, isLogConversion, parseLookCube } from './look';
-import type { LookError, LookLut, LookProblem } from './look';
+import { LookError, isCubeFile, isLogConversion, parseLookCube } from './look';
+import type { LookLut, LookProblem } from './look';
 
 // What the bar under the preview reports after an action; the texts come from the language files
 // when shown, so that they follow a language switch.
@@ -113,8 +113,11 @@ export const useLookStore = defineStore('look', () => {
         imported.push(look);
         await save(look, problems);
       } catch (error) {
-        // The parser throws only LookErrors, which name the problem.
-        problems.push({ kind: 'rejected', file: file.name, reason: (error as LookError).problem });
+        // The parser names the problem; a file the browser cannot read (moved or locked since it
+        // was chosen) has none of its own.
+        const reason: LookProblem =
+          error instanceof LookError ? error.problem : { key: 'unreadable', params: {} };
+        problems.push({ kind: 'rejected', file: file.name, reason });
       }
     }
     // A look that looks like a log conversion gets the warning instead of a place in the line that

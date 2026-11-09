@@ -12,6 +12,7 @@ import { recomputeOnChange } from '../solve/recompute';
 import { useSolveStore } from '../solve/solve-store';
 import { bothCards } from '../test-support/cards';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { grayFrame } from '../test-support/frames';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
 import { cameraCode, syntheticMeasurements } from '../test-support/synthetic-camera';
@@ -110,7 +111,7 @@ describe('ColorStep', () => {
     // The measurement of the (tiny) still image is replaced by prepared measurements afterwards.
     const chart = prepareMeasurements();
     const measurements = chart.measurements;
-    useCameraStore().still = { width: 1, height: 1, data: new Float32Array(3) };
+    useCameraStore().still = grayFrame(1, 1);
     await flushPromises();
     chart.measurements = measurements;
     await flushPromises();
@@ -130,7 +131,7 @@ describe('ColorStep', () => {
     camera.status = 'live';
     await flushPromises();
     expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(false);
-    camera.still = { width: 1, height: 1, data: new Float32Array(3) };
+    camera.still = grayFrame(1, 1);
     await flushPromises();
     expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(true);
   });

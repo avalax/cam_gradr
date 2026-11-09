@@ -63,13 +63,10 @@ describe('ChoiceChips', () => {
     }
   });
 
-  it('is one stop of the Tab key: the chosen option, else the first', async () => {
+  it('is one stop of the Tab key: the chosen option', () => {
     const wrapper = mount(ChoiceChips, { props: { options: THREE, selected: 'c' } });
-    const stops = () =>
-      wrapper.findAll('[role="radio"]').map((radio) => radio.attributes('tabindex'));
-    expect(stops()).toEqual(['-1', '-1', '0']);
-    await wrapper.setProps({ selected: 'x' });
-    expect(stops()).toEqual(['0', '-1', '-1']);
+    const stops = wrapper.findAll('[role="radio"]').map((radio) => radio.attributes('tabindex'));
+    expect(stops).toEqual(['-1', '-1', '0']);
   });
 
   it('chooses the next option with the arrow keys', async () => {

@@ -20,7 +20,7 @@ test.describe('Color cards', () => {
     await expect(app.page.getByTestId('reference-saved')).toBeVisible();
 
     await app.page.reload();
-    await app.openSettings('reference');
+    await app.openReferenceSettings();
     const select = app.page.getByTestId('reference-select');
     await select.selectOption('Saved list');
     await app.closeSettings();
@@ -29,12 +29,12 @@ test.describe('Color cards', () => {
       '„Saved list“ mit 48 Feldern',
     );
 
-    await app.openSettings('reference');
+    await app.openReferenceSettings();
     await app.button('Satz löschen').click();
     // Only after the confirmation is the set also removed from the browser storage.
     await expect(app.page.getByTestId('reference-removed')).toBeVisible();
     await app.page.reload();
-    await app.openSettings('reference');
+    await app.openReferenceSettings();
     await expect(select.locator('option')).not.toHaveCount(0);
     await expect(select.locator('option', { hasText: 'Saved list' })).toHaveCount(0);
   });

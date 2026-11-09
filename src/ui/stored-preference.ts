@@ -1,7 +1,7 @@
 import { APP_ID } from './app-info';
 
 // A choice of the settings that the browser keeps (language, appearance).
-export interface StoredPreference<T extends string> {
+interface StoredPreference<T extends string> {
   read: (storage?: Pick<Storage, 'getItem'> | null) => T;
   write: (preference: T, storage?: Pick<Storage, 'setItem'> | null) => void;
 }

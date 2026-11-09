@@ -129,6 +129,26 @@ describe('LookPicker', () => {
     expect(wrapper.find('[data-testid="look-list"]').exists()).toBe(false);
   });
 
+  it('scrolls only the list to the highlighted entry', async () => {
+    const { press, wrapper } = picker(null);
+    await press('Enter');
+    // Five entries of 20 px in a list that shows 50 px.
+    const list = wrapper.get('[data-testid="look-list"]').element as HTMLElement;
+    Object.defineProperty(list, 'clientHeight', { value: 50 });
+    for (const [index, item] of [...list.children].entries()) {
+      Object.defineProperties(item, {
+        offsetTop: { value: index * 20 },
+        offsetHeight: { value: 20 },
+      });
+    }
+    await press('ArrowDown');
+    await press('ArrowDown');
+    await press('ArrowDown');
+    expect(list.scrollTop).toBe(30);
+    await press('Home');
+    expect(list.scrollTop).toBe(0);
+  });
+
   it('ignores other keys', async () => {
     const { press, value } = picker();
     await press('a');

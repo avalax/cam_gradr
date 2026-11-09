@@ -72,7 +72,6 @@ const viewOptions = computed(() => [
   { key: 'grays', value: 'grays' as const, label: t('preview.viewGrays') },
 ]);
 const view = ref<View>('colors');
-const WORST_COUNT = 3;
 
 // The targets at the exposure of the shot, like in the report (without a report at the reference's).
 const exposureGain = computed(() => result.value?.report.exposureGain ?? 1);
@@ -87,9 +86,7 @@ const fittedReference = computed(() =>
 const tiles = computed(() =>
   colorCards(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
-const worst = computed(() =>
-  result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
-);
+const worst = computed(() => (result.value === null ? [] : worstPatches(result.value.report)));
 
 // Gray wedge from the measured neutral patches and what the correction changes per tonal range.
 const rows = computed(() =>

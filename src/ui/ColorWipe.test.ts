@@ -95,7 +95,28 @@ describe('ColorWipe', () => {
     expect(mousedown.defaultPrevented).toBe(true);
   });
 
-  it('has no popup and is not focusable without a report or without content', () => {
+  it('hands the focus to the trigger when Escape closes the result from inside', async () => {
+    const wrapper = mount(ColorWipe, {
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report,
+        live: false,
+      },
+      slots: { details: '<button type="button" data-testid="inside">Ergebnis</button>' },
+      attachTo: document.body,
+    });
+    const inside = wrapper.get('[data-testid="inside"]');
+    (inside.element as HTMLButtonElement).focus();
+    await inside.trigger('keydown', { key: 'Escape' });
+    expect(wrapper.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="color-wipe-result"]').element);
+    wrapper.unmount();
+  });
+
+  it('has no popup and is not focusable without a report', () => {
     const withoutReport = mount(ColorWipe, {
       props: {
         layout: colorLayout,
@@ -111,8 +132,6 @@ describe('ColorWipe', () => {
     expect(
       withoutReport.get('[data-testid="color-wipe-result"]').attributes('tabindex'),
     ).toBeUndefined();
-    const withoutSlot = mountWipe({ report });
-    expect(withoutSlot.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
   });
 
   it('orders the patches as on the cards, row by row from A to H per card', () => {

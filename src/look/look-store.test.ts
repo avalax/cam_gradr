@@ -1,12 +1,15 @@
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { usePreviewStore } from '../lut/preview-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { failingStorage } from '../test-support/failing-storage';
-import { IDENTITY_CUBE, INVERT_CUBE, cubeFile as file } from '../test-support/look-cubes';
+import {
+  IDENTITY_CUBE,
+  INVERT_CUBE,
+  cubeFile as file,
+  emptyLookStorage,
+} from '../test-support/look-cubes';
 
 import { parseLookCube } from './look';
 import type { LookLut } from './look';
@@ -21,8 +24,7 @@ describe('useLookStore', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    storage = createIndexedDbStorage<LookLut>(new IDBFactory(), 'test', 'looks');
-    setLookStorage(storage);
+    storage = emptyLookStorage();
   });
 
   it('loads the saved looks sorted by name; looks imported meanwhile stay', async () => {

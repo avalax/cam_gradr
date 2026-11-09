@@ -121,10 +121,19 @@ function onKey(event: KeyboardEvent): void {
   }
 }
 
-// The highlighted entry stays visible in a long list.
+// The highlighted entry stays visible in a long list. Only the list scrolls: scrollIntoView would
+// move the page as well wherever the list reaches beyond the window.
 watch(active, async (index) => {
   await nextTick();
-  list.value?.children.item(index)?.scrollIntoView({ block: 'nearest' });
+  const box = list.value;
+  if (box === null) {
+    return;
+  }
+  const item = box.children[index] as HTMLElement;
+  box.scrollTop = Math.min(
+    Math.max(box.scrollTop, item.offsetTop + item.offsetHeight - box.clientHeight),
+    item.offsetTop,
+  );
 });
 </script>
 
@@ -144,15 +153,16 @@ watch(active, async (index) => {
       @keydown="onKey"
       @blur="close"
     >
-      <span class="min-w-0 flex-1 truncate">{{ shown }}</span>
+      <span class="min-w-0 flex-1 truncate" :title="shown">{{ shown }}</span>
       <LineIcon class="size-3.5 shrink-0"><path :d="CHEVRON_PATH" /></LineIcon>
     </button>
+    <!-- The list opens upwards, over the image: below the bar it would lengthen the page. -->
     <ul
       v-if="open"
       id="look-list"
       ref="list"
       role="listbox"
-      class="absolute left-0 top-full z-20 mt-0.5 max-h-72 min-w-full overflow-auto rounded border border-zinc-500 bg-white py-1 shadow-lg dark:bg-zinc-100"
+      class="absolute bottom-full left-0 z-20 mb-0.5 max-h-72 min-w-full overflow-auto rounded border border-zinc-500 bg-white py-1 shadow-lg dark:bg-zinc-100"
       data-testid="look-list"
     >
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/interactive-supports-focus -- the combobox keeps the focus and handles the keys for its options (aria-activedescendant) -->

@@ -32,8 +32,11 @@ export function dummyIds(): string[] {
 }
 
 // The made-up reference set as the app holds it after an import.
-export function dummyReference(name = 'Test'): ReferenceSet {
-  return { name, patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])) };
+export function dummyReference(): ReferenceSet {
+  return {
+    name: 'Test',
+    patches: Object.fromEntries(dummyIds().map((id) => [id, dummyLab(id)])),
+  };
 }
 
 // Reference file in the import format (JSON) with made-up values.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CameraError, describeCameraError, toCameraError } from './camera-error';
+import { CameraError, toCameraError } from './camera-error';
 
 function named(name: string): Error {
   return new DOMException('x', name);
@@ -8,11 +8,11 @@ function named(name: string): Error {
 
 describe('toCameraError', () => {
   it.each([
-    ['NotAllowedError', 'permission-denied'],
-    ['SecurityError', 'permission-denied'],
-    ['NotFoundError', 'not-found'],
-    ['NotReadableError', 'in-use'],
-    ['AbortError', 'in-use'],
+    ['NotAllowedError', 'permissionDenied'],
+    ['SecurityError', 'permissionDenied'],
+    ['NotFoundError', 'notFound'],
+    ['NotReadableError', 'inUse'],
+    ['AbortError', 'inUse'],
     ['OverconstrainedError', 'unsatisfiable'],
     ['ConstraintNotSatisfiedError', 'unsatisfiable'],
     ['SomethingElse', 'unknown'],
@@ -31,26 +31,5 @@ describe('toCameraError', () => {
     const error = toCameraError('kaputt');
     expect(error.code).toBe('unknown');
     expect(error.cause).toBe('kaputt');
-  });
-});
-
-describe('describeCameraError', () => {
-  it('returns a German text for every code', () => {
-    for (const code of [
-      'unsupported',
-      'permission-denied',
-      'not-found',
-      'in-use',
-      'unsatisfiable',
-      'unknown',
-    ] as const) {
-      expect(describeCameraError(new CameraError(code)).length).toBeGreaterThan(10);
-    }
-  });
-
-  it('sets name and code', () => {
-    const error = new CameraError('not-found');
-    expect(error.name).toBe('CameraError');
-    expect(error.code).toBe('not-found');
   });
 });

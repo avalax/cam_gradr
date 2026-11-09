@@ -1,6 +1,5 @@
 import type { Vec3 } from '../color/lab';
 import { CHANNELS } from '../color/srgb';
-import { t } from '../lang';
 import { MAX_SIZE, MIN_SIZE, sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
 
@@ -23,14 +22,22 @@ const LOG_NAME = /s-?log|log-?c|v-?log|c-?log|f-?log|n-?log|d-?log|log-?3g/i;
 // (look.errors) with the values to fill in. The bar translates it when it shows it, so that it
 // follows a language switch.
 export interface LookProblem {
-  key: 'notCube' | 'oneDimensional' | 'noSize' | 'size' | 'numbers' | 'count' | 'domain';
+  key:
+    | 'notCube'
+    | 'unreadable'
+    | 'oneDimensional'
+    | 'noSize'
+    | 'size'
+    | 'numbers'
+    | 'count'
+    | 'domain';
   params: Record<string, string | number>;
 }
 
-// The error of the parser; its message is the text in the language of the moment.
+// The error of the parser: it names the problem, which the bar translates.
 export class LookError extends Error {
   constructor(readonly problem: LookProblem) {
-    super(t(`look.errors.${problem.key}`, problem.params));
+    super(problem.key);
   }
 }
 
