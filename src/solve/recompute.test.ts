@@ -1,15 +1,14 @@
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
 import type { WatchStopHandle } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useColorChartStore } from '../chart/chart-store';
-import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
+import { useReferenceStore } from '../reference/reference-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
+import { emptyReferenceStorage } from '../test-support/reference-storage';
 
 import { recomputeOnChange } from './recompute';
 import { useSolveStore } from './solve-store';
@@ -31,7 +30,7 @@ describe('recomputeOnChange', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     stop = recomputeOnChange();
   });
 

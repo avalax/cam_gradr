@@ -14,6 +14,9 @@
    thirds of the size they have in one. */
 @custom-variant one-row (@container (aspect-ratio > 3));
 @custom-variant two-rows (@container (aspect-ratio <= 3));
+/* Without color correction the box only gets the room that is left; where that is too little for
+   the gray stand-ins to read as slices, they are left out rather than shrunk to dots. */
+@custom-variant cramped (@container (height < 2rem));
 
 :root {
   --page-bg: #fff;

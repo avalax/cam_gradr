@@ -14,6 +14,7 @@ import { useExportStore } from '../lut/export-store';
 import { buildLut } from '../lut/lut';
 import { FULL_STRENGTH, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
+import type { ColorModel } from '../solve/fit';
 import { useSolveStore } from '../solve/solve-store';
 
 import { exportFileName, exportNotes, exportTitle } from './export-file';
@@ -123,20 +124,18 @@ const previewArea = computed(() =>
   }),
 );
 
-function download(): void {
-  const current = model.value;
-  if (current !== null) {
-    const lut = lookedLut(
-      buildLut(current, size.value),
-      chosen.value,
-      preview.strength / FULL_STRENGTH,
-    );
-    downloadFile(
-      fileName.value,
-      formatCube(lut, exportTitle(exportLook.value), exportNotes(exportLook.value)),
-      'text/plain',
-    );
-  }
+// The button only works with a correction, so the template hands it over.
+function download(current: ColorModel): void {
+  const lut = lookedLut(
+    buildLut(current, size.value),
+    chosen.value,
+    preview.strength / FULL_STRENGTH,
+  );
+  downloadFile(
+    fileName.value,
+    formatCube(lut, exportTitle(exportLook.value), exportNotes(exportLook.value)),
+    'text/plain',
+  );
 }
 </script>
 
@@ -179,13 +178,18 @@ function download(): void {
         </button>
       </p>
       <!-- The slices take the room the card has (it is as tall as the preview), as large as fits in
-           width and height; they never make the card taller. The box starts from a basis of 6 rem
-           rather than only a minimum height: where it gets no more than that (narrow windows),
-           Chrome otherwise measures the container units against a height of 0 and the slices
-           shrink to dots. -->
-      <div class="min-h-24 flex-[1_1_6rem] [container-type:size]">
+           width and height; they never make the card taller. With a correction the box starts from
+           a basis of 6 rem rather than only a minimum height: where it gets no more than that
+           (narrow windows), Chrome otherwise measures the container units against a height of 0 and
+           the slices shrink to dots. Without one, the gray stand-ins only take the room that is
+           left, so that the card with its notice is not taller than it needs to be (and are left out
+           where that is too little, see style.css). -->
+      <div
+        class="[container-type:size]"
+        :class="model === null ? 'min-h-0 flex-1' : 'min-h-24 flex-[1_1_6rem]'"
+      >
         <LutSlices
-          class="one-row:w-[min(100cqw,calc(400cqh_+_1.5rem))] two-rows:w-[min(100cqw,calc(200cqh_+_0.5rem))]"
+          class="one-row:w-[min(100cqw,calc(400cqh_+_1.5rem))] two-rows:w-[min(100cqw,calc(200cqh_+_0.5rem))] cramped:hidden"
           :model="model"
           :look="sliceLook"
         />
@@ -203,24 +207,26 @@ function download(): void {
           data-testid="export-size"
           @choose="exportSettings.setSize($event)"
         />
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-3">
           <span
             aria-hidden="true"
             class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white dark:bg-zinc-100 pb-0.5 text-[8px] font-bold"
             >.cube</span
           >
           <div class="min-w-0 flex-1 text-sm">
-            <p id="export-file-name" class="truncate font-semibold">{{ fileName }}</p>
+            <p id="export-file-name" class="truncate font-semibold" :title="fileName">
+              {{ fileName }}
+            </p>
             <p class="text-xs text-zinc-500" data-testid="export-file-info">{{ fileInfo }}</p>
           </div>
           <!-- The file name stands beside the button, so it is not repeated in the button. -->
           <button
             type="button"
-            class="ml-auto rounded border border-emerald-700 bg-emerald-700 px-3 py-1 text-sm text-white enabled:hover:bg-emerald-800 disabled:border-zinc-300 disabled:bg-zinc-300 disabled:text-zinc-500"
+            class="rounded border border-emerald-700 bg-emerald-700 px-3 py-1 text-sm text-white enabled:hover:bg-emerald-800 disabled:border-zinc-300 disabled:bg-zinc-300 disabled:text-zinc-500"
             :disabled="model === null"
             aria-describedby="export-file-name"
             data-testid="export-download"
-            @click="download"
+            @click="model !== null && download(model)"
           >
             {{ t('export.lut.download') }}
           </button>

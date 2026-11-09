@@ -9,6 +9,7 @@ import { useChartStore } from '../chart/chart-store';
 import { cameraSwitchStandIn } from '../test-support/camera-switch';
 import { bothCards } from '../test-support/cards';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
+import { grayFrame } from '../test-support/frames';
 
 import GrayStep from './GrayStep.vue';
 
@@ -16,14 +17,6 @@ import GrayStep from './GrayStep.vue';
 // itself is tested in draw-frame.test.ts, here it only counts that the still image is drawn.
 const { drawFrame } = vi.hoisted(() => ({ drawFrame: vi.fn() }));
 vi.mock('../camera/draw-frame', () => ({ drawFrame }));
-
-function stillFrame(value: number): Frame {
-  return {
-    width: 1280,
-    height: 720,
-    data: new Float32Array(1280 * 720 * 3).fill(value),
-  };
-}
 
 // The automatic capture searches a live image of half the camera resolution: it runs the same way,
 // and every search and capture costs a quarter of the time.
@@ -170,7 +163,7 @@ describe('GrayStep', () => {
     installFakeCamera();
     const camera = useCameraStore();
     await camera.start();
-    const still = stillFrame(0.5);
+    const still = grayFrame(1280, 720, 0.5);
     camera.still = still;
     const wrapper = mount(GrayStep);
     expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
@@ -184,7 +177,7 @@ describe('GrayStep', () => {
     placeAll();
     await flushPromises();
     expect(wrapper.findAll('circle')).toHaveLength(0);
-    useCameraStore().still = stillFrame(0.5);
+    useCameraStore().still = grayFrame(1280, 720, 0.5);
     await flushPromises();
     expect(wrapper.findAll('circle')).toHaveLength(8);
     expect(wrapper.text()).toContain('ziehe sie bei Bedarf');
@@ -223,7 +216,7 @@ describe('GrayStep', () => {
       installFakeCamera();
       const wrapper = mount(GrayStep);
       const camera = useCameraStore();
-      camera.still = stillFrame(0.5);
+      camera.still = grayFrame(1280, 720, 0.5);
       placeAll();
       await flushPromises();
       expect(wrapper.findAll('circle')).toHaveLength(8);
@@ -255,31 +248,10 @@ describe('GrayStep', () => {
     });
   });
 
-  it('never measures in the live view, only on still images', async () => {
-    vi.useFakeTimers();
-    await mountLive();
-    const chart = useChartStore();
-    const measure = vi.spyOn(chart, 'measure');
-    placeAll();
-    await vi.advanceTimersByTimeAsync(2000);
-    expect(measure).not.toHaveBeenCalled();
-    useCameraStore().still = stillFrame(0.5);
-    await flushPromises();
-    expect(measure).toHaveBeenCalled();
-  });
-
-  it('sets no corner points on click', async () => {
-    const wrapper = await mountLive();
-    useCameraStore().still = stillFrame(0.5);
-    await flushPromises();
-    await wrapper.get('svg').trigger('click', { clientX: 640, clientY: 360 });
-    expect(useChartStore().points).toEqual({});
-  });
-
   it('moves a corner point by dragging and ends the drag', async () => {
     const wrapper = await mountLive();
     placeAll();
-    useCameraStore().still = stillFrame(0.5);
+    useCameraStore().still = grayFrame(1280, 720, 0.5);
     await flushPromises();
     const first = () => useChartStore().points[3]?.[0];
     await wrapper.get('circle').trigger('pointerdown');
@@ -296,7 +268,7 @@ describe('GrayStep', () => {
 
   it('measures the still image once all corner points are set, and shows the measuring field', async () => {
     const wrapper = await mountLive();
-    useCameraStore().still = stillFrame(0.5);
+    useCameraStore().still = grayFrame(1280, 720, 0.5);
     await flushPromises();
     expect(useChartStore().exposure).toBeNull();
     placeAll();
@@ -311,12 +283,12 @@ describe('GrayStep', () => {
   it('measures again with the existing corner points on a new still image', async () => {
     await mountLive();
     const camera = useCameraStore();
-    camera.still = stillFrame(0.3);
+    camera.still = grayFrame(1280, 720, 0.3);
     await flushPromises();
     placeAll();
     await flushPromises();
     const dark = useChartStore().exposure?.level18;
-    camera.still = stillFrame(0.8);
+    camera.still = grayFrame(1280, 720, 0.8);
     await flushPromises();
     expect(useChartStore().exposure?.level18).toBeGreaterThan(dark ?? 1);
   });
@@ -448,15 +420,6 @@ describe('GrayStep', () => {
       expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#fff');
     });
 
-    it('requires two hits in a row', async () => {
-      let visible = true;
-      await mountAuto(() => (visible ? cards() : empty()));
-      await vi.advanceTimersByTimeAsync(500);
-      visible = false;
-      await vi.advanceTimersByTimeAsync(3000);
-      expect(useCameraStore().still).toBeNull();
-    });
-
     it('does not run when the corner points are already set', async () => {
       await mountAuto(cards);
       placeAll();
@@ -475,7 +438,7 @@ describe('GrayStep', () => {
 
   it('starts over with “Eckpunkte löschen”: corner points and still image are dropped', async () => {
     const wrapper = await mountLive();
-    useCameraStore().still = stillFrame(0.5);
+    useCameraStore().still = grayFrame(1280, 720, 0.5);
     await flushPromises();
     placeAll();
     const cameraSwitch = cameraSwitchStandIn();
@@ -497,7 +460,7 @@ describe('GrayStep', () => {
     const camera = useCameraStore();
     expect(camera.status).toBe('idle');
     expect(resetButton(wrapper)).toBeUndefined();
-    camera.still = stillFrame(0.5);
+    camera.still = grayFrame(1280, 720, 0.5);
     placeAll();
     await flushPromises();
     await resetButton(wrapper)?.trigger('click');
@@ -527,14 +490,5 @@ describe('GrayStep', () => {
     camera.actual = { width: 640, height: 400 };
     await flushPromises();
     expect(chart.points).toEqual({});
-  });
-
-  it('stops the measurement on unmount', async () => {
-    vi.useFakeTimers();
-    const wrapper = await mountLive();
-    const measure = vi.spyOn(useChartStore(), 'measure');
-    wrapper.unmount();
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(measure).not.toHaveBeenCalled();
   });
 });

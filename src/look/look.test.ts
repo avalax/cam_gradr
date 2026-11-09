@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { identityLut, sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
+import { INVERT_CUBE } from '../test-support/look-cubes';
 
 import {
   applyLook,
@@ -17,8 +18,8 @@ import {
 } from './look';
 import type { LookLut } from './look';
 
-// A made-up look that inverts every channel, written as a 2³ .cube file (R fastest).
-const INVERT_LINES = ['1 1 1', '0 1 1', '1 0 1', '0 0 1', '1 1 0', '0 1 0', '1 0 0', '0 0 0'];
+// The value lines of the inverting look, for files with other headers.
+const INVERT_LINES = INVERT_CUBE.split('\n').slice(1);
 
 function cube(...header: string[]): string {
   return [...header, ...INVERT_LINES].join('\n');

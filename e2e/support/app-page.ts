@@ -150,7 +150,7 @@ export class AppPage {
   }
 
   // Loads a project file via the Export tab.
-  async loadProject(text: string, name = 'project.json'): Promise<void> {
+  async loadProject(text: string, name: string): Promise<void> {
     await this.openTab('Export');
     await this.page.getByTestId('project-file').setInputFiles({
       name,
@@ -221,9 +221,9 @@ export class AppPage {
     }
   }
 
-  // Opens the gear menu if it is still closed. It shows the camera first; with `section` the
-  // requested section expands (the sections are an accordion, only one is open at a time).
-  async openSettings(section: 'camera' | 'reference' = 'camera'): Promise<void> {
+  // Opens the gear menu if it is still closed and expands the requested section (the sections are
+  // an accordion, only one is open at a time).
+  async openSettings(section: 'camera' | 'reference'): Promise<void> {
     const panel = this.page.getByTestId('settings-panel');
     if (!(await panel.isVisible())) {
       await this.page.getByTestId('settings-button').click();

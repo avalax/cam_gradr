@@ -60,16 +60,17 @@ const STYLES = {
 } as const;
 const styles = computed(() => STYLES[props.variant]);
 
-const enabled = computed(() => props.options.map(() => !props.disabled));
-// The option that takes the Tab stop: the chosen one, or the first that can be chosen.
-const tabStop = computed(() => {
-  const chosen = props.options.findIndex((option) => option.key === props.selected);
-  return enabled.value[chosen] === true ? chosen : enabled.value.indexOf(true);
-});
+// The option that takes the Tab stop: the chosen one, else the first.
+const tabStop = computed(() =>
+  Math.max(
+    props.options.findIndex((option) => option.key === props.selected),
+    0,
+  ),
+);
 
 // An arrow key moves the focus to the next option and chooses it, as a click would.
 function onKey(event: KeyboardEvent, index: number): void {
-  const next = rovingTarget(event.key, index, enabled.value, true);
+  const next = rovingTarget(event.key, index, props.options.length, true);
   if (next !== null) {
     event.preventDefault();
     const target = group.value?.children[next] as HTMLButtonElement | undefined;

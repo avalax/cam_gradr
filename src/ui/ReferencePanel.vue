@@ -82,7 +82,7 @@ function remove(name: string): void {
         >
           {{ t('reference.panel.delete') }}
         </button>
-        <button type="button" :class="TEXT_BUTTON" @click="references.downloadSelected()">
+        <button type="button" :class="TEXT_BUTTON" @click="references.download(selected)">
           {{ t('reference.panel.download') }}
         </button>
       </template>

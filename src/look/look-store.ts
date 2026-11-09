@@ -1,20 +1,19 @@
 import { defineStore } from 'pinia';
 import { shallowRef } from 'vue';
 
-import { t } from '../lang';
 import { usePreviewStore } from '../lut/preview-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { APP_ID } from '../ui/app-info';
 
 import { isCubeFile, isLogConversion, parseLookCube } from './look';
-import type { LookLut } from './look';
+import type { LookError, LookLut, LookProblem } from './look';
 
 // What the bar under the preview reports after an action; the texts come from the language files
 // when shown, so that they follow a language switch.
 export type LookMessage =
   | { kind: 'imported'; names: string[] }
-  | { kind: 'rejected'; file: string; reason: string }
+  | { kind: 'rejected'; file: string; reason: LookProblem }
   // `fallback` is the look the preview shows again when this one is removed through the warning.
   | { kind: 'logConversion'; name: string; fallback: string | null }
   | { kind: 'removed'; name: string }
@@ -53,6 +52,13 @@ export const useLookStore = defineStore('look', () => {
   const messages = shallowRef<LookMessage[]>([]);
   // The last deleted look, which "Undo" brings back.
   const removed = shallowRef<{ look: LookLut; selected: boolean } | null>(null);
+
+  // The warnings about log conversions that are shown, but not the one about this look.
+  function warningsExcept(name: string): LookMessage[] {
+    return messages.value.filter(
+      (message) => message.kind === 'logConversion' && message.name !== name,
+    );
+  }
 
   function find(name: string | null): LookLut | null {
     return looks.value.find((look) => look.name === name) ?? null;
@@ -94,7 +100,11 @@ export const useLookStore = defineStore('look', () => {
     const problems: LookMessage[] = [];
     for (const file of files) {
       if (!isCubeFile(file.name)) {
-        problems.push({ kind: 'rejected', file: file.name, reason: t('look.errors.notCube') });
+        problems.push({
+          kind: 'rejected',
+          file: file.name,
+          reason: { key: 'notCube', params: {} },
+        });
         continue;
       }
       try {
@@ -103,8 +113,8 @@ export const useLookStore = defineStore('look', () => {
         imported.push(look);
         await save(look, problems);
       } catch (error) {
-        // The parser throws only Error objects with an understandable message.
-        problems.push({ kind: 'rejected', file: file.name, reason: (error as Error).message });
+        // The parser throws only LookErrors, which name the problem.
+        problems.push({ kind: 'rejected', file: file.name, reason: (error as LookError).problem });
       }
     }
     // A look that looks like a log conversion gets the warning instead of a place in the line that
@@ -138,11 +148,13 @@ export const useLookStore = defineStore('look', () => {
       preview.setLook(null);
     }
     removed.value = { look, selected };
-    messages.value = [{ kind: 'removed', name }];
+    // Warnings about other looks of the same import stay below the line about this one.
+    const others = warningsExcept(name);
+    messages.value = [{ kind: 'removed', name }, ...others];
     try {
       await storage().remove(name);
     } catch {
-      messages.value = [{ kind: 'removeFailed' }];
+      messages.value = [{ kind: 'removeFailed' }, ...others];
     }
   }
 
@@ -195,9 +207,10 @@ export const useLookStore = defineStore('look', () => {
     if (last.selected) {
       usePreviewStore().setLook(last.look.name);
     }
+    const others = warningsExcept(last.look.name);
     const report: LookMessage[] = [];
     await save(last.look, report);
-    messages.value = report;
+    messages.value = [...report, ...others];
   }
 
   function dismiss(): void {

@@ -1,8 +1,6 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
-import { parseLayout } from '../../src/chart/layout';
+import { colorLayout, grayLayout } from '../../src/chart/layouts';
 import type { Vec3 } from '../../src/color/lab';
+import { CARD_LEFTS, cardRect } from '../../src/test-support/cards';
 import { dummyLab } from '../../src/test-support/dummy-reference';
 import { cameraCode } from '../../src/test-support/synthetic-camera';
 
@@ -10,13 +8,14 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 
 // Pixel rectangles of the card pairs in the synthetic camera image (gray cards 3 and 4, color
-// cards 1 and 2).
+// cards 1 and 2), where the unit tests place them too.
+const [LEFT, RIGHT] = CARD_LEFTS;
 const CARD_PIXELS = {
-  1: { x: 100, y: 50, w: 400, h: 600 },
-  2: { x: 700, y: 50, w: 400, h: 600 },
-  3: { x: 100, y: 50, w: 400, h: 600 },
-  4: { x: 700, y: 50, w: 400, h: 600 },
-} as const;
+  1: cardRect(LEFT),
+  2: cardRect(RIGHT),
+  3: cardRect(LEFT),
+  4: cardRect(RIGHT),
+};
 
 type CardNumber = keyof typeof CARD_PIXELS;
 
@@ -46,17 +45,6 @@ export interface Scene {
 
 const SURROUND = 0.35;
 const CARD_SURFACE = 0.05;
-
-function readLayout(name: string) {
-  return parseLayout(
-    JSON.parse(
-      readFileSync(path.join(import.meta.dirname, `../../src/data/layouts/${name}`), 'utf8'),
-    ),
-  );
-}
-
-const grayLayout = readLayout('spyder-checkr-photo-gray.layout.json');
-const colorLayout = readLayout('spyder-checkr-photo-color.layout.json');
 
 function toGray(value: number): [number, number, number] {
   const code = Math.round(value * 255);

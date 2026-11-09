@@ -75,7 +75,9 @@ function text(message: LookMessage): string {
         : t('look.messages.importedMany', { count: message.names.length });
     }
     case 'rejected': {
-      return t('look.messages.rejected', { file: message.file, reason: message.reason });
+      // The reason is translated here, so that it follows a language switch.
+      const reason = t(`look.errors.${message.reason.key}`, message.reason.params);
+      return t('look.messages.rejected', { file: message.file, reason });
     }
     case 'logConversion': {
       return t('look.messages.logConversion', { name: message.name });

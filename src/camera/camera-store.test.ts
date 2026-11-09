@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { grayFrame } from '../test-support/frames';
+
 import { CameraError } from './camera-error';
 import { setCameraApi, useCameraStore } from './camera-store';
 import { RESOLUTIONS } from './types';
@@ -212,11 +214,6 @@ describe('useCameraStore', () => {
   });
 
   describe('search with held still image', () => {
-    const frame = (value: number) => ({
-      width: 1,
-      height: 1,
-      data: new Float32Array([value, 0, 0]),
-    });
     const grabber = {
       grab: () => ({ width: 1, height: 1, data: [255, 0, 0, 255] }),
       nextFrame: () => Promise.resolve(),
@@ -225,7 +222,7 @@ describe('useCameraStore', () => {
     it('holds the previous still image on camera start and returns it on stop', async () => {
       fakeApi();
       const store = useCameraStore();
-      const old = frame(0.2);
+      const old = grayFrame(1, 1, 0.2);
       store.still = old;
       await store.start();
       expect(store.still).toBeNull();
@@ -238,7 +235,7 @@ describe('useCameraStore', () => {
     it('keeps a new still image and drops the previous one', async () => {
       fakeApi();
       const store = useCameraStore();
-      const old = frame(0.2);
+      const old = grayFrame(1, 1, 0.2);
       store.still = old;
       await store.start();
       await store.captureStill(grabber);
@@ -252,7 +249,7 @@ describe('useCameraStore', () => {
     it('returns the previous still image even after a start error', async () => {
       fakeApi({ open: vi.fn().mockRejectedValue(new CameraError('permission-denied')) });
       const store = useCameraStore();
-      const old = frame(0.2);
+      const old = grayFrame(1, 1, 0.2);
       store.still = old;
       await store.start();
       expect(store.status).toBe('error');
@@ -262,12 +259,12 @@ describe('useCameraStore', () => {
     it('also deletes the held still image with clearStill and discardStills', async () => {
       fakeApi();
       const store = useCameraStore();
-      store.still = frame(0.2);
+      store.still = grayFrame(1, 1, 0.2);
       await store.start();
       store.clearStill();
       store.stop();
       expect(store.still).toBeNull();
-      store.still = frame(0.3);
+      store.still = grayFrame(1, 1, 0.3);
       await store.start();
       store.discardStills();
       store.stop();
@@ -277,10 +274,10 @@ describe('useCameraStore', () => {
     it('stores the still image on tab switch with a running camera and holds the image of the new tab', async () => {
       fakeApi();
       const store = useCameraStore();
-      const grayStill = frame(0.1);
+      const grayStill = grayFrame(1, 1, 0.1);
       store.still = grayStill;
       store.swapStill('gray', 'color');
-      const colorStill = frame(0.2);
+      const colorStill = grayFrame(1, 1, 0.2);
       store.still = colorStill;
       store.swapStill('color', 'gray');
       await store.start();
@@ -299,18 +296,13 @@ describe('useCameraStore', () => {
   it('knows the owner of the still image, returns all still images and restores them', () => {
     fakeApi();
     const store = useCameraStore();
-    const frame = (value: number) => ({
-      width: 1,
-      height: 1,
-      data: new Float32Array([value, 0, 0]),
-    });
     expect(store.stillOwner).toBe('gray');
     expect(store.allStills()).toEqual({});
 
-    store.still = frame(0.1);
+    store.still = grayFrame(1, 1, 0.1);
     store.swapStill('gray', 'color');
     expect(store.stillOwner).toBe('color');
-    store.still = frame(0.2);
+    store.still = grayFrame(1, 1, 0.2);
     const stills = store.allStills();
     expect(Object.keys(stills)).toHaveLength(2);
     expect(stills.color?.data[0]).toBeCloseTo(0.2);
@@ -318,7 +310,11 @@ describe('useCameraStore', () => {
 
     store.discardStills();
     expect(store.allStills()).toEqual({});
-    store.restoreStills({ gray: frame(0.3), color: frame(0.4), preview: frame(0.5) });
+    store.restoreStills({
+      gray: grayFrame(1, 1, 0.3),
+      color: grayFrame(1, 1, 0.4),
+      preview: grayFrame(1, 1, 0.5),
+    });
     // The owner's image (color charts) is shown, the others are parked.
     expect(shown(store)).toBeCloseTo(0.4);
     store.swapStill('color', 'preview');

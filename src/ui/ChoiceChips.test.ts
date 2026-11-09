@@ -70,8 +70,6 @@ describe('ChoiceChips', () => {
     expect(stops()).toEqual(['-1', '-1', '0']);
     await wrapper.setProps({ selected: 'x' });
     expect(stops()).toEqual(['0', '-1', '-1']);
-    await wrapper.setProps({ disabled: true });
-    expect(stops()).toEqual(['-1', '-1', '-1']);
   });
 
   it('chooses the next option with the arrow keys', async () => {

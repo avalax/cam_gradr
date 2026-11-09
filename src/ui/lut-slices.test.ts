@@ -14,7 +14,7 @@ const invert = parseLookCube('Invert.cube', INVERT_CUBE);
 
 describe('lutSlices', () => {
   it('shows the look over the correction at its strength', () => {
-    const [plain] = lutSlices(identity, 2);
+    const [plain] = lutSlices(identity, 2, null);
     const [full] = lutSlices(identity, 2, { lut: invert, amount: 1 });
     const [none] = lutSlices(identity, 2, { lut: invert, amount: 0 });
     expect(none).toEqual(plain);
@@ -24,7 +24,7 @@ describe('lutSlices', () => {
   });
 
   it('returns eight slices with cells × cells colors each', () => {
-    const slices = lutSlices(identity, 4);
+    const slices = lutSlices(identity, 4, null);
     expect(slices).toHaveLength(8);
     for (const slice of slices) {
       expect(slice).toHaveLength(16);
@@ -32,7 +32,7 @@ describe('lutSlices', () => {
   });
 
   it('shows black with the blue share at bottom left and yellow at top right for the identity', () => {
-    const [first] = lutSlices(identity, 4);
+    const [first] = lutSlices(identity, 4, null);
     // Bottom left: red 0, green 0, blue 1/16 (share 16 of 255).
     const bottomLeft = first?.[12] ?? '';
     expect(bottomLeft).toMatch(/^rgb\(0, 0, \d+\)$/);
@@ -49,7 +49,7 @@ describe('lutSlices', () => {
         [0, 0, 1],
       ],
     };
-    expect(lutSlices(tinted, 2)).not.toEqual(lutSlices(identity, 2));
+    expect(lutSlices(tinted, 2, null)).not.toEqual(lutSlices(identity, 2, null));
   });
 });
 

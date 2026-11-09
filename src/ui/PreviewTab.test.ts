@@ -14,6 +14,7 @@ import { createFakeGl } from '../test-support/fake-gl';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { chooseInvert } from '../test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
+import { grayFrame } from '../test-support/frames';
 import {
   computeModel,
   syntheticFit,
@@ -29,10 +30,6 @@ vi.mock(import('../lut/lut'), async (original) => lutOnce(await original()));
 
 const reference = dummyReference();
 const measurements = syntheticMeasurements();
-
-function stillFrame() {
-  return { width: 8, height: 4, data: new Float32Array(8 * 4 * 3).fill(0.4) };
-}
 
 // Scheduler for the draw cycle: runs can be triggered by hand.
 function mockAnimation() {
@@ -61,10 +58,17 @@ function mockContexts(fake = createFakeGl()) {
 }
 
 describe('PreviewTab', () => {
+  // The draw cycle runs by hand, on a fake graphics card; a test that needs other contexts mocks
+  // them again.
+  let animation: ReturnType<typeof mockAnimation>;
+  let fake: ReturnType<typeof createFakeGl>;
+
   beforeEach(() => {
     setActivePinia(createPinia());
     installMediaStubs();
     installFakeCamera();
+    animation = mockAnimation();
+    fake = mockContexts();
     // While the preview is open, the shown still image is its own, as the app arranges it.
     useCameraStore().stillOwner = 'preview';
   });
@@ -74,8 +78,6 @@ describe('PreviewTab', () => {
   });
 
   it('asks for a computed color correction first', async () => {
-    mockAnimation();
-    mockContexts();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="preview-no-source"]').exists()).toBe(false);
@@ -97,8 +99,6 @@ describe('PreviewTab', () => {
   });
 
   it('points to camera or still image without an image source', () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(false);
@@ -108,8 +108,6 @@ describe('PreviewTab', () => {
   });
 
   it('shows a camera error on the image', async () => {
-    mockAnimation();
-    mockContexts();
     installFakeCamera({ open: () => Promise.reject(new Error('x')) });
     const wrapper = mount(PreviewTab);
     await useCameraStore().start();
@@ -118,12 +116,10 @@ describe('PreviewTab', () => {
   });
 
   it('captures a still image in the live view and then switches the camera off', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const camera = useCameraStore();
     const capture = vi.spyOn(camera, 'captureStill').mockImplementation(() => {
-      camera.still = stillFrame();
+      camera.still = grayFrame(8, 4, 0.4);
       return Promise.resolve();
     });
     const wrapper = mount(PreviewTab);
@@ -156,8 +152,6 @@ describe('PreviewTab', () => {
   });
 
   it('keeps the camera on when the capture yields no still image', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const camera = useCameraStore();
     vi.spyOn(camera, 'captureStill').mockResolvedValue();
@@ -171,11 +165,9 @@ describe('PreviewTab', () => {
   });
 
   it('shows the image of the color measurement as long as the preview has none of its own', () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const camera = useCameraStore();
-    camera.still = stillFrame();
+    camera.still = grayFrame(8, 4, 0.4);
     camera.swapStill('color', 'preview');
     expect(camera.still).toBeNull();
     const wrapper = mount(PreviewTab);
@@ -185,10 +177,8 @@ describe('PreviewTab', () => {
   });
 
   it('loads the LUT and draws the still image with the divider line on the graphics card', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     usePreviewStore().setSplit(25);
     const wrapper = mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
@@ -212,10 +202,8 @@ describe('PreviewTab', () => {
   });
 
   it('lays the chosen look LUT over the correction and can show the correction left', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     await chooseInvert();
     const preview = usePreviewStore();
     const wrapper = mount(PreviewTab);
@@ -251,10 +239,8 @@ describe('PreviewTab', () => {
   });
 
   it('switches both sides with a click on their labels, the right one to the look alone', async () => {
-    mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     await chooseInvert();
     const preview = usePreviewStore();
     const wrapper = mount(PreviewTab);
@@ -294,8 +280,6 @@ describe('PreviewTab', () => {
   });
 
   it('draws the video image while the camera is running as soon as it has data', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
     await useCameraStore().start();
     const wrapper = mount(PreviewTab);
@@ -317,8 +301,6 @@ describe('PreviewTab', () => {
   });
 
   it('draws nothing without a source', () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
     mount(PreviewTab);
     animation.runFrame();
@@ -326,10 +308,8 @@ describe('PreviewTab', () => {
   });
 
   it('draws an unchanged still image only once', () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     const wrapper = mount(PreviewTab);
     animation.runFrame();
     animation.runFrame();
@@ -339,11 +319,9 @@ describe('PreviewTab', () => {
   });
 
   it('draws the still image again when the divider, the correction or the image changes', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
     const camera = useCameraStore();
-    camera.still = stillFrame();
+    camera.still = grayFrame(8, 4, 0.4);
     mount(PreviewTab);
     animation.runFrame();
     usePreviewStore().setSplit(30);
@@ -354,7 +332,7 @@ describe('PreviewTab', () => {
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(3);
-    camera.still = { width: 4, height: 2, data: new Float32Array(4 * 2 * 3).fill(0.6) };
+    camera.still = grayFrame(4, 2, 0.6);
     await flushPromises();
     animation.runFrame();
     animation.runFrame();
@@ -362,8 +340,6 @@ describe('PreviewTab', () => {
   });
 
   it('updates the LUT when the color correction changes', async () => {
-    mockAnimation();
-    const fake = mockContexts();
     computeModel();
     mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
@@ -377,10 +353,8 @@ describe('PreviewTab', () => {
   });
 
   it('sets the divider line via the wipe', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="wipe"]').trigger('keydown', { key: 'End' });
     expect(usePreviewStore().split).toBe(100);
@@ -388,8 +362,6 @@ describe('PreviewTab', () => {
   });
 
   it('shows the colors first: a grid of the colored patches and the largest deviations', () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     useColorChartStore().measurements = measurements;
     const wrapper = mount(PreviewTab);
@@ -407,8 +379,6 @@ describe('PreviewTab', () => {
   });
 
   it('shows targets only from the set the correction was fitted with', async () => {
-    mockAnimation();
-    mockContexts();
     const references = useReferenceStore();
     await references.importFile('mein.json', dummyReferenceJson('Mein Satz'));
     useColorChartStore().measurements = measurements;
@@ -427,8 +397,6 @@ describe('PreviewTab', () => {
   });
 
   it('switches to the gray wedge with the tonal ranges and the result, and back to colors', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     useColorChartStore().measurements = measurements;
     const wrapper = mount(PreviewTab);
@@ -447,8 +415,6 @@ describe('PreviewTab', () => {
   });
 
   it('calls tonal ranges neutral where the correction shifts no color', async () => {
-    mockAnimation();
-    mockContexts();
     useSolveStore().loadModel(IDENTITY_MODEL, null);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
@@ -460,8 +426,6 @@ describe('PreviewTab', () => {
   });
 
   it('says without a measurement that color cards are missing for the views', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
@@ -471,8 +435,6 @@ describe('PreviewTab', () => {
   });
 
   it('leaves the column empty without a correction, in both views: the image says what is missing', async () => {
-    mockAnimation();
-    mockContexts();
     const wrapper = mount(PreviewTab);
     expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain(
       'Noch keine Korrektur',
@@ -485,8 +447,6 @@ describe('PreviewTab', () => {
   });
 
   it('binds a running stream and follows a new one', async () => {
-    mockAnimation();
-    mockContexts();
     await useCameraStore().start();
     const wrapper = mount(PreviewTab);
     expect(wrapper.get('video').element.srcObject).not.toBeNull();
@@ -496,7 +456,6 @@ describe('PreviewTab', () => {
   });
 
   it('falls back to software rendering without WebGL2 and draws downscaled', async () => {
-    const animation = mockAnimation();
     const image = { data: new Uint8ClampedArray(480 * 270 * 4) };
     const context2d = {
       createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
@@ -507,7 +466,7 @@ describe('PreviewTab', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(((id: string) =>
       id === 'webgl2' ? null : context2d) as never);
     computeModel();
-    useCameraStore().still = { width: 960, height: 540, data: new Float32Array(960 * 540 * 3) };
+    useCameraStore().still = grayFrame(960, 540);
     const wrapper = mount(PreviewTab);
     await flushPromises();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
@@ -521,7 +480,6 @@ describe('PreviewTab', () => {
   });
 
   it('reports missing WebGL2 support', async () => {
-    mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const wrapper = mount(PreviewTab);
     await flushPromises();
@@ -529,7 +487,6 @@ describe('PreviewTab', () => {
   });
 
   it('reports errors when creating the renderer', async () => {
-    mockAnimation();
     mockContexts(createFakeGl({ getShaderParameter: () => false }));
     const wrapper = mount(PreviewTab);
     await flushPromises();
@@ -537,8 +494,6 @@ describe('PreviewTab', () => {
   });
 
   it('ends the draw cycle and releases WebGL resources', () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     const wrapper = mount(PreviewTab);
     wrapper.unmount();
     expect(animation.cancel).toHaveBeenCalled();
@@ -546,7 +501,6 @@ describe('PreviewTab', () => {
   });
 
   it('cleans up properly even without a renderer', () => {
-    mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const wrapper = mount(PreviewTab);
     expect(() => {

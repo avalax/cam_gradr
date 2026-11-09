@@ -32,8 +32,8 @@ export const IMAGE_BLOCK =
 
 // The image and the narrow column beside it, as one grid on every tab with a camera image. The
 // column follows the image right away: the row is as wide as the image (TAB_COLUMNS), and the export
-// puts its project card at the same place.
-export const IMAGE_ROW = 'grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3';
+// puts its project card at the same place. The row places the popups of its column over the image.
+export const IMAGE_ROW = 'relative grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3';
 
 // The band above the image: its corners follow the edge of the dark surface.
 export const IMAGE_BAND = 'rounded-t dark:rounded-t-[7px]';

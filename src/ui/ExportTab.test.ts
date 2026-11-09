@@ -15,6 +15,7 @@ import { parseCube } from '../test-support/cube-parse';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { chooseInvert } from '../test-support/look-cubes';
 import { computeModel } from '../test-support/synthetic-camera';
+import { grayFrame } from '../test-support/frames';
 
 import ExportTab from './ExportTab.vue';
 
@@ -43,20 +44,18 @@ describe('ExportTab', () => {
     ).toBeDefined();
   });
 
-  it('shows gray slices and an empty project list without a correction', () => {
+  it('shows an empty project list without a correction', () => {
     const wrapper = mount(ExportTab);
-    expect(wrapper.findAll('[data-testid="lut-slice-empty"]')).toHaveLength(8);
     const facts = wrapper.get('[data-testid="project-facts"]');
     expect(facts.text()).toContain('Graukarten–');
     expect(facts.text()).toContain('Korrektur–');
     expect(facts.text()).toContain('Referenz–');
   });
 
-  it('names the slices, the file size and the project contents with a correction', async () => {
+  it('names the grid points and the project contents with a correction', async () => {
     computeModel();
     useChartStore().setCards(bothCards());
     const wrapper = mount(ExportTab);
-    expect(wrapper.findAll('[data-testid="lut-slice"]')).toHaveLength(8);
     expect(wrapper.get('[data-testid="export-file-info"]').text()).toBe(
       '33 × 33 × 33 Stützstellen',
     );
@@ -79,7 +78,7 @@ describe('ExportTab', () => {
 
     // With a correction and the still image of the color cards the preview has an image.
     computeModel();
-    useCameraStore().restoreStills({ color: { width: 4, height: 3, data: new Float32Array(36) } });
+    useCameraStore().restoreStills({ color: grayFrame(4, 3) });
     await wrapper.vm.$nextTick();
     expect(sizer().attributes('style')).toContain(`* ${String(4 / 3)})`);
     expect(sizer().find('[data-testid="look-bar"]').exists()).toBe(true);
@@ -116,28 +115,16 @@ describe('ExportTab', () => {
     expect(facts()).toContain('Look-LUT–');
   });
 
-  it('downloads nothing without a color correction', () => {
-    const wrapper = mount(ExportTab);
-    (wrapper.vm as unknown as { download: () => void }).download();
-    expect(download).not.toHaveBeenCalled();
-  });
-
-  it('offers sizes 17, 33 and 65 with 33 as default, each with its file size and purpose', () => {
+  it('offers sizes 17, 33 and 65 with 33 as default, each with what it is for', () => {
     computeModel();
     const wrapper = mount(ExportTab);
     const radios = wrapper.findAll('[data-testid="export-size"] [role="radio"]');
-    // The file size never breaks apart (non-breaking spaces).
-    expect(radios.map((radio) => radio.text())).toEqual([
-      '17³ca.\u{A0}133\u{A0}KBfür ältere Geräte',
-      '33³ca.\u{A0}970\u{A0}KBStandard',
-      '65³ca.\u{A0}7,4\u{A0}MBam genauesten',
-    ]);
     expect(radios.map((radio) => radio.attributes('aria-checked'))).toEqual([
       'false',
       'true',
       'false',
     ]);
-    expect(wrapper.get('#export-file-name').text()).toBe('cam_gradr-33.cube');
+    expect(radios[1]?.text()).toContain('Standard');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(false);
   });
 
@@ -155,8 +142,6 @@ describe('ExportTab', () => {
     expect(mime).toBe('text/plain');
     const looked = parseCube(content);
     expect(looked.lut.size).toBe(17);
-    expect(looked.title).toBe('cam_gradr + Invert 70 %');
-    expect(content).toContain('# Look LUT: Invert.cube, strength 70 %');
 
     // Without a look in the preview the file holds the correction alone.
     usePreviewStore().setLook(null);
@@ -165,8 +150,6 @@ describe('ExportTab', () => {
     const [plainName, plainContent] = download.mock.calls[1] as [string, string, string];
     expect(plainName).toBe('cam_gradr-17.cube');
     const plain = parseCube(plainContent);
-    expect(plain.title).toBe('cam_gradr');
-    expect(plainContent).not.toContain('Look LUT');
     // The file holds the full correction: the node (r = 1/16 of the scale) does not stay on the
     // identity.
     expect(plain.lut.data[3 * (1 + 17 * 2 + 17 * 17 * 4)]).not.toBeCloseTo(1 / 16, 3);

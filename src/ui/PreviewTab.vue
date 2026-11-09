@@ -479,71 +479,86 @@ const splitModel = computed({
               @choose="view = $event"
             />
           </div>
-          <div v-if="view === 'colors'" class="flex min-h-0 flex-1 flex-col gap-2 p-2">
-            <div v-if="tiles.length > 0" class="min-h-24 flex-1">
-              <ColorTiles :cards="tiles" />
-            </div>
-            <p
-              v-else-if="model !== null"
-              class="text-[11px] leading-snug text-zinc-600"
-              data-testid="preview-side-empty"
-            >
-              {{ t('preview.emptyNoCards') }}
-            </p>
-            <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              {{
-                t(fittedReference === null ? 'preview.tilesLegendNoTarget' : 'preview.tilesLegend')
-              }}
-            </p>
+          <!-- The views take the height the image gives the column and scroll inside where they
+               need more (the grays on a narrow window), so that the preview keeps the height of
+               its image, and with it the export. -->
+          <div class="relative min-h-0 flex-1">
             <div
-              v-if="worst.length > 0"
-              class="text-[11px] leading-snug"
-              data-testid="worst-patches"
+              v-if="view === 'colors'"
+              class="focus-ring-inset absolute inset-0 flex flex-col gap-2 overflow-y-auto p-2"
             >
-              <p class="font-semibold">{{ t('preview.worstTitle') }}</p>
-              <p>
-                <template v-for="(patch, index) in worst" :key="patch.id">
-                  <template v-if="index > 0"> · </template>{{ patch.id }}
-                  {{ formatDecimal(patch.deviation) }}
-                </template>
+              <div v-if="tiles.length > 0" class="min-h-24 flex-1">
+                <ColorTiles :cards="tiles" />
+              </div>
+              <p
+                v-else-if="model !== null"
+                class="text-[11px] leading-snug text-zinc-600"
+                data-testid="preview-side-empty"
+              >
+                {{ t('preview.emptyNoCards') }}
+              </p>
+              <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
+                {{
+                  t(
+                    fittedReference === null
+                      ? 'preview.tilesLegendNoTarget'
+                      : 'preview.tilesLegend',
+                  )
+                }}
+              </p>
+              <div
+                v-if="worst.length > 0"
+                class="text-[11px] leading-snug"
+                data-testid="worst-patches"
+              >
+                <p class="font-semibold">{{ t('preview.worstTitle') }}</p>
+                <p>
+                  <template v-for="(patch, index) in worst" :key="patch.id">
+                    <template v-if="index > 0"> · </template>{{ patch.id }}
+                    {{ formatDecimal(patch.deviation) }}
+                  </template>
+                </p>
+              </div>
+            </div>
+            <div
+              v-else
+              class="focus-ring-inset absolute inset-0 flex flex-col gap-2 overflow-y-auto p-2"
+            >
+              <div v-if="rows.length > 0" class="min-h-24 flex-1">
+                <GrayWedge :rows="rows" />
+              </div>
+              <p
+                v-else-if="model !== null"
+                class="text-[11px] leading-snug text-zinc-600"
+                data-testid="preview-side-empty"
+              >
+                {{ t('preview.emptyNoCards') }}
+              </p>
+              <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
+                <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
+                  <dt class="font-semibold">{{ zone.name }}</dt>
+                  <!-- Room for three lines, so the gray wedge keeps its size when the texts change. A
+                     channel with its value never breaks apart. -->
+                  <dd class="min-h-[3lh]">
+                    {{ brightnessText(zone.brighter) }}
+                    <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
+                    <template v-for="cast in zone.casts" :key="cast.key">
+                      ·
+                      <span class="whitespace-nowrap">
+                        <i
+                          class="inline-block size-2 rounded-full"
+                          :style="{ background: CAST_COLORS[cast.key] }"
+                        ></i>
+                        {{ cast.channel }} {{ signedPoints(cast.points) }}
+                      </span>
+                    </template>
+                  </dd>
+                </div>
+              </dl>
+              <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
+                {{ t('preview.pointsLegend') }}
               </p>
             </div>
-          </div>
-          <div v-else class="flex min-h-0 flex-1 flex-col gap-2 p-2">
-            <div v-if="rows.length > 0" class="min-h-24 flex-1">
-              <GrayWedge :rows="rows" />
-            </div>
-            <p
-              v-else-if="model !== null"
-              class="text-[11px] leading-snug text-zinc-600"
-              data-testid="preview-side-empty"
-            >
-              {{ t('preview.emptyNoCards') }}
-            </p>
-            <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
-              <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
-                <dt class="font-semibold">{{ zone.name }}</dt>
-                <!-- Room for three lines, so the gray wedge keeps its size when the texts change. A
-                     channel with its value never breaks apart. -->
-                <dd class="min-h-[3lh]">
-                  {{ brightnessText(zone.brighter) }}
-                  <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
-                  <template v-for="cast in zone.casts" :key="cast.key">
-                    ·
-                    <span class="whitespace-nowrap">
-                      <i
-                        class="inline-block size-2 rounded-full"
-                        :style="{ background: CAST_COLORS[cast.key] }"
-                      ></i>
-                      {{ cast.channel }} {{ signedPoints(cast.points) }}
-                    </span>
-                  </template>
-                </dd>
-              </div>
-            </dl>
-            <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              {{ t('preview.pointsLegend') }}
-            </p>
           </div>
           <p
             v-if="summary !== null"

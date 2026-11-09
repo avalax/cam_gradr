@@ -21,11 +21,7 @@ export interface SliceLook {
 // The LUT as eight small color fields: each field shows which colors the correction (and the look
 // over it) maps the red-green plane to at a fixed blue fraction (green at the top, red on the
 // right).
-export function lutSlices(
-  model: ColorModel,
-  cells: number,
-  look: SliceLook | null = null,
-): string[][] {
+export function lutSlices(model: ColorModel, cells: number, look: SliceLook | null): string[][] {
   const last = cells - 1;
   return BLUE_LEVELS.map((blue) => {
     const colors: string[] = [];

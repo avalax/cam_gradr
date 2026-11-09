@@ -83,10 +83,9 @@ function openTab(next: TabKey): void {
 // The tabs as a WAI-ARIA tablist: one stop of the Tab key, the arrow keys move to the neighboring
 // tab and open it, Home and End to the first and the last.
 const tablist = useTemplateRef<HTMLElement>('tablist');
-const TAB_ENABLED = TABS.map(() => true);
 
 function onTabKey(event: KeyboardEvent, index: number): void {
-  const next = rovingTarget(event.key, index, TAB_ENABLED, false);
+  const next = rovingTarget(event.key, index, TABS.length, false);
   if (next !== null) {
     event.preventDefault();
     const target = tablist.value?.children[next] as HTMLButtonElement | undefined;

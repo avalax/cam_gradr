@@ -65,9 +65,17 @@ describe('useLookStore', () => {
     ]);
     expect(store.looks.map((entry) => entry.name)).toEqual(['Ok']);
     // The errors come first: the room under the bar shows two lines.
-    expect(store.messages[0]).toMatchObject({ kind: 'rejected', file: 'notes.txt' });
-    expect(store.messages[0]).toHaveProperty('reason', 'Nur .cube-Dateien sind möglich.');
-    expect(store.messages[1]).toMatchObject({ kind: 'rejected', file: 'broken.cube' });
+    // The reason is kept as the key of its text, so that the bar can translate it when shown.
+    expect(store.messages[0]).toEqual({
+      kind: 'rejected',
+      file: 'notes.txt',
+      reason: { key: 'notCube', params: {} },
+    });
+    expect(store.messages[1]).toEqual({
+      kind: 'rejected',
+      file: 'broken.cube',
+      reason: { key: 'oneDimensional', params: {} },
+    });
     expect(store.messages[2]).toEqual({ kind: 'imported', names: ['Ok'] });
   });
 
@@ -90,6 +98,23 @@ describe('useLookStore', () => {
     expect(store.messages).toEqual([
       { kind: 'logConversion', name: 'LogC to Rec709', fallback: 'Warm' },
     ]);
+  });
+
+  it('keeps the warning about another look of the same import when one is removed', async () => {
+    const store = useLookStore();
+    await store.importFiles([file('SLOG3.cube'), file('LogC.cube')]);
+    expect(store.messages.map((message) => message.kind)).toEqual([
+      'logConversion',
+      'logConversion',
+    ]);
+    await store.removeWarned('SLOG3', null);
+    expect(store.messages).toEqual([
+      { kind: 'removed', name: 'SLOG3' },
+      { kind: 'logConversion', name: 'LogC', fallback: null },
+    ]);
+    // Undo brings the look back and keeps the other warning too.
+    await store.undo();
+    expect(store.messages).toEqual([{ kind: 'logConversion', name: 'LogC', fallback: null }]);
   });
 
   it('shows again the look a warned look took the place of when it is removed through the warning', async () => {

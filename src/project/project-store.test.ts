@@ -9,14 +9,16 @@ import type { LookLut } from '../look/look';
 import { setLookStorage, useLookStore } from '../look/look-store';
 import { useExportStore } from '../lut/export-store';
 import { usePreviewStore } from '../lut/preview-store';
-import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
+import { useReferenceStore } from '../reference/reference-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
-import { installedDialogs } from '../test-support/file-dialogs';
+import { fakeHandle, installedDialogs } from '../test-support/file-dialogs';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { INVERT_CUBE, cubeFile, emptyLookStorage } from '../test-support/look-cubes';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
+import { emptyReferenceStorage } from '../test-support/reference-storage';
+import { grayFrame } from '../test-support/frames';
 
 import { parseProject } from './project';
 import { PROJECT_FILE_NAME, useProjectStore } from './project-store';
@@ -38,6 +40,12 @@ const grayMeasurements: Record<string, Rgb> = {
   'S3-5': [0.85, 0.85, 0.85],
 };
 
+// The name and the content of the file saved last.
+function lastDownload(): { name: string; text: string } {
+  const [name, text] = download.mock.calls.at(-1) as [string, string, string];
+  return { name, text };
+}
+
 // Brings all stores into a complete working state and returns the saved file.
 async function workedState(): Promise<string> {
   const references = useReferenceStore();
@@ -58,7 +66,7 @@ async function workedState(): Promise<string> {
   });
   usePreviewStore().setSplit(30);
   await useProjectStore().save(PLAIN);
-  return (download.mock.calls.at(-1) as [string, string, string])[1];
+  return lastDownload().text;
 }
 
 // Imports the look LUT "Warm" and chooses it at 70 %.
@@ -66,12 +74,6 @@ async function chooseWarm(): Promise<void> {
   await useLookStore().importFiles([cubeFile('Warm.cube')]);
   usePreviewStore().setStrength(70);
 }
-
-const frame = (value: number) => ({
-  width: 4,
-  height: 2,
-  data: new Float32Array(4 * 2 * 3).fill(value),
-});
 
 // Red share of the shown still image.
 function shown(): number | undefined {
@@ -81,18 +83,18 @@ function shown(): number | undefined {
 describe('useProjectStore with still images', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     download.mockReset();
   });
 
   it('saves the still images of all tabs when requested', async () => {
     await workedState();
     const camera = useCameraStore();
-    camera.still = frame(0.5);
+    camera.still = grayFrame(4, 2, 0.5);
     camera.swapStill('gray', 'color');
-    camera.still = frame(0.25);
+    camera.still = grayFrame(4, 2, 0.25);
     await useProjectStore().save({ withStills: true, withLooks: false });
-    const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
+    const project = parseProject(lastDownload().text);
     expect(Object.keys(project.stills ?? {})).toHaveLength(2);
     expect(project.stills?.color).toBeDefined();
     expect(project.stills?.gray).toBeDefined();
@@ -100,12 +102,12 @@ describe('useProjectStore with still images', () => {
 
   it('saves the corner points along with still images, even while the camera is searching', async () => {
     await workedState();
-    useCameraStore().still = frame(0.5);
+    useCameraStore().still = grayFrame(4, 2, 0.5);
     // During the search the store keeps the previous state; that is what gets saved.
     useChartStore().beginSearch();
     expect(useChartStore().points).toEqual({});
     await useProjectStore().save({ withStills: true, withLooks: false });
-    const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
+    const project = parseProject(lastDownload().text);
     expect(project.gray.corners).toEqual({ 3: [{ x: 1, y: 2 }] });
     expect(project.color.corners).toEqual({ 1: [{ x: 3, y: 4 }] });
     expect(Object.keys(project.gray.measurements)).toContain('G18');
@@ -113,21 +115,21 @@ describe('useProjectStore with still images', () => {
 
   it('omits the still images when the checkbox is unchecked', async () => {
     await workedState();
-    useCameraStore().still = frame(0.5);
+    useCameraStore().still = grayFrame(4, 2, 0.5);
     await useProjectStore().save(PLAIN);
-    const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
+    const project = parseProject(lastDownload().text);
     expect(project.stills).toBeUndefined();
   });
 
   it('restores the still images on load and turns the camera off', async () => {
     await workedState();
     const camera = useCameraStore();
-    camera.still = frame(0.5);
+    camera.still = grayFrame(4, 2, 0.5);
     camera.swapStill('gray', 'color');
-    camera.still = frame(0.25);
+    camera.still = grayFrame(4, 2, 0.25);
     camera.swapStill('color', 'gray');
     await useProjectStore().save({ withStills: true, withLooks: false });
-    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const text = lastDownload().text;
 
     setActivePinia(createPinia());
     const fresh = useCameraStore();
@@ -150,7 +152,7 @@ describe('useProjectStore with still images', () => {
     setActivePinia(createPinia());
     const camera = useCameraStore();
     camera.status = 'live';
-    camera.still = frame(0.5);
+    camera.still = grayFrame(4, 2, 0.5);
     await useProjectStore().load(text, FILE);
     expect(camera.status).toBe('live');
     expect(camera.still).toBeNull();
@@ -161,7 +163,7 @@ describe('useProjectStore with still images', () => {
     const raw = JSON.parse(text) as Record<string, unknown>;
     raw.stills = { gray: { width: 1, height: 1, encoding: 'rgb8-deflate-base64', data: 'AAAA' } };
     const camera = useCameraStore();
-    camera.still = frame(0.5);
+    camera.still = grayFrame(4, 2, 0.5);
     const project = useProjectStore();
     await project.load(JSON.stringify(raw), FILE);
     expect(project.error).toContain('lässt sich nicht lesen');
@@ -172,7 +174,7 @@ describe('useProjectStore with still images', () => {
 describe('useProjectStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     download.mockReset();
   });
 
@@ -225,7 +227,7 @@ describe('useProjectStore', () => {
     useExportStore().setSize(65);
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
-    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const text = lastDownload().text;
     const saved = parseProject(text);
     expect(saved.export).toEqual({ size: 65 });
     expect({ ...saved.looks, luts: saved.looks?.luts.map((look) => look.name) }).toEqual({
@@ -260,7 +262,7 @@ describe('useProjectStore', () => {
     await chooseWarm();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
-    const text = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const text = lastDownload().text;
     const looks = useLookStore();
     const saved = looks.find('Warm');
     await looks.importFiles([cubeFile('Warm.cube', INVERT_CUBE), cubeFile('Blue.cube')]);
@@ -305,7 +307,7 @@ describe('useProjectStore', () => {
     await chooseWarm();
     await workedState();
     await useProjectStore().save({ withStills: false, withLooks: true });
-    const raw = JSON.parse((download.mock.calls.at(-1) as [string, string, string])[1]) as {
+    const raw = JSON.parse(lastDownload().text) as {
       looks: { luts: { data: string }[] };
     };
     raw.looks.luts[0] = { ...raw.looks.luts[0], data: 'kaputt' };
@@ -330,7 +332,7 @@ describe('useProjectStore', () => {
   it('uses the saved model when the reference set is missing, and points that out', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
+    emptyReferenceStorage();
     // A correction from before does not stay.
     useSolveStore().loadModel(IDENTITY_MODEL, 'Vorher');
     const project = useProjectStore();
@@ -345,12 +347,12 @@ describe('useProjectStore', () => {
   it('keeps naming the missing set of a loaded correction when saving again', async () => {
     const text = await workedState();
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
+    emptyReferenceStorage();
     await useProjectStore().load(text, FILE);
     // The active set is the bundled one, but the correction was fitted with "Mein Satz".
     expect(useReferenceStore().selectedName).not.toBe('Mein Satz');
     await useProjectStore().save(PLAIN);
-    const again = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const again = lastDownload().text;
     expect(parseProject(again).color.reference).toBe('Mein Satz');
 
     // Loaded once more, the file still brings the saved correction, not one from the active set.
@@ -359,14 +361,14 @@ describe('useProjectStore', () => {
     expect(useSolveStore().model).toEqual(parseProject(text).model);
     expect(useSolveStore().result).toBeNull();
     await useProjectStore().save(PLAIN);
-    const third = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const third = lastDownload().text;
     expect(parseProject(third).color.reference).toBe('Mein Satz');
   });
 
   it('names the active set when there is no correction yet', async () => {
     await useReferenceStore().load();
     await useProjectStore().save(PLAIN);
-    const saved = (download.mock.calls.at(-1) as [string, string, string])[1];
+    const saved = lastDownload().text;
     expect(parseProject(saved).color.reference).toBe(useReferenceStore().selectedName);
     expect(parseProject(saved).model).toBeNull();
   });
@@ -424,28 +426,9 @@ describe('useProjectStore', () => {
 describe('the project file that saving suggests', () => {
   const globals = globalThis as unknown as Record<string, unknown>;
 
-  // The file "mein-projekt.json" in the system dialogs, readable and writable (Chrome, Edge).
-  function fakeHandle(text = '') {
-    const name = 'mein-projekt.json';
-    const written: string[] = [];
-    const handle = {
-      name,
-      getFile: () => Promise.resolve({ name, text: () => Promise.resolve(text) }),
-      createWritable: () =>
-        Promise.resolve({
-          write: (content: string) => {
-            written.push(content);
-            return Promise.resolve();
-          },
-          close: () => Promise.resolve(),
-        }),
-    } as unknown as FileSystemFileHandle;
-    return { handle, written };
-  }
-
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     download.mockReset();
   });
 
@@ -459,20 +442,20 @@ describe('the project file that saving suggests', () => {
     const project = useProjectStore();
     await project.load(text, { name: 'mein-projekt.json' });
     await project.save(PLAIN);
-    expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('mein-projekt.json');
+    expect(lastDownload().name).toBe('mein-projekt.json');
   });
 
   it('does not take the name of a faulty file', async () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}', { name: 'kaputt.json' });
     await project.save(PLAIN);
-    expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe(PROJECT_FILE_NAME);
+    expect(lastDownload().name).toBe(PROJECT_FILE_NAME);
   });
 
   it('opens a file in the system dialog and saves it there again', async () => {
     const text = await workedState();
-    const opened = fakeHandle(text);
-    const chosen = fakeHandle();
+    const opened = fakeHandle('mein-projekt.json', text);
+    const chosen = fakeHandle('mein-projekt.json');
     const showSaveFilePicker = vi.fn().mockResolvedValue(chosen.handle);
     Object.assign(globals, {
       showOpenFilePicker: vi.fn().mockResolvedValue([opened.handle]),

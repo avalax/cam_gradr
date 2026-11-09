@@ -108,7 +108,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: resolveLocale(languagePreference.read()),
   fallbackLocale: DEFAULT_LOCALE,
-  messages: { en, de },
+  messages,
 });
 
 // Translates outside of components (stores, helpers, error messages).

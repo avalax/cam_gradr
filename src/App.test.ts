@@ -1,21 +1,18 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
-import { useChartStore, useColorChartStore } from './chart/chart-store';
+import { useChartStore } from './chart/chart-store';
 import { useProjectStore } from './project/project-store';
 import { BUNDLED_NAME } from './reference/bundled';
-import { setReferenceStorage, useReferenceStore } from './reference/reference-store';
-import { createIndexedDbStorage } from './storage/indexed-db';
+import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
-import { dummyReferenceJson } from './test-support/dummy-reference';
 import { cubeFile, importLooks } from './test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
-import { syntheticMeasurements } from './test-support/synthetic-camera';
+import { grayFrame } from './test-support/frames';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
 
@@ -32,13 +29,12 @@ function tabs(wrapper: ReturnType<typeof mountApp>) {
   return wrapper.findAll('[role="tab"]');
 }
 
-function stillFrame() {
-  return { width: 4, height: 3, data: new Float32Array(4 * 3 * 3) };
-}
-
 describe('App', () => {
+  let api: ReturnType<typeof installFakeCamera>;
+
   beforeEach(() => {
     installMediaStubs();
+    api = installFakeCamera();
   });
 
   afterEach(() => {
@@ -46,7 +42,6 @@ describe('App', () => {
   });
 
   it('shows name, identifier, camera toggle, settings and initially the gray cards tab', () => {
-    installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
     expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera starten');
@@ -57,7 +52,6 @@ describe('App', () => {
   });
 
   it('names in the preview tab what lies left and right of the divider, as its labels do', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const preview = () => tabs(wrapper)[2]?.text();
     expect(preview()).toContain('Kamera / Korrigiert');
@@ -68,7 +62,6 @@ describe('App', () => {
   });
 
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const gauges = () =>
       wrapper
@@ -97,7 +90,6 @@ describe('App', () => {
   });
 
   it('offers four tabs, all freely selectable', () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const all = tabs(wrapper);
     expect(all.map((tab) => tab.attributes('aria-label'))).toEqual([
@@ -118,7 +110,6 @@ describe('App', () => {
   });
 
   it('moves between the tabs with the arrow keys as one stop of the Tab key', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const stops = () => tabs(wrapper).map((tab) => tab.attributes('tabindex'));
     expect(stops()).toEqual(['0', '-1', '-1', '-1']);
@@ -134,7 +125,6 @@ describe('App', () => {
   });
 
   it('shows the camera switch in the export only while the camera runs', async () => {
-    installFakeCamera();
     const wrapper = mountApp({ attach: true });
     const cameraSwitch = () => wrapper.find('[data-testid="camera-toggle"]');
     await tabs(wrapper)[3]?.trigger('click');
@@ -157,7 +147,6 @@ describe('App', () => {
   });
 
   it('keeps the camera running when switching tabs', async () => {
-    const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
     await tabs(wrapper)[1]?.trigger('click');
@@ -167,10 +156,9 @@ describe('App', () => {
   });
 
   it('gives each tab with a camera image its own still image, the export changes nothing', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const camera = useCameraStore();
-    const gray = stillFrame();
+    const gray = grayFrame(4, 3);
     camera.still = gray;
     await tabs(wrapper)[0]?.trigger('click');
     expect(camera.still).toBe(gray);
@@ -185,7 +173,6 @@ describe('App', () => {
   });
 
   it('shows the missing-color-correction notice in the export tab and jumps to the color cards', async () => {
-    installFakeCamera();
     const wrapper = mountApp({ attach: true });
     await tabs(wrapper)[3]?.trigger('click');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(true);
@@ -197,7 +184,6 @@ describe('App', () => {
   });
 
   it('puts the floating project message after the panel in the order of the Tab key', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     useProjectStore().notice = 'Hinweis';
     await flushPromises();
@@ -206,34 +192,13 @@ describe('App', () => {
     expect(panel.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('recomputes the correction on any tab when a reference set is imported', async () => {
-    installFakeCamera();
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'app', 'references'));
-    const wrapper = mountApp();
-    // The stores of this app, before other mounted apps of this file take over the active pinia.
-    const chart = useColorChartStore();
-    const references = useReferenceStore();
-    const solve = useSolveStore();
-    await flushPromises();
-    // Measurements as a project without still images brings them, while the gray cards are open.
-    chart.restore({ points: {}, measurements: syntheticMeasurements(), rotated: false });
-    await references.importFile('a.json', dummyReferenceJson('Mein Satz'));
-    await flushPromises();
-    expect(solve.result).not.toBeNull();
-    expect(solve.referenceName).toBe('Mein Satz');
-    wrapper.unmount();
-    setReferenceStorage(null);
-  });
-
   it('loads the bundled reference set at startup', async () => {
-    installFakeCamera();
     mountApp();
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
   });
 
   it('stops the camera when the app is removed', async () => {
-    const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
     wrapper.unmount();

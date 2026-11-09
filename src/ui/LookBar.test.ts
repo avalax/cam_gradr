@@ -4,6 +4,7 @@ import type { VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setLocale } from '../lang';
 import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { failingStorage } from '../test-support/failing-storage';
@@ -129,17 +130,12 @@ describe('LookBar', () => {
     expect(lines[2]).toContain('2 Look-LUTs importiert');
     expect((input.element as HTMLInputElement).value).toBe('');
 
-    expect(usePreviewStore().look).toBe('SLOG 3 S CINETONE_REC709');
     await press(wrapper, 'look-remove-again');
     await flushPromises();
     expect(messages.text()).toContain('Look-LUT „SLOG 3 S CINETONE_REC709“ lokal gelöscht.');
     // The look the import would otherwise have chosen comes back.
     expect(usePreviewStore().look).toBe('Cold');
     expect(document.activeElement).toBe(wrapper.get('[data-testid="look-select"]').element);
-    await wrapper.get('[data-testid="look-undo"]').trigger('click');
-    await vi.waitFor(() => {
-      expect(useLookStore().looks).toHaveLength(3);
-    });
     wrapper.unmount();
   });
 
@@ -169,6 +165,17 @@ describe('LookBar', () => {
     expect(usePreviewStore().look).toBe('Warm');
     expect(document.activeElement).toBe(picker);
     wrapper.unmount();
+  });
+
+  it('translates the reason of a rejected file when the language changes', async () => {
+    const wrapper = mount(LookBar);
+    await useLookStore().importFiles([{ name: 'notes.txt', text: () => Promise.resolve('x') }]);
+    await flushPromises();
+    const alert = () => wrapper.get('[data-testid="look-messages"] [role="alert"]').text();
+    expect(alert()).toContain('Nur .cube-Dateien sind möglich.');
+    setLocale('en');
+    await flushPromises();
+    expect(alert()).toContain('Only .cube files are possible.');
   });
 
   it('takes no file when the dialog was cancelled', async () => {

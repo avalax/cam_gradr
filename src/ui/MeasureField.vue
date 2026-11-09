@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type { ExposureResult } from '../chart/exposure';
 
 import type { Edge } from './measure-field';
-import { detailRows, fieldHint, fieldPosition, mainIssue, okBox } from './measure-field';
+import { OK_BOX, detailRows, fieldHint, fieldPosition, mainIssue } from './measure-field';
 import { usePopupDismiss } from './popup-dismiss';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
@@ -34,7 +34,7 @@ const BANDS = [
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
 
-const box = okBox();
+const box = OK_BOX;
 const boxStyle = {
   left: `${String(box.left)}%`,
   top: `${String(box.top)}%`,

@@ -77,12 +77,9 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  // Saves the selected set as a JSON file so it can be imported later or elsewhere.
-  function downloadSelected(): void {
-    const set = selected.value;
-    if (set !== null) {
-      downloadFile(`${set.name}.json`, serializeReferenceJson(set), 'application/json');
-    }
+  // Saves a set as a JSON file so it can be imported later or elsewhere.
+  function download(set: ReferenceSet): void {
+    downloadFile(`${set.name}.json`, serializeReferenceJson(set), 'application/json');
   }
 
   function select(name: string): void {
@@ -114,7 +111,7 @@ export const useReferenceStore = defineStore('reference', () => {
     lastRemoved,
     load,
     importFile,
-    downloadSelected,
+    download,
     select,
     remove,
   };

@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import type { WatchStopHandle } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,8 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { BUNDLED_NAME } from '../reference/bundled';
-import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
+import { useReferenceStore } from '../reference/reference-store';
 import { recomputeOnChange } from '../solve/recompute';
 import { useSolveStore } from '../solve/solve-store';
 import { bothCards } from '../test-support/cards';
@@ -17,6 +15,7 @@ import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
 import { cameraCode, syntheticMeasurements } from '../test-support/synthetic-camera';
+import { emptyReferenceStorage } from '../test-support/reference-storage';
 
 import ColorStep from './ColorStep.vue';
 
@@ -40,7 +39,7 @@ describe('ColorStep', () => {
     setActivePinia(createPinia());
     installMediaStubs();
     installFakeCamera();
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     stopRecompute = recomputeOnChange();
   });
 

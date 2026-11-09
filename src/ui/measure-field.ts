@@ -31,22 +31,15 @@ export interface Box extends Position {
   height: number;
 }
 
-// Normal range in the middle of the field, matching the allowed deviations.
-export function okBox(
-  lightTolerance = DEFAULT_EXPOSURE_CONFIG.tolerance,
-  contrastTolerance = DEFAULT_EXPOSURE_CONFIG.contrastTolerance,
-): Box {
-  const halfWidth = (contrastTolerance / CONTRAST_RANGE) * HALF;
-  const halfHeight = (lightTolerance / LIGHT_RANGE) * HALF;
-  const left = clamp(HALF - halfWidth);
-  const top = clamp(HALF - halfHeight);
-  return {
-    left,
-    top,
-    width: clamp(HALF + halfWidth) - left,
-    height: clamp(HALF + halfHeight) - top,
-  };
-}
+// Normal range in the middle of the field, matching the deviations the rating allows.
+const OK_HALF_WIDTH = (DEFAULT_EXPOSURE_CONFIG.contrastTolerance / CONTRAST_RANGE) * HALF;
+const OK_HALF_HEIGHT = (DEFAULT_EXPOSURE_CONFIG.tolerance / LIGHT_RANGE) * HALF;
+export const OK_BOX: Box = {
+  left: HALF - OK_HALF_WIDTH,
+  top: HALF - OK_HALF_HEIGHT,
+  width: 2 * OK_HALF_WIDTH,
+  height: 2 * OK_HALF_HEIGHT,
+};
 
 function percent(value: number): string {
   return t('measure.percent', { value: formatDecimal(value * 100, 0) });

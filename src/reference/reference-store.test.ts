@@ -1,11 +1,10 @@
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 import { failingStorage } from '../test-support/failing-storage';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
+import { emptyReferenceStorage } from '../test-support/reference-storage';
 
 import { BUNDLED_NAME } from './bundled';
 import { setReferenceStorage, useReferenceStore } from './reference-store';
@@ -19,8 +18,7 @@ describe('useReferenceStore', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    storage = createIndexedDbStorage(new IDBFactory(), 'test', 'references');
-    setReferenceStorage(storage);
+    storage = emptyReferenceStorage();
   });
 
   it('contains the bundled set after loading and preselects it', async () => {
@@ -180,7 +178,7 @@ describe('useReferenceStore', () => {
       download.mockReset();
       const store = useReferenceStore();
       await store.importFile('a.json', dummyReferenceJson('Satz A'));
-      store.downloadSelected();
+      store.download(store.selected ?? { name: '', patches: {} });
       const [name, content, mime] = download.mock.calls[0] as [string, string, string];
       expect(name).toBe('Satz A.json');
       expect(mime).toBe('application/json');
@@ -188,12 +186,6 @@ describe('useReferenceStore', () => {
       const again = useReferenceStore();
       await again.importFile(name, content);
       expect(again.selected?.patches).toEqual(store.selected?.patches);
-    });
-
-    it('does nothing without a selected set', () => {
-      download.mockReset();
-      useReferenceStore().downloadSelected();
-      expect(download).not.toHaveBeenCalled();
     });
   });
 });

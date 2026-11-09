@@ -19,6 +19,21 @@ const CUBE_EXTENSION = /\.cube$/i;
 // D-Log, Log3G). Such a LUT expects a log signal, a webcam delivers Rec.709 already.
 const LOG_NAME = /s-?log|log-?c|v-?log|c-?log|f-?log|n-?log|d-?log|log-?3g/i;
 
+// What makes a file unusable as a look LUT: the key of its text in the language files
+// (look.errors) with the values to fill in. The bar translates it when it shows it, so that it
+// follows a language switch.
+export interface LookProblem {
+  key: 'notCube' | 'oneDimensional' | 'noSize' | 'size' | 'numbers' | 'count' | 'domain';
+  params: Record<string, string | number>;
+}
+
+// The error of the parser; its message is the text in the language of the moment.
+export class LookError extends Error {
+  constructor(readonly problem: LookProblem) {
+    super(t(`look.errors.${problem.key}`, problem.params));
+  }
+}
+
 export function isCubeFile(fileName: string): boolean {
   return CUBE_EXTENSION.test(fileName);
 }
@@ -38,7 +53,7 @@ export function isLogConversion(name: string): boolean {
 function numbers(parts: readonly string[], line: number, count: number): number[] {
   const values = parts.slice(0, count).map(Number);
   if (parts.length < count || values.some((value) => !Number.isFinite(value))) {
-    throw new TypeError(t('look.errors.numbers', { line }));
+    throw new LookError({ key: 'numbers', params: { line } });
   }
   return values;
 }
@@ -50,9 +65,10 @@ function triple(parts: readonly string[], line: number): Vec3 {
 function lutSize(value: string | undefined): number {
   const size = Number(value);
   if (!Number.isSafeInteger(size) || size < MIN_SIZE || size > MAX_SIZE) {
-    throw new RangeError(
-      t('look.errors.size', { size: String(value), min: MIN_SIZE, max: MAX_SIZE }),
-    );
+    throw new LookError({
+      key: 'size',
+      params: { size: String(value), min: MIN_SIZE, max: MAX_SIZE },
+    });
   }
   return size;
 }
@@ -73,7 +89,7 @@ const KEYWORDS = new Map<string, KeywordReader>([
   [
     'LUT_1D_SIZE',
     () => {
-      throw new TypeError(t('look.errors.oneDimensional'));
+      throw new LookError({ key: 'oneDimensional', params: {} });
     },
   ],
   [
@@ -108,7 +124,7 @@ const KEYWORDS = new Map<string, KeywordReader>([
 
 function readValues(state: CubeState, parts: readonly string[], line: number): void {
   if (state.data === null) {
-    throw new TypeError(t('look.errors.noSize'));
+    throw new LookError({ key: 'noSize', params: {} });
   }
   const values = triple(parts, line);
   if (state.count < state.size ** 3) {
@@ -142,13 +158,13 @@ export function parseLookCube(fileName: string, text: string): LookLut {
   }
   const { size, data, count, min, max } = state;
   if (data === null) {
-    throw new TypeError(t('look.errors.noSize'));
+    throw new LookError({ key: 'noSize', params: {} });
   }
   if (count !== size ** 3) {
-    throw new RangeError(t('look.errors.count', { expected: size ** 3, actual: count }));
+    throw new LookError({ key: 'count', params: { expected: size ** 3, actual: count } });
   }
   if (min.some((low, axis) => low >= max[axis as 0 | 1 | 2])) {
-    throw new RangeError(t('look.errors.domain'));
+    throw new LookError({ key: 'domain', params: {} });
   }
   return { name: lookName(fileName), lut: { size, data }, min, max };
 }

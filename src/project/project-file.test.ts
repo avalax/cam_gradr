@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { installedDialogs } from '../test-support/file-dialogs';
+import { fakeHandle, installedDialogs } from '../test-support/file-dialogs';
 
 import { fileDialogs, openProjectFile, saveProjectFile } from './project-file';
 import type { FileDialogs } from './project-file';
@@ -9,24 +9,6 @@ const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 
 const globals = globalThis as unknown as Record<string, unknown>;
-
-// A file in the system's file dialogs: it can be read and written.
-function fakeHandle(name: string, text = '') {
-  const written: string[] = [];
-  const handle = {
-    name,
-    getFile: () => Promise.resolve({ name, text: () => Promise.resolve(text) }),
-    createWritable: () =>
-      Promise.resolve({
-        write: (content: string) => {
-          written.push(content);
-          return Promise.resolve();
-        },
-        close: () => Promise.resolve(),
-      }),
-  } as unknown as FileSystemFileHandle;
-  return { handle, written };
-}
 
 function installDialogs(dialogs: Partial<FileDialogs>): void {
   Object.assign(globals, dialogs);

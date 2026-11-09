@@ -1,13 +1,12 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { emptyReferenceStorage } from '../test-support/reference-storage';
 
 import ReferencePanel from './ReferencePanel.vue';
 
@@ -40,7 +39,7 @@ function button(wrapper: ReturnType<typeof mount>, text: string) {
 describe('ReferencePanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     download.mockReset();
   });
 
