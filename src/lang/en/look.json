@@ -13,7 +13,7 @@
     "importedMany": "{count} look LUTs imported and saved locally in the browser.",
     "rejected": "“{file}” was not imported: {reason}",
     "logConversion": "“{name}” seems made for log footage (S\u2011Log, LogC\u00a0…) and makes the webcam image too dark.",
-    "removeAgain": "Delete again",
+    "removeAgain": "Remove it",
     "removed": "Look LUT “{name}” deleted locally.",
     "undo": "Undo",
     "loadFailed": "Saved look LUTs could not be loaded.",

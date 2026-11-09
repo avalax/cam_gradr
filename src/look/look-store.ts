@@ -15,7 +15,8 @@ import type { LookLut } from './look';
 export type LookMessage =
   | { kind: 'imported'; names: string[] }
   | { kind: 'rejected'; file: string; reason: string }
-  | { kind: 'logConversion'; name: string }
+  // `fallback` is the look the preview shows again when this one is removed through the warning.
+  | { kind: 'logConversion'; name: string; fallback: string | null }
   | { kind: 'removed'; name: string }
   | { kind: 'loadFailed' }
   | { kind: 'saveFailed'; name: string }
@@ -88,6 +89,7 @@ export const useLookStore = defineStore('look', () => {
   // Reads the chosen files; each valid one is saved (a look of the same name is replaced) and the
   // last one is chosen in the preview. Invalid files are named with the reason.
   async function importFiles(files: readonly LookFile[]): Promise<void> {
+    const before = usePreviewStore().look;
     const imported: LookLut[] = [];
     const problems: LookMessage[] = [];
     for (const file of files) {
@@ -107,16 +109,14 @@ export const useLookStore = defineStore('look', () => {
     }
     // A look that looks like a log conversion gets the warning instead of a place in the line that
     // names the imported looks. Errors and warnings come first, that line last: the room under the
-    // bar shows two lines, and what needs attention has to be in them.
-    const warnings: LookMessage[] = [];
-    const plain: string[] = [];
-    for (const look of imported) {
-      if (isLogConversion(look.name)) {
-        warnings.push({ kind: 'logConversion', name: look.name });
-      } else {
-        plain.push(look.name);
-      }
-    }
+    // bar shows two lines, and what needs attention has to be in them. Removed through the warning,
+    // the look gives way to the one the import would otherwise have chosen: the last other look of
+    // this import, or the look from before.
+    const plain = imported.filter((look) => !isLogConversion(look.name)).map((look) => look.name);
+    const fallback = plain.at(-1) ?? before;
+    const warnings: LookMessage[] = imported
+      .filter((look) => isLogConversion(look.name))
+      .map((look) => ({ kind: 'logConversion', name: look.name, fallback }));
     const last = imported.at(-1);
     if (last !== undefined) {
       usePreviewStore().setLook(last.name);
@@ -144,6 +144,18 @@ export const useLookStore = defineStore('look', () => {
     } catch {
       messages.value = [{ kind: 'removeFailed' }];
     }
+  }
+
+  // Removes a look the import warned about; if it was chosen, the preview shows the look it took the
+  // place of (see importFiles). The trash removes a look without that.
+  async function removeWarned(name: string, fallback: string | null): Promise<void> {
+    const preview = usePreviewStore();
+    const chosen = preview.look === name;
+    const removing = remove(name);
+    if (chosen && find(fallback) !== null) {
+      preview.setLook(fallback);
+    }
+    await removing;
   }
 
   // Makes the look LUTs of a project file the whole list, also in the browser's storage: looks the
@@ -192,5 +204,16 @@ export const useLookStore = defineStore('look', () => {
     messages.value = [];
   }
 
-  return { looks, messages, find, load, importFiles, replaceAll, remove, undo, dismiss };
+  return {
+    looks,
+    messages,
+    find,
+    load,
+    importFiles,
+    replaceAll,
+    remove,
+    removeWarned,
+    undo,
+    dismiss,
+  };
 });

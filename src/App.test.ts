@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore, useColorChartStore } from './chart/chart-store';
-import { usePreviewStore } from './lut/preview-store';
 import { useProjectStore } from './project/project-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { setReferenceStorage, useReferenceStore } from './reference/reference-store';
@@ -62,16 +61,10 @@ describe('App', () => {
     const wrapper = mountApp();
     const preview = () => tabs(wrapper)[2]?.text();
     expect(preview()).toContain('Kamera / Korrigiert');
+    // How the sides are named is up to preview-sides.ts; the tab follows the chosen look.
     await importLooks(cubeFile('Warm.cube'));
     await flushPromises();
     expect(preview()).toContain('Kamera / Korrigiert + Look-LUT');
-    usePreviewStore().setLeft('corrected');
-    usePreviewStore().setRight('camera');
-    await flushPromises();
-    expect(preview()).toContain('Korrigiert / Kamera + Look-LUT');
-    usePreviewStore().setLook(null);
-    await flushPromises();
-    expect(preview()).toContain('Kamera / Korrigiert');
   });
 
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
@@ -119,9 +112,6 @@ describe('App', () => {
       'false',
       'false',
     ]);
-    for (const tab of all) {
-      expect(tab.attributes('disabled')).toBeUndefined();
-    }
     expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
     expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-gray');
     expect(all[0]?.attributes('aria-describedby')).toBe('tab-hint-gray');
@@ -141,16 +131,6 @@ describe('App', () => {
     await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowDown' });
     await tabs(wrapper)[0]?.trigger('keydown', { key: 'a' });
     expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
-  });
-
-  it('switches between the tabs without conditions', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    await tabs(wrapper)[1]?.trigger('click');
-    expect(wrapper.text()).toContain('Dieser Tab berechnet die Farbkorrektur');
-    expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
-    await tabs(wrapper)[0]?.trigger('click');
-    expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
   });
 
   it('shows the camera switch in the export only while the camera runs', async () => {

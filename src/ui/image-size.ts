@@ -6,7 +6,7 @@ import type { Resolution } from '../camera/types';
 // the same value so the image is the same size and in the same place on every page, and the preview
 // fits the window with its look bar; on a short window the image of every tab gets smaller.
 const PAGE_CHROME_REM = 12;
-const LOOK_BAR_REM = 5.25;
+const LOOK_BAR_REM = 5.375;
 const IMAGE_CHROME_REM = PAGE_CHROME_REM + LOOK_BAR_REM;
 
 // Width of the image: as wide as the height that fits on one screen with everything around it allows

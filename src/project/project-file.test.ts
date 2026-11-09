@@ -1,19 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { installedDialogs } from '../test-support/file-dialogs';
+
 import { fileDialogs, openProjectFile, saveProjectFile } from './project-file';
 import type { FileDialogs } from './project-file';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
-
-// The fake system dialogs installed by the test (fails the test if they are missing).
-function installedDialogs(): FileDialogs {
-  const dialogs = fileDialogs();
-  if (dialogs === null) {
-    throw new Error('The test did not install the file dialogs.');
-  }
-  return dialogs;
-}
 
 const globals = globalThis as unknown as Record<string, unknown>;
 

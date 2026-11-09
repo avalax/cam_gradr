@@ -22,7 +22,7 @@ const props = defineProps<{
   reference: ReferenceSet | null;
   report: FitResult['report'] | null;
   // The live image is shown: nothing to compare yet, so only the camera colors and no divider.
-  live?: boolean;
+  live: boolean;
 }>();
 
 // Position of the divider: camera colors on the left, corrected ones on the right.
@@ -67,7 +67,7 @@ const summary = computed(() => {
 <template>
   <!-- Wipe over the color cards: camera colors left of the divider, corrected ones on the right. -->
   <div
-    class="relative flex w-44 shrink-0 flex-col self-stretch rounded-lg border border-zinc-500 bg-zinc-50"
+    class="relative flex flex-col rounded-lg border border-zinc-500 bg-zinc-50"
     data-testid="color-wipe"
   >
     <p
@@ -78,7 +78,7 @@ const summary = computed(() => {
     </p>
     <WipeLabels v-else :split="split" class="rounded-t-[7px]" />
 
-    <div class="relative min-h-64 flex-1 overflow-hidden">
+    <div class="relative min-h-0 flex-1 overflow-hidden">
       <div
         v-for="(layer, index) in shownLayers"
         :key="layer.key"

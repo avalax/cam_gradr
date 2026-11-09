@@ -4,6 +4,7 @@ import type { Vec3 } from '../color/lab';
 import { linearToSrgb } from '../color/srgb';
 import { fitColorModel } from '../solve/fit';
 import type { FitResult } from '../solve/fit';
+import { useSolveStore } from '../solve/solve-store';
 
 import { dummyIds, dummyLab, dummyReference } from './dummy-reference';
 
@@ -36,6 +37,12 @@ export function cameraCode(lab: Vec3): Vec3 {
 // What the artificial webcam measures on every patch of the made-up reference.
 export function syntheticMeasurements(): Record<string, Rgb> {
   return Object.fromEntries(dummyIds().map((id) => [id, cameraCode(dummyLab(id))]));
+}
+
+// Computes the correction of these measurements against the made-up reference, as the app does once
+// the color cards are measured.
+export function computeModel(): void {
+  useSolveStore().compute({ measurements: syntheticMeasurements(), reference: dummyReference() });
 }
 
 const memory: { fit: FitResult | null } = { fit: null };

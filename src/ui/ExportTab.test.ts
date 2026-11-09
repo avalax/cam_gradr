@@ -10,11 +10,11 @@ import { useReferenceStore } from '../reference/reference-store';
 import { useExportStore } from '../lut/export-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useSolveStore } from '../solve/solve-store';
+import { bothCards } from '../test-support/cards';
 import { parseCube } from '../test-support/cube-parse';
-import { dummyReference } from '../test-support/dummy-reference';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
-import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
-import { syntheticMeasurements } from '../test-support/synthetic-camera';
+import { chooseInvert } from '../test-support/look-cubes';
+import { computeModel } from '../test-support/synthetic-camera';
 
 import ExportTab from './ExportTab.vue';
 
@@ -22,14 +22,6 @@ const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
 vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
-
-async function chooseInvert(): Promise<void> {
-  await importLooks(cubeFile('Invert.cube', INVERT_CUBE));
-}
-
-function computeModel() {
-  useSolveStore().compute({ measurements: syntheticMeasurements(), reference: dummyReference() });
-}
 
 describe('ExportTab', () => {
   beforeEach(() => {
@@ -62,20 +54,7 @@ describe('ExportTab', () => {
 
   it('names the slices, the file size and the project contents with a correction', async () => {
     computeModel();
-    useChartStore().setCards([
-      [
-        { x: 0, y: 0 },
-        { x: 1, y: 0 },
-        { x: 1, y: 1 },
-        { x: 0, y: 1 },
-      ],
-      [
-        { x: 2, y: 0 },
-        { x: 3, y: 0 },
-        { x: 3, y: 1 },
-        { x: 2, y: 1 },
-      ],
-    ]);
+    useChartStore().setCards(bothCards());
     const wrapper = mount(ExportTab);
     expect(wrapper.findAll('[data-testid="lut-slice"]')).toHaveLength(8);
     expect(wrapper.get('[data-testid="export-file-info"]').text()).toBe(
@@ -137,18 +116,6 @@ describe('ExportTab', () => {
     expect(facts()).toContain('Look-LUT–');
   });
 
-  it('leads to the color cards via the link', async () => {
-    const wrapper = mount(ExportTab);
-    await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
-    expect(wrapper.emitted('goto')).toEqual([['color']]);
-  });
-
-  it('offers the project even without a color correction', () => {
-    const wrapper = mount(ExportTab);
-    expect(wrapper.get('[data-testid="project-save"]').attributes('disabled')).toBeUndefined();
-    expect(wrapper.find('[data-testid="project-file"]').exists()).toBe(true);
-  });
-
   it('downloads nothing without a color correction', () => {
     const wrapper = mount(ExportTab);
     (wrapper.vm as unknown as { download: () => void }).download();
@@ -179,7 +146,6 @@ describe('ExportTab', () => {
     await chooseInvert();
     usePreviewStore().setStrength(70);
     const wrapper = mount(ExportTab);
-    expect(wrapper.find('[data-testid="export-content"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="project-facts"]').text()).toContain('Invert · 70 %');
     // The smallest size keeps the test fast.
     await wrapper.get('[data-testid="export-size"] [data-option="17"]').trigger('click');

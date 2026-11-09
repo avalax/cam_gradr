@@ -124,7 +124,6 @@ describe('useChartStore', () => {
   it('returns corners only for complete charts', () => {
     const store = withCorners(point(1, 1));
     expect(store.corners).toEqual({});
-    expect(store.ready).toBe(false);
   });
 
   it('moves existing corners and ignores unset ones', () => {
@@ -198,10 +197,9 @@ describe('useChartStore', () => {
     store.setCards([card(0), card(100)]);
     expect(store.points[3]).toEqual(card(0));
     expect(store.points[4]).toEqual(card(100));
-    expect(store.ready).toBe(true);
     store.setCards([card(50)]);
+    expect(store.points[3]).toEqual(card(50));
     expect(store.points[4]).toEqual([]);
-    expect(store.ready).toBe(false);
   });
 
   it('resets everything', () => {
@@ -212,7 +210,6 @@ describe('useChartStore', () => {
     expect(store.points).toEqual({});
     expect(store.measurements).toEqual({});
     expect(store.exposure).toBeNull();
-    expect(store.ready).toBe(false);
   });
 
   // Two charts side by side (100 pixels wide each); the strip patches run from top to bottom

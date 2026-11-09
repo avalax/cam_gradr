@@ -19,6 +19,7 @@ function mountWipe(overrides: Record<string, unknown> = {}) {
       model: null,
       reference: null,
       report: null,
+      live: false,
       ...overrides,
     },
   });
@@ -39,7 +40,14 @@ describe('ColorWipe', () => {
 
   it('shows the result as a popup on the label once there is a report', () => {
     const wrapper = mount(ColorWipe, {
-      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report },
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report,
+        live: false,
+      },
       slots: { details: '<p data-testid="inhalt">Ergebnis</p>' },
     });
     const trigger = wrapper.get('[data-testid="color-wipe-result"]');
@@ -60,7 +68,14 @@ describe('ColorWipe', () => {
 
   it('closes the result with Escape until the pointer or the focus leaves', async () => {
     const wrapper = mount(ColorWipe, {
-      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report },
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report,
+        live: false,
+      },
       slots: { details: '<p>Ergebnis</p>' },
     });
     const trigger = wrapper.get('[data-testid="color-wipe-result"]');
@@ -82,7 +97,14 @@ describe('ColorWipe', () => {
 
   it('has no popup and is not focusable without a report or without content', () => {
     const withoutReport = mount(ColorWipe, {
-      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report: null },
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report: null,
+        live: false,
+      },
       slots: { details: '<p>Ergebnis</p>' },
     });
     expect(withoutReport.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);

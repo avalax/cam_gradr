@@ -12,9 +12,13 @@ import { cameraSwitchStandIn } from '../test-support/camera-switch';
 import { dummyReference, dummyReferenceJson } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
-import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
+import { chooseInvert } from '../test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
-import { syntheticFit, syntheticMeasurements } from '../test-support/synthetic-camera';
+import {
+  computeModel,
+  syntheticFit,
+  syntheticMeasurements,
+} from '../test-support/synthetic-camera';
 
 import PreviewTab from './PreviewTab.vue';
 
@@ -26,16 +30,8 @@ vi.mock(import('../lut/lut'), async (original) => lutOnce(await original()));
 const reference = dummyReference();
 const measurements = syntheticMeasurements();
 
-async function chooseInvert(): Promise<void> {
-  await importLooks(cubeFile('Invert.cube', INVERT_CUBE));
-}
-
 function stillFrame() {
   return { width: 8, height: 4, data: new Float32Array(8 * 4 * 3).fill(0.4) };
-}
-
-function computeModel() {
-  useSolveStore().compute({ measurements, reference });
 }
 
 // Scheduler for the draw cycle: runs can be triggered by hand.
@@ -69,6 +65,8 @@ describe('PreviewTab', () => {
     setActivePinia(createPinia());
     installMediaStubs();
     installFakeCamera();
+    // While the preview is open, the shown still image is its own, as the app arranges it.
+    useCameraStore().stillOwner = 'preview';
   });
 
   afterEach(() => {
@@ -378,7 +376,7 @@ describe('PreviewTab', () => {
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
   });
 
-  it('sets the divider line via the wipe and no longer has a slider', async () => {
+  it('sets the divider line via the wipe', async () => {
     mockAnimation();
     mockContexts();
     computeModel();

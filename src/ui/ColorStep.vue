@@ -41,9 +41,6 @@ const missingSet = computed(() => {
 function grayCheck(current: FitResult) {
   return checkGrayCards(current.model, grayChart.measurements, current.report.exposureGain);
 }
-
-// The correction itself is recalculated on every change of the measurements or the reference set,
-// on any tab (src/solve/recompute.ts, started by the app).
 </script>
 
 <template>

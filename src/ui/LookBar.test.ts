@@ -129,9 +129,12 @@ describe('LookBar', () => {
     expect(lines[2]).toContain('2 Look-LUTs importiert');
     expect((input.element as HTMLInputElement).value).toBe('');
 
+    expect(usePreviewStore().look).toBe('SLOG 3 S CINETONE_REC709');
     await press(wrapper, 'look-remove-again');
     await flushPromises();
     expect(messages.text()).toContain('Look-LUT „SLOG 3 S CINETONE_REC709“ lokal gelöscht.');
+    // The look the import would otherwise have chosen comes back.
+    expect(usePreviewStore().look).toBe('Cold');
     expect(document.activeElement).toBe(wrapper.get('[data-testid="look-select"]').element);
     await wrapper.get('[data-testid="look-undo"]').trigger('click');
     await vi.waitFor(() => {

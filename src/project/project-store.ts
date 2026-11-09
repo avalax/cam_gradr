@@ -174,13 +174,14 @@ export const useProjectStore = defineStore('project', () => {
   // The file that was loaded or saved last: saving suggests it again.
   const file = shallowRef<ProjectFile | null>(null);
 
-  // Saves the working state; with `withStills` the tabs' still images are included in the file.
-  async function save(options?: { withStills: boolean; withLooks?: boolean }): Promise<void> {
+  // Saves the working state; with `withStills` the tabs' still images are included in the file, with
+  // `withLooks` the imported look LUTs.
+  async function save(options: { withStills: boolean; withLooks: boolean }): Promise<void> {
     error.value = null;
     notice.value = null;
-    const withStills = options?.withStills === true;
+    const { withStills } = options;
     const project = snapshot(withStills);
-    if (options?.withLooks === true) {
+    if (options.withLooks) {
       project.looks = await lookSettings();
     }
     if (withStills) {
@@ -202,7 +203,7 @@ export const useProjectStore = defineStore('project', () => {
 
   // Applies a project file; with a faulty file the previous state is kept. `source` is the file it
   // came from, which saving suggests afterwards.
-  async function load(text: string, source?: ProjectFile): Promise<void> {
+  async function load(text: string, source: ProjectFile): Promise<void> {
     notice.value = null;
     let read: ReadProject;
     try {
@@ -212,9 +213,7 @@ export const useProjectStore = defineStore('project', () => {
       return;
     }
     error.value = null;
-    if (source !== undefined) {
-      file.value = source;
-    }
+    file.value = source;
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);

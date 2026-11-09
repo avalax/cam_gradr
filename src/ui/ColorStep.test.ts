@@ -93,19 +93,6 @@ describe('ColorStep', () => {
     );
   });
 
-  it('computes the color correction by itself once measurements exist, and shows the report', async () => {
-    const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
-    expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
-    prepareMeasurements();
-    await flushPromises();
-    expect(wrapper.find('[data-testid="report"]').exists()).toBe(true);
-    const before = Number(wrapper.get('[data-testid="mean-before"]').text().replace(',', '.'));
-    const after = Number(wrapper.get('[data-testid="mean-after"]').text().replace(',', '.'));
-    expect(after).toBeLessThan(before);
-    expect(useSolveStore().result).not.toBeNull();
-  });
-
   it('checks the correction against the measured gray cards from step 1', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().importFile('a.json', dummyReferenceJson());

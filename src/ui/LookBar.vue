@@ -52,6 +52,12 @@ function remove(name: string): void {
   void looks.remove(name);
 }
 
+// The link of a warning removes its look and shows again the look it took the place of.
+function removeWarned(name: string, fallback: string | null): void {
+  focusById(PICKER_ID);
+  void looks.removeWarned(name, fallback);
+}
+
 function undo(): void {
   focusById(PICKER_ID);
   void looks.undo();
@@ -157,9 +163,11 @@ function text(message: LookMessage): string {
 
   <!-- Exactly two lines, as long as the hint: more messages at once (an import with a warning and a
        rejected file) scroll inside, so that they never make the preview taller than the window. The
-       store puts errors and warnings first, so that they and their actions are in these lines. -->
+       store puts errors and warnings first, so that they and their actions are in these lines. A
+       padding of 2 px on top and below and 4 px at the sides (taken back by the negative margin)
+       keeps the focus rings of the links inside the box, which clips them otherwise. -->
   <div
-    class="mt-1.5 flex h-[2lh] flex-col overflow-y-auto text-xs leading-snug"
+    class="-mx-1 mt-1 box-content flex h-[2lh] flex-col overflow-y-auto px-1 py-0.5 text-xs leading-snug [&_button]:outline-offset-0"
     data-testid="look-messages"
   >
     <p v-if="list.length === 0 && messages.length === 0" class="text-zinc-600">
@@ -180,7 +188,7 @@ function text(message: LookMessage): string {
           type="button"
           :class="LINK_BUTTON"
           data-testid="look-remove-again"
-          @click="remove(message.name)"
+          @click="removeWarned(message.name, message.fallback)"
         >
           {{ t('look.messages.removeAgain') }}
         </button>

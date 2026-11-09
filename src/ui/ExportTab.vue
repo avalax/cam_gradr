@@ -209,7 +209,7 @@ function download(): void {
             class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white dark:bg-zinc-100 pb-0.5 text-[8px] font-bold"
             >.cube</span
           >
-          <div class="min-w-0 text-sm">
+          <div class="min-w-0 flex-1 text-sm">
             <p id="export-file-name" class="truncate font-semibold">{{ fileName }}</p>
             <p class="text-xs text-zinc-500" data-testid="export-file-info">{{ fileInfo }}</p>
           </div>

@@ -39,3 +39,8 @@ export async function importLooks(...files: ReturnType<typeof cubeFile>[]): Prom
   emptyLookStorage();
   await useLookStore().importFiles(files);
 }
+
+// Imports the inverting look "Invert", which becomes the chosen look.
+export async function chooseInvert(): Promise<void> {
+  await importLooks(cubeFile('Invert.cube', INVERT_CUBE));
+}

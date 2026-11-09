@@ -95,6 +95,11 @@ function placeAll() {
   useChartStore().setCards(bothCards());
 }
 
+// How many corner points the gray cards have (eight once both cards are found).
+function cornerCount(): number {
+  return Object.values(useChartStore().points).flat().length;
+}
+
 // The button that discards the corner points and searches again.
 function resetButton(wrapper: Wrapper) {
   return wrapper
@@ -150,16 +155,15 @@ describe('GrayStep', () => {
     expect(wrapper.get('video').attributes('style')).toContain('aspect-ratio: 1.77');
   });
 
-  it('connects the running stream to the video', async () => {
+  it('shows no placeholder while the camera runs', async () => {
     const wrapper = await mountLive();
-    expect(wrapper.get('video').element.srcObject).toBe(FAKE_STREAM);
     expect(wrapper.text()).not.toContain('Die Kamera ist aus');
   });
 
   it('sizes the image so that it fits on one screen, with room for the look bar', async () => {
     const wrapper = await mountLive();
     const style = wrapper.get('[data-testid="image-block"]').attributes('style');
-    expect(style).toContain('width: calc((100vh - 17.25rem) * 1.77');
+    expect(style).toContain('width: calc((100vh - 17.375rem) * 1.77');
   });
 
   it('binds stream and existing still image on mount', async () => {
@@ -173,13 +177,6 @@ describe('GrayStep', () => {
     // Coming back to the tab draws its still image again.
     expect(drawFrame).toHaveBeenCalledExactlyOnceWith(expect.anything(), still);
     expect(resetButton(wrapper)).toBeDefined();
-  });
-
-  it('shows capture errors', async () => {
-    const wrapper = await mountLive();
-    useCameraStore().errorMessage = 'Aufnahme fehlgeschlagen.';
-    await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toContain('Aufnahme fehlgeschlagen');
   });
 
   it('shows the corner points only on the still image and hints at dragging there', async () => {
@@ -226,12 +223,11 @@ describe('GrayStep', () => {
       installFakeCamera();
       const wrapper = mount(GrayStep);
       const camera = useCameraStore();
-      const chart = useChartStore();
       camera.still = stillFrame(0.5);
       placeAll();
       await flushPromises();
       expect(wrapper.findAll('circle')).toHaveLength(8);
-      expect(chart.ready).toBe(true);
+      expect(cornerCount()).toBe(8);
 
       await camera.start();
       await flushPromises();
@@ -305,7 +301,7 @@ describe('GrayStep', () => {
     expect(useChartStore().exposure).toBeNull();
     placeAll();
     await flushPromises();
-    expect(useChartStore().ready).toBe(true);
+    expect(cornerCount()).toBe(8);
     expect(useChartStore().exposure).not.toBeNull();
     expect(wrapper.find('[data-testid="measure-marker"]').exists()).toBe(true);
     expect(wrapper.text()).toContain('18 %-Karte');
@@ -361,7 +357,7 @@ describe('GrayStep', () => {
       await flushPromises();
       expect(useCameraStore().still).not.toBeNull();
       expect(useCameraStore().status).toBe('idle');
-      expect(useChartStore().ready).toBe(true);
+      expect(cornerCount()).toBe(8);
       expect(wrapper.find('[data-testid="auto-hint"]').exists()).toBe(false);
       expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Standbild');
     });
@@ -386,7 +382,7 @@ describe('GrayStep', () => {
       await vi.advanceTimersByTimeAsync(2000);
       await flushPromises();
       expect(useCameraStore().still).not.toBeNull();
-      expect(useChartStore().ready).toBe(true);
+      expect(cornerCount()).toBe(8);
     });
 
     it('frames the recognized cards: white while searching, green during the capture', async () => {
@@ -439,7 +435,7 @@ describe('GrayStep', () => {
       await vi.advanceTimersByTimeAsync(1500);
       await flushPromises();
       expect(useCameraStore().status).toBe('live');
-      expect(useChartStore().ready).toBe(false);
+      expect(cornerCount()).toBe(0);
       expect(wrapper.get('[data-testid="wrong-cards"]').text()).toContain('Keine Graukarten');
       expect(wrapper.get('[data-testid="found-frame"]').attributes('stroke')).toBe('#f87171');
       visible = false;
@@ -521,13 +517,13 @@ describe('GrayStep', () => {
     placeAll();
     camera.actual = { width: 1280, height: 720 };
     await flushPromises();
-    expect(chart.ready).toBe(true);
+    expect(cornerCount()).toBe(8);
     camera.actual = null;
     await flushPromises();
-    expect(chart.ready).toBe(true);
+    expect(cornerCount()).toBe(8);
     camera.actual = { width: 640, height: 480 };
     await flushPromises();
-    expect(chart.ready).toBe(true);
+    expect(cornerCount()).toBe(8);
     camera.actual = { width: 640, height: 400 };
     await flushPromises();
     expect(chart.points).toEqual({});

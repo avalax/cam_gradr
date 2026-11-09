@@ -70,7 +70,7 @@ export function grayStatus(exposure: ExposureResult | null): TabStatus {
 // of looking as if nothing were calculated.
 export function colorStatus(
   report: { meanBefore: number; meanAfter: number } | null,
-  corrected = false,
+  corrected: boolean,
 ): TabStatus {
   if (report === null) {
     return {

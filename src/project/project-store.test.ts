@@ -13,13 +13,12 @@ import { setReferenceStorage, useReferenceStore } from '../reference/reference-s
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { installedDialogs } from '../test-support/file-dialogs';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { INVERT_CUBE, cubeFile, emptyLookStorage } from '../test-support/look-cubes';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
 import { parseProject } from './project';
-import { fileDialogs } from './project-file';
-import type { FileDialogs } from './project-file';
 import { PROJECT_FILE_NAME, useProjectStore } from './project-store';
 
 const download = vi.hoisted(() => vi.fn());
@@ -27,14 +26,9 @@ vi.mock('../lut/download', () => ({ downloadFile: download }));
 const { fitOnce } = await vi.hoisted(() => import('../test-support/fit-once'));
 vi.mock(import('../solve/fit'), async (original) => fitOnce(await original()));
 
-// The fake system dialogs installed by the test (fails the test if they are missing).
-function installedDialogs(): FileDialogs {
-  const dialogs = fileDialogs();
-  if (dialogs === null) {
-    throw new Error('The test did not install the file dialogs.');
-  }
-  return dialogs;
-}
+// What a save without still images and look LUTs includes, and the file a project comes from.
+const PLAIN = { withStills: false, withLooks: false };
+const FILE = { name: 'project.json' };
 
 const colorMeasurements = syntheticMeasurements();
 const grayMeasurements: Record<string, Rgb> = {
@@ -63,7 +57,7 @@ async function workedState(): Promise<string> {
     reference: references.selected ?? { name: '', patches: {} },
   });
   usePreviewStore().setSplit(30);
-  await useProjectStore().save();
+  await useProjectStore().save(PLAIN);
   return (download.mock.calls.at(-1) as [string, string, string])[1];
 }
 
@@ -79,7 +73,7 @@ const frame = (value: number) => ({
   data: new Float32Array(4 * 2 * 3).fill(value),
 });
 
-// Rotanteil des angezeigten Standbilds.
+// Red share of the shown still image.
 function shown(): number | undefined {
   return useCameraStore().still?.data[0];
 }
@@ -97,7 +91,7 @@ describe('useProjectStore with still images', () => {
     camera.still = frame(0.5);
     camera.swapStill('gray', 'color');
     camera.still = frame(0.25);
-    await useProjectStore().save({ withStills: true });
+    await useProjectStore().save({ withStills: true, withLooks: false });
     const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
     expect(Object.keys(project.stills ?? {})).toHaveLength(2);
     expect(project.stills?.color).toBeDefined();
@@ -110,7 +104,7 @@ describe('useProjectStore with still images', () => {
     // During the search the store keeps the previous state; that is what gets saved.
     useChartStore().beginSearch();
     expect(useChartStore().points).toEqual({});
-    await useProjectStore().save({ withStills: true });
+    await useProjectStore().save({ withStills: true, withLooks: false });
     const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
     expect(project.gray.corners).toEqual({ 3: [{ x: 1, y: 2 }] });
     expect(project.color.corners).toEqual({ 1: [{ x: 3, y: 4 }] });
@@ -120,7 +114,7 @@ describe('useProjectStore with still images', () => {
   it('omits the still images when the checkbox is unchecked', async () => {
     await workedState();
     useCameraStore().still = frame(0.5);
-    await useProjectStore().save({ withStills: false });
+    await useProjectStore().save(PLAIN);
     const project = parseProject((download.mock.calls.at(-1) as [string, string, string])[1]);
     expect(project.stills).toBeUndefined();
   });
@@ -132,14 +126,14 @@ describe('useProjectStore with still images', () => {
     camera.swapStill('gray', 'color');
     camera.still = frame(0.25);
     camera.swapStill('color', 'gray');
-    await useProjectStore().save({ withStills: true });
+    await useProjectStore().save({ withStills: true, withLooks: false });
     const text = (download.mock.calls.at(-1) as [string, string, string])[1];
 
     setActivePinia(createPinia());
     const fresh = useCameraStore();
     fresh.status = 'live';
     const project = useProjectStore();
-    await project.load(text);
+    await project.load(text, FILE);
 
     expect(project.error).toBeNull();
     expect(fresh.status).toBe('idle');
@@ -157,7 +151,7 @@ describe('useProjectStore with still images', () => {
     const camera = useCameraStore();
     camera.status = 'live';
     camera.still = frame(0.5);
-    await useProjectStore().load(text);
+    await useProjectStore().load(text, FILE);
     expect(camera.status).toBe('live');
     expect(camera.still).toBeNull();
   });
@@ -169,7 +163,7 @@ describe('useProjectStore with still images', () => {
     const camera = useCameraStore();
     camera.still = frame(0.5);
     const project = useProjectStore();
-    await project.load(JSON.stringify(raw));
+    await project.load(JSON.stringify(raw), FILE);
     expect(project.error).toContain('lässt sich nicht lesen');
     expect(shown()).toBeCloseTo(0.5);
   });
@@ -206,7 +200,7 @@ describe('useProjectStore', () => {
     setActivePinia(createPinia());
     useCameraStore().still = { width: 1, height: 1, data: new Float32Array(3) };
     const project = useProjectStore();
-    await project.load(text);
+    await project.load(text, FILE);
 
     expect(project.error).toBeNull();
     expect(project.notice).toBeNull();
@@ -246,7 +240,7 @@ describe('useProjectStore', () => {
     const other = createIndexedDbStorage<LookLut>(new IDBFactory(), 'other', 'looks');
     setLookStorage(other);
     const project = useProjectStore();
-    await project.load(text);
+    await project.load(text, FILE);
     expect(project.notice).toBeNull();
     expect(useLookStore().looks.map((look) => look.name)).toEqual(['Cold', 'Warm']);
     expect(useLookStore().find('Warm')?.lut.size).toBe(2);
@@ -272,7 +266,7 @@ describe('useProjectStore', () => {
     await looks.importFiles([cubeFile('Warm.cube', INVERT_CUBE), cubeFile('Blue.cube')]);
     expect(looks.find('Warm')?.lut.data).not.toEqual(saved?.lut.data);
     const project = useProjectStore();
-    await project.load(text);
+    await project.load(text, FILE);
     expect(looks.find('Warm')?.lut.data).toEqual(saved?.lut.data);
     // Blue is not in the project.
     expect(looks.find('Blue')).toBeNull();
@@ -292,7 +286,7 @@ describe('useProjectStore', () => {
 
     useExportStore().setSize(65);
     await useLookStore().importFiles([cubeFile('Cold.cube')]);
-    await useProjectStore().load(text);
+    await useProjectStore().load(text, FILE);
     expect(useProjectStore().notice).toContain('2 importierte Look-LUTs');
     expect(useLookStore().looks).toEqual([]);
     expect(await storage.list()).toEqual([]);
@@ -317,7 +311,7 @@ describe('useProjectStore', () => {
     raw.looks.luts[0] = { ...raw.looks.luts[0], data: 'kaputt' };
     usePreviewStore().setSplit(80);
     const project = useProjectStore();
-    await project.load(JSON.stringify(raw));
+    await project.load(JSON.stringify(raw), FILE);
     expect(project.error).toContain('lässt sich nicht lesen');
     expect(usePreviewStore().split).toBe(80);
     expect(useLookStore().find('Warm')).not.toBeNull();
@@ -325,7 +319,7 @@ describe('useProjectStore', () => {
 
   it('closes error and notice with dismiss', async () => {
     const project = useProjectStore();
-    await project.load('{"format":"x"}');
+    await project.load('{"format":"x"}', FILE);
     expect(project.error).not.toBeNull();
     project.notice = 'Hinweis';
     project.dismiss();
@@ -340,7 +334,7 @@ describe('useProjectStore', () => {
     // A correction from before does not stay.
     useSolveStore().loadModel(IDENTITY_MODEL, 'Vorher');
     const project = useProjectStore();
-    await project.load(text);
+    await project.load(text, FILE);
 
     expect(useSolveStore().model).toEqual(parseProject(text).model);
     expect(useSolveStore().result).toBeNull();
@@ -352,26 +346,26 @@ describe('useProjectStore', () => {
     const text = await workedState();
     setActivePinia(createPinia());
     setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'andere', 'references'));
-    await useProjectStore().load(text);
+    await useProjectStore().load(text, FILE);
     // The active set is the bundled one, but the correction was fitted with "Mein Satz".
     expect(useReferenceStore().selectedName).not.toBe('Mein Satz');
-    await useProjectStore().save();
+    await useProjectStore().save(PLAIN);
     const again = (download.mock.calls.at(-1) as [string, string, string])[1];
     expect(parseProject(again).color.reference).toBe('Mein Satz');
 
     // Loaded once more, the file still brings the saved correction, not one from the active set.
     setActivePinia(createPinia());
-    await useProjectStore().load(again);
+    await useProjectStore().load(again, FILE);
     expect(useSolveStore().model).toEqual(parseProject(text).model);
     expect(useSolveStore().result).toBeNull();
-    await useProjectStore().save();
+    await useProjectStore().save(PLAIN);
     const third = (download.mock.calls.at(-1) as [string, string, string])[1];
     expect(parseProject(third).color.reference).toBe('Mein Satz');
   });
 
   it('names the active set when there is no correction yet', async () => {
     await useReferenceStore().load();
-    await useProjectStore().save();
+    await useProjectStore().save(PLAIN);
     const saved = (download.mock.calls.at(-1) as [string, string, string])[1];
     expect(parseProject(saved).color.reference).toBe(useReferenceStore().selectedName);
     expect(parseProject(saved).model).toBeNull();
@@ -385,7 +379,7 @@ describe('useProjectStore', () => {
     setActivePinia(createPinia());
     useSolveStore().loadModel(IDENTITY_MODEL, 'Vorher');
     const project = useProjectStore();
-    await project.load(JSON.stringify(raw));
+    await project.load(JSON.stringify(raw), FILE);
 
     expect(project.notice).toBeNull();
     expect(useSolveStore().model).toBeNull();
@@ -397,7 +391,7 @@ describe('useProjectStore', () => {
     const raw = JSON.parse(text) as { color: { measurements: Record<string, Rgb> } };
     raw.color.measurements = { '1A': [0.5, 0.5, 0.5] };
     setActivePinia(createPinia());
-    await useProjectStore().load(JSON.stringify(raw));
+    await useProjectStore().load(JSON.stringify(raw), FILE);
 
     expect(useSolveStore().result).toBeNull();
     expect(useSolveStore().model).not.toBeNull();
@@ -406,7 +400,7 @@ describe('useProjectStore', () => {
   it('reports faulty files and leaves the previous state unchanged', async () => {
     const project = useProjectStore();
     useChartStore().restore({ points: { 3: [{ x: 5, y: 6 }] }, measurements: {}, rotated: false });
-    await project.load('{"format":"anderes"}');
+    await project.load('{"format":"anderes"}', FILE);
 
     expect(project.error).toContain('Unbekanntes Format');
     expect(project.notice).toBeNull();
@@ -416,12 +410,13 @@ describe('useProjectStore', () => {
   it('clears an earlier error message after a successful load and save', async () => {
     const text = await workedState();
     const project = useProjectStore();
-    await project.load('kaputt');
+    await project.load('kaputt', FILE);
     expect(project.error).not.toBeNull();
-    await project.save();
+    await project.save(PLAIN);
     expect(project.error).toBeNull();
-    await project.load('kaputt');
-    await project.load(text);
+    expect(project.notice).toBeNull();
+    await project.load('kaputt', FILE);
+    await project.load(text, FILE);
     expect(project.error).toBeNull();
   });
 });
@@ -463,14 +458,14 @@ describe('the project file that saving suggests', () => {
     const text = await workedState();
     const project = useProjectStore();
     await project.load(text, { name: 'mein-projekt.json' });
-    await project.save();
+    await project.save(PLAIN);
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('mein-projekt.json');
   });
 
   it('does not take the name of a faulty file', async () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}', { name: 'kaputt.json' });
-    await project.save();
+    await project.save(PLAIN);
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe(PROJECT_FILE_NAME);
   });
 
@@ -486,13 +481,13 @@ describe('the project file that saving suggests', () => {
     const project = useProjectStore();
     await project.open(installedDialogs());
     expect(project.error).toBeNull();
-    await project.save();
+    await project.save(PLAIN);
     expect(showSaveFilePicker).toHaveBeenCalledWith(
       expect.objectContaining({ suggestedName: 'mein-projekt.json', startIn: opened.handle }),
     );
     expect(chosen.written).toHaveLength(1);
     // The next save starts in the folder of the file just written.
-    await project.save();
+    await project.save(PLAIN);
     expect(showSaveFilePicker).toHaveBeenLastCalledWith(
       expect.objectContaining({ startIn: chosen.handle }),
     );
@@ -507,8 +502,8 @@ describe('the project file that saving suggests', () => {
     });
     const project = useProjectStore();
     await project.open(installedDialogs());
-    await project.save();
-    await project.save();
+    await project.save(PLAIN);
+    await project.save(PLAIN);
     // Neither dialog left a file behind: saving still suggests the default name, in no folder.
     const [options] = showSaveFilePicker.mock.lastCall as [
       { suggestedName: string; startIn?: FileSystemFileHandle },
@@ -528,7 +523,7 @@ describe('the project file that saving suggests', () => {
     const project = useProjectStore();
     await project.open(installedDialogs());
     expect(project.error).toBe('Die Projektdatei ließ sich nicht öffnen: No access');
-    await project.save();
+    await project.save(PLAIN);
     expect(project.error).toBe('Das Projekt ließ sich nicht speichern: Disk full');
   });
 });

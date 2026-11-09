@@ -68,7 +68,11 @@ describe('grayStatus bars', () => {
 
 describe('colorStatus', () => {
   it('is open as long as nothing is computed', () => {
-    expect(colorStatus(null)).toEqual({ level: 'off', fill: 0, text: 'Noch nicht berechnet' });
+    expect(colorStatus(null, false)).toEqual({
+      level: 'off',
+      fill: 0,
+      text: 'Noch nicht berechnet',
+    });
   });
 
   it('says that a correction without a report has no report', () => {
@@ -76,26 +80,26 @@ describe('colorStatus', () => {
   });
 
   it('is green up to a mean deviation of 2', () => {
-    expect(colorStatus({ meanBefore: 5.1, meanAfter: 0.4 })).toEqual({
+    expect(colorStatus({ meanBefore: 5.1, meanAfter: 0.4 }, true)).toEqual({
       level: 'ok',
       fill: 4,
       text: 'Ø 5,1 → 0,4',
     });
-    expect(colorStatus({ meanBefore: 9, meanAfter: 2 }).level).toBe('ok');
+    expect(colorStatus({ meanBefore: 9, meanAfter: 2 }, true).level).toBe('ok');
   });
 
   it('warns above that, more strongly above 4 and 7', () => {
-    expect(colorStatus({ meanBefore: 9, meanAfter: 3.5 })).toEqual({
+    expect(colorStatus({ meanBefore: 9, meanAfter: 3.5 }, true)).toEqual({
       level: 'warn',
       fill: 3,
       text: 'Ø 9,0 → 3,5',
     });
-    expect(colorStatus({ meanBefore: 20.2, meanAfter: 5.6 })).toEqual({
+    expect(colorStatus({ meanBefore: 20.2, meanAfter: 5.6 }, true)).toEqual({
       level: 'warn',
       fill: 2,
       text: 'Ø 20,2 → 5,6',
     });
-    expect(colorStatus({ meanBefore: 20.2, meanAfter: 8 })).toEqual({
+    expect(colorStatus({ meanBefore: 20.2, meanAfter: 8 }, true)).toEqual({
       level: 'warn',
       fill: 1,
       text: 'Ø 20,2 → 8,0',

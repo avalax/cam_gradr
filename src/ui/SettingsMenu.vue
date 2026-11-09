@@ -120,7 +120,7 @@ onBeforeUnmount(() => {
         <h2 :id="`${entry.key}-heading`">
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-200"
+            class="focus-ring-inset flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-200"
             :aria-expanded="section === entry.key"
             :aria-controls="`${entry.key}-body`"
             :data-testid="`section-${entry.key}`"

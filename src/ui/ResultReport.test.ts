@@ -19,7 +19,9 @@ describe('ResultReport', () => {
       neutral: { count: 12, meanBefore: 8.2, meanAfter: 0.71 },
       color: { count: 36, meanBefore: 13.66, meanAfter: 1.2 },
     };
-    const wrapper = mount(ResultReport, { props: { result: { ...result, report } } });
+    const wrapper = mount(ResultReport, {
+      props: { result: { ...result, report }, grayCheck: [] },
+    });
     const text = (id: string) => wrapper.get(`[data-testid="${id}"]`).text();
     expect(text('mean-before')).toBe('12,3');
     expect(text('mean-after')).toBe('1,1');
@@ -30,7 +32,7 @@ describe('ResultReport', () => {
   });
 
   it('shows every patch with three swatches and its error', () => {
-    const wrapper = mount(ResultReport, { props: { result } });
+    const wrapper = mount(ResultReport, { props: { result, grayCheck: [] } });
     expect(wrapper.findAll('li')).toHaveLength(48);
     const tile = wrapper.get('[data-testid="tile-3A"]');
     expect(tile.attributes('title')).toContain('3A: ΔE');
@@ -41,7 +43,7 @@ describe('ResultReport', () => {
   });
 
   it('warns about compressed highlights only when neutral patches are indistinguishable', async () => {
-    const wrapper = mount(ResultReport, { props: { result } });
+    const wrapper = mount(ResultReport, { props: { result, grayCheck: [] } });
     expect(wrapper.find('[data-testid="indistinct-warning"]').exists()).toBe(false);
     await wrapper.setProps({
       result: { ...result, report: { ...result.report, indistinct: ['2E', '2D'] } },
@@ -50,7 +52,7 @@ describe('ResultReport', () => {
   });
 
   it('shows no gray card section without check values', () => {
-    const wrapper = mount(ResultReport, { props: { result } });
+    const wrapper = mount(ResultReport, { props: { result, grayCheck: [] } });
     expect(wrapper.find('[data-testid="gray-check"]').exists()).toBe(false);
   });
 

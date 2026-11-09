@@ -55,7 +55,7 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
 
 <template>
   <!-- Measuring field as tall as the camera image: brightness vertically, contrast horizontally; details on hover or keyboard focus. -->
-  <div class="flex w-44 shrink-0 flex-col self-stretch">
+  <div class="flex flex-col">
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the details closes them with Escape -->
     <div
       class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500"

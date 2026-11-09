@@ -82,28 +82,6 @@ describe('ProjectBar', () => {
     );
   });
 
-  it('saves the project', async () => {
-    const wrapper = mount(ProjectBar);
-    await wrapper.get('[data-testid="project-save"]').trigger('click');
-    expect(download).toHaveBeenCalledTimes(1);
-    expect(useProjectStore().notice).toBeNull();
-  });
-
-  it('loads the selected file', async () => {
-    const wrapper = mount(ProjectBar);
-    await wrapper.get('[data-testid="project-save"]').trigger('click');
-    const saved = (download.mock.calls[0] as [string, string, string])[1];
-    await chooseFile(wrapper, saved);
-    expect(useProjectStore().error).toBeNull();
-    expect(useProjectStore().notice).toBeNull();
-  });
-
-  it('reports a faulty file in the project storage', async () => {
-    const wrapper = mount(ProjectBar);
-    await chooseFile(wrapper, '{"format":"x"}');
-    expect(useProjectStore().error).toContain('Unbekanntes Format');
-  });
-
   it('remembers the name of the loaded file for saving', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');

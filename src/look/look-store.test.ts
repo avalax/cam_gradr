@@ -83,11 +83,42 @@ describe('useLookStore', () => {
     await store.importFiles([file('SLOG 3 S CINETONE_REC709.cube'), file('Warm.cube')]);
     expect(store.looks.map((look) => look.name)).toEqual(['SLOG 3 S CINETONE_REC709', 'Warm']);
     expect(store.messages).toEqual([
-      { kind: 'logConversion', name: 'SLOG 3 S CINETONE_REC709' },
+      { kind: 'logConversion', name: 'SLOG 3 S CINETONE_REC709', fallback: 'Warm' },
       { kind: 'imported', names: ['Warm'] },
     ]);
     await store.importFiles([file('LogC to Rec709.cube')]);
-    expect(store.messages).toEqual([{ kind: 'logConversion', name: 'LogC to Rec709' }]);
+    expect(store.messages).toEqual([
+      { kind: 'logConversion', name: 'LogC to Rec709', fallback: 'Warm' },
+    ]);
+  });
+
+  it('shows again the look a warned look took the place of when it is removed through the warning', async () => {
+    const store = useLookStore();
+    const preview = usePreviewStore();
+    await store.importFiles([file('Warm.cube')]);
+    // Alone, the warned look gives way to the look from before the import.
+    await store.importFiles([file('LogC to Rec709.cube')]);
+    expect(preview.look).toBe('LogC to Rec709');
+    await store.removeWarned('LogC to Rec709', 'Warm');
+    expect(store.find('LogC to Rec709')).toBeNull();
+    expect(preview.look).toBe('Warm');
+    // Imported with others, it gives way to the last of them, which the import would have chosen.
+    await store.importFiles([file('Cold.cube'), file('SLOG3.cube')]);
+    expect(store.messages[0]).toEqual({ kind: 'logConversion', name: 'SLOG3', fallback: 'Cold' });
+    await store.removeWarned('SLOG3', 'Cold');
+    expect(preview.look).toBe('Cold');
+    // A look chosen since stays; one that is gone is not chosen again.
+    await store.importFiles([file('SLOG3.cube')]);
+    preview.setLook('Warm');
+    await store.removeWarned('SLOG3', 'Cold');
+    expect(preview.look).toBe('Warm');
+    await store.importFiles([file('SLOG3.cube')]);
+    await store.removeWarned('SLOG3', 'Gone');
+    expect(preview.look).toBeNull();
+    // The trash removes without choosing another look.
+    await store.importFiles([file('SLOG3.cube')]);
+    await store.remove('SLOG3');
+    expect(preview.look).toBeNull();
   });
 
   it('deletes a look and brings it back with undo, chosen as before', async () => {

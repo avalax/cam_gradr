@@ -36,6 +36,7 @@ import {
   IMAGE_ROW,
   TAB_COLUMNS,
   imageWidth as widthFor,
+  previewImage,
 } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
@@ -57,7 +58,7 @@ const { t } = useI18n();
 const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
-const { stream, status, still } = storeToRefs(camera);
+const { stream, status, still, actual } = storeToRefs(camera);
 const { model, result, referenceName } = storeToRefs(solve);
 const { split, look: lookName, strength, left, right } = storeToRefs(preview);
 const looks = useLookStore();
@@ -162,7 +163,6 @@ function switchSide(side: 'left' | 'right'): void {
 const shownStill = computed(
   () => still.value ?? (isLive.value ? null : (camera.allStills().color ?? null)),
 );
-const hasSource = computed(() => isLive.value || shownStill.value !== null);
 // What the preview shows, as in the band of the card tabs: a badge on the image while there is one,
 // otherwise the band above the placeholder. Without a correction the camera shows nothing here, so
 // the band names what is missing instead of a live image it does not show.
@@ -172,8 +172,18 @@ const band = computed(() =>
     ? { state: 'off' as const, label: t('preview.noModelTitle') }
     : { state: stage.value, label: null },
 );
-const showImage = computed(() => model.value !== null && hasSource.value);
-const aspect = ref(16 / 9);
+// Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
+// of this image area must not differ from it.
+const area = computed(() =>
+  previewImage({
+    corrected: model.value !== null,
+    live: isLive.value,
+    stills: camera.allStills(),
+    actual: actual.value,
+  }),
+);
+const showImage = computed(() => area.value.shown);
+const aspect = computed(() => area.value.aspect);
 const width = computed(() => widthFor(aspect.value));
 
 const renderer = shallowRef<LutRenderer | null>(null);
@@ -236,7 +246,6 @@ function drawFrameToCanvas(): void {
     if (sizeKey(target) !== sizeKey(size)) {
       target.width = size.width;
       target.height = size.height;
-      aspect.value = source.width / source.height;
     }
     renderer.value.render(source.image, { split: split.value / 100 });
     stillChanged = false;
@@ -457,13 +466,12 @@ const splitModel = computed({
 
         <!-- Without a correction the placeholder says what is missing; the column stays empty. -->
         <div
-          class="flex w-44 shrink-0 flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
+          class="flex flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
           data-testid="preview-side"
         >
           <div class="border-b-(length:--band-line) border-zinc-700 bg-zinc-200 p-1.5">
             <ChoiceChips
               variant="segmented"
-              compact
               :options="viewOptions"
               :selected="view"
               :aria-label="t('preview.viewLabel')"

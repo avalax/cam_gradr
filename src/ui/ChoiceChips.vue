@@ -3,12 +3,13 @@ import { computed, useTemplateRef } from 'vue';
 
 import { rovingTarget } from './roving';
 
-// A choice as a row of radio buttons: chips (language, appearance, resolution), one segmented control
-// (`compact` fills a narrow band in small type, as the view of the preview's side column) or cards
-// that also show a detail and a hint (the sizes of the export). `key` tells the options apart (`selected` is the key of the
-// chosen one), `lang` names the language of a label for screen readers, and an option can be locked
-// on its own. The label of the group (aria-label or aria-labelledby) and a test id go to the group.
-// As a WAI-ARIA radio group it is one stop of the Tab key; the arrow keys choose the next option.
+// A choice as a row of radio buttons: chips (language, appearance, resolution), a segmented control
+// that fills a narrow band in small type (the view of the preview's side column) or cards that also
+// show a detail and a hint (the sizes of the export). `key` tells the options apart (`selected` is the
+// key of the chosen one), `lang` names the language of a label for screen readers, and `disabled`
+// locks the whole group. The label of the group (aria-label or aria-labelledby) and a test id go to
+// the group. As a WAI-ARIA radio group it is one stop of the Tab key; the arrow keys choose the next
+// option.
 const props = withDefaults(
   defineProps<{
     options: readonly {
@@ -16,7 +17,6 @@ const props = withDefaults(
       value: T;
       label: string;
       lang?: string;
-      disabled?: boolean;
       // Only shown by the cards: beside the label, and in a line below it.
       detail?: string;
       hint?: string;
@@ -24,15 +24,14 @@ const props = withDefaults(
     selected: string;
     disabled?: boolean;
     variant?: 'chips' | 'segmented' | 'cards';
-    compact?: boolean;
   }>(),
-  { disabled: false, variant: 'chips', compact: false },
+  { disabled: false, variant: 'chips' },
 );
 const emit = defineEmits<{ choose: [value: T] }>();
 
 const group = useTemplateRef<HTMLElement>('group');
 
-// Hover only reaches options that can be chosen. The segmented controls clip their corners, so their
+// Hover only reaches options that can be chosen. The segmented control clips its corners, so its
 // options draw the focus ring inside.
 const STYLES = {
   chips: {
@@ -41,36 +40,27 @@ const STYLES = {
     on: 'border-zinc-800 bg-zinc-800 text-zinc-50',
     off: 'border-zinc-400 bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
   },
-  segmented: {
-    group: 'inline-flex w-fit overflow-hidden rounded-md border border-zinc-500 text-sm',
-    option:
-      'focus-ring-inset border-zinc-500 px-3 py-1 [&:not(:first-child)]:border-l disabled:text-zinc-500',
-    on: 'bg-zinc-800 text-zinc-50',
-    off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
-  },
   // The chosen card has a border of 2 px; the others have 1 px and a margin of 1 px, so that the cards
   // keep their size. The group is a size container, so that all cards put their detail beside or
-  // below the label together; the content starts at the top of every card, also where a hint wraps.
+  // below the label together; stacked, they keep less room at the sides, so that a hint such as „für
+  // ältere Geräte“ stays on one line. The content starts at the top of every card.
   cards: {
     group: '@container grid grid-cols-3 gap-2',
-    option: 'flex flex-col rounded-lg px-3 py-1.5 text-left leading-snug disabled:opacity-50',
+    option:
+      'flex flex-col rounded-lg px-2 py-1.5 text-left leading-snug disabled:opacity-50 @md:px-3',
     on: 'border-2 border-zinc-800 bg-white dark:bg-zinc-100',
     off: 'm-px border border-zinc-300 bg-zinc-50 enabled:hover:bg-zinc-200',
   },
-  compact: {
+  segmented: {
     group: 'flex w-full overflow-hidden rounded border border-zinc-500 text-[11px] font-semibold',
     option: 'focus-ring-inset flex-1 border-zinc-500 px-1 py-1 [&:not(:first-child)]:border-l',
     on: 'bg-zinc-800 text-zinc-50',
     off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
   },
 } as const;
-const styles = computed(() =>
-  props.variant === 'segmented' && props.compact ? STYLES.compact : STYLES[props.variant],
-);
+const styles = computed(() => STYLES[props.variant]);
 
-const enabled = computed(() =>
-  props.options.map((option) => !props.disabled && option.disabled !== true),
-);
+const enabled = computed(() => props.options.map(() => !props.disabled));
 // The option that takes the Tab stop: the chosen one, or the first that can be chosen.
 const tabStop = computed(() => {
   const chosen = props.options.findIndex((option) => option.key === props.selected);
@@ -90,11 +80,7 @@ function onKey(event: KeyboardEvent, index: number): void {
 </script>
 
 <template>
-  <div
-    ref="group"
-    role="radiogroup"
-    :class="[styles.group, { 'opacity-50': variant === 'segmented' && disabled }]"
-  >
+  <div ref="group" role="radiogroup" :class="styles.group">
     <button
       v-for="(option, index) in options"
       :key="option.key"
@@ -104,7 +90,7 @@ function onKey(event: KeyboardEvent, index: number): void {
       :aria-checked="option.key === selected"
       :tabindex="index === tabStop ? 0 : -1"
       :lang="option.lang"
-      :disabled="disabled || option.disabled"
+      :disabled="disabled"
       :data-option="option.key"
       @click="emit('choose', option.value)"
       @keydown="onKey($event, index)"

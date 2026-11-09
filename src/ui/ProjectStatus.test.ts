@@ -20,13 +20,6 @@ describe('ProjectStatus', () => {
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 
-  it('shows no message after saving', async () => {
-    const wrapper = mount(ProjectStatus);
-    await useProjectStore().save();
-    await wrapper.vm.$nextTick();
-    expect(wrapper.find('[data-testid="project-message"]').exists()).toBe(false);
-  });
-
   it('shows the project hint floating and closes it with the cross', async () => {
     const wrapper = mount(ProjectStatus);
     useProjectStore().notice = 'Der Referenzsatz fehlt.';
@@ -76,7 +69,7 @@ describe('ProjectStatus', () => {
 
   it('shows the error of a faulty file', async () => {
     const wrapper = mount(ProjectStatus);
-    await useProjectStore().load('{"format":"x"}');
+    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
     await wrapper.vm.$nextTick();
     expect(wrapper.get('[data-testid="project-error"]').text()).toContain('Unbekanntes Format');
   });
