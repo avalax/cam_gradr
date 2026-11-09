@@ -30,9 +30,9 @@ describe('useSolveStore', () => {
     expect(store.result).toBeNull();
     expect(store.model).toBeNull();
     expect(store.referenceName).toBeNull();
-    expect(store.error).toBe('Zu wenige Messwerte: mindestens 8 Felder, davon 4 neutrale');
+    expect(store.error).toBe('Zu wenige Messwerte: mindestens 8 Felder, davon 4 neutrale.');
     i18n.global.locale.value = 'en';
-    expect(store.error).toBe('Too few measurements: at least 8 patches, 4 of them neutral');
+    expect(store.error).toBe('Too few measurements: at least 8 patches, 4 of them neutral.');
   });
 
   it('provides the model, even without a report after loading', () => {

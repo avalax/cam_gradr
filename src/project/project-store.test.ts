@@ -518,6 +518,8 @@ describe('the project file that saving suggests', () => {
     expect(options.suggestedName).toBe(PROJECT_FILE_NAME);
     expect(options.startIn).toBeUndefined();
     expect(project.error).toBeNull();
+    // A cancel is no failure: nothing is logged.
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('names why a file cannot be saved in its own words, the browser in the console', async () => {
@@ -606,5 +608,6 @@ describe('the project file that saving suggests', () => {
     await project.open(installedDialogs());
     expect(project.notice).toBeNull();
     expect(project.error).toContain('Zugriff auf die Datei verweigert');
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

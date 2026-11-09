@@ -1,4 +1,4 @@
 {
-  "tooFewMeasurements": "Too few measurements: at least {patches} patches, {neutral} of them neutral",
+  "tooFewMeasurements": "Too few measurements: at least {patches} patches, {neutral} of them neutral.",
   "calculationFailed": "The correction could not be calculated."
 }
