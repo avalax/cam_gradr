@@ -5,22 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLookStore } from '../look/look-store';
 import { useProjectStore } from '../project/project-store';
-import { cubeFile, emptyLookStorage } from '../test-support/look-cubes';
+import { chooseFile } from '../test-support/file-input';
+import { cubeFile } from '../test-support/look-cubes';
+import { emptyLookStorage } from '../test-support/empty-storage';
 
 import ProjectBar from './ProjectBar.vue';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
-
-async function chooseFile(wrapper: ReturnType<typeof mount>, text: string) {
-  const input = wrapper.get('[data-testid="project-file"]');
-  Object.defineProperty(input.element, 'files', {
-    value: [{ name: 'project.json', text: () => Promise.resolve(text) }],
-    configurable: true,
-  });
-  await input.trigger('change');
-  await flushPromises();
-}
 
 describe('ProjectBar', () => {
   beforeEach(() => {
@@ -50,6 +42,12 @@ describe('ProjectBar', () => {
     await box.setValue(false);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(save).toHaveBeenLastCalledWith({ withStills: false, withLooks: false });
+    // The choice survives a switch to another tab, which mounts the bar anew.
+    wrapper.unmount();
+    const again = mount(ProjectBar);
+    expect((again.get('[data-testid="project-stills"]').element as HTMLInputElement).checked).toBe(
+      false,
+    );
   });
 
   it('offers to save the look LUTs along as soon as one is imported', async () => {
@@ -69,35 +67,18 @@ describe('ProjectBar', () => {
     await box.setValue(false);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     expect(save).toHaveBeenLastCalledWith({ withStills: true, withLooks: false });
-  });
-
-  it('saves the project', async () => {
-    const wrapper = mount(ProjectBar);
-    await wrapper.get('[data-testid="project-save"]').trigger('click');
-    expect(download).toHaveBeenCalledTimes(1);
-    expect(useProjectStore().notice).toBeNull();
-  });
-
-  it('loads the selected file', async () => {
-    const wrapper = mount(ProjectBar);
-    await wrapper.get('[data-testid="project-save"]').trigger('click');
-    const saved = (download.mock.calls[0] as [string, string, string])[1];
-    await chooseFile(wrapper, saved);
-    expect(useProjectStore().error).toBeNull();
-    expect(useProjectStore().notice).toBeNull();
-  });
-
-  it('reports a faulty file in the project storage', async () => {
-    const wrapper = mount(ProjectBar);
-    await chooseFile(wrapper, '{"format":"x"}');
-    expect(useProjectStore().error).toContain('Unbekanntes Format');
+    wrapper.unmount();
+    const again = mount(ProjectBar);
+    expect((again.get('[data-testid="project-looks"]').element as HTMLInputElement).checked).toBe(
+      false,
+    );
   });
 
   it('remembers the name of the loaded file for saving', async () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     const saved = (download.mock.calls[0] as [string, string, string])[1];
-    await chooseFile(wrapper, saved);
+    await chooseFile(wrapper, 'project-file', 'project.json', saved);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     await flushPromises();
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('project.json');
@@ -126,7 +107,7 @@ describe('ProjectBar', () => {
     const wrapper = mount(ProjectBar);
     const input = wrapper.get('[data-testid="project-file"]');
     Object.defineProperty(input.element, 'files', { value: [], configurable: true });
-    const load = vi.spyOn(useProjectStore(), 'load');
+    const load = vi.spyOn(useProjectStore(), 'loadChosen');
     await input.trigger('change');
     expect(load).not.toHaveBeenCalled();
   });

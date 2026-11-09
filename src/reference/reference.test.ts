@@ -78,7 +78,7 @@ describe('parseReferenceJson', () => {
           { id: '1A', lab: [50, 0, 0] },
         ]),
       ),
-    ).toThrow('Doppelte Feld-ID: 1A');
+    ).toThrow('Doppelte Feld-ID: 1A.');
   });
 
   it('requires enough fields and enough neutral fields', () => {

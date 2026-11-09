@@ -4,10 +4,12 @@ import type { VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setLocale } from '../lang';
 import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { failingStorage } from '../test-support/failing-storage';
-import { IDENTITY_CUBE, cubeFile as file, emptyLookStorage } from '../test-support/look-cubes';
+import { IDENTITY_CUBE, cubeFile as file } from '../test-support/look-cubes';
+import { emptyLookStorage } from '../test-support/empty-storage';
 
 import LookBar from './LookBar.vue';
 
@@ -22,6 +24,13 @@ async function options(wrapper: VueWrapper): Promise<string[]> {
   const texts = wrapper.findAll('[role="option"]').map((option) => option.text());
   await wrapper.get('[data-testid="look-select"]').trigger('click');
   return texts;
+}
+
+// Focuses a button of the bar and activates it, as the keyboard does.
+async function press(wrapper: VueWrapper, testId: string): Promise<void> {
+  const button = wrapper.get(`[data-testid="${testId}"]`);
+  (button.element as HTMLButtonElement).focus();
+  await button.trigger('click');
 }
 
 // Chooses an entry of the picker with the mouse.
@@ -90,12 +99,13 @@ describe('LookBar', () => {
   });
 
   it('imports the chosen files and reports what happened', async () => {
-    const wrapper = mount(LookBar);
+    const wrapper = mount(LookBar, { attachTo: document.body });
     const input = wrapper.get('[data-testid="look-file"]');
     Object.defineProperty(input.element, 'files', {
       configurable: true,
       value: [
         new File([IDENTITY_CUBE], 'Warm.cube'),
+        new File([IDENTITY_CUBE], 'Cold.cube'),
         new File(['x'], 'notes.txt'),
         new File([IDENTITY_CUBE], 'SLOG 3 S CINETONE_REC709.cube'),
       ],
@@ -105,27 +115,28 @@ describe('LookBar', () => {
       expect(useLookStore().messages).toHaveLength(3);
     });
     await flushPromises();
-    expect(useLookStore().looks.map((look) => look.name)).toEqual([
-      'SLOG 3 S CINETONE_REC709',
-      'Warm',
-    ]);
     const messages = wrapper.get('[data-testid="look-messages"]');
+    // The log conversion gets its warning instead of a place in the line of imported looks.
     expect(messages.text()).toContain('2 Look-LUTs importiert');
     expect(messages.get('[role="alert"]').text()).toContain('„notes.txt“ wurde nicht importiert');
-    expect(messages.text()).toContain('sieht nach einer Umwandlung aus Log aus');
+    // Errors and warnings first, with the action at the start of the warning.
+    const lines = messages.findAll('p').map((line) => line.text());
+    expect(lines[0]).toContain('„notes.txt“ wurde nicht importiert');
+    expect(lines[1]).toMatch(/^Wieder löschen · „SLOG 3 S CINETONE_REC709“ ist wohl für Log/);
+    expect(lines[2]).toContain('2 Look-LUTs importiert');
     expect((input.element as HTMLInputElement).value).toBe('');
 
-    await wrapper.get('[data-testid="look-remove-again"]').trigger('click');
+    await press(wrapper, 'look-remove-again');
     await flushPromises();
     expect(messages.text()).toContain('Look-LUT „SLOG 3 S CINETONE_REC709“ lokal gelöscht.');
-    await wrapper.get('[data-testid="look-undo"]').trigger('click');
-    await vi.waitFor(() => {
-      expect(useLookStore().looks).toHaveLength(2);
-    });
+    // The look the import would otherwise have chosen comes back.
+    expect(usePreviewStore().look).toBe('Cold');
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="look-select"]').element);
+    wrapper.unmount();
   });
 
   it('names a single imported look and deletes the chosen one with the trash icon', async () => {
-    const wrapper = mount(LookBar);
+    const wrapper = mount(LookBar, { attachTo: document.body });
     const input = wrapper.get('[data-testid="look-file"]');
     Object.defineProperty(input.element, 'files', {
       configurable: true,
@@ -137,10 +148,42 @@ describe('LookBar', () => {
     });
     await flushPromises();
     expect(wrapper.text()).toContain('„Warm“ importiert und lokal im Browser gespeichert.');
-    await wrapper.get('[data-testid="look-remove"]').trigger('click');
+    const picker = wrapper.get('[data-testid="look-select"]').element;
+    await press(wrapper, 'look-remove');
     await flushPromises();
     expect(useLookStore().looks).toEqual([]);
     expect(usePreviewStore().look).toBeNull();
+    // The trash went with the look, the undo link goes with its message: the focus stays in the
+    // bar, on the picker.
+    expect(document.activeElement).toBe(picker);
+    await press(wrapper, 'look-undo');
+    await flushPromises();
+    expect(usePreviewStore().look).toBe('Warm');
+    expect(document.activeElement).toBe(picker);
+    wrapper.unmount();
+  });
+
+  it('names the reasons of rejected files, also of an unreadable one, in the language shown', async () => {
+    const wrapper = mount(LookBar);
+    // As the store keeps them (tested there): what the parser found, or why the browser did not
+    // hand over the file.
+    useLookStore().messages = [
+      { kind: 'rejected', file: 'notes.txt', reason: { key: 'notCube', params: {} } },
+      { kind: 'rejected', file: 'Gone.cube', reason: 'unreadable' },
+    ];
+    await flushPromises();
+    const alerts = () =>
+      wrapper.findAll('[data-testid="look-messages"] [role="alert"]').map((alert) => alert.text());
+    expect(alerts()).toEqual([
+      '„notes.txt“ wurde nicht importiert: Nur .cube-Dateien sind möglich.',
+      '„Gone.cube“ wurde nicht importiert: Die Datei lässt sich nicht lesen.',
+    ]);
+    setLocale('en');
+    await flushPromises();
+    expect(alerts()).toEqual([
+      '“notes.txt” was not imported: Only .cube files are possible.',
+      '“Gone.cube” was not imported: The file cannot be read.',
+    ]);
   });
 
   it('takes no file when the dialog was cancelled', async () => {
@@ -159,8 +202,15 @@ describe('LookBar', () => {
     await useLookStore().load();
     await flushPromises();
     expect(wrapper.text()).toContain('Gespeicherte Look-LUTs konnten nicht geladen werden.');
-    await useLookStore().importFiles([file('Warm.cube')]);
+    await useLookStore().importFiles([file('Warm.cube'), file('Cold.cube')]);
     await flushPromises();
-    expect(wrapper.text()).toContain('„Warm“ konnte nicht lokal gespeichert werden');
+    expect(wrapper.text()).toContain(
+      '2 Look-LUTs konnten nicht lokal gespeichert werden und gelten nur für diese Sitzung.',
+    );
+    expect(wrapper.text()).not.toContain('importiert');
+    await useLookStore().remove('Cold');
+    await useLookStore().undo();
+    await flushPromises();
+    expect(wrapper.text()).toContain('„Cold“ konnte nicht lokal gespeichert werden');
   });
 });

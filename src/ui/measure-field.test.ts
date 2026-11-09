@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ExposureResult } from '../chart/exposure';
 
-import { detailRows, fieldHint, fieldPosition, mainIssue, okBox } from './measure-field';
+import { detailRows, fieldHint, fieldPosition, mainIssue, OK_BOX } from './measure-field';
 
 const exposure: ExposureResult = {
   verdict: 'ok',
@@ -34,18 +34,12 @@ describe('fieldPosition', () => {
   });
 });
 
-describe('okBox', () => {
-  it('sits in the middle and matches the allowed deviations', () => {
-    const box = okBox(0.06, 0.05);
-    expect(box.left).toBeCloseTo(40, 6);
-    expect(box.top).toBeCloseTo(40, 6);
-    expect(box.width).toBeCloseTo(20, 6);
-    expect(box.height).toBeCloseTo(20, 6);
-  });
-
-  it('uses the rating tolerances by default and stays in the field', () => {
-    expect(okBox().width).toBeCloseTo(20, 6);
-    expect(okBox(1, 1)).toEqual({ left: 0, top: 0, width: 100, height: 100 });
+describe('OK_BOX', () => {
+  it('sits in the middle and matches the deviations the rating allows', () => {
+    expect(OK_BOX.left).toBeCloseTo(40, 6);
+    expect(OK_BOX.top).toBeCloseTo(40, 6);
+    expect(OK_BOX.width).toBeCloseTo(20, 6);
+    expect(OK_BOX.height).toBeCloseTo(20, 6);
   });
 });
 

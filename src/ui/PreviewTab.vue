@@ -7,8 +7,8 @@ import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import { drawFrame } from '../camera/draw-frame';
 import { createCpuRenderer } from '../gl/cpu-renderer';
-import { createLutRenderer } from '../gl/lut-renderer';
-import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
+import { createLutRenderer, describeRendererProblem, rendererProblem } from '../gl/lut-renderer';
+import type { LutRenderer, RenderSource, RendererProblem } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
 import { formatDecimal } from '../lang/format';
 import { applyLook, blendLuts } from '../look/look';
@@ -29,7 +29,15 @@ import {
 } from './gray-wedge';
 import ChoiceChips from './ChoiceChips.vue';
 import ColorTiles from './ColorTiles.vue';
-import { imageMaxWidth as maxWidthFor } from './image-size';
+import { CAMERA_SWITCH_ID, focusById } from './focus';
+import {
+  IMAGE_BAND,
+  IMAGE_BLOCK,
+  IMAGE_ROW,
+  TAB_COLUMNS,
+  imageWidth as widthFor,
+  previewImage,
+} from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import GrayWedge from './GrayWedge.vue';
@@ -50,8 +58,8 @@ const { t } = useI18n();
 const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
-const { stream, status, still } = storeToRefs(camera);
-const { model, result } = storeToRefs(solve);
+const { stream, status, still, actual } = storeToRefs(camera);
+const { model, result, referenceName } = storeToRefs(solve);
 const { split, look: lookName, strength, left, right } = storeToRefs(preview);
 const looks = useLookStore();
 const { measurements } = storeToRefs(useColorChartStore());
@@ -64,22 +72,25 @@ const viewOptions = computed(() => [
   { key: 'grays', value: 'grays' as const, label: t('preview.viewGrays') },
 ]);
 const view = ref<View>('colors');
-const WORST_COUNT = 3;
 
 // The targets at the exposure of the shot, like in the report (without a report at the reference's).
 const exposureGain = computed(() => result.value?.report.exposureGain ?? 1);
+// The targets come from the set the correction was fitted with; while that set is missing (a
+// correction loaded from a project) the tiles and the wedge show no targets rather than another
+// set's.
+const fittedReference = computed(() =>
+  selected.value?.name === referenceName.value ? selected.value : null,
+);
 
 // Color grid from the measured chromatic patches and the patches with the largest residual error.
 const tiles = computed(() =>
-  colorCards(measurements.value, model.value, selected.value, exposureGain.value),
+  colorCards(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
-const worst = computed(() =>
-  result.value === null ? [] : worstPatches(result.value.report, WORST_COUNT),
-);
+const worst = computed(() => (result.value === null ? [] : worstPatches(result.value.report)));
 
 // Gray wedge from the measured neutral patches and what the correction changes per tonal range.
 const rows = computed(() =>
-  wedgeRows(measurements.value, model.value, selected.value, exposureGain.value),
+  wedgeRows(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
 // Colors of the dots in front of the channels.
@@ -91,7 +102,12 @@ const CAST_COLORS = {
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
-const error = ref<string | null>(null);
+// Why the preview cannot draw; its text is translated when shown, so that it follows a language
+// switch.
+const problem = shallowRef<RendererProblem | null>(null);
+const error = computed(() =>
+  problem.value === null ? null : describeRendererProblem(problem.value),
+);
 // A capture only makes sense once the video delivers an image.
 const videoReady = ref(false);
 
@@ -149,13 +165,28 @@ function switchSide(side: 'left' | 'right'): void {
 const shownStill = computed(
   () => still.value ?? (isLive.value ? null : (camera.allStills().color ?? null)),
 );
-const hasSource = computed(() => isLive.value || shownStill.value !== null);
 // What the preview shows, as in the band of the card tabs: a badge on the image while there is one,
-// otherwise the band above the placeholder.
+// otherwise the band above the placeholder. Without a correction the camera shows nothing here, so
+// the band names what is missing instead of a live image it does not show.
 const stage = computed(() => stageState(shownStill.value !== null, isLive.value));
-const showImage = computed(() => model.value !== null && hasSource.value);
-const aspect = ref(16 / 9);
-const maxWidth = computed(() => maxWidthFor(aspect.value));
+const band = computed(() =>
+  model.value === null
+    ? { state: 'off' as const, label: t('preview.noModelTitle') }
+    : { state: stage.value, label: null },
+);
+// Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
+// of this image area must not differ from it.
+const area = computed(() =>
+  previewImage({
+    corrected: model.value !== null,
+    live: isLive.value,
+    stills: camera.allStills(),
+    actual: actual.value,
+  }),
+);
+const showImage = computed(() => area.value.shown);
+const aspect = computed(() => area.value.aspect);
+const width = computed(() => widthFor(aspect.value));
 
 const renderer = shallowRef<LutRenderer | null>(null);
 const stopLoop = shallowRef<(() => void) | null>(null);
@@ -194,11 +225,13 @@ function currentSource(): { image: RenderSource; width: number; height: number }
 }
 
 // After the capture the app turns the camera off (as after the automatic capture). A new
-// camera start discards the still image and shows the live image again.
+// camera start discards the still image and shows the live image again. The button leaves with the
+// live image, so the focus goes to the camera switch.
 async function capture(): Promise<void> {
   await captureFromVideo(video.value, (grabber) => camera.captureStill(grabber));
   if (still.value !== null) {
     camera.stop();
+    focusById(CAMERA_SWITCH_ID);
   }
 }
 
@@ -215,7 +248,6 @@ function drawFrameToCanvas(): void {
     if (sizeKey(target) !== sizeKey(size)) {
       target.width = size.width;
       target.height = size.height;
-      aspect.value = source.width / source.height;
     }
     renderer.value.render(source.image, { split: split.value / 100 });
     stillChanged = false;
@@ -233,7 +265,7 @@ function setup(): void {
     // Without WebGL2 the software rendering takes over so the preview still works.
     renderer.value = gl ? createLutRenderer(gl) : createCpuRenderer(target);
   } catch (error_) {
-    error.value = (error_ as Error).message;
+    problem.value = rendererProblem(error_);
     return;
   }
   if (lut.value !== null) {
@@ -273,10 +305,15 @@ watch(split, () => {
   stillChanged = true;
 });
 
-// Mean error before and after the correction while the report is available.
-const summary = computed(() =>
-  result.value === null ? null : deviationSummary(result.value.report),
-);
+// Mean error before and after the correction while the report is available; a correction without a
+// report (loaded from a project whose reference set is missing) says so, as under the color cards'
+// divider.
+const summary = computed(() => {
+  if (result.value !== null) {
+    return deviationSummary(result.value.report);
+  }
+  return model.value === null ? null : t('color.wipe.noReport');
+});
 
 // The wipe over the image writes the divider position to the store.
 const splitModel = computed({
@@ -288,7 +325,7 @@ const splitModel = computed({
 </script>
 
 <template>
-  <section class="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
+  <section :class="TAB_COLUMNS">
     <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
       <p class="text-sm text-zinc-700">
         {{ t('preview.intro') }}
@@ -308,13 +345,8 @@ const splitModel = computed({
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
-      <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-stretch gap-x-3">
-        <!-- In the dark appearance the image lies on its own surface with an edge. -->
-        <div
-          data-testid="image-block"
-          class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
-          :style="{ maxWidth: maxWidth }"
-        >
+      <div :class="IMAGE_ROW">
+        <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ width }">
           <div class="relative">
             <!-- The video only serves as an image source and stays invisible. -->
             <video
@@ -325,7 +357,8 @@ const splitModel = computed({
               @loadeddata="videoReady = true"
             ></video>
             <!-- The band above the image names the two sides, as above the color cards' wipe; without
-                 an image it says what the camera does, as on the card tabs. -->
+                 an image it says what the camera does, as on the card tabs, or that the correction is
+                 missing. -->
             <WipeLabels
               v-if="showImage"
               :split="splitModel"
@@ -336,19 +369,32 @@ const splitModel = computed({
               :switchable="chosenLook !== null"
               :left-tip="leftTip"
               :right-tip="rightTip"
-              class="rounded-t"
+              :class="IMAGE_BAND"
               data-testid="preview-labels"
               @switch="switchSide"
             />
-            <StageLabel v-else :state="stage" class="rounded-t" data-testid="stage-label" />
+            <StageLabel
+              v-else
+              :state="band.state"
+              :label="band.label"
+              :class="IMAGE_BAND"
+              data-testid="stage-label"
+            />
             <div class="relative">
-              <!-- Placeholder the size of the image while there is nothing to show. -->
+              <!-- Placeholder the size of the image while there is nothing to show. Under a camera
+                   error its lines move to the top and the hint to switch the camera on goes, as on
+                   the card tabs, so that the box of the error never covers them. What a missing
+                   correction needs has nothing to do with the camera and stays; the icon gives it
+                   the room (at 1024 px the box covered its second line). -->
               <div
                 v-if="!showImage"
-                class="flex w-full flex-col items-center justify-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+                class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+                :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
                 :style="{ aspectRatio: aspect }"
+                data-testid="preview-placeholder"
               >
                 <svg
+                  v-if="model !== null || camera.errorMessage === null"
                   class="w-28 text-zinc-400"
                   viewBox="0 0 96 60"
                   fill="none"
@@ -385,7 +431,9 @@ const splitModel = computed({
                   <span class="block font-semibold text-zinc-800">{{
                     t('preview.noSourceTitle')
                   }}</span>
-                  {{ t('preview.noSourceText', { button: t('camera.toggle.start') }) }}
+                  <template v-if="camera.errorMessage === null">{{
+                    t('preview.noSourceText', { button: t('camera.toggle.start') })
+                  }}</template>
                 </p>
               </div>
               <canvas
@@ -429,13 +477,12 @@ const splitModel = computed({
 
         <!-- Without a correction the placeholder says what is missing; the column stays empty. -->
         <div
-          class="flex w-44 shrink-0 flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
+          class="flex flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
           data-testid="preview-side"
         >
           <div class="border-b-(length:--band-line) border-zinc-700 bg-zinc-200 p-1.5">
             <ChoiceChips
               variant="segmented"
-              compact
               :options="viewOptions"
               :selected="view"
               :aria-label="t('preview.viewLabel')"
@@ -443,69 +490,86 @@ const splitModel = computed({
               @choose="view = $event"
             />
           </div>
-          <div v-if="view === 'colors'" class="flex min-h-0 flex-1 flex-col gap-2 p-2">
-            <div v-if="tiles.length > 0" class="min-h-24 flex-1">
-              <ColorTiles :cards="tiles" />
-            </div>
-            <p
-              v-else-if="model !== null"
-              class="text-[11px] leading-snug text-zinc-600"
-              data-testid="preview-side-empty"
-            >
-              {{ t('preview.emptyNoCards') }}
-            </p>
-            <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              {{ t('preview.tilesLegend') }}
-            </p>
+          <!-- The views take the height the image gives the column and scroll inside where they
+               need more (the grays on a narrow window), so that the preview keeps the height of
+               its image, and with it the export. -->
+          <div class="relative min-h-0 flex-1">
             <div
-              v-if="worst.length > 0"
-              class="text-[11px] leading-snug"
-              data-testid="worst-patches"
+              v-if="view === 'colors'"
+              class="focus-ring-inset absolute inset-0 flex flex-col gap-2 overflow-y-auto p-2"
             >
-              <p class="font-semibold">{{ t('preview.worstTitle') }}</p>
-              <p>
-                <template v-for="(patch, index) in worst" :key="patch.id">
-                  <template v-if="index > 0"> · </template>{{ patch.id }}
-                  {{ formatDecimal(patch.deviation) }}
-                </template>
+              <div v-if="tiles.length > 0" class="min-h-24 flex-1">
+                <ColorTiles :cards="tiles" />
+              </div>
+              <p
+                v-else-if="model !== null"
+                class="text-[11px] leading-snug text-zinc-600"
+                data-testid="preview-side-empty"
+              >
+                {{ t('preview.emptyNoCards') }}
+              </p>
+              <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
+                {{
+                  t(
+                    fittedReference === null
+                      ? 'preview.tilesLegendNoTarget'
+                      : 'preview.tilesLegend',
+                  )
+                }}
+              </p>
+              <div
+                v-if="worst.length > 0"
+                class="text-[11px] leading-snug"
+                data-testid="worst-patches"
+              >
+                <p class="font-semibold">{{ t('preview.worstTitle') }}</p>
+                <p>
+                  <template v-for="(patch, index) in worst" :key="patch.id">
+                    <template v-if="index > 0"> · </template>{{ patch.id }}
+                    {{ formatDecimal(patch.deviation) }}
+                  </template>
+                </p>
+              </div>
+            </div>
+            <div
+              v-else
+              class="focus-ring-inset absolute inset-0 flex flex-col gap-2 overflow-y-auto p-2"
+            >
+              <div v-if="rows.length > 0" class="min-h-24 flex-1">
+                <GrayWedge :rows="rows" />
+              </div>
+              <p
+                v-else-if="model !== null"
+                class="text-[11px] leading-snug text-zinc-600"
+                data-testid="preview-side-empty"
+              >
+                {{ t('preview.emptyNoCards') }}
+              </p>
+              <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
+                <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
+                  <dt class="font-semibold">{{ zone.name }}</dt>
+                  <!-- Room for three lines, so the gray wedge keeps its size when the texts change. A
+                     channel with its value never breaks apart. -->
+                  <dd class="min-h-[3lh]">
+                    {{ brightnessText(zone.brighter) }}
+                    <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
+                    <template v-for="cast in zone.casts" :key="cast.key">
+                      ·
+                      <span class="whitespace-nowrap">
+                        <i
+                          class="inline-block size-2 rounded-full"
+                          :style="{ background: CAST_COLORS[cast.key] }"
+                        ></i>
+                        {{ cast.channel }} {{ signedPoints(cast.points) }}
+                      </span>
+                    </template>
+                  </dd>
+                </div>
+              </dl>
+              <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
+                {{ t('preview.pointsLegend') }}
               </p>
             </div>
-          </div>
-          <div v-else class="flex min-h-0 flex-1 flex-col gap-2 p-2">
-            <div v-if="rows.length > 0" class="min-h-24 flex-1">
-              <GrayWedge :rows="rows" />
-            </div>
-            <p
-              v-else-if="model !== null"
-              class="text-[11px] leading-snug text-zinc-600"
-              data-testid="preview-side-empty"
-            >
-              {{ t('preview.emptyNoCards') }}
-            </p>
-            <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
-              <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
-                <dt class="font-semibold">{{ zone.name }}</dt>
-                <!-- Room for three lines, so the gray wedge keeps its size when the texts change. A
-                     channel with its value never breaks apart. -->
-                <dd class="min-h-[3lh]">
-                  {{ brightnessText(zone.brighter) }}
-                  <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
-                  <template v-for="cast in zone.casts" :key="cast.key">
-                    ·
-                    <span class="whitespace-nowrap">
-                      <i
-                        class="inline-block size-2 rounded-full"
-                        :style="{ background: CAST_COLORS[cast.key] }"
-                      ></i>
-                      {{ cast.channel }} {{ signedPoints(cast.points) }}
-                    </span>
-                  </template>
-                </dd>
-              </div>
-            </dl>
-            <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
-              {{ t('preview.pointsLegend') }}
-            </p>
           </div>
           <p
             v-if="summary !== null"

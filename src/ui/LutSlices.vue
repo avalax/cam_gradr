@@ -6,20 +6,17 @@ import type { ColorModel } from '../solve/fit';
 import { lutSlices } from './lut-slices';
 import type { SliceLook } from './lut-slices';
 
-const props = defineProps<{ model: ColorModel | null; look?: SliceLook | null }>();
+const props = defineProps<{ model: ColorModel | null; look: SliceLook | null }>();
 
-const CELLS = 8;
 const EMPTY = [0, 1, 2, 3, 4, 5, 6, 7] as const;
-const slices = computed(() =>
-  props.model === null ? null : lutSlices(props.model, CELLS, props.look ?? null),
-);
+const slices = computed(() => (props.model === null ? null : lutSlices(props.model, props.look)));
 </script>
 
 <template>
   <!-- Eight slices through the LUT, in two rows where the box has room for them, otherwise every
        second one in one row (see the variants in style.css); without color correction, gray patches
        stand in. The width comes from the caller, the slices are square. -->
-  <div class="grid grid-cols-4 gap-2" data-testid="lut-slices" :data-ready="slices !== null">
+  <div class="grid grid-cols-4 gap-2" data-testid="lut-slices">
     <template v-if="slices !== null">
       <div
         v-for="(colors, index) in slices"

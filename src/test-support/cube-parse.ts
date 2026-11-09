@@ -1,7 +1,7 @@
 import type { Lut } from '../lut/lut';
 
 // Reads a .cube file back in (tests only: round trip to verify the export).
-export interface ParsedCube {
+interface ParsedCube {
   title: string;
   lut: Lut;
   domainMin: number[];

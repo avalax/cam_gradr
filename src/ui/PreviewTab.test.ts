@@ -4,15 +4,24 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { setLocale } from '../lang';
 import { useColorChartStore } from '../chart/chart-store';
 import { usePreviewStore } from '../lut/preview-store';
+import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
-import { dummyReference } from '../test-support/dummy-reference';
+import { cameraSwitchStandIn } from '../test-support/camera-switch';
+import { chosenFile } from '../test-support/chosen-file';
+import { dummyReference, dummyReferenceJson } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
-import { INVERT_CUBE, cubeFile, importLooks } from '../test-support/look-cubes';
+import { chooseInvert } from '../test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
-import { syntheticFit, syntheticMeasurements } from '../test-support/synthetic-camera';
+import { grayFrame } from '../test-support/frames';
+import {
+  computeModel,
+  syntheticFit,
+  syntheticMeasurements,
+} from '../test-support/synthetic-camera';
 
 import PreviewTab from './PreviewTab.vue';
 
@@ -23,18 +32,6 @@ vi.mock(import('../lut/lut'), async (original) => lutOnce(await original()));
 
 const reference = dummyReference();
 const measurements = syntheticMeasurements();
-
-async function chooseInvert(): Promise<void> {
-  await importLooks(cubeFile('Invert.cube', INVERT_CUBE));
-}
-
-function stillFrame() {
-  return { width: 8, height: 4, data: new Float32Array(8 * 4 * 3).fill(0.4) };
-}
-
-function computeModel() {
-  useSolveStore().compute({ measurements, reference });
-}
 
 // Scheduler for the draw cycle: runs can be triggered by hand.
 function mockAnimation() {
@@ -63,19 +60,26 @@ function mockContexts(fake = createFakeGl()) {
 }
 
 describe('PreviewTab', () => {
+  // The draw cycle runs by hand, on a fake graphics card; a test that needs other contexts mocks
+  // them again.
+  let animation: ReturnType<typeof mockAnimation>;
+  let fake: ReturnType<typeof createFakeGl>;
+
   beforeEach(() => {
     setActivePinia(createPinia());
     installMediaStubs();
     installFakeCamera();
+    animation = mockAnimation();
+    fake = mockContexts();
+    // While the preview is open, the shown still image is its own, as the app arranges it.
+    useCameraStore().stillOwner = 'preview';
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('asks for a computed color correction first', () => {
-    mockAnimation();
-    mockContexts();
+  it('asks for a computed color correction first', async () => {
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="preview-no-source"]').exists()).toBe(false);
@@ -83,39 +87,49 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="preview-canvas"]').attributes('style')).toContain(
       'display: none',
     );
-    // Without an image the band says what the camera does, as on the card tabs.
-    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
+    // Without a correction the band names what is missing, also while the camera runs: the preview
+    // shows no camera image then.
+    const band = wrapper.get('[data-testid="stage-label"]');
+    expect(band.text()).toBe('Noch keine Korrektur');
+    expect(band.attributes('data-state')).toBe('off');
+    await useCameraStore().start();
+    await flushPromises();
+    expect(band.text()).toBe('Noch keine Korrektur');
     expect(wrapper.find('[data-testid="preview-source"]').exists()).toBe(false);
     // The icon of the placeholder has no circle: the tests count the corner points as circles.
     expect(wrapper.find('circle').exists()).toBe(false);
   });
 
   it('points to camera or still image without an image source', () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('„Kamera starten“');
+    // Without an image the band says what the camera does, as on the card tabs.
+    expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
   });
 
-  it('shows a camera error on the image', async () => {
-    mockAnimation();
-    mockContexts();
+  it('shows a camera error on the image, over a placeholder without the hint to the camera', async () => {
     installFakeCamera({ open: () => Promise.reject(new Error('x')) });
     const wrapper = mount(PreviewTab);
     await useCameraStore().start();
     await flushPromises();
     expect(wrapper.get('[data-testid="camera-error"]').text()).toContain('nicht gestartet');
+    // What a missing correction needs has nothing to do with the camera; the icon gives it room.
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain('Berechne sie zuerst');
+    const icon = () => wrapper.find('[data-testid="preview-placeholder"] svg');
+    expect(icon().exists()).toBe(false);
+    computeModel();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toBe('Noch kein Bild');
+    expect(icon().exists()).toBe(true);
   });
 
   it('captures a still image in the live view and then switches the camera off', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const camera = useCameraStore();
     const capture = vi.spyOn(camera, 'captureStill').mockImplementation(() => {
-      camera.still = stillFrame();
+      camera.still = grayFrame(8, 4, 0.4);
       return Promise.resolve();
     });
     const wrapper = mount(PreviewTab);
@@ -131,12 +145,16 @@ describe('PreviewTab', () => {
     expect(take().attributes('disabled')).toBeDefined();
     await wrapper.get('video').trigger('loadeddata');
     expect(take().attributes('disabled')).toBeUndefined();
+    const cameraSwitch = cameraSwitchStandIn();
     await take().trigger('click');
     await flushPromises();
     expect(capture).toHaveBeenCalledTimes(1);
     expect(camera.status).toBe('idle');
     expect(camera.still).not.toBeNull();
     expect(take().exists()).toBe(false);
+    // The button left with the live image: the focus is on the camera switch.
+    expect(document.activeElement).toBe(cameraSwitch);
+    cameraSwitch.remove();
     expect(wrapper.get('[data-testid="preview-source"]').text()).toBe('Standbild');
     await camera.start();
     await flushPromises();
@@ -144,8 +162,6 @@ describe('PreviewTab', () => {
   });
 
   it('keeps the camera on when the capture yields no still image', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const camera = useCameraStore();
     vi.spyOn(camera, 'captureStill').mockResolvedValue();
@@ -159,11 +175,9 @@ describe('PreviewTab', () => {
   });
 
   it('shows the image of the color measurement as long as the preview has none of its own', () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const camera = useCameraStore();
-    camera.still = stillFrame();
+    camera.still = grayFrame(8, 4, 0.4);
     camera.swapStill('color', 'preview');
     expect(camera.still).toBeNull();
     const wrapper = mount(PreviewTab);
@@ -173,10 +187,8 @@ describe('PreviewTab', () => {
   });
 
   it('loads the LUT and draws the still image with the divider line on the graphics card', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     usePreviewStore().setSplit(25);
     const wrapper = mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
@@ -200,10 +212,8 @@ describe('PreviewTab', () => {
   });
 
   it('lays the chosen look LUT over the correction and can show the correction left', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     await chooseInvert();
     const preview = usePreviewStore();
     const wrapper = mount(PreviewTab);
@@ -239,10 +249,8 @@ describe('PreviewTab', () => {
   });
 
   it('switches both sides with a click on their labels, the right one to the look alone', async () => {
-    mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     await chooseInvert();
     const preview = usePreviewStore();
     const wrapper = mount(PreviewTab);
@@ -282,8 +290,6 @@ describe('PreviewTab', () => {
   });
 
   it('draws the video image while the camera is running as soon as it has data', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
     await useCameraStore().start();
     const wrapper = mount(PreviewTab);
@@ -305,8 +311,6 @@ describe('PreviewTab', () => {
   });
 
   it('draws nothing without a source', () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
     mount(PreviewTab);
     animation.runFrame();
@@ -314,10 +318,8 @@ describe('PreviewTab', () => {
   });
 
   it('draws an unchanged still image only once', () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     const wrapper = mount(PreviewTab);
     animation.runFrame();
     animation.runFrame();
@@ -327,22 +329,20 @@ describe('PreviewTab', () => {
   });
 
   it('draws the still image again when the divider, the correction or the image changes', async () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     computeModel();
     const camera = useCameraStore();
-    camera.still = stillFrame();
+    camera.still = grayFrame(8, 4, 0.4);
     mount(PreviewTab);
     animation.runFrame();
     usePreviewStore().setSplit(30);
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(2);
-    useSolveStore().loadModel({ ...syntheticFit().model });
+    useSolveStore().loadModel({ ...syntheticFit().model }, null);
     await flushPromises();
     animation.runFrame();
     expect(fake.call('drawArrays')).toHaveBeenCalledTimes(3);
-    camera.still = { width: 4, height: 2, data: new Float32Array(4 * 2 * 3).fill(0.6) };
+    camera.still = grayFrame(4, 2, 0.6);
     await flushPromises();
     animation.runFrame();
     animation.runFrame();
@@ -350,12 +350,10 @@ describe('PreviewTab', () => {
   });
 
   it('updates the LUT when the color correction changes', async () => {
-    mockAnimation();
-    const fake = mockContexts();
     computeModel();
     mount(PreviewTab);
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
-    useSolveStore().loadModel({ ...syntheticFit().model });
+    useSolveStore().loadModel({ ...syntheticFit().model }, null);
     await flushPromises();
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
     // A failed calculation leaves no model.
@@ -364,11 +362,9 @@ describe('PreviewTab', () => {
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
   });
 
-  it('sets the divider line via the wipe and no longer has a slider', async () => {
-    mockAnimation();
-    mockContexts();
+  it('sets the divider line via the wipe', async () => {
     computeModel();
-    useCameraStore().still = stillFrame();
+    useCameraStore().still = grayFrame(8, 4, 0.4);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="wipe"]').trigger('keydown', { key: 'End' });
     expect(usePreviewStore().split).toBe(100);
@@ -376,8 +372,6 @@ describe('PreviewTab', () => {
   });
 
   it('shows the colors first: a grid of the colored patches and the largest deviations', () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     useColorChartStore().measurements = measurements;
     const wrapper = mount(PreviewTab);
@@ -394,9 +388,25 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="worst-patches"]').text()).toContain('Größte Abweichung');
   });
 
+  it('shows targets only from the set the correction was fitted with', async () => {
+    const references = useReferenceStore();
+    await references.importChosen(chosenFile('mein.json', dummyReferenceJson('Mein Satz')));
+    useColorChartStore().measurements = measurements;
+    useSolveStore().compute({ measurements, reference: references.selected ?? reference });
+    const wrapper = mount(PreviewTab);
+    const stripes = () =>
+      new Set(wrapper.findAll('[data-stripe]').map((stripe) => stripe.attributes('data-stripe')));
+    expect(stripes().has('target')).toBe(true);
+    expect(wrapper.text()).toContain('Jedes Feld: Soll, Kamera, korrigiert');
+
+    // A correction loaded with a set that is missing here: no targets from the active set.
+    useSolveStore().loadModel(syntheticFit().model, 'Fehlender Satz');
+    await flushPromises();
+    expect(stripes().has('target')).toBe(false);
+    expect(wrapper.text()).toContain('Jedes Feld: Kamera, korrigiert');
+  });
+
   it('switches to the gray wedge with the tonal ranges and the result, and back to colors', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     useColorChartStore().measurements = measurements;
     const wrapper = mount(PreviewTab);
@@ -415,18 +425,17 @@ describe('PreviewTab', () => {
   });
 
   it('calls tonal ranges neutral where the correction shifts no color', async () => {
-    mockAnimation();
-    mockContexts();
-    useSolveStore().loadModel(IDENTITY_MODEL);
+    useSolveStore().loadModel(IDENTITY_MODEL, null);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
     expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');
-    expect(wrapper.find('[data-testid="preview-summary"]').exists()).toBe(false);
+    // A correction without a report says so in the band, as under the color cards' divider.
+    expect(wrapper.get('[data-testid="preview-summary"]').text()).toBe(
+      'Ohne Bericht (Referenz fehlt)',
+    );
   });
 
   it('says without a measurement that color cards are missing for the views', async () => {
-    mockAnimation();
-    mockContexts();
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
@@ -436,8 +445,6 @@ describe('PreviewTab', () => {
   });
 
   it('leaves the column empty without a correction, in both views: the image says what is missing', async () => {
-    mockAnimation();
-    mockContexts();
     const wrapper = mount(PreviewTab);
     expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain(
       'Noch keine Korrektur',
@@ -450,8 +457,6 @@ describe('PreviewTab', () => {
   });
 
   it('binds a running stream and follows a new one', async () => {
-    mockAnimation();
-    mockContexts();
     await useCameraStore().start();
     const wrapper = mount(PreviewTab);
     expect(wrapper.get('video').element.srcObject).not.toBeNull();
@@ -461,7 +466,6 @@ describe('PreviewTab', () => {
   });
 
   it('falls back to software rendering without WebGL2 and draws downscaled', async () => {
-    const animation = mockAnimation();
     const image = { data: new Uint8ClampedArray(480 * 270 * 4) };
     const context2d = {
       createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
@@ -472,7 +476,7 @@ describe('PreviewTab', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(((id: string) =>
       id === 'webgl2' ? null : context2d) as never);
     computeModel();
-    useCameraStore().still = { width: 960, height: 540, data: new Float32Array(960 * 540 * 3) };
+    useCameraStore().still = grayFrame(960, 540);
     const wrapper = mount(PreviewTab);
     await flushPromises();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
@@ -486,7 +490,6 @@ describe('PreviewTab', () => {
   });
 
   it('reports missing WebGL2 support', async () => {
-    mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const wrapper = mount(PreviewTab);
     await flushPromises();
@@ -494,16 +497,16 @@ describe('PreviewTab', () => {
   });
 
   it('reports errors when creating the renderer', async () => {
-    mockAnimation();
     mockContexts(createFakeGl({ getShaderParameter: () => false }));
     const wrapper = mount(PreviewTab);
     await flushPromises();
     expect(wrapper.get('[role="alert"]').text()).toContain('Shader konnte nicht übersetzt werden');
+    setLocale('en');
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('Shader could not be compiled');
   });
 
   it('ends the draw cycle and releases WebGL resources', () => {
-    const animation = mockAnimation();
-    const fake = mockContexts();
     const wrapper = mount(PreviewTab);
     wrapper.unmount();
     expect(animation.cancel).toHaveBeenCalled();
@@ -511,7 +514,6 @@ describe('PreviewTab', () => {
   });
 
   it('cleans up properly even without a renderer', () => {
-    mockAnimation();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const wrapper = mount(PreviewTab);
     expect(() => {

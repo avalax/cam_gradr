@@ -38,6 +38,9 @@ describe('ColorTiles', () => {
       .findAll('[data-stripe]')
       .map((stripe) => stripe.attributes('data-stripe'));
     expect(stripes).toEqual(['camera', 'corrected']);
+    expect(wrapper.get('[data-testid="color-tiles"]').attributes('aria-label')).toBe(
+      'Farbfelder: Kamera und nach der Korrektur',
+    );
   });
 
   it('leaves the target of a single patch empty when only that one has no reference value', () => {

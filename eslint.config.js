@@ -166,10 +166,7 @@ export default tseslint.config(
       'unicorn/no-top-level-side-effects': 'off',
       'unicorn/prefer-module': 'off',
       'security/detect-non-literal-fs-filename': 'off',
-      'playwright/expect-expect': [
-        'error',
-        { assertFunctionNames: ['expect', 'expectVerdict', 'expectPatch', 'expectPreviewColor'] },
-      ],
+      'playwright/expect-expect': 'error',
     },
   },
   {

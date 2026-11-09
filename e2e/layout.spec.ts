@@ -15,20 +15,16 @@ test.describe('Layout', () => {
     await app.open();
     const boxes: unknown[] = [];
     const heights: number[] = [];
-    const panelHeight = async (): Promise<number> => {
-      const box = await app.page.getByRole('tabpanel').boundingBox();
-      return Math.round(box?.height ?? 0);
-    };
     for (const [tab, column] of Object.entries(SIDE_COLUMNS)) {
       await app.openTab(tab as keyof typeof SIDE_COLUMNS);
-      heights.push(await panelHeight());
+      heights.push(await app.panelHeight());
       boxes.push(
         await app.page.getByTestId('image-block').first().boundingBox(),
         await app.page.getByTestId(column).boundingBox(),
       );
     }
     await app.openTab('Export');
-    heights.push(await panelHeight());
+    heights.push(await app.panelHeight());
     expect(boxes[0]).not.toBeNull();
     for (const [index, box] of boxes.entries()) {
       expect(box).toEqual(boxes[index % 2]);
@@ -37,6 +33,32 @@ test.describe('Layout', () => {
     for (const height of heights) {
       expect(Math.abs(height - (heights[0] ?? 0))).toBeLessThanOrEqual(1);
     }
+
+    // The export follows the window as the image does, also when the window changes while the export
+    // is open: on a wide, low window the height limits the image.
+    await app.page.setViewportSize({ width: 1920, height: 720 });
+    const exportHeight = await app.panelHeight();
+    expect(exportHeight).not.toBe(heights[0]);
+    await app.openTab('Graukarten');
+    expect(Math.abs((await app.panelHeight()) - exportHeight)).toBeLessThanOrEqual(1);
+    // There the window height makes the image narrower than the room there is: image, side column
+    // and text stay together (the column 12 px after the image), the free room collects at the right
+    // edge, and the export puts its project card where the side column is.
+    const besideImage = async (column: string): Promise<number> => {
+      const image = await app.page.getByTestId('image-block').boundingBox();
+      const side = await app.page.getByTestId(column).boundingBox();
+      return (side?.x ?? 0) - (image?.x ?? 0) - (image?.width ?? 0);
+    };
+    expect(Math.abs((await besideImage('measure-field')) - 12)).toBeLessThanOrEqual(1);
+    const grayColumn = await app.page.getByTestId('measure-field').boundingBox();
+    await app.openTab('Vorschau');
+    expect(Math.abs((await besideImage('preview-side')) - 12)).toBeLessThanOrEqual(1);
+    expect(await app.page.getByTestId('preview-side').boundingBox()).toEqual(grayColumn);
+    await app.openTab('Export');
+    const projectCard = await app.page
+      .getByRole('article', { name: 'Projekt speichern' })
+      .boundingBox();
+    expect(Math.abs((projectCard?.x ?? 0) - (grayColumn?.x ?? -1))).toBeLessThanOrEqual(1);
   });
 
   test('The image keeps its size while the camera starts and captures, and fits on one screen', async ({
@@ -84,10 +106,7 @@ test.describe('Layout', () => {
           const image = await app.image.boundingBox();
           expect(image?.y).toBeGreaterThan(0);
           expect((image?.y ?? 0) + (image?.height ?? 0)).toBeLessThanOrEqual(height);
-          const overflow = await app.page.evaluate(
-            () => document.documentElement.scrollHeight - window.innerHeight,
-          );
-          expect(overflow).toBeLessThanOrEqual(0);
+          expect(await app.pageOverflow()).toBeLessThanOrEqual(0);
           expect(image?.width).toBeGreaterThan(minImageWidth);
         },
         `${String(width)}×${String(height)}`,

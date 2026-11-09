@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type { ExposureResult } from '../chart/exposure';
 
 import type { Edge } from './measure-field';
-import { detailRows, fieldHint, fieldPosition, mainIssue, okBox } from './measure-field';
+import { OK_BOX, detailRows, fieldHint, fieldPosition, mainIssue } from './measure-field';
 import { usePopupDismiss } from './popup-dismiss';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
@@ -34,12 +34,11 @@ const BANDS = [
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
 
-const box = okBox();
 const boxStyle = {
-  left: `${String(box.left)}%`,
-  top: `${String(box.top)}%`,
-  width: `${String(box.width)}%`,
-  height: `${String(box.height)}%`,
+  left: `${String(OK_BOX.left)}%`,
+  top: `${String(OK_BOX.top)}%`,
+  width: `${String(OK_BOX.width)}%`,
+  height: `${String(OK_BOX.height)}%`,
 };
 const hint = computed(() => fieldHint(props.exposure));
 const issue = computed(() => mainIssue(props.exposure));
@@ -55,7 +54,7 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
 
 <template>
   <!-- Measuring field as tall as the camera image: brightness vertically, contrast horizontally; details on hover or keyboard focus. -->
-  <div class="flex w-44 shrink-0 flex-col self-stretch">
+  <div class="flex flex-col">
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the details closes them with Escape -->
     <div
       class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500"

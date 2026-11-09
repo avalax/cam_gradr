@@ -91,17 +91,20 @@ export function colorCards(
     .filter((rows) => rows.length > 0);
 }
 
-export interface WorstPatch {
+interface WorstPatch {
   id: string;
   deviation: number;
 }
 
+// The preview names the three of them.
+const WORST_COUNT = 3;
+
 // The chromatic patches with the largest residual error after the correction.
-export function worstPatches(report: FitResult['report'], count: number): WorstPatch[] {
+export function worstPatches(report: FitResult['report']): WorstPatch[] {
   return report.patches
     .filter((patch) => !patch.neutral)
     .toSorted((first, second) => second.after - first.after)
-    .slice(0, count)
+    .slice(0, WORST_COUNT)
     .map((patch) => ({ id: patch.id, deviation: patch.after }));
 }
 
@@ -143,7 +146,7 @@ interface CastChange {
   points: number;
 }
 
-export interface ZoneChange {
+interface ZoneChange {
   name: string;
   // Mean brightening (negative = darkened) in points.
   brighter: number;

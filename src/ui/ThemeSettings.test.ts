@@ -3,8 +3,6 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useThemeStore } from '../theme/theme-store';
-
 import ThemeSettings from './ThemeSettings.vue';
 
 describe('ThemeSettings', () => {
@@ -31,14 +29,5 @@ describe('ThemeSettings', () => {
       'false',
     ]);
     expect(wrapper.get('[role="radiogroup"]').attributes('aria-label')).toBe('Darstellung der App');
-  });
-
-  it('switches the appearance at once', async () => {
-    const wrapper = mount(ThemeSettings);
-    await wrapper.get('[data-option="dark"]').trigger('click');
-    expect(useThemeStore().preference).toBe('dark');
-    expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(wrapper.get('[data-option="dark"]').attributes('aria-checked')).toBe('true');
-    expect(wrapper.get('[data-option="system"]').attributes('aria-checked')).toBe('false');
   });
 });

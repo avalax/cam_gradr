@@ -19,8 +19,9 @@ import type { ChartStore } from '../chart/chart-store';
 import { detectOutlines, sameCards } from '../chart/detect';
 import type { ChartLayout, Corners } from '../chart/types';
 
+import { CAMERA_SWITCH_ID, focusById } from './focus';
 import { TRASH_PATH } from './icons';
-import { imageMaxWidth as maxWidthFor } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageWidth as widthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
 import { buildShapes, clientToImage } from './overlay-geometry';
@@ -103,7 +104,7 @@ const handles = computed(() =>
 );
 // Image and buttons should fit on one screen together: the image height is limited to the window
 // height minus header, hint line and button bar (width = height × aspect ratio).
-const imageMaxWidth = computed(() => maxWidthFor(size.value.width / size.value.height));
+const imageWidth = computed(() => widthFor(size.value.width / size.value.height));
 
 function imagePoint(event: PointerEvent | MouseEvent) {
   const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -132,13 +133,15 @@ function drawStill(frame: Frame | null): void {
 }
 
 // Discards corner points and still image and turns the camera on if it is off (the automation
-// turns it off after the capture): the search starts over in the live image.
+// turns it off after the capture): the search starts over in the live image. The trash leaves with
+// the still image, so the focus goes to the camera switch, which can end the search.
 function redetect(): void {
   props.store.reset();
   camera.clearStill();
   if (!isLive.value) {
     void camera.start();
   }
+  focusById(CAMERA_SWITCH_ID);
 }
 
 // Not shown anywhere, so plain variables: the consecutive hits and the cards of the last search.
@@ -285,19 +288,17 @@ watch(actual, (next, previous) => {
 </script>
 
 <template>
-  <div class="flex items-stretch gap-3">
-    <!-- In the dark appearance the image lies on its own surface with an edge. -->
-    <div
-      data-testid="image-block"
-      class="min-w-0 flex-1 dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:p-2.5"
-      :style="{ maxWidth: imageMaxWidth }"
-    >
-      <StageLabel :state="stage" class="rounded-t" data-testid="stage-label" />
+  <div :class="IMAGE_ROW">
+    <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ width: imageWidth }">
+      <StageLabel :state="stage" :class="IMAGE_BAND" data-testid="stage-label" />
       <div class="relative" data-testid="stage-image">
         <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
+        <!-- Under a camera error only the icon and the title, at the top: the box of the error at the
+             bottom of the image says what to do, and on a small image it would cover the rest. -->
         <div
           v-if="showPlaceholder"
-          class="flex w-full flex-col items-center justify-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+          class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+          :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
           :style="{ aspectRatio: size.width / size.height }"
           data-testid="card-placeholder"
         >
@@ -324,8 +325,10 @@ watch(actual, (next, previous) => {
               <span class="block font-semibold text-zinc-800">{{
                 t('cards.stage.off.title')
               }}</span>
-              {{ t('cards.stage.off.text', { button: t('camera.toggle.start') }) }}
-              {{ idleText }}
+              <template v-if="camera.errorMessage === null">
+                {{ t('cards.stage.off.text', { button: t('camera.toggle.start') }) }}
+                {{ idleText }}
+              </template>
             </template>
           </p>
         </div>

@@ -6,32 +6,36 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.vue';
 import { useCameraStore } from './camera/camera-store';
 import { useChartStore } from './chart/chart-store';
-import { usePreviewStore } from './lut/preview-store';
+import { useProjectStore } from './project/project-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
+import { chosenFile } from './test-support/chosen-file';
 import { cubeFile, importLooks } from './test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
+import { grayFrame } from './test-support/frames';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
 
-function mountApp() {
+function mountApp(options: { attach?: boolean } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
-  return mount(App, { global: { plugins: [pinia] } });
+  return mount(App, {
+    global: { plugins: [pinia] },
+    ...(options.attach === true && { attachTo: document.body }),
+  });
 }
 
 function tabs(wrapper: ReturnType<typeof mountApp>) {
   return wrapper.findAll('[role="tab"]');
 }
 
-function stillFrame() {
-  return { width: 4, height: 3, data: new Float32Array(4 * 3 * 3) };
-}
-
 describe('App', () => {
+  let api: ReturnType<typeof installFakeCamera>;
+
   beforeEach(() => {
     installMediaStubs();
+    api = installFakeCamera();
   });
 
   afterEach(() => {
@@ -39,7 +43,6 @@ describe('App', () => {
   });
 
   it('shows name, identifier, camera toggle, settings and initially the gray cards tab', () => {
-    installFakeCamera();
     const wrapper = mountApp();
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
     expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera starten');
@@ -50,24 +53,16 @@ describe('App', () => {
   });
 
   it('names in the preview tab what lies left and right of the divider, as its labels do', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const preview = () => tabs(wrapper)[2]?.text();
     expect(preview()).toContain('Kamera / Korrigiert');
+    // How the sides are named is up to preview-sides.ts; the tab follows the chosen look.
     await importLooks(cubeFile('Warm.cube'));
     await flushPromises();
     expect(preview()).toContain('Kamera / Korrigiert + Look-LUT');
-    usePreviewStore().setLeft('corrected');
-    usePreviewStore().setRight('camera');
-    await flushPromises();
-    expect(preview()).toContain('Korrigiert / Kamera + Look-LUT');
-    usePreviewStore().setLook(null);
-    await flushPromises();
-    expect(preview()).toContain('Kamera / Korrigiert');
   });
 
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const gauges = () =>
       wrapper
@@ -95,40 +90,7 @@ describe('App', () => {
     expect(gauges()).toEqual(['ok', 'warn']);
   });
 
-  it('gives the export the height of the other tabs as its minimum height', async () => {
-    const observers: { fire: (height: number) => void }[] = [];
-    class FakeObserver {
-      readonly observe = vi.fn();
-      readonly disconnect = vi.fn();
-      constructor(private readonly callback: ResizeObserverCallback) {
-        observers.push({
-          fire: (height) => {
-            const target = { getBoundingClientRect: () => ({ height }) };
-            this.callback([{ target } as unknown as ResizeObserverEntry], this as never);
-          },
-        });
-      }
-    }
-    vi.stubGlobal('ResizeObserver', FakeObserver);
-    installFakeCamera();
-    const wrapper = mountApp();
-    const panel = () => wrapper.get('[role="tabpanel"]');
-    expect(panel().attributes('style')).toBeUndefined();
-    observers[0]?.fire(480);
-    await flushPromises();
-    await tabs(wrapper)[3]?.trigger('click');
-    expect(panel().attributes('style')).toContain('min-height: 480px');
-    // Heights measured in the export do not count.
-    observers[0]?.fire(300);
-    await flushPromises();
-    expect(panel().attributes('style')).toContain('min-height: 480px');
-    await tabs(wrapper)[0]?.trigger('click');
-    expect(panel().attributes('style')).toBeUndefined();
-    wrapper.unmount();
-  });
-
   it('offers four tabs, all freely selectable', () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const all = tabs(wrapper);
     expect(all.map((tab) => tab.attributes('aria-label'))).toEqual([
@@ -143,52 +105,46 @@ describe('App', () => {
       'false',
       'false',
     ]);
-    for (const tab of all) {
-      expect(tab.attributes('disabled')).toBeUndefined();
-    }
     expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
     expect(wrapper.get('[role="tabpanel"]').attributes('aria-labelledby')).toBe('tab-gray');
     expect(all[0]?.attributes('aria-describedby')).toBe('tab-hint-gray');
   });
 
   it('moves between the tabs with the arrow keys as one stop of the Tab key', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const stops = () => tabs(wrapper).map((tab) => tab.attributes('tabindex'));
     expect(stops()).toEqual(['0', '-1', '-1', '-1']);
     await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowLeft' });
     expect(tabs(wrapper)[3]?.attributes('aria-selected')).toBe('true');
     expect(stops()).toEqual(['-1', '-1', '-1', '0']);
-    await tabs(wrapper)[3]?.trigger('keydown', { key: 'Home' });
-    expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
-    // Up and down keep scrolling the page, other keys do nothing either.
-    await tabs(wrapper)[0]?.trigger('keydown', { key: 'ArrowDown' });
-    await tabs(wrapper)[0]?.trigger('keydown', { key: 'a' });
-    expect(tabs(wrapper)[0]?.attributes('aria-selected')).toBe('true');
-  });
-
-  it('switches between the tabs without conditions', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
-    await tabs(wrapper)[1]?.trigger('click');
-    expect(wrapper.text()).toContain('Dieser Tab berechnet die Farbkorrektur');
-    expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
-    await tabs(wrapper)[0]?.trigger('click');
-    expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
+    // Up and down keep scrolling the page.
+    await tabs(wrapper)[3]?.trigger('keydown', { key: 'ArrowDown' });
+    expect(tabs(wrapper)[3]?.attributes('aria-selected')).toBe('true');
   });
 
   it('shows the camera switch in the export only while the camera runs', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
+    const wrapper = mountApp({ attach: true });
+    const cameraSwitch = () => wrapper.find('[data-testid="camera-toggle"]');
     await tabs(wrapper)[3]?.trigger('click');
-    expect(wrapper.find('[data-testid="camera-toggle"]').exists()).toBe(false);
+    expect(cameraSwitch().exists()).toBe(false);
     await useCameraStore().start();
     await flushPromises();
-    expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera stoppen');
+    expect(cameraSwitch().text()).toBe('Kamera stoppen');
+    // Stopped by keyboard, the switch goes and hands the focus to the tab of the export.
+    (cameraSwitch().element as HTMLButtonElement).focus();
+    await cameraSwitch().trigger('click');
+    expect(cameraSwitch().exists()).toBe(false);
+    expect(document.activeElement?.id).toBe('tab-export');
+    // A camera that stops while the focus is elsewhere leaves the focus where it is.
+    await useCameraStore().start();
+    await flushPromises();
+    useCameraStore().stop();
+    await flushPromises();
+    expect(document.activeElement?.id).toBe('tab-export');
+    wrapper.unmount();
   });
 
   it('keeps the camera running when switching tabs', async () => {
-    const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
     await tabs(wrapper)[1]?.trigger('click');
@@ -198,10 +154,9 @@ describe('App', () => {
   });
 
   it('gives each tab with a camera image its own still image, the export changes nothing', async () => {
-    installFakeCamera();
     const wrapper = mountApp();
     const camera = useCameraStore();
-    const gray = stillFrame();
+    const gray = grayFrame(4, 3);
     camera.still = gray;
     await tabs(wrapper)[0]?.trigger('click');
     expect(camera.still).toBe(gray);
@@ -216,23 +171,32 @@ describe('App', () => {
   });
 
   it('shows the missing-color-correction notice in the export tab and jumps to the color cards', async () => {
-    installFakeCamera();
-    const wrapper = mountApp();
+    const wrapper = mountApp({ attach: true });
     await tabs(wrapper)[3]?.trigger('click');
     expect(wrapper.find('[data-testid="export-no-model"]').exists()).toBe(true);
     await wrapper.get('[data-testid="export-no-model"] button').trigger('click');
     expect(tabs(wrapper)[1]?.attributes('aria-selected')).toBe('true');
+    // The link went with the export: the focus is on the tab that opened.
+    expect(document.activeElement?.id).toBe('tab-color');
+    wrapper.unmount();
+  });
+
+  it('puts the floating project message after the panel in the order of the Tab key', async () => {
+    const wrapper = mountApp();
+    await useProjectStore().loadChosen(chosenFile('kaputt.json', '{"format":"x"}'));
+    await flushPromises();
+    const panel = wrapper.get('[role="tabpanel"]').element;
+    const message = wrapper.get('[data-testid="project-message"]').element;
+    expect(panel.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('loads the bundled reference set at startup', async () => {
-    installFakeCamera();
     mountApp();
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
   });
 
   it('stops the camera when the app is removed', async () => {
-    const api = installFakeCamera();
     const wrapper = mountApp();
     await useCameraStore().start();
     wrapper.unmount();

@@ -65,10 +65,19 @@ export function grayStatus(exposure: ExposureResult | null): TabStatus {
   };
 }
 
-// Color cards: the status follows the mean error after the correction, not mere computation.
-export function colorStatus(report: { meanBefore: number; meanAfter: number } | null): TabStatus {
+// Color cards: the status follows the mean error after the correction, not mere computation. A
+// correction without a report (loaded from a project whose reference set is missing) says so instead
+// of looking as if nothing were calculated.
+export function colorStatus(
+  report: { meanBefore: number; meanAfter: number } | null,
+  corrected: boolean,
+): TabStatus {
   if (report === null) {
-    return { level: 'off', fill: 0, text: t('app.status.notComputed') };
+    return {
+      level: 'off',
+      fill: 0,
+      text: t(corrected ? 'app.status.noReport' : 'app.status.notComputed'),
+    };
   }
   const text = t('app.status.meanChange', {
     before: formatDecimal(report.meanBefore),

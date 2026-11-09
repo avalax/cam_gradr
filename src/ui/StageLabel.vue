@@ -8,10 +8,12 @@ const { t } = useI18n();
 // Camera off, live image or still image, with a dot: as the band above the image of the card tabs
 // (always there, so that the image never moves when the camera starts; as high as the band of the
 // preview, so that all tabs are equally high), or as a badge in the image corner of the preview,
-// whose band names the sides of the divider.
-withDefaults(defineProps<{ state: StageState; variant?: 'band' | 'badge' }>(), {
-  variant: 'band',
-});
+// whose band names the sides of the divider. `label` replaces the text where the camera is not what
+// the image area waits for (the preview without a correction).
+withDefaults(
+  defineProps<{ state: StageState; variant?: 'band' | 'badge'; label?: string | null }>(),
+  { variant: 'band', label: null },
+);
 
 const TEXTS: Readonly<Record<StageState, string>> = {
   off: 'cards.stage.labelOff',
@@ -37,6 +39,6 @@ const VARIANTS = {
     :data-state="state"
   >
     <i class="size-2.5 shrink-0 rounded-full" :class="DOTS[state]" aria-hidden="true"></i>
-    {{ t(TEXTS[state]) }}
+    {{ label ?? t(TEXTS[state]) }}
   </div>
 </template>

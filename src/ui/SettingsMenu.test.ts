@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { setLocale } from '../lang';
+import { useReferenceStore } from '../reference/reference-store';
 
 import SettingsMenu from './SettingsMenu.vue';
 
@@ -60,6 +62,13 @@ describe('SettingsMenu', () => {
     expect(camera.text()).toContain('Standardkamera · 1280 × 720');
     expect(reference.text()).toContain('Mitgelieferter Satz');
     expect(wrapper.find('[data-testid="reference-select"]').exists()).toBe(false);
+    // Once loaded, the bundled set shows under its label in the language of the app.
+    await useReferenceStore().load();
+    await flushPromises();
+    expect(reference.text()).toContain('Spyder Checkr 48 (inoffizielle Transkription)');
+    setLocale('en');
+    await flushPromises();
+    expect(reference.text()).toContain('Spyder Checkr 48 (unofficial transcription)');
     wrapper.unmount();
   });
 
@@ -189,6 +198,22 @@ describe('SettingsMenu', () => {
     expect(panel(wrapper).exists()).toBe(true);
     outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     await wrapper.vm.$nextTick();
+    expect(panel(wrapper).exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('closes when the focus moves on past it, not when it goes nowhere', async () => {
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    const wrapper = mountAttached();
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    const root = wrapper.get('[data-settings-root]');
+    await root.trigger('focusout', { relatedTarget: null });
+    expect(panel(wrapper).exists()).toBe(true);
+    const inside = wrapper.get('[data-testid="section-camera"]').element;
+    await root.trigger('focusout', { relatedTarget: inside });
+    expect(panel(wrapper).exists()).toBe(true);
+    await root.trigger('focusout', { relatedTarget: outside });
     expect(panel(wrapper).exists()).toBe(false);
     wrapper.unmount();
   });

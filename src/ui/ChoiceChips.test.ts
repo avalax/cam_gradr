@@ -11,7 +11,7 @@ const SIZES = [
 
 const THREE = [
   { key: 'a', value: 'A', label: 'Eins' },
-  { key: 'b', value: 'B', label: 'Zwei', disabled: true },
+  { key: 'b', value: 'B', label: 'Zwei' },
   { key: 'c', value: 'C', label: 'Drei' },
 ];
 
@@ -40,18 +40,6 @@ describe('ChoiceChips', () => {
     expect(wrapper.emitted('choose')).toEqual([[{ width: 640 }]]);
   });
 
-  it('can lock one option, and shows the segmented control grayed out while disabled', async () => {
-    const options = SIZES.map((option, index) => ({ ...option, disabled: index === 1 }));
-    const wrapper = mount(ChoiceChips, {
-      props: { options, selected: 'small', variant: 'segmented' },
-    });
-    const radios = wrapper.findAll('[role="radio"]');
-    expect(radios.map((radio) => radio.attributes('disabled'))).toEqual([undefined, '']);
-    expect(wrapper.get('[role="radiogroup"]').classes()).not.toContain('opacity-50');
-    await wrapper.setProps({ disabled: true });
-    expect(wrapper.get('[role="radiogroup"]').classes()).toContain('opacity-50');
-  });
-
   it('shows cards with a detail and a hint', () => {
     const options = SIZES.map((option, index) => ({
       ...option,
@@ -75,36 +63,34 @@ describe('ChoiceChips', () => {
     }
   });
 
-  it('is one stop of the Tab key: the chosen option, else the first that can be chosen', async () => {
+  it('is one stop of the Tab key: the chosen option', () => {
     const wrapper = mount(ChoiceChips, { props: { options: THREE, selected: 'c' } });
-    const stops = () =>
-      wrapper.findAll('[role="radio"]').map((radio) => radio.attributes('tabindex'));
-    expect(stops()).toEqual(['-1', '-1', '0']);
-    await wrapper.setProps({ selected: 'b' });
-    expect(stops()).toEqual(['0', '-1', '-1']);
-    await wrapper.setProps({ disabled: true });
-    expect(stops()).toEqual(['-1', '-1', '-1']);
+    const stops = wrapper.findAll('[role="radio"]').map((radio) => radio.attributes('tabindex'));
+    expect(stops).toEqual(['-1', '-1', '0']);
   });
 
-  it('chooses the next option with the arrow keys and skips locked ones', async () => {
+  it('chooses the next option with the arrow keys', async () => {
     const wrapper = mount(ChoiceChips, {
       props: { options: THREE, selected: 'a' },
       attachTo: document.body,
     });
     const radios = wrapper.findAll('[role="radio"]');
     await radios[0]?.trigger('keydown', { key: 'ArrowRight' });
-    expect(wrapper.emitted('choose')).toEqual([['C']]);
-    expect(document.activeElement).toBe(radios[2]?.element);
-    await radios[2]?.trigger('keydown', { key: 'Enter' });
+    expect(wrapper.emitted('choose')).toEqual([['B']]);
+    expect(document.activeElement).toBe(radios[1]?.element);
+    await radios[1]?.trigger('keydown', { key: 'Enter' });
     expect(wrapper.emitted('choose')).toHaveLength(1);
     wrapper.unmount();
   });
 
-  it('fills a narrow band in small type when compact', () => {
+  it('fills a narrow band as a segmented control, with the focus ring inside where it clips', () => {
     const wrapper = mount(ChoiceChips, {
-      props: { options: SIZES, selected: 'small', variant: 'segmented', compact: true },
+      props: { options: SIZES, selected: 'small', variant: 'segmented' },
     });
-    expect(wrapper.get('[role="radiogroup"]').classes()).toContain('w-full');
-    expect(wrapper.get('[role="radio"]').classes()).toContain('flex-1');
+    const group = wrapper.get('[role="radiogroup"]');
+    expect(group.classes()).toEqual(expect.arrayContaining(['w-full', 'overflow-hidden']));
+    expect(wrapper.get('[role="radio"]').classes()).toEqual(
+      expect.arrayContaining(['flex-1', 'focus-ring-inset']),
+    );
   });
 });

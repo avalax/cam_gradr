@@ -2,19 +2,19 @@ import { homographyFromCorners, project } from '../chart/homography';
 import type { Homography } from '../chart/homography';
 import type { ChartLayout, Corners, Point, Rect } from '../chart/types';
 
-export interface Box {
+interface Box {
   left: number;
   top: number;
   width: number;
   height: number;
 }
 
-export interface Size {
+interface Size {
   width: number;
   height: number;
 }
 
-export interface Shape {
+interface Shape {
   key: string;
   points: string;
   kind: 'card' | 'large' | 'strip';

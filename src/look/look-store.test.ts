@@ -1,12 +1,12 @@
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { usePreviewStore } from '../lut/preview-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
+import { chosenFile, notReadable } from '../test-support/chosen-file';
 import { failingStorage } from '../test-support/failing-storage';
 import { IDENTITY_CUBE, INVERT_CUBE, cubeFile as file } from '../test-support/look-cubes';
+import { emptyLookStorage } from '../test-support/empty-storage';
 
 import { parseLookCube } from './look';
 import type { LookLut } from './look';
@@ -21,8 +21,7 @@ describe('useLookStore', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    storage = createIndexedDbStorage<LookLut>(new IDBFactory(), 'test', 'looks');
-    setLookStorage(storage);
+    storage = emptyLookStorage();
   });
 
   it('loads the saved looks sorted by name; looks imported meanwhile stay', async () => {
@@ -57,17 +56,37 @@ describe('useLookStore', () => {
   });
 
   it('names rejected files with the reason and keeps the valid ones', async () => {
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
     const store = useLookStore();
+    const gone = notReadable();
     await store.importFiles([
       file('notes.txt'),
       file('broken.cube', 'LUT_1D_SIZE 2'),
+      chosenFile('Gone.cube', gone),
       file('Ok.cube'),
     ]);
     expect(store.looks.map((entry) => entry.name)).toEqual(['Ok']);
-    expect(store.messages[0]).toEqual({ kind: 'imported', names: ['Ok'] });
-    expect(store.messages[1]).toMatchObject({ kind: 'rejected', file: 'notes.txt' });
-    expect(store.messages[1]).toHaveProperty('reason', 'Nur .cube-Dateien sind möglich.');
-    expect(store.messages[2]).toMatchObject({ kind: 'rejected', file: 'broken.cube' });
+    // The errors come first: the room under the bar shows two lines.
+    // The reason is kept as the key of its text, so that the bar can translate it when shown.
+    expect(store.messages[0]).toEqual({
+      kind: 'rejected',
+      file: 'notes.txt',
+      reason: { key: 'notCube', params: {} },
+    });
+    expect(store.messages[1]).toEqual({
+      kind: 'rejected',
+      file: 'broken.cube',
+      reason: { key: 'oneDimensional', params: {} },
+    });
+    // A file the browser did not hand over: why goes to the message, what it threw to the console.
+    expect(store.messages[2]).toEqual({
+      kind: 'rejected',
+      file: 'Gone.cube',
+      reason: 'unreadable',
+    });
+    expect(warn).toHaveBeenCalledWith(gone);
+    expect(store.messages[3]).toEqual({ kind: 'imported', names: ['Ok'] });
+    warn.mockRestore();
   });
 
   it('chooses nothing when no file was valid', async () => {
@@ -77,13 +96,64 @@ describe('useLookStore', () => {
     expect(store.messages).toHaveLength(1);
   });
 
-  it('warns about conversions from camera log curves', async () => {
+  it('warns about conversions from camera log curves instead of naming them as imported', async () => {
     const store = useLookStore();
     await store.importFiles([file('SLOG 3 S CINETONE_REC709.cube'), file('Warm.cube')]);
+    expect(store.looks.map((look) => look.name)).toEqual(['SLOG 3 S CINETONE_REC709', 'Warm']);
     expect(store.messages).toEqual([
-      { kind: 'imported', names: ['SLOG 3 S CINETONE_REC709', 'Warm'] },
-      { kind: 'logConversion', name: 'SLOG 3 S CINETONE_REC709' },
+      { kind: 'logConversion', name: 'SLOG 3 S CINETONE_REC709', fallback: 'Warm' },
+      { kind: 'imported', names: ['Warm'] },
     ]);
+    await store.importFiles([file('LogC to Rec709.cube')]);
+    expect(store.messages).toEqual([
+      { kind: 'logConversion', name: 'LogC to Rec709', fallback: 'Warm' },
+    ]);
+  });
+
+  it('keeps the warning about another look of the same import when one is removed', async () => {
+    const store = useLookStore();
+    await store.importFiles([file('SLOG3.cube'), file('LogC.cube')]);
+    expect(store.messages.map((message) => message.kind)).toEqual([
+      'logConversion',
+      'logConversion',
+    ]);
+    await store.removeWarned('SLOG3', null);
+    expect(store.messages).toEqual([
+      { kind: 'removed', name: 'SLOG3' },
+      { kind: 'logConversion', name: 'LogC', fallback: null },
+    ]);
+    // Undo brings the look back and keeps the other warning too.
+    await store.undo();
+    expect(store.messages).toEqual([{ kind: 'logConversion', name: 'LogC', fallback: null }]);
+  });
+
+  it('shows again the look a warned look took the place of when it is removed through the warning', async () => {
+    const store = useLookStore();
+    const preview = usePreviewStore();
+    await store.importFiles([file('Warm.cube')]);
+    // Alone, the warned look gives way to the look from before the import.
+    await store.importFiles([file('LogC to Rec709.cube')]);
+    expect(preview.look).toBe('LogC to Rec709');
+    await store.removeWarned('LogC to Rec709', 'Warm');
+    expect(store.find('LogC to Rec709')).toBeNull();
+    expect(preview.look).toBe('Warm');
+    // Imported with others, it gives way to the last of them, which the import would have chosen.
+    await store.importFiles([file('Cold.cube'), file('SLOG3.cube')]);
+    expect(store.messages[0]).toEqual({ kind: 'logConversion', name: 'SLOG3', fallback: 'Cold' });
+    await store.removeWarned('SLOG3', 'Cold');
+    expect(preview.look).toBe('Cold');
+    // A look chosen since stays; one that is gone is not chosen again.
+    await store.importFiles([file('SLOG3.cube')]);
+    preview.setLook('Warm');
+    await store.removeWarned('SLOG3', 'Cold');
+    expect(preview.look).toBe('Warm');
+    await store.importFiles([file('SLOG3.cube')]);
+    await store.removeWarned('SLOG3', 'Gone');
+    expect(preview.look).toBeNull();
+    // The trash removes without choosing another look.
+    await store.importFiles([file('SLOG3.cube')]);
+    await store.remove('SLOG3');
+    expect(preview.look).toBeNull();
   });
 
   it('deletes a look and brings it back with undo, chosen as before', async () => {
@@ -136,16 +206,25 @@ describe('useLookStore', () => {
     const store = useLookStore();
     await store.load();
     expect(store.messages).toEqual([{ kind: 'loadFailed' }]);
-    await store.importFiles([file('Warm.cube')]);
-    expect(store.looks).toHaveLength(1);
+    // One line for all looks that were not saved, after the warning with its action and instead of
+    // the line that names them as saved.
+    await store.importFiles([file('Warm.cube'), file('SLOG3.cube'), file('notes.txt')]);
+    expect(store.looks).toHaveLength(2);
     expect(store.messages).toEqual([
-      { kind: 'imported', names: ['Warm'] },
-      { kind: 'saveFailed', name: 'Warm' },
+      { kind: 'rejected', file: 'notes.txt', reason: { key: 'notCube', params: {} } },
+      { kind: 'logConversion', name: 'SLOG3', fallback: 'Warm' },
+      { kind: 'saveFailed', names: ['Warm', 'SLOG3'] },
     ]);
     await store.remove('Warm');
-    expect(store.messages).toEqual([{ kind: 'removeFailed' }]);
+    expect(store.messages).toEqual([
+      { kind: 'removeFailed' },
+      { kind: 'logConversion', name: 'SLOG3', fallback: 'Warm' },
+    ]);
     await store.undo();
-    expect(store.messages).toEqual([{ kind: 'saveFailed', name: 'Warm' }]);
+    expect(store.messages).toEqual([
+      { kind: 'logConversion', name: 'SLOG3', fallback: 'Warm' },
+      { kind: 'saveFailed', names: ['Warm'] },
+    ]);
   });
 
   it('makes the look LUTs of a project the whole list, also in the browser storage', async () => {

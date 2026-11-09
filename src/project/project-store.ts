@@ -1,16 +1,20 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef } from 'vue';
+import { computed, shallowRef } from 'vue';
 
 import { useCameraStore } from '../camera/camera-store';
 import type { StillKey, Stills } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
-import { t } from '../lang';
+import { onLocaleChange, t } from '../lang';
 import type { LookLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
 import { useExportStore } from '../lut/export-store';
 import { LOOK_DEFAULTS, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
+import { readChosen, readFailure } from '../ui/chosen-file';
+import type { ChosenFile } from '../ui/chosen-file';
+import { writeProblem } from '../ui/file-problem';
+import type { ReadProblem, WriteProblem } from '../ui/file-problem';
 
 import { decodeFrame, encodeFrame } from './frame-codec';
 import { openProjectFile, saveProjectFile } from './project-file';
@@ -103,10 +107,10 @@ async function applyCorrection(project: Project): Promise<string | null> {
     // With reference values available, the error report can be recomputed.
     solve.compute({ measurements: project.color.measurements, reference });
   }
-  // Otherwise the saved model applies, never one from before; it also steps in when the calculation
-  // fails.
+  // Otherwise the saved model applies, never one from before, with the name of the set it was
+  // fitted with; it also steps in when the calculation fails.
   if (!recompute || (solve.model === null && project.model !== null)) {
-    solve.loadModel(project.model);
+    solve.loadModel(project.model, name);
   }
   const missing = name !== null && reference?.name !== name;
   return missing ? name : null;
@@ -125,11 +129,14 @@ async function decodeStills(project: Project): Promise<Stills | null> {
 }
 
 // Reads the current working state from the stores. Corner points belong to a still image: without still
-// images in the file they are not saved.
+// images in the file they are not saved. The reference is the set the correction was fitted with, so
+// that a correction loaded without its set keeps naming it; without a correction it is the active
+// set, which the measurements are computed with on loading.
 function snapshot(withCorners: boolean): Project {
   const gray = useChartStore().committed();
   const color = useColorChartStore().committed();
   const preview = usePreviewStore();
+  const solve = useSolveStore();
   return {
     format: PROJECT_FORMAT,
     savedAt: new Date().toISOString(),
@@ -142,9 +149,9 @@ function snapshot(withCorners: boolean): Project {
       corners: withCorners ? color.points : {},
       measurements: { ...color.measurements },
       rotated: color.rotated,
-      reference: useReferenceStore().selectedName,
+      reference: solve.model === null ? useReferenceStore().selectedName : solve.referenceName,
     },
-    model: useSolveStore().model,
+    model: solve.model,
     preview: { split: preview.split },
     export: { size: useExportStore().size },
   };
@@ -164,20 +171,56 @@ async function lookSettings(): Promise<LookSettings> {
 
 export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 
+// What the message over the page says: what failed, and why as a sentence of its own where it is
+// known. The keys of the texts in the language files are translated when read, so that the message
+// follows a language switch. The validation of a file is the exception: it puts its text together
+// deep in the parser, in the language of the moment, so that text goes away with a switch.
+type ProjectFailure =
+  | { key: 'saveFailed'; problem: WriteProblem | null }
+  | { key: 'openFailed'; problem: ReadProblem }
+  | { key: 'invalid'; text: string };
+
+// The text of a failure in the language of the moment.
+function describeFailure(failure: ProjectFailure): string {
+  if (failure.key === 'saveFailed') {
+    const why = failure.problem === null ? [] : [t(`file.${failure.problem}`)];
+    return [t('project.errors.saveFailed'), ...why].join(' ');
+  }
+  const why = failure.key === 'invalid' ? failure.text : t(`file.${failure.problem}`);
+  return `${t('project.errors.openFailed')} ${why}`;
+}
+
 // Saving and loading the working state as a JSON file (without the manufacturers' reference values).
 export const useProjectStore = defineStore('project', () => {
-  const error = ref<string | null>(null);
-  const notice = ref<string | null>(null);
+  type ProjectNotice =
+    | { key: 'missingReference'; name: string }
+    | { key: 'lookRemoved' | 'looksRemoved'; count: number };
+
+  const failure = shallowRef<ProjectFailure | null>(null);
+  const notices = shallowRef<ProjectNotice[]>([]);
   // The file that was loaded or saved last: saving suggests it again.
   const file = shallowRef<ProjectFile | null>(null);
 
-  // Saves the working state; with `withStills` the tabs' still images are included in the file.
-  async function save(options?: { withStills: boolean; withLooks?: boolean }): Promise<void> {
-    error.value = null;
-    notice.value = null;
-    const withStills = options?.withStills === true;
+  const error = computed(() => (failure.value === null ? null : describeFailure(failure.value)));
+  const notice = computed(() =>
+    notices.value.length === 0
+      ? null
+      : notices.value.map((entry) => t(`project.notice.${entry.key}`, entry)).join(' '),
+  );
+
+  onLocaleChange(() => {
+    if (failure.value?.key === 'invalid') {
+      failure.value = null;
+    }
+  });
+
+  // Saves the working state; with `withStills` the tabs' still images are included in the file, with
+  // `withLooks` the imported look LUTs.
+  async function save(options: { withStills: boolean; withLooks: boolean }): Promise<void> {
+    dismiss();
+    const { withStills } = options;
     const project = snapshot(withStills);
-    if (options?.withLooks === true) {
+    if (options.withLooks) {
       project.looks = await lookSettings();
     }
     if (withStills) {
@@ -193,59 +236,77 @@ export const useProjectStore = defineStore('project', () => {
         file.value = saved;
       }
     } catch (error_) {
-      error.value = t('project.errors.saveFailed', { reason: (error_ as Error).message });
+      // What the browser threw goes to the console, so that it is not lost.
+      console.warn(error_);
+      failure.value = { key: 'saveFailed', problem: writeProblem(error_) };
     }
   }
 
   // Applies a project file; with a faulty file the previous state is kept. `source` is the file it
   // came from, which saving suggests afterwards.
-  async function load(text: string, source?: ProjectFile): Promise<void> {
-    notice.value = null;
+  async function load(text: string, source: ProjectFile): Promise<void> {
+    notices.value = [];
     let read: ReadProject;
     try {
       read = await readProject(text);
     } catch (error_) {
-      error.value = (error_ as Error).message;
+      failure.value = { key: 'invalid', text: (error_ as Error).message };
       return;
     }
-    error.value = null;
-    if (source !== undefined) {
-      file.value = source;
-    }
+    failure.value = null;
+    file.value = source;
     applyStills(read.stills);
     applyCharts(read.project, read.stills !== null);
     const missing = await applyCorrection(read.project);
     const gone = await applyLooks(read.project.looks, read.luts);
     // There are no success messages; a missing reference set and look LUTs that left the browser
     // deserve a notice.
-    const notices = [
-      missing === null ? null : t('project.notice.missingReference', { name: missing }),
-      gone === 0
-        ? null
-        : t(gone === 1 ? 'project.notice.lookRemoved' : 'project.notice.looksRemoved', {
-            count: gone,
-          }),
-    ].filter((entry) => entry !== null);
-    notice.value = notices.length === 0 ? null : notices.join(' ');
+    const found: ProjectNotice[] = [];
+    if (missing !== null) {
+      found.push({ key: 'missingReference', name: missing });
+    }
+    if (gone > 0) {
+      found.push({ key: gone === 1 ? 'lookRemoved' : 'looksRemoved', count: gone });
+    }
+    notices.value = found;
+  }
+
+  // A file that could not be opened. The notices of the file loaded before do not belong to its
+  // message.
+  function openFailed(problem: ReadProblem): void {
+    dismiss();
+    failure.value = { key: 'openFailed', problem };
+  }
+
+  // Loads a file chosen in the file input (browsers without the system dialogs).
+  async function loadChosen(file: ChosenFile): Promise<void> {
+    const read = await readChosen(file);
+    if ('problem' in read) {
+      openFailed(read.problem);
+      return;
+    }
+    await load(read.text, { name: file.name });
   }
 
   // Lets the user choose a project file in the system dialog and loads it.
   async function open(dialogs: FileDialogs): Promise<void> {
+    let picked: Awaited<ReturnType<typeof openProjectFile>>;
     try {
-      const picked = await openProjectFile(dialogs);
-      if (picked !== null) {
-        await load(picked.text, picked.file);
-      }
+      picked = await openProjectFile(dialogs);
     } catch (error_) {
-      error.value = t('project.errors.openFailed', { reason: (error_ as Error).message });
+      openFailed(readFailure(error_));
+      return;
+    }
+    if (picked !== null) {
+      await load(picked.text, picked.file);
     }
   }
 
   // Dismisses the message.
   function dismiss(): void {
-    error.value = null;
-    notice.value = null;
+    failure.value = null;
+    notices.value = [];
   }
 
-  return { error, notice, save, load, open, dismiss };
+  return { notices, error, notice, save, loadChosen, open, dismiss };
 });

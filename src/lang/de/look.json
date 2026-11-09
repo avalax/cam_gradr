@@ -12,12 +12,13 @@
     "importedOne": "„{name}“ importiert und lokal im Browser gespeichert.",
     "importedMany": "{count} Look-LUTs importiert und lokal im Browser gespeichert.",
     "rejected": "„{file}“ wurde nicht importiert: {reason}",
-    "logConversion": "„{name}“ sieht nach einer Umwandlung aus Log aus (S-Log, LogC, V-Log …). Die Webcam liefert schon Rec.709; damit würden die Schatten zu dunkel und der Kontrast zu hart. Als Look-LUT nimm eine Datei für Rec.709-Eingang.",
+    "logConversion": "„{name}“ ist wohl für Log\u2011Material (S\u2011Log, LogC\u00a0…) und macht das Webcam-Bild zu dunkel.",
     "removeAgain": "Wieder löschen",
     "removed": "Look-LUT „{name}“ lokal gelöscht.",
     "undo": "Rückgängig",
     "loadFailed": "Gespeicherte Look-LUTs konnten nicht geladen werden.",
-    "saveFailed": "„{name}“ konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
+    "saveFailedOne": "„{name}“ konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
+    "saveFailedMany": "{count} Look-LUTs konnten nicht lokal gespeichert werden und gelten nur für diese Sitzung.",
     "removeFailed": "Die Look-LUT konnte lokal nicht gelöscht werden.",
     "storeFailed": "Die Look-LUTs des Projekts ließen sich nicht lokal speichern und gelten nur für diese Sitzung."
   },
@@ -28,6 +29,7 @@
     "size": "LUT_3D_SIZE {size} wird nicht unterstützt ({min} bis {max}).",
     "numbers": "Zeile {line} enthält keine gültigen Zahlen.",
     "count": "Erwartet werden {expected} Werte-Zeilen, die Datei hat {actual}.",
-    "domain": "DOMAIN_MIN muss in jedem Kanal kleiner sein als DOMAIN_MAX."
+    "domain": "DOMAIN_MIN muss in jedem Kanal kleiner sein als DOMAIN_MAX.",
+    "parseFailed": "Die Datei ließ sich nicht auswerten."
   }
 }

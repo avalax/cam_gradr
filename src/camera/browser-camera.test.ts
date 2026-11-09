@@ -91,7 +91,7 @@ describe('createBrowserCamera', () => {
       fakeMedia({ getUserMedia: () => Promise.reject(error) }),
     );
     await expect(camera.open(null, { width: 1, height: 1 })).rejects.toMatchObject({
-      code: 'permission-denied',
+      code: 'permissionDenied',
     });
   });
 

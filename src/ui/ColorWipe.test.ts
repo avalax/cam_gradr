@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { colorLayout } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
 import type { FitResult } from '../solve/fit';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import ColorWipe from './ColorWipe.vue';
 
@@ -18,6 +19,7 @@ function mountWipe(overrides: Record<string, unknown> = {}) {
       model: null,
       reference: null,
       report: null,
+      live: false,
       ...overrides,
     },
   });
@@ -38,7 +40,14 @@ describe('ColorWipe', () => {
 
   it('shows the result as a popup on the label once there is a report', () => {
     const wrapper = mount(ColorWipe, {
-      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report },
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report,
+        live: false,
+      },
       slots: { details: '<p data-testid="inhalt">Ergebnis</p>' },
     });
     const trigger = wrapper.get('[data-testid="color-wipe-result"]');
@@ -59,7 +68,14 @@ describe('ColorWipe', () => {
 
   it('closes the result with Escape until the pointer or the focus leaves', async () => {
     const wrapper = mount(ColorWipe, {
-      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report },
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report,
+        live: false,
+      },
       slots: { details: '<p>Ergebnis</p>' },
     });
     const trigger = wrapper.get('[data-testid="color-wipe-result"]');
@@ -79,17 +95,43 @@ describe('ColorWipe', () => {
     expect(mousedown.defaultPrevented).toBe(true);
   });
 
-  it('has no popup and is not focusable without a report or without content', () => {
+  it('hands the focus to the trigger when Escape closes the result from inside', async () => {
+    const wrapper = mount(ColorWipe, {
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report,
+        live: false,
+      },
+      slots: { details: '<button type="button" data-testid="inside">Ergebnis</button>' },
+      attachTo: document.body,
+    });
+    const inside = wrapper.get('[data-testid="inside"]');
+    (inside.element as HTMLButtonElement).focus();
+    await inside.trigger('keydown', { key: 'Escape' });
+    expect(wrapper.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="color-wipe-result"]').element);
+    wrapper.unmount();
+  });
+
+  it('has no popup and is not focusable without a report', () => {
     const withoutReport = mount(ColorWipe, {
-      props: { layout: colorLayout, measurements: {}, model: null, reference: null, report: null },
+      props: {
+        layout: colorLayout,
+        measurements: {},
+        model: null,
+        reference: null,
+        report: null,
+        live: false,
+      },
       slots: { details: '<p>Ergebnis</p>' },
     });
     expect(withoutReport.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
     expect(
       withoutReport.get('[data-testid="color-wipe-result"]').attributes('tabindex'),
     ).toBeUndefined();
-    const withoutSlot = mountWipe({ report });
-    expect(withoutSlot.find('[data-testid="color-wipe-popup"]').exists()).toBe(false);
   });
 
   it('orders the patches as on the cards, row by row from A to H per card', () => {
@@ -116,6 +158,14 @@ describe('ColorWipe', () => {
     expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
       'Ø Abweichung 18,4 → 8,0',
     );
+  });
+
+  it('says that a correction loaded without its reference set has no report', () => {
+    const wrapper = mountWipe({ model: IDENTITY_MODEL });
+    expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
+      'Ohne Bericht (Referenz fehlt)',
+    );
+    expect(wrapper.get('[data-testid="color-wipe-result"]').attributes('tabindex')).toBeUndefined();
   });
 
   it('fades in the corrected layer right of the line and follows the wipe', async () => {

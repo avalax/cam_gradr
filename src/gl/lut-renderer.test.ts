@@ -1,9 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { identityLut } from '../lut/lut';
 import { createFakeGl } from '../test-support/fake-gl';
 
-import { FRAGMENT_SHADER, VERTEX_SHADER, createLutRenderer } from './lut-renderer';
+import {
+  FRAGMENT_SHADER,
+  RendererError,
+  VERTEX_SHADER,
+  createLutRenderer,
+  describeRendererProblem,
+  rendererProblem,
+} from './lut-renderer';
+
+// The renderer error with this problem.
+function problem(expected: Record<string, string>): Error {
+  return expect.objectContaining({ problem: expected }) as Error;
+}
 
 const source = { width: 4, height: 2 } as unknown as HTMLCanvasElement;
 
@@ -153,39 +165,71 @@ describe('createLutRenderer', () => {
   it('reports errors when compiling a shader, with the log', () => {
     const { gl, call } = createFakeGl({ getShaderParameter: () => false });
     expect(() => createLutRenderer(gl)).toThrow(
-      'Shader konnte nicht übersetzt werden: Shader error',
+      problem({ key: 'compileFailed', log: 'Shader error' }),
     );
     expect(call('deleteShader')).toHaveBeenCalledTimes(1);
   });
 
   it('reports errors when linking', () => {
     const { gl, call } = createFakeGl({ getProgramParameter: () => false });
-    expect(() => createLutRenderer(gl)).toThrow('gelinkt werden: Link error');
+    expect(() => createLutRenderer(gl)).toThrow(problem({ key: 'linkFailed', log: 'Link error' }));
     expect(call('deleteProgram')).toHaveBeenCalledTimes(1);
   });
 
   it('handles missing logs', () => {
     const shader = createFakeGl({ getShaderParameter: () => false, getShaderInfoLog: () => null });
-    expect(() => createLutRenderer(shader.gl)).toThrow('übersetzt werden: ');
+    expect(() => createLutRenderer(shader.gl)).toThrow(problem({ key: 'compileFailed', log: '' }));
     const program = createFakeGl({
       getProgramParameter: () => false,
       getProgramInfoLog: () => null,
     });
-    expect(() => createLutRenderer(program.gl)).toThrow('gelinkt werden: ');
+    expect(() => createLutRenderer(program.gl)).toThrow(problem({ key: 'linkFailed', log: '' }));
   });
 
   it('reports missing WebGL resources', () => {
+    const missing = (what: string): Error => problem({ key: 'createFailed', what });
     expect(() => createLutRenderer(createFakeGl({ createShader: () => null }).gl)).toThrow(
-      'einen Shader',
+      missing('shader'),
     );
     expect(() => createLutRenderer(createFakeGl({ createProgram: () => null }).gl)).toThrow(
-      'ein Shader-Programm',
+      missing('program'),
     );
     expect(() => createLutRenderer(createFakeGl({ createVertexArray: () => null }).gl)).toThrow(
-      'ein Vertex-Array',
+      missing('vertexArray'),
     );
     expect(() => createLutRenderer(createFakeGl({ createTexture: () => null }).gl)).toThrow(
-      'die Bildtextur',
+      missing('imageTexture'),
     );
+    // The preview names what is missing in its own words.
+    expect(describeRendererProblem({ key: 'createFailed', what: 'shader' })).toBe(
+      'WebGL konnte einen Shader nicht anlegen.',
+    );
+  });
+});
+
+describe('the problems of the renderers', () => {
+  it('name the log of the driver only where it wrote one', () => {
+    expect(describeRendererProblem({ key: 'compileFailed', log: 'ERROR: 0:1' })).toBe(
+      'Shader konnte nicht übersetzt werden: ERROR: 0:1',
+    );
+    expect(describeRendererProblem({ key: 'compileFailed', log: '' })).toBe(
+      'Shader konnte nicht übersetzt werden.',
+    );
+    expect(describeRendererProblem({ key: 'linkFailed', log: '' })).toBe(
+      'Shader-Programm konnte nicht gelinkt werden.',
+    );
+  });
+
+  it('are what a renderer names, and a preview that did not start for anything else', () => {
+    expect(rendererProblem(new RendererError({ key: 'noContext' }))).toEqual({ key: 'noContext' });
+    // A bug goes to the console as it is.
+    const logged = vi.spyOn(console, 'error').mockReturnValue();
+    const bug = new TypeError('Cannot read properties of undefined');
+    expect(rendererProblem(bug)).toEqual({ key: 'startFailed' });
+    expect(logged).toHaveBeenCalledWith(bug);
+    expect(describeRendererProblem({ key: 'startFailed' })).toBe(
+      'Die Vorschau ließ sich nicht starten.',
+    );
+    logged.mockRestore();
   });
 });

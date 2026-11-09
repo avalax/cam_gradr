@@ -33,7 +33,7 @@ test.describe('Gray cards', () => {
     // The details of the measuring field appear only on hover or keyboard focus, and Escape closes
     // them. The field comes right after the trash of the image in the order of the Tab key.
     await expect(app.details).toBeHidden();
-    await app.expectVerdict('im Normalbereich');
+    await app.expectNormalLight();
     await expect(app.details).toContainText('Lichter');
     await app.page.mouse.move(0, 0);
     await expect(app.details).toBeHidden();

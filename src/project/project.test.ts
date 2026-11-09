@@ -203,7 +203,7 @@ describe('parseProject', () => {
     rejects(lutOf({ data: 5 }), 'gespeicherten Look-LUTs sind ungültig');
     rejects(lutOf({ size: 1 }), 'gespeicherten Look-LUTs sind ungültig');
     rejects(lutOf({ size: 130 }), 'gespeicherten Look-LUTs sind ungültig');
-    rejects(lutOf({ min: [0, 0] }), 'erwartet werden 3 Zahlen');
+    rejects(lutOf({ min: [0, 0] }), 'Look-LUT „Warm“: erwartet werden 3 Zahlen.');
   });
 });
 

@@ -13,8 +13,6 @@ import { measureChart, exposureInput } from './measure';
 import type { Measurements } from './measure';
 import type { ChartLayout, Corners, Point } from './types';
 
-const CORNERS_PER_CARD = 4;
-
 interface ChartStoreOptions {
   id: string;
   // Its cards from left to right: gray cards 50 % then 18 %, color cards columns A–D then E–H.
@@ -71,11 +69,6 @@ function defineChartStore(options: ChartStoreOptions) {
     function placed(card: number): Point[] {
       return points.value[card] ?? [];
     }
-
-    // All cards have their corners.
-    const ready = computed(() =>
-      cardOrder.every((card) => placed(card).length === CORNERS_PER_CARD),
-    );
 
     const uprightCorners = computed<CornerMap>(() => {
       const result: CornerMap = {};
@@ -217,7 +210,6 @@ function defineChartStore(options: ChartStoreOptions) {
       exposure,
       plausible,
       rotated,
-      ready,
       corners,
       moveCorner,
       setCards,

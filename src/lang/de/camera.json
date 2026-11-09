@@ -14,14 +14,14 @@
     "autoHint": "Stelle Auto-Belichtung und Auto-Weißabgleich in der Kamera-Software fest. Automatische Anpassungen verfälschen die Messung."
   },
   "errors": {
-    "unsupported": "Kamerazugriff wird nicht unterstützt. Bitte einen aktuellen Browser über HTTPS oder localhost verwenden.",
-    "permissionDenied": "Der Zugriff auf die Kamera wurde verweigert. Bitte die Berechtigung im Browser erlauben.",
+    "unsupported": "Kamerazugriff wird nicht unterstützt. Nutze einen aktuellen Browser über HTTPS oder localhost.",
+    "permissionDenied": "Der Zugriff auf die Kamera wurde verweigert. Erlaube den Kamerazugriff im Browser.",
     "notFound": "Es wurde keine Kamera gefunden.",
     "inUse": "Die Kamera wird bereits von einer anderen Anwendung verwendet oder ist nicht lesbar.",
     "unsatisfiable": "Die gewählte Kamera unterstützt die gewünschte Auflösung nicht.",
     "unknown": "Die Kamera konnte nicht gestartet werden.",
     "captureFailed": "Aufnahme fehlgeschlagen.",
-    "notReady": "Das Kamerabild ist noch nicht bereit. Bitte einen Moment warten und erneut versuchen.",
+    "notReady": "Das Kamerabild ist noch nicht bereit. Warte einen Moment und versuche es erneut.",
     "noCanvas": "Canvas-Kontext nicht verfügbar."
   }
 }

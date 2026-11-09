@@ -1,5 +1,4 @@
-import { t } from '../lang';
-
+import { CameraError } from './camera-error';
 import type { FrameGrabber } from './capture';
 import type { RawFrame } from './frame';
 
@@ -24,14 +23,14 @@ export function createVideoGrabber(
   return {
     grab(): RawFrame {
       if (video.videoWidth === 0 || video.videoHeight === 0) {
-        throw new Error(t('camera.errors.notReady'));
+        throw new CameraError('notReady');
       }
       const canvas = createCanvas();
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d', { willReadFrequently: true });
       if (context === null) {
-        throw new Error(t('camera.errors.noCanvas'));
+        throw new CameraError('noCanvas');
       }
       context.drawImage(video, 0, 0);
       return context.getImageData(0, 0, canvas.width, canvas.height);

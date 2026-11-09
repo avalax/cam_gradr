@@ -1,23 +1,23 @@
 import type { Page } from '@playwright/test';
 
 import { SCENE_NAMES, sceneFor } from './synthetic-cards';
-import type { Scene, SceneName } from './synthetic-cards';
+import type { Scene } from './synthetic-cards';
 
 const REDRAW_MS = 100;
 const FRAME_RATE = 30;
 
 interface Options {
   scenes: Record<string, Scene>;
-  initial: string;
   redrawMs: number;
   frameRate: number;
 }
 
-// Runs in the browser and must therefore be completely self-contained.
-function installInPage({ scenes, initial, redrawMs, frameRate }: Options): void {
-  const first = scenes[initial];
+// Runs in the browser and must therefore be completely self-contained. The camera starts with the
+// gray cards.
+function installInPage({ scenes, redrawMs, frameRate }: Options): void {
+  const first = scenes.gray;
   if (first === undefined) {
-    throw new Error('Unknown scene.');
+    throw new Error('The scenes lack the gray cards.');
   }
   const canvas = document.createElement('canvas');
   canvas.width = first.width;
@@ -93,11 +93,9 @@ export async function installSyntheticCamera(
   scenes: Record<string, Scene> = Object.fromEntries(
     SCENE_NAMES.map((name) => [name, sceneFor(name)]),
   ),
-  initial = 'gray',
 ): Promise<void> {
   await page.addInitScript(installInPage, {
     scenes,
-    initial,
     redrawMs: REDRAW_MS,
     frameRate: FRAME_RATE,
   });
@@ -112,12 +110,12 @@ export async function setScene(page: Page, name: string): Promise<void> {
   }, name);
 }
 
-// Holds other cards in front of the camera and waits until the new image arrives in the video
-// element.
-export async function showScene(page: Page, name: SceneName): Promise<void> {
-  await setScene(page, name);
+// Holds the color cards in front of the running camera and waits until their image arrives in the
+// video element.
+export async function showColorScene(page: Page): Promise<void> {
+  await setScene(page, 'colors');
   // Probe point: center of the last drawn patch of the scene.
-  const probe = sceneFor(name).rects.at(-1);
+  const probe = sceneFor('colors').rects.at(-1);
   if (probe === undefined) {
     throw new Error('The scene is empty.');
   }

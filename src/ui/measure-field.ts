@@ -12,7 +12,7 @@ function clamp(value: number): number {
   return Math.min(Math.max(value, 0), 100);
 }
 
-export interface Position {
+interface Position {
   left: number;
   top: number;
 }
@@ -26,27 +26,20 @@ export function fieldPosition(exposure: ExposureResult): Position {
   };
 }
 
-export interface Box extends Position {
+interface Box extends Position {
   width: number;
   height: number;
 }
 
-// Normal range in the middle of the field, matching the allowed deviations.
-export function okBox(
-  lightTolerance = DEFAULT_EXPOSURE_CONFIG.tolerance,
-  contrastTolerance = DEFAULT_EXPOSURE_CONFIG.contrastTolerance,
-): Box {
-  const halfWidth = (contrastTolerance / CONTRAST_RANGE) * HALF;
-  const halfHeight = (lightTolerance / LIGHT_RANGE) * HALF;
-  const left = clamp(HALF - halfWidth);
-  const top = clamp(HALF - halfHeight);
-  return {
-    left,
-    top,
-    width: clamp(HALF + halfWidth) - left,
-    height: clamp(HALF + halfHeight) - top,
-  };
-}
+// Normal range in the middle of the field, matching the deviations the rating allows.
+const OK_HALF_WIDTH = (DEFAULT_EXPOSURE_CONFIG.contrastTolerance / CONTRAST_RANGE) * HALF;
+const OK_HALF_HEIGHT = (DEFAULT_EXPOSURE_CONFIG.tolerance / LIGHT_RANGE) * HALF;
+export const OK_BOX: Box = {
+  left: HALF - OK_HALF_WIDTH,
+  top: HALF - OK_HALF_HEIGHT,
+  width: 2 * OK_HALF_WIDTH,
+  height: 2 * OK_HALF_HEIGHT,
+};
 
 function percent(value: number): string {
   return t('measure.percent', { value: formatDecimal(value * 100, 0) });
@@ -56,7 +49,7 @@ function signed(value: number): string {
   return t('measure.points', { value: formatSigned(value * 100, 0) });
 }
 
-export interface DetailRow {
+interface DetailRow {
   label: string;
   value: string;
 }
@@ -97,7 +90,7 @@ export type Edge = 'top' | 'bottom' | 'left' | 'right';
 
 // Most important message: it sits on the edge of the field towards which the measurement deviates,
 // and names the next step together with the hint.
-export interface Issue {
+interface Issue {
   edge: Edge;
   label: string;
   hint: string;

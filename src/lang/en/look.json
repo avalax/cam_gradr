@@ -6,18 +6,19 @@
   "importFile": "Import look LUT (.cube)",
   "remove": "Delete look LUT “{name}”",
   "strength": "Strength",
-  "percent": "{value} %",
+  "percent": "{value}%",
   "hint": "With “+ Import look LUT …” in the list you add a look LUT (.cube, 3D LUT for Rec.709 input), for example a cinema look.",
   "messages": {
     "importedOne": "“{name}” imported and saved locally in the browser.",
     "importedMany": "{count} look LUTs imported and saved locally in the browser.",
     "rejected": "“{file}” was not imported: {reason}",
-    "logConversion": "“{name}” looks like a conversion from log (S-Log, LogC, V-Log …). The webcam already delivers Rec.709; with it the shadows would get too dark and the contrast too hard. As a look LUT, take a file for Rec.709 input.",
-    "removeAgain": "Delete again",
+    "logConversion": "“{name}” seems made for log footage (S\u2011Log, LogC\u00a0…) and makes the webcam image too dark.",
+    "removeAgain": "Remove it",
     "removed": "Look LUT “{name}” deleted locally.",
     "undo": "Undo",
     "loadFailed": "Saved look LUTs could not be loaded.",
-    "saveFailed": "“{name}” could not be saved locally and only applies to this session.",
+    "saveFailedOne": "“{name}” could not be saved locally and only applies to this session.",
+    "saveFailedMany": "{count} look LUTs could not be saved locally and only apply to this session.",
     "removeFailed": "The look LUT could not be deleted locally.",
     "storeFailed": "The look LUTs of the project could not be saved locally and only apply to this session."
   },
@@ -28,6 +29,7 @@
     "size": "LUT_3D_SIZE {size} is not supported ({min} to {max}).",
     "numbers": "Line {line} contains no valid numbers.",
     "count": "Expected {expected} value lines, the file has {actual}.",
-    "domain": "DOMAIN_MIN must be smaller than DOMAIN_MAX in every channel."
+    "domain": "DOMAIN_MIN must be smaller than DOMAIN_MAX in every channel.",
+    "parseFailed": "The file could not be processed."
   }
 }

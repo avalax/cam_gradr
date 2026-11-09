@@ -1,26 +1,23 @@
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { i18n } from '../lang';
+import { chosenFile, notReadable } from '../test-support/chosen-file';
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 import { failingStorage } from '../test-support/failing-storage';
-import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
+import { emptyReferenceStorage } from '../test-support/empty-storage';
 
 import { BUNDLED_NAME } from './bundled';
 import { setReferenceStorage, useReferenceStore } from './reference-store';
 import type { ReferenceSet } from './reference';
-
-const download = vi.hoisted(() => vi.fn());
-vi.mock('../lut/download', () => ({ downloadFile: download }));
 
 describe('useReferenceStore', () => {
   let storage: NamedStorage<ReferenceSet>;
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    storage = createIndexedDbStorage(new IDBFactory(), 'test', 'references');
-    setReferenceStorage(storage);
+    storage = emptyReferenceStorage();
   });
 
   it('contains the bundled set after loading and preselects it', async () => {
@@ -36,7 +33,7 @@ describe('useReferenceStore', () => {
   it('imports, selects and saves a set locally, and reports the saving', async () => {
     const store = useReferenceStore();
     expect(store.lastSaved).toBeNull();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     expect(store.error).toBeNull();
     expect(store.selected?.name).toBe('Satz A');
     expect(store.lastSaved).toBe('Satz A');
@@ -44,17 +41,9 @@ describe('useReferenceStore', () => {
     expect(saved.map((set) => set.name)).toEqual(['Satz A']);
   });
 
-  it('reports as soon as a set is deleted locally', async () => {
-    const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    expect(store.lastRemoved).toBeNull();
-    await store.remove('Satz A');
-    expect(store.lastRemoved).toBe('Satz A');
-  });
-
   it('loads saved sets in addition to the bundled one and preselects it', async () => {
     const first = useReferenceStore();
-    await first.importFile('a.json', dummyReferenceJson('Satz A'));
+    await first.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     setActivePinia(createPinia());
     const again = useReferenceStore();
     await again.load();
@@ -66,8 +55,8 @@ describe('useReferenceStore', () => {
 
   it('keeps an already made selection on load', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     store.select('Satz A');
     await store.load();
     expect(store.selectedName).toBe('Satz A');
@@ -75,27 +64,70 @@ describe('useReferenceStore', () => {
 
   it('replaces a set of the same name', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('a.csv', dummyReferenceCsv());
-    await store.importFile('b.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('a.csv', dummyReferenceCsv()));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz A')));
     expect(store.sets.filter((set) => set.name === 'Satz A')).toHaveLength(1);
   });
 
   it('reports faulty files and keeps the previous sets', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('kaputt.json', '{"format":"x"}');
-    expect(store.error).toContain('Unbekanntes Format');
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
+    // What failed first, then what the validation found.
+    expect(store.error).toBe(
+      'Der Satz ließ sich nicht importieren. Unbekanntes Format, erwartet wird „cam_gradr-reference/1“.',
+    );
     expect(store.sets).toHaveLength(1);
-    await store.importFile('kaputt.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('kaputt.json', dummyReferenceJson('Satz B')));
     expect(store.error).toBeNull();
   });
 
-  it('reports unknown errors generically', async () => {
+  it('names why the browser did not hand over a file, and logs what it threw', async () => {
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
     const store = useReferenceStore();
-    // A value that is not a string triggers a TypeError from the file selection.
-    await store.importFile('a.json', null as unknown as string);
+    const denied = new DOMException('Not allowed.', 'NotAllowedError');
+    await store.importChosen(chosenFile('a.json', denied));
+    expect(store.error).toBe(
+      'Der Satz ließ sich nicht importieren. Der Browser hat den Zugriff auf die Datei verweigert.',
+    );
+    expect(warn).toHaveBeenCalledWith(denied);
+    const gone = notReadable();
+    await store.importChosen(chosenFile('a.json', gone));
+    expect(warn).toHaveBeenLastCalledWith(gone);
+    i18n.global.locale.value = 'en';
+    expect(store.error).toBe('The set could not be imported. The file cannot be read.');
+    warn.mockRestore();
+  });
+
+  it('shows only the outcome of the last action', async () => {
+    const store = useReferenceStore();
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.remove('Satz A');
+    expect(store.lastRemoved).toBe('Satz A');
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
+    expect([store.lastRemoved, store.lastSaved]).toEqual([null, 'Satz B']);
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
+    expect(store.lastSaved).toBeNull();
     expect(store.error).not.toBeNull();
+    store.choose('Satz B');
+    expect(store.error).toBeNull();
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
+    await store.remove('Satz B');
+    expect(store.error).toBeNull();
+  });
+
+  it('translates warnings when the language changes and drops the error of the validation', async () => {
+    setReferenceStorage(failingStorage());
+    const store = useReferenceStore();
+    await store.load();
+    expect(store.warning).toBe('Gespeicherte Referenzen konnten nicht geladen werden.');
+    i18n.global.locale.value = 'en';
+    expect(store.warning).toBe('Saved references could not be loaded.');
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
+    expect(store.error).not.toBeNull();
+    i18n.global.locale.value = 'de';
+    expect(store.error).toBeNull();
   });
 
   it('keeps imported sets when loading only finishes afterwards', async () => {
@@ -107,7 +139,7 @@ describe('useReferenceStore', () => {
     });
     const store = useReferenceStore();
     const loading = store.load();
-    await store.importFile('neu.json', dummyReferenceJson('Neu'));
+    await store.importChosen(chosenFile('neu.json', dummyReferenceJson('Neu')));
     slowList.resolve([
       { name: 'Alt', patches: {} },
       { name: 'Neu', patches: {} },
@@ -122,18 +154,18 @@ describe('useReferenceStore', () => {
 
   it('selects only existing sets', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     store.select('gibt es nicht');
     expect(store.selectedName).toBe('Satz A');
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     store.select('Satz A');
     expect(store.selected?.name).toBe('Satz A');
   });
 
   it('deletes sets and selects another one', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     await store.remove('Satz B');
     expect(store.selectedName).toBe('Satz A');
     await store.remove('Satz A');
@@ -148,7 +180,7 @@ describe('useReferenceStore', () => {
     await store.load();
     expect(store.warning).toContain('geladen');
     expect(store.selected?.name).toBe(BUNDLED_NAME);
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     expect(store.selected?.name).toBe('Satz A');
     expect(store.warning).toContain('nur für diese Sitzung');
     expect(store.lastSaved).toBeNull();
@@ -172,28 +204,6 @@ describe('useReferenceStore', () => {
       await store.load();
       expect(store.sets).toHaveLength(1);
       expect(Object.keys(store.selected?.patches ?? {})).toEqual(['1A']);
-    });
-  });
-
-  describe('Download', () => {
-    it('saves the selected set as an importable JSON file', async () => {
-      download.mockReset();
-      const store = useReferenceStore();
-      await store.importFile('a.json', dummyReferenceJson('Satz A'));
-      store.downloadSelected();
-      const [name, content, mime] = download.mock.calls[0] as [string, string, string];
-      expect(name).toBe('Satz A.json');
-      expect(mime).toBe('application/json');
-      setActivePinia(createPinia());
-      const again = useReferenceStore();
-      await again.importFile(name, content);
-      expect(again.selected?.patches).toEqual(store.selected?.patches);
-    });
-
-    it('does nothing without a selected set', () => {
-      download.mockReset();
-      useReferenceStore().downloadSelected();
-      expect(download).not.toHaveBeenCalled();
     });
   });
 });

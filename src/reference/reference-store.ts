@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
-import { t } from '../lang';
+import { onLocaleChange, t } from '../lang';
 import { APP_ID } from '../ui/app-info';
+import { readChosen } from '../ui/chosen-file';
+import type { ChosenFile } from '../ui/chosen-file';
+import type { ReadProblem } from '../ui/file-problem';
 import { downloadFile } from '../lut/download';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
@@ -26,12 +29,44 @@ function storage(): NamedStorage<ReferenceSet> {
 export const useReferenceStore = defineStore('reference', () => {
   const sets = ref<ReferenceSet[]>([]);
   const selectedName = ref<string | null>(null);
-  const error = ref<string | null>(null);
-  const warning = ref<string | null>(null);
+  // Why the import failed, after the sentence that it did: why the browser did not hand over the
+  // file, translated when read, or the problem the validation names. The validation puts its text
+  // together deep in the parser, in the language of the moment, so that text cannot follow a
+  // language switch and goes away with it.
+  const failure = shallowRef<
+    { key: 'unread'; problem: ReadProblem } | { key: 'invalid'; text: string } | null
+  >(null);
+  const error = computed(() => {
+    const current = failure.value;
+    if (current === null) {
+      return null;
+    }
+    const why = current.key === 'invalid' ? current.text : t(`file.${current.problem}`);
+    return `${t('reference.errors.importFailed')} ${why}`;
+  });
+  // A problem of the local storage: the key of its text, translated when read.
+  const warningKey = ref<'loadFailed' | 'saveFailed' | 'removeFailed' | null>(null);
+  const warning = computed(() =>
+    warningKey.value === null ? null : t(`reference.warnings.${warningKey.value}`),
+  );
   // Name of the set that was last saved locally successfully.
   const lastSaved = ref<string | null>(null);
   // Name of the set that was last deleted from local storage successfully.
   const lastRemoved = ref<string | null>(null);
+
+  onLocaleChange(() => {
+    if (failure.value?.key === 'invalid') {
+      failure.value = null;
+    }
+  });
+
+  // Each action of the panel shows only its own outcome.
+  function clearOutcome(): void {
+    failure.value = null;
+    warningKey.value = null;
+    lastSaved.value = null;
+    lastRemoved.value = null;
+  }
 
   const selected = computed(
     () => sets.value.find((set) => set.name === selectedName.value) ?? null,
@@ -49,7 +84,7 @@ export const useReferenceStore = defineStore('reference', () => {
         ...local,
       ];
     } catch {
-      warning.value = t('reference.warnings.loadFailed');
+      warningKey.value = 'loadFailed';
     }
     if (sets.value.every((set) => set.name !== BUNDLED_NAME)) {
       sets.value = [bundledReference(), ...sets.value];
@@ -57,10 +92,9 @@ export const useReferenceStore = defineStore('reference', () => {
     selectedName.value ??= BUNDLED_NAME;
   }
 
-  // Reads a file, validates it and saves it locally (a set of the same name is replaced).
+  // Validates the text of a file and saves the set locally (a set of the same name is replaced).
   async function importFile(fileName: string, text: string): Promise<void> {
-    error.value = null;
-    warning.value = null;
+    clearOutcome();
     try {
       const set = parseReferenceFile(fileName, text);
       sets.value = [...sets.value.filter((existing) => existing.name !== set.name), set];
@@ -69,29 +103,46 @@ export const useReferenceStore = defineStore('reference', () => {
         await storage().save(set);
         lastSaved.value = set.name;
       } catch {
-        warning.value = t('reference.warnings.saveFailed');
+        warningKey.value = 'saveFailed';
       }
     } catch (error_) {
       // The validation throws only Error objects with an understandable message.
-      error.value = (error_ as Error).message;
+      failure.value = { key: 'invalid', text: (error_ as Error).message };
     }
   }
 
-  // Saves the selected set as a JSON file so it can be imported later or elsewhere.
-  function downloadSelected(): void {
-    const set = selected.value;
-    if (set !== null) {
-      downloadFile(`${set.name}.json`, serializeReferenceJson(set), 'application/json');
+  // Reads a file chosen in the dialog and imports it; a file the browser does not hand over (moved
+  // or locked since it was chosen) is reported with the reason.
+  async function importChosen(file: ChosenFile): Promise<void> {
+    const read = await readChosen(file);
+    if ('problem' in read) {
+      clearOutcome();
+      failure.value = { key: 'unread', problem: read.problem };
+      return;
     }
+    await importFile(file.name, read.text);
   }
 
+  // Saves a set as a JSON file so it can be imported later or elsewhere.
+  function download(set: ReferenceSet): void {
+    downloadFile(`${set.name}.json`, serializeReferenceJson(set), 'application/json');
+  }
+
+  // Selects a set, also when a project is loaded: what the panel reports stays.
   function select(name: string): void {
     if (sets.value.some((set) => set.name === name)) {
       selectedName.value = name;
     }
   }
 
+  // The choice in the panel, which shows only its own outcome.
+  function choose(name: string): void {
+    clearOutcome();
+    select(name);
+  }
+
   async function remove(name: string): Promise<void> {
+    clearOutcome();
     sets.value = sets.value.filter((set) => set.name !== name);
     if (selectedName.value === name) {
       selectedName.value = sets.value[0]?.name ?? null;
@@ -100,7 +151,7 @@ export const useReferenceStore = defineStore('reference', () => {
       await storage().remove(name);
       lastRemoved.value = name;
     } catch {
-      warning.value = t('reference.warnings.removeFailed');
+      warningKey.value = 'removeFailed';
     }
   }
 
@@ -113,9 +164,10 @@ export const useReferenceStore = defineStore('reference', () => {
     lastSaved,
     lastRemoved,
     load,
-    importFile,
-    downloadSelected,
+    importChosen,
+    download,
     select,
+    choose,
     remove,
   };
 });

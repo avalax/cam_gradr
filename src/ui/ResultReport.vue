@@ -11,9 +11,7 @@ import type { GrayCheck } from '../solve/gray-check';
 import { cssColor } from './color-css';
 
 const { t } = useI18n();
-const props = withDefaults(defineProps<{ result: FitResult; grayCheck?: readonly GrayCheck[] }>(), {
-  grayCheck: () => [],
-});
+const props = defineProps<{ result: FitResult; grayCheck: readonly GrayCheck[] }>();
 
 // From this error (ΔE2000) on the gray cards, the report points to possible causes.
 const GRAY_WARN = 3;

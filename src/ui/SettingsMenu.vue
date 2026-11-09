@@ -13,6 +13,7 @@ import CameraControls from './CameraControls.vue';
 import { CHEVRON_PATH } from './icons';
 import LanguageSettings from './LanguageSettings.vue';
 import LineIcon from './LineIcon.vue';
+import { referenceLabel } from './reference-label';
 import ReferencePanel from './ReferencePanel.vue';
 import ThemeSettings from './ThemeSettings.vue';
 
@@ -53,7 +54,8 @@ const cameraSummary = computed(() => {
 });
 const summaries = computed<Record<Section, string>>(() => ({
   camera: cameraSummary.value,
-  reference: selected.value?.name ?? t('settings.bundledSet'),
+  reference:
+    selected.value === null ? t('settings.bundledSet') : referenceLabel(selected.value.name),
   language: languageSummary.value,
   theme: themeSummary.value,
 }));
@@ -61,6 +63,15 @@ const summaries = computed<Record<Section, string>>(() => ({
 function onPointerDown(event: PointerEvent): void {
   // A click outside the menu closes it.
   if (open.value && (event.target as Element).closest('[data-settings-root]') === null) {
+    open.value = false;
+  }
+}
+
+// The Tab key moving on past the menu closes it as well. Focus that goes nowhere (the window loses
+// it, a button inside goes away) leaves it open.
+function onFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget as Element | null;
+  if (next !== null && next.closest('[data-settings-root]') === null) {
     open.value = false;
   }
 }
@@ -86,7 +97,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="relative" data-settings-root>
+  <div class="relative" data-settings-root @focusout="onFocusOut">
     <button
       ref="gear"
       type="button"
@@ -118,7 +129,7 @@ onBeforeUnmount(() => {
         <h2 :id="`${entry.key}-heading`">
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-200"
+            class="focus-ring-inset flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-200"
             :aria-expanded="section === entry.key"
             :aria-controls="`${entry.key}-body`"
             :data-testid="`section-${entry.key}`"

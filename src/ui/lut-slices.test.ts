@@ -14,30 +14,30 @@ const invert = parseLookCube('Invert.cube', INVERT_CUBE);
 
 describe('lutSlices', () => {
   it('shows the look over the correction at its strength', () => {
-    const [plain] = lutSlices(identity, 2);
-    const [full] = lutSlices(identity, 2, { lut: invert, amount: 1 });
-    const [none] = lutSlices(identity, 2, { lut: invert, amount: 0 });
+    const [plain] = lutSlices(identity, null);
+    const [full] = lutSlices(identity, { lut: invert, amount: 1 });
+    const [none] = lutSlices(identity, { lut: invert, amount: 0 });
     expect(none).toEqual(plain);
     expect(full).not.toEqual(plain);
     // Top left is green at a blue fraction of 1/16; inverted it turns magenta.
     expect(full?.[0]).toBe(cssColor([1, 0, 1 - 1 / 16]));
   });
 
-  it('returns eight slices with cells × cells colors each', () => {
-    const slices = lutSlices(identity, 4);
+  it('returns eight slices with 8 × 8 colors each', () => {
+    const slices = lutSlices(identity, null);
     expect(slices).toHaveLength(8);
     for (const slice of slices) {
-      expect(slice).toHaveLength(16);
+      expect(slice).toHaveLength(64);
     }
   });
 
   it('shows black with the blue share at bottom left and yellow at top right for the identity', () => {
-    const [first] = lutSlices(identity, 4);
+    const [first] = lutSlices(identity, null);
     // Bottom left: red 0, green 0, blue 1/16 (share 16 of 255).
-    const bottomLeft = first?.[12] ?? '';
+    const bottomLeft = first?.[56] ?? '';
     expect(bottomLeft).toMatch(/^rgb\(0, 0, \d+\)$/);
     // Top right: red 1, green 1.
-    expect(first?.[3]).toMatch(/^rgb\(255, 255, \d+\)$/);
+    expect(first?.[7]).toMatch(/^rgb\(255, 255, \d+\)$/);
   });
 
   it('passes corrections on: a red cast in the model colors the patches', () => {
@@ -49,14 +49,14 @@ describe('lutSlices', () => {
         [0, 0, 1],
       ],
     };
-    expect(lutSlices(tinted, 2)).not.toEqual(lutSlices(identity, 2));
+    expect(lutSlices(tinted, null)).not.toEqual(lutSlices(identity, null));
   });
 });
 
 describe('cubeSizeText', () => {
   it('estimates the file size of the three sizes', () => {
-    expect(cubeSizeText(17)).toBe('ca. 133 KB');
-    expect(cubeSizeText(33)).toBe('ca. 970 KB');
-    expect(cubeSizeText(65)).toBe('ca. 7,4 MB');
+    expect(cubeSizeText(17)).toBe('ca.\u{A0}133\u{A0}KB');
+    expect(cubeSizeText(33)).toBe('ca.\u{A0}970\u{A0}KB');
+    expect(cubeSizeText(65)).toBe('ca.\u{A0}7,4\u{A0}MB');
   });
 });

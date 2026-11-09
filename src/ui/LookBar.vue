@@ -8,6 +8,7 @@ import type { LookMessage } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 
 import { LINK_BUTTON } from './control-styles';
+import { focusById } from './focus';
 import IconButton from './IconButton.vue';
 import { TRASH_PATH } from './icons';
 import LookPicker from './LookPicker.vue';
@@ -39,7 +40,27 @@ async function onFiles(event: Event): Promise<void> {
   const chosen = [...(input.files ?? [])];
   // The same files should be selectable again.
   input.value = '';
-  await looks.importFiles(chosen.map((entry) => ({ name: entry.name, text: () => entry.text() })));
+  await looks.importFiles(chosen);
+}
+
+// Deleting a look or undoing it removes the button that did it (the trash goes with the chosen look,
+// the message with its link is replaced): the focus goes to the picker, which stays.
+const PICKER_ID = 'look-select';
+
+function remove(name: string): void {
+  focusById(PICKER_ID);
+  void looks.remove(name);
+}
+
+// The link of a warning removes its look and shows again the look it took the place of.
+function removeWarned(name: string, fallback: string | null): void {
+  focusById(PICKER_ID);
+  void looks.removeWarned(name, fallback);
+}
+
+function undo(): void {
+  focusById(PICKER_ID);
+  void looks.undo();
 }
 
 function onStrength(event: Event): void {
@@ -54,7 +75,14 @@ function text(message: LookMessage): string {
         : t('look.messages.importedMany', { count: message.names.length });
     }
     case 'rejected': {
-      return t('look.messages.rejected', { file: message.file, reason: message.reason });
+      // The reason is translated here, so that it follows a language switch: why the browser did
+      // not hand over the file, or what the parser found.
+      const { reason } = message;
+      const why =
+        typeof reason === 'string'
+          ? t(`file.${reason}`)
+          : t(`look.errors.${reason.key}`, reason.params);
+      return t('look.messages.rejected', { file: message.file, reason: why });
     }
     case 'logConversion': {
       return t('look.messages.logConversion', { name: message.name });
@@ -63,7 +91,9 @@ function text(message: LookMessage): string {
       return t('look.messages.removed', { name: message.name });
     }
     case 'saveFailed': {
-      return t('look.messages.saveFailed', { name: message.name });
+      return message.names.length === 1
+        ? t('look.messages.saveFailedOne', { name: message.names[0] })
+        : t('look.messages.saveFailedMany', { count: message.names.length });
     }
     default: {
       return t(`look.messages.${message.kind}`);
@@ -81,8 +111,10 @@ function text(message: LookMessage): string {
     :aria-label="t('look.label')"
     data-testid="look-bar"
   >
-    <div class="flex min-w-0 items-center gap-1.5">
-      <label for="look-select" class="font-semibold">{{ t('look.label') }}</label>
+    <!-- The picker group starts from a fixed width, so that the name of the look does not decide
+         whether the bar takes a second line (the preview and the export would jump with it). -->
+    <div class="flex min-w-0 flex-[1_1_13rem] items-center gap-1.5">
+      <label :for="PICKER_ID" class="shrink-0 font-semibold">{{ t('look.label') }}</label>
       <LookPicker
         v-model="chosen"
         :names="names"
@@ -101,13 +133,14 @@ function text(message: LookMessage): string {
         data-testid="look-file"
         @change="onFiles"
       />
+      <!-- As high as the picker and with its edge, so the bar keeps its height with and without it. -->
       <IconButton
         v-if="current !== null"
         size="sm"
-        class="border border-zinc-500 bg-white dark:bg-zinc-100"
+        class="border border-zinc-800 bg-white dark:bg-zinc-100"
         :label="t('look.remove', { name: current.name })"
         data-testid="look-remove"
-        @click="looks.remove(current.name)"
+        @click="remove(current.name)"
       >
         <path :d="TRASH_PATH" />
       </IconButton>
@@ -139,9 +172,13 @@ function text(message: LookMessage): string {
     </div>
   </div>
 
-  <!-- Room for two lines, as long as the hint, so that a message does not move what lies below. -->
+  <!-- Exactly two lines, as long as the hint: more messages at once (an import with a warning and a
+       rejected file) scroll inside, so that they never make the preview taller than the window. The
+       store puts errors and warnings first, so that they and their actions are in these lines. A
+       padding of 2 px on top and below and 4 px at the sides (taken back by the negative margin)
+       keeps the focus rings of the links inside the box, which clips them otherwise. -->
   <div
-    class="mt-1.5 flex min-h-[2lh] flex-col gap-1.5 text-xs leading-snug"
+    class="-mx-1 mt-1 box-content flex h-[2lh] flex-col overflow-y-auto px-1 py-0.5 text-xs leading-snug [&_button]:outline-offset-0"
     data-testid="look-messages"
   >
     <p v-if="list.length === 0 && messages.length === 0" class="text-zinc-600">
@@ -151,24 +188,26 @@ function text(message: LookMessage): string {
       <p v-if="message.kind === 'rejected'" class="text-red-700 dark:text-red-400" role="alert">
         {{ text(message) }}
       </p>
-      <div
+      <!-- A warning with its action at the start, so that the action shows in the first line even
+           where the text needs more than the room has. -->
+      <p
         v-else-if="message.kind === 'logConversion'"
-        class="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+        class="text-amber-800 dark:text-amber-300"
         role="status"
       >
-        <p>{{ text(message) }}</p>
         <button
           type="button"
-          class="mt-1.5 rounded border border-current px-2 py-0.5 hover:bg-amber-200 dark:hover:bg-amber-900"
+          :class="LINK_BUTTON"
           data-testid="look-remove-again"
-          @click="looks.remove(message.name)"
+          @click="removeWarned(message.name, message.fallback)"
         >
           {{ t('look.messages.removeAgain') }}
         </button>
-      </div>
+        · {{ text(message) }}
+      </p>
       <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
         {{ text(message) }}
-        <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="looks.undo()">
+        <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="undo">
           {{ t('look.messages.undo') }}
         </button>
       </p>

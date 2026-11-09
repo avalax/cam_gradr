@@ -115,13 +115,15 @@ describe('worstPatches', () => {
       patch('2E', 20, true),
       patch('3B', 9, false),
       patch('4C', 5, false),
+      patch('5D', 1, false),
     ],
   } as unknown as FitResult['report'];
 
-  it('lists the colored patches with the largest deviation first and skips neutral patches', () => {
-    expect(worstPatches(report, 2)).toEqual([
+  it('lists the three colored patches with the largest deviation first, without neutral ones', () => {
+    expect(worstPatches(report)).toEqual([
       { id: '3B', deviation: 9 },
       { id: '4C', deviation: 5 },
+      { id: '1A', deviation: 2 },
     ]);
   });
 });

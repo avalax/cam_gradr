@@ -1,39 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { fakeHandle, installedDialogs } from '../test-support/file-dialogs';
+
 import { fileDialogs, openProjectFile, saveProjectFile } from './project-file';
 import type { FileDialogs } from './project-file';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 
-// The fake system dialogs installed by the test (fails the test if they are missing).
-function installedDialogs(): FileDialogs {
-  const dialogs = fileDialogs();
-  if (dialogs === null) {
-    throw new Error('The test did not install the file dialogs.');
-  }
-  return dialogs;
-}
-
 const globals = globalThis as unknown as Record<string, unknown>;
-
-// A file in the system's file dialogs: it can be read and written.
-function fakeHandle(name: string, text = '') {
-  const written: string[] = [];
-  const handle = {
-    name,
-    getFile: () => Promise.resolve({ name, text: () => Promise.resolve(text) }),
-    createWritable: () =>
-      Promise.resolve({
-        write: (content: string) => {
-          written.push(content);
-          return Promise.resolve();
-        },
-        close: () => Promise.resolve(),
-      }),
-  } as unknown as FileSystemFileHandle;
-  return { handle, written };
-}
 
 function installDialogs(dialogs: Partial<FileDialogs>): void {
   Object.assign(globals, dialogs);
@@ -77,6 +52,9 @@ describe('project file', () => {
     await expect(openProjectFile(dialogs)).resolves.toBeNull();
     showOpenFilePicker.mockRejectedValueOnce(new DOMException('No access', 'NotAllowedError'));
     await expect(openProjectFile(dialogs)).rejects.toThrow('No access');
+    // Only the dialog can be cancelled: an abort while reading the chosen file is an error.
+    showOpenFilePicker.mockResolvedValueOnce([fakeHandle('mein-projekt.json', abort()).handle]);
+    await expect(openProjectFile(dialogs)).rejects.toThrow('The user aborted a request.');
   });
 
   it('downloads under the name of the last file without the dialogs', async () => {
@@ -121,5 +99,10 @@ describe('project file', () => {
     await expect(saveProjectFile('content', null, 'default.json')).resolves.toBeNull();
     showSaveFilePicker.mockRejectedValueOnce(new Error('Disk full'));
     await expect(saveProjectFile('content', null, 'default.json')).rejects.toThrow('Disk full');
+    // Only the dialog can be cancelled: an abort while writing the chosen file is an error.
+    showSaveFilePicker.mockResolvedValueOnce(fakeHandle('default.json', '', abort()).handle);
+    await expect(saveProjectFile('content', null, 'default.json')).rejects.toThrow(
+      'The user aborted a request.',
+    );
   });
 });

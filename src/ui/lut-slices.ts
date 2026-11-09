@@ -11,6 +11,8 @@ import { cssColor } from './color-css';
 // blue), evenly spread. Where the export has room for one row only, it shows every second one.
 const SLICES = 8;
 const BLUE_LEVELS = Array.from({ length: SLICES }, (_, index) => (index + 0.5) / SLICES);
+// Each slice is a grid of 8 × 8 color fields.
+const CELLS = 8;
 
 // The look LUT over the correction, with its strength (0..1).
 export interface SliceLook {
@@ -21,16 +23,12 @@ export interface SliceLook {
 // The LUT as eight small color fields: each field shows which colors the correction (and the look
 // over it) maps the red-green plane to at a fixed blue fraction (green at the top, red on the
 // right).
-export function lutSlices(
-  model: ColorModel,
-  cells: number,
-  look: SliceLook | null = null,
-): string[][] {
-  const last = cells - 1;
+export function lutSlices(model: ColorModel, look: SliceLook | null): string[][] {
+  const last = CELLS - 1;
   return BLUE_LEVELS.map((blue) => {
     const colors: string[] = [];
-    for (let row = 0; row < cells; row++) {
-      for (let column = 0; column < cells; column++) {
+    for (let row = 0; row < CELLS; row++) {
+      for (let column = 0; column < CELLS; column++) {
         const code = applyColorModel(model, [column / last, 1 - row / last, blue]);
         const shown =
           look === null ? code : blendColor(code, sampleLook(look.lut, code), look.amount);

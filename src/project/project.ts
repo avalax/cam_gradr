@@ -202,7 +202,7 @@ function parseLookData(value: unknown): EncodedLook {
   ) {
     throw new TypeError(t('project.errors.lookData'));
   }
-  const where = t('project.errors.lookData');
+  const where = t('project.errors.lookWhere', { name: value.name });
   return {
     name: value.name,
     size: Number(value.size),

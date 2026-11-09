@@ -17,6 +17,7 @@
     "lightOk": "Licht passt",
     "checkLight": "Licht prüfen",
     "notComputed": "Noch nicht berechnet",
+    "noReport": "Ohne Bericht",
     "meanChange": "Ø {before} → {after}"
   }
 }

@@ -1,32 +1,30 @@
 import { defineStore } from 'pinia';
 import { shallowRef } from 'vue';
 
-import { t } from '../lang';
 import { usePreviewStore } from '../lut/preview-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { APP_ID } from '../ui/app-info';
+import { readChosen } from '../ui/chosen-file';
+import type { ChosenFile } from '../ui/chosen-file';
+import type { ReadProblem } from '../ui/file-problem';
 
-import { isCubeFile, isLogConversion, parseLookCube } from './look';
-import type { LookLut } from './look';
+import { isCubeFile, isLogConversion, lookProblem, parseLookCube } from './look';
+import type { LookLut, LookProblem } from './look';
 
 // What the bar under the preview reports after an action; the texts come from the language files
-// when shown, so that they follow a language switch.
+// when shown, so that they follow a language switch. A file is rejected for what the parser names
+// or for why the browser did not hand it over.
 export type LookMessage =
   | { kind: 'imported'; names: string[] }
-  | { kind: 'rejected'; file: string; reason: string }
-  | { kind: 'logConversion'; name: string }
+  | { kind: 'rejected'; file: string; reason: LookProblem | ReadProblem }
+  // `fallback` is the look the preview shows again when this one is removed through the warning.
+  | { kind: 'logConversion'; name: string; fallback: string | null }
   | { kind: 'removed'; name: string }
   | { kind: 'loadFailed' }
-  | { kind: 'saveFailed'; name: string }
+  | { kind: 'saveFailed'; names: string[] }
   | { kind: 'removeFailed' }
   | { kind: 'storeFailed' };
-
-// A file chosen in the dialog: its name and a way to read it.
-interface LookFile {
-  name: string;
-  text: () => Promise<string>;
-}
 
 const holder: { storage: NamedStorage<LookLut> | null } = { storage: null };
 
@@ -44,6 +42,22 @@ function byName(first: LookLut, second: LookLut): number {
   return first.name.localeCompare(second.name);
 }
 
+// Reads one chosen file: its look, or the message that names why it was rejected.
+async function readLook(file: ChosenFile): Promise<LookLut | LookMessage> {
+  if (!isCubeFile(file.name)) {
+    return { kind: 'rejected', file: file.name, reason: { key: 'notCube', params: {} } };
+  }
+  const read = await readChosen(file);
+  if ('problem' in read) {
+    return { kind: 'rejected', file: file.name, reason: read.problem };
+  }
+  try {
+    return parseLookCube(file.name, read.text);
+  } catch (error) {
+    return { kind: 'rejected', file: file.name, reason: lookProblem(error) };
+  }
+}
+
 // The imported look LUTs, sorted by name. Which one the preview uses and how strongly is set in
 // the preview store, since a project file saves it with the other preview settings.
 export const useLookStore = defineStore('look', () => {
@@ -52,6 +66,13 @@ export const useLookStore = defineStore('look', () => {
   const messages = shallowRef<LookMessage[]>([]);
   // The last deleted look, which "Undo" brings back.
   const removed = shallowRef<{ look: LookLut; selected: boolean } | null>(null);
+
+  // The warnings about log conversions that are shown, but not the one about this look.
+  function warningsExcept(name: string): LookMessage[] {
+    return messages.value.filter(
+      (message) => message.kind === 'logConversion' && message.name !== name,
+    );
+  }
 
   function find(name: string | null): LookLut | null {
     return looks.value.find((look) => look.name === name) ?? null;
@@ -77,46 +98,60 @@ export const useLookStore = defineStore('look', () => {
     }
   }
 
-  async function save(look: LookLut, report: LookMessage[]): Promise<void> {
+  // Saves the look in the browser; false where the storage fails.
+  async function save(look: LookLut): Promise<boolean> {
     try {
       await storage().save(look);
+      return true;
     } catch {
-      report.push({ kind: 'saveFailed', name: look.name });
+      return false;
     }
   }
 
   // Reads the chosen files; each valid one is saved (a look of the same name is replaced) and the
   // last one is chosen in the preview. Invalid files are named with the reason.
-  async function importFiles(files: readonly LookFile[]): Promise<void> {
+  async function importFiles(files: readonly ChosenFile[]): Promise<void> {
+    const before = usePreviewStore().look;
     const imported: LookLut[] = [];
+    const unsaved: string[] = [];
     const problems: LookMessage[] = [];
     for (const file of files) {
-      if (!isCubeFile(file.name)) {
-        problems.push({ kind: 'rejected', file: file.name, reason: t('look.errors.notCube') });
+      const look = await readLook(file);
+      if ('kind' in look) {
+        problems.push(look);
         continue;
       }
-      try {
-        const look = parseLookCube(file.name, await file.text());
-        put(look);
-        imported.push(look);
-        await save(look, problems);
-      } catch (error) {
-        // The parser throws only Error objects with an understandable message.
-        problems.push({ kind: 'rejected', file: file.name, reason: (error as Error).message });
+      put(look);
+      imported.push(look);
+      if (!(await save(look))) {
+        unsaved.push(look.name);
       }
     }
-    const report: LookMessage[] = [];
+    // A look that looks like a log conversion gets the warning instead of a place in the line that
+    // names the imported looks, and so does a look the browser could not save, in one line for all
+    // of them. Errors and the warnings with their action come first, those lines last: the room
+    // under the bar shows two lines, and what needs attention has to be in them. Removed through
+    // the warning, the look gives way to the one the import would otherwise have chosen: the last
+    // other look of this import, or the look from before.
+    const plain = imported.filter((look) => !isLogConversion(look.name)).map((look) => look.name);
+    const fallback = plain.at(-1) ?? before;
+    const warnings: LookMessage[] = imported
+      .filter((look) => isLogConversion(look.name))
+      .map((look) => ({ kind: 'logConversion', name: look.name, fallback }));
     const last = imported.at(-1);
     if (last !== undefined) {
       usePreviewStore().setLook(last.name);
-      report.push({ kind: 'imported', names: imported.map((look) => look.name) });
-      const conversions = imported.filter((entry) => isLogConversion(entry.name));
-      report.push(
-        ...conversions.map((look) => ({ kind: 'logConversion', name: look.name }) as const),
-      );
+    }
+    const saved = plain.filter((name) => !unsaved.includes(name));
+    const report: LookMessage[] = [];
+    if (unsaved.length > 0) {
+      report.push({ kind: 'saveFailed', names: unsaved });
+    }
+    if (saved.length > 0) {
+      report.push({ kind: 'imported', names: saved });
     }
     removed.value = null;
-    messages.value = [...report, ...problems];
+    messages.value = [...problems, ...warnings, ...report];
   }
 
   async function remove(name: string): Promise<void> {
@@ -131,12 +166,26 @@ export const useLookStore = defineStore('look', () => {
       preview.setLook(null);
     }
     removed.value = { look, selected };
-    messages.value = [{ kind: 'removed', name }];
+    // Warnings about other looks of the same import stay below the line about this one.
+    const others = warningsExcept(name);
+    messages.value = [{ kind: 'removed', name }, ...others];
     try {
       await storage().remove(name);
     } catch {
-      messages.value = [{ kind: 'removeFailed' }];
+      messages.value = [{ kind: 'removeFailed' }, ...others];
     }
+  }
+
+  // Removes a look the import warned about; if it was chosen, the preview shows the look it took the
+  // place of (see importFiles). The trash removes a look without that.
+  async function removeWarned(name: string, fallback: string | null): Promise<void> {
+    const preview = usePreviewStore();
+    const chosen = preview.look === name;
+    const removing = remove(name);
+    if (chosen && find(fallback) !== null) {
+      preview.setLook(fallback);
+    }
+    await removing;
   }
 
   // Makes the look LUTs of a project file the whole list, also in the browser's storage: looks the
@@ -176,14 +225,25 @@ export const useLookStore = defineStore('look', () => {
     if (last.selected) {
       usePreviewStore().setLook(last.look.name);
     }
-    const report: LookMessage[] = [];
-    await save(last.look, report);
-    messages.value = report;
+    const others = warningsExcept(last.look.name);
+    const saved = await save(last.look);
+    messages.value = saved ? others : [...others, { kind: 'saveFailed', names: [last.look.name] }];
   }
 
   function dismiss(): void {
     messages.value = [];
   }
 
-  return { looks, messages, find, load, importFiles, replaceAll, remove, undo, dismiss };
+  return {
+    looks,
+    messages,
+    find,
+    load,
+    importFiles,
+    replaceAll,
+    remove,
+    removeWarned,
+    undo,
+    dismiss,
+  };
 });

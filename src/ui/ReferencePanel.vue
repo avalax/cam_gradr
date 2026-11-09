@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { useReferenceStore } from '../reference/reference-store';
 
 import { LINK_BUTTON, SELECT, TEXT_BUTTON } from './control-styles';
+import { referenceLabel } from './reference-label';
 
 const { t } = useI18n();
 const references = useReferenceStore();
@@ -15,21 +17,30 @@ async function onFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file !== undefined) {
-    await references.importFile(file.name, await file.text());
+    await references.importChosen(file);
   }
   // The same file should be selectable again.
   input.value = '';
 }
 
 function onSelect(event: Event): void {
-  references.select((event.target as HTMLSelectElement).value);
+  references.choose((event.target as HTMLSelectElement).value);
+}
+
+// Deleting the active set takes its button away (the bundled set that follows cannot be deleted):
+// the focus goes to the select of the active set, which stays.
+const select = useTemplateRef<HTMLSelectElement>('select');
+
+function remove(name: string): void {
+  select.value?.focus();
+  void references.remove(name);
 }
 </script>
 
 <template>
   <div class="space-y-3">
     <p class="text-xs text-zinc-600" data-testid="reference-source">
-      {{ t('reference.panel.sourceBefore', { name: BUNDLED_NAME }) }}
+      {{ t('reference.panel.sourceBefore', { name: referenceLabel(BUNDLED_NAME) }) }}
       <a :href="BUNDLED_SOURCE_URL" :class="LINK_BUTTON" target="_blank" rel="noopener noreferrer"
         >bartneck.de</a
       >
@@ -40,13 +51,14 @@ function onSelect(event: Event): void {
     <label class="flex flex-col gap-1 text-sm">
       {{ t('reference.panel.activeSet') }}
       <select
+        ref="select"
         :class="SELECT"
         :value="selected?.name"
         data-testid="reference-select"
         @change="onSelect"
       >
         <option v-for="set in sets" :key="set.name" :value="set.name">
-          {{ set.name }}
+          {{ referenceLabel(set.name) }}
         </option>
       </select>
     </label>
@@ -66,20 +78,16 @@ function onSelect(event: Event): void {
           v-if="selected.name !== BUNDLED_NAME"
           type="button"
           :class="TEXT_BUTTON"
-          @click="references.remove(selected.name)"
+          @click="remove(selected.name)"
         >
           {{ t('reference.panel.delete') }}
         </button>
-        <button type="button" :class="TEXT_BUTTON" @click="references.downloadSelected()">
+        <button type="button" :class="TEXT_BUTTON" @click="references.download(selected)">
           {{ t('reference.panel.download') }}
         </button>
       </template>
     </div>
-    <p
-      v-if="selected !== null && lastSaved === selected.name"
-      class="text-xs text-zinc-600"
-      data-testid="reference-saved"
-    >
+    <p v-if="lastSaved !== null" class="text-xs text-zinc-600" data-testid="reference-saved">
       {{ t('reference.panel.saved') }}
     </p>
     <p v-if="lastRemoved !== null" class="text-xs text-zinc-600" data-testid="reference-removed">

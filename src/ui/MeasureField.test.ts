@@ -69,7 +69,7 @@ describe('MeasureField', () => {
     const wrapper = mount(MeasureField, { props: { exposure } });
     expect(wrapper.get('[data-testid="measure-issue"]').text()).toBe('Brightness too high');
     expect(wrapper.get('[data-testid="measure-details"]').text()).toContain(
-      'Brightness of the gray fields in the image',
+      'Brightness of the gray patches in the image',
     );
     expect(wrapper.get('[data-testid="measure-field"]').attributes('aria-label')).toMatch(
       /^Brightness and contrast: /,

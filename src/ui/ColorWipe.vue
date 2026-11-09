@@ -22,7 +22,7 @@ const props = defineProps<{
   reference: ReferenceSet | null;
   report: FitResult['report'] | null;
   // The live image is shown: nothing to compare yet, so only the camera colors and no divider.
-  live?: boolean;
+  live: boolean;
 }>();
 
 // Position of the divider: camera colors on the left, corrected ones on the right.
@@ -54,17 +54,19 @@ const layers = computed(() =>
 // While the live image runs, the corrected layer and the divider would show nothing meaningful.
 const shownLayers = computed(() => (props.live ? layers.value.slice(0, 1) : layers.value));
 
-const summary = computed(() =>
-  props.report === null ? t('color.wipe.noCorrection') : deviationSummary(props.report),
-);
+// A correction without a report (loaded from a project whose reference set is missing) says so: its
+// colors are corrected, only the deviations are unknown.
+const summary = computed(() => {
+  if (props.report !== null) {
+    return deviationSummary(props.report);
+  }
+  return t(props.model === null ? 'color.wipe.noCorrection' : 'color.wipe.noReport');
+});
 </script>
 
 <template>
   <!-- Wipe over the color cards: camera colors left of the divider, corrected ones on the right. -->
-  <div
-    class="relative flex w-44 shrink-0 flex-col self-stretch rounded-lg border border-zinc-500 bg-zinc-50"
-    data-testid="color-wipe"
-  >
+  <div class="flex flex-col rounded-lg border border-zinc-500 bg-zinc-50" data-testid="color-wipe">
     <p
       v-if="live"
       class="rounded-t-[7px] border-b-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
@@ -73,7 +75,7 @@ const summary = computed(() =>
     </p>
     <WipeLabels v-else :split="split" class="rounded-t-[7px]" />
 
-    <div class="relative min-h-64 flex-1 overflow-hidden">
+    <div class="relative min-h-0 flex-1 overflow-hidden">
       <div
         v-for="(layer, index) in shownLayers"
         :key="layer.key"
@@ -108,11 +110,14 @@ const summary = computed(() =>
     </div>
 
     <!-- The summary is also the trigger: on hover or keyboard focus the color correction result
-         appears as a popup beside the column, like the details on the gray cards' measuring
-         field. It stays within the height of the column, so it never covers the tabs; it starts at
-         the bottom, where the trigger is, so that the pointer can move into it to scroll. The Tab
-         key also moves into it to scroll; a click does not focus the trigger, so it does not keep
-         the result open once the pointer leaves. Escape closes it. -->
+         appears as a popup over the image beside the column, like the details on the gray cards'
+         measuring field. It is placed against the image row (IMAGE_ROW, whose side column is
+         11 rem wide): at most as wide as the image, so it never leaves the window, and within the
+         height of the row, so it never covers the tabs. It starts at the bottom, where the trigger
+         is, so that the pointer can move into it to scroll. The Tab key also moves into it to scroll
+         (its ring is drawn inside, where it shows on the dark popup over the image); a click does
+         not focus the trigger, so it does not keep the result open once the pointer leaves. Escape
+         closes it. -->
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the result closes it with Escape -->
     <div
       class="group rounded-b-[7px]"
@@ -130,13 +135,13 @@ const summary = computed(() =>
         {{ summary }}
       </p>
       <div
-        v-if="report !== null && $slots.details && !dismissed"
-        class="absolute bottom-0 right-full z-20 hidden max-h-full flex-col pr-3 group-hover:flex group-focus-within:flex"
+        v-if="report !== null && !dismissed"
+        class="absolute bottom-0 left-0 right-[11rem] z-20 hidden max-h-full flex-col items-end pr-3 group-hover:flex group-focus-within:flex"
         role="tooltip"
         data-testid="color-wipe-popup"
       >
         <div
-          class="min-h-0 w-[min(36rem,calc(100vw-14rem))] overflow-auto rounded bg-zinc-950 p-3 text-sm text-white shadow-lg"
+          class="focus-ring-inset min-h-0 w-full max-w-[36rem] overflow-auto rounded bg-zinc-950 p-3 text-sm text-white shadow-lg"
         >
           <slot name="details" />
         </div>

@@ -8,6 +8,7 @@ import { useChartStore } from './chart/chart-store';
 import { useLookStore } from './look/look-store';
 import { usePreviewStore } from './lut/preview-store';
 import { useReferenceStore } from './reference/reference-store';
+import { recomputeOnChange } from './solve/recompute';
 import { useSolveStore } from './solve/solve-store';
 import CameraToggle from './ui/CameraToggle.vue';
 import ColorStep from './ui/ColorStep.vue';
@@ -19,7 +20,7 @@ import SettingsMenu from './ui/SettingsMenu.vue';
 import StatusGauge from './ui/StatusGauge.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
-import { trackHeight } from './ui/panel-height';
+import { CAMERA_SWITCH_ID, focusById } from './ui/focus';
 import { previewSides } from './ui/preview-sides';
 import { rovingTarget } from './ui/roving';
 import { colorStatus, grayStatus } from './ui/tab-status';
@@ -48,7 +49,7 @@ const TABS: readonly {
     key: 'color',
     width: 'min-w-40',
     label: () => t('app.tabs.color'),
-    summary: () => colorStatus(result.value?.report ?? null),
+    summary: () => colorStatus(result.value?.report ?? null, model.value !== null),
   },
   { key: 'preview', width: 'min-w-44', label: () => t('app.tabs.preview'), summary: previewHint },
   {
@@ -72,13 +73,19 @@ function previewHint(): string {
 
 const tab = ref<TabKey>('gray');
 
+// Opens a tab from a link in another tab: the link leaves with its tab, so the focus goes to the tab
+// that opens.
+function openTab(next: TabKey): void {
+  tab.value = next;
+  focusById(`tab-${next}`);
+}
+
 // The tabs as a WAI-ARIA tablist: one stop of the Tab key, the arrow keys move to the neighboring
 // tab and open it, Home and End to the first and the last.
 const tablist = useTemplateRef<HTMLElement>('tablist');
-const TAB_ENABLED = TABS.map(() => true);
 
 function onTabKey(event: KeyboardEvent, index: number): void {
-  const next = rovingTarget(event.key, index, TAB_ENABLED, false);
+  const next = rovingTarget(event.key, index, TABS.length, false);
   if (next !== null) {
     event.preventDefault();
     const target = tablist.value?.children[next] as HTMLButtonElement | undefined;
@@ -90,7 +97,7 @@ function onTabKey(event: KeyboardEvent, index: number): void {
 const camera = useCameraStore();
 const cameraRuns = computed(() => camera.status === 'live' || camera.status === 'starting');
 const { exposure } = storeToRefs(useChartStore());
-const { result } = storeToRefs(useSolveStore());
+const { result, model } = storeToRefs(useSolveStore());
 
 const entries = computed(() =>
   TABS.map(({ key, width, label, summary }) => {
@@ -100,6 +107,9 @@ const entries = computed(() =>
       : { key, width, label: label(), status: shown, text: shown.text };
   }),
 );
+
+// The correction follows the color measurements and the reference set on every tab.
+recomputeOnChange();
 
 // The bundled reference set, the locally saved sets and the look LUTs are available from the start.
 onMounted(() => {
@@ -115,31 +125,15 @@ watch(tab, (next) => {
   }
 });
 
-// The export should be as tall as the other tabs: the app remembers their height and applies it
-// as the minimum height in the export.
-const panel = useTemplateRef<HTMLElement>('panel');
-const knownHeight = ref(0);
-const panelStyle = computed(() =>
-  tab.value === 'export' && knownHeight.value > 0
-    ? { minHeight: `${String(knownHeight.value)}px` }
-    : undefined,
-);
-let stopTracking: (() => void) | null = null;
-onMounted(() => {
-  const element = panel.value;
-  /* v8 ignore next 3 -- the content area exists as soon as the app is mounted */
-  if (element === null) {
-    return;
+// The camera switch leaves the export when the camera stops. If it had the focus, the focus goes to
+// the tab of the export before the switch is gone (this watcher runs before the page updates).
+watch(cameraRuns, (runs) => {
+  if (!runs && tab.value === 'export' && document.activeElement?.id === CAMERA_SWITCH_ID) {
+    focusById('tab-export');
   }
-  stopTracking = trackHeight(element, (height) => {
-    if (tab.value !== 'export') {
-      knownHeight.value = height;
-    }
-  });
 });
 
 onBeforeUnmount(() => {
-  stopTracking?.();
   camera.stop();
 });
 </script>
@@ -168,7 +162,7 @@ onBeforeUnmount(() => {
               entry.width,
               tab === entry.key
                 ? 'z-10 -mb-px border-zinc-800 bg-white dark:bg-zinc-100 text-zinc-900'
-                : 'border-zinc-400 bg-zinc-100 text-zinc-700 hover:bg-zinc-200',
+                : 'border-zinc-400 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-50',
             ]"
             :tabindex="tab === entry.key ? 0 : -1"
             :aria-label="entry.label"
@@ -199,24 +193,17 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <div
-        class="space-y-3 rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white dark:bg-zinc-100 p-3"
-      >
-        <ProjectStatus />
-
-        <div
-          :id="`panel-${tab}`"
-          ref="panel"
-          class="flex flex-col"
-          role="tabpanel"
-          :aria-labelledby="`tab-${tab}`"
-          :style="panelStyle"
-        >
+      <div class="rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white dark:bg-zinc-100 p-3">
+        <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
           <GrayStep v-if="tab === 'gray'" />
           <ColorStep v-else-if="tab === 'color'" />
           <PreviewTab v-else-if="tab === 'preview'" />
-          <ExportTab v-else @goto="tab = $event" />
+          <ExportTab v-else @goto="openTab" />
         </div>
+
+        <!-- The message floats at the bottom of the window; after the panel in the order of the Tab
+             key, so that it does not stand between the tabs and what they show. -->
+        <ProjectStatus />
       </div>
     </div>
 

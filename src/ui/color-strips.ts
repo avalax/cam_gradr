@@ -17,7 +17,7 @@ interface Swatch {
   measured: boolean;
 }
 
-export interface Strips {
+interface Strips {
   camera: Swatch[];
   corrected: Swatch[];
 }

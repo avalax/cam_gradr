@@ -1,3 +1,4 @@
 {
-  "tooFewMeasurements": "Zu wenige Messwerte: mindestens {patches} Felder, davon {neutral} neutrale"
+  "tooFewMeasurements": "Zu wenige Messwerte: mindestens {patches} Felder, davon {neutral} neutrale.",
+  "calculationFailed": "Die Korrektur ließ sich nicht berechnen."
 }

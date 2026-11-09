@@ -16,7 +16,8 @@
     "notMeasured": "Not measured yet",
     "lightOk": "Lighting is fine",
     "checkLight": "Check lighting",
-    "notComputed": "Not computed yet",
+    "notComputed": "Not calculated yet",
+    "noReport": "No report",
     "meanChange": "Ø {before} → {after}"
   }
 }

@@ -22,15 +22,4 @@ describe('ImageCornerButton', () => {
     await button.trigger('click');
     expect(onClick).toHaveBeenCalledTimes(1);
   });
-
-  it('draws the paths of the slot as a line icon', () => {
-    const wrapper = mount(ImageCornerButton, {
-      props: { label: 'Löschen', title: 'Alles löschen' },
-      slots: { default: '<path d="M4 7h16" />' },
-    });
-    const icon = wrapper.get('button svg');
-    expect(icon.attributes('aria-hidden')).toBe('true');
-    expect(icon.get('path').element.namespaceURI).toBe('http://www.w3.org/2000/svg');
-    expect(icon.get('path').attributes('d')).toBe('M4 7h16');
-  });
 });

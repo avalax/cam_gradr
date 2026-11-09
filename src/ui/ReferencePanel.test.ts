@@ -1,34 +1,27 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
-import { IDBFactory } from 'fake-indexeddb';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { createIndexedDbStorage } from '../storage/indexed-db';
+import { notReadable } from '../test-support/chosen-file';
+import { chooseFile } from '../test-support/file-input';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { emptyReferenceStorage } from '../test-support/empty-storage';
 
 import ReferencePanel from './ReferencePanel.vue';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 
-async function mountLoaded() {
-  const wrapper = mount(ReferencePanel);
+async function mountLoaded(options: { attach?: boolean } = {}) {
+  const wrapper = mount(ReferencePanel, {
+    ...(options.attach === true && { attachTo: document.body }),
+  });
   await useReferenceStore().load();
   await flushPromises();
   return wrapper;
-}
-
-async function chooseFile(wrapper: ReturnType<typeof mount>, name: string, text: string) {
-  const input = wrapper.get('[data-testid="reference-file"]');
-  Object.defineProperty(input.element, 'files', {
-    value: [{ name, text: () => Promise.resolve(text) }],
-    configurable: true,
-  });
-  await input.trigger('change');
-  await flushPromises();
 }
 
 function button(wrapper: ReturnType<typeof mount>, text: string) {
@@ -38,7 +31,7 @@ function button(wrapper: ReturnType<typeof mount>, text: string) {
 describe('ReferencePanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setReferenceStorage(createIndexedDbStorage(new IDBFactory(), 'test', 'references'));
+    emptyReferenceStorage();
     download.mockReset();
   });
 
@@ -60,7 +53,7 @@ describe('ReferencePanel', () => {
 
   it('imports a JSON file and selects it', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
     expect(useReferenceStore().selected?.name).toBe('Mein Satz');
     expect(
       (wrapper.get('[data-testid="reference-select"]').element as HTMLSelectElement).value,
@@ -70,7 +63,7 @@ describe('ReferencePanel', () => {
   it('shows that the set was saved locally', async () => {
     const wrapper = await mountLoaded();
     expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
     await vi.waitFor(() => {
       expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(true);
     });
@@ -79,9 +72,23 @@ describe('ReferencePanel', () => {
 
   it('reports faulty files and keeps the selection', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'kaputt.json', '{"format":"x"}');
+    await chooseFile(wrapper, 'reference-file', 'kaputt.json', '{"format":"x"}');
     expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
+  });
+
+  it('reports a file the browser cannot read instead of what the last import did', async () => {
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
+    const wrapper = await mountLoaded();
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
+    const gone = notReadable();
+    await chooseFile(wrapper, 'reference-file', 'weg.json', gone);
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      'Der Satz ließ sich nicht importieren. Die Datei lässt sich nicht lesen.',
+    );
+    expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
+    expect(warn).toHaveBeenCalledWith(gone);
+    warn.mockRestore();
   });
 
   it('does nothing without a selected file', async () => {
@@ -94,24 +101,30 @@ describe('ReferencePanel', () => {
   });
 
   it('switches between sets and deletes custom sets', async () => {
-    const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Satz A'));
-    await chooseFile(wrapper, 'b.json', dummyReferenceJson('Satz B'));
+    const wrapper = await mountLoaded({ attach: true });
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Satz A'));
+    await chooseFile(wrapper, 'reference-file', 'b.json', dummyReferenceJson('Satz B'));
     expect(useReferenceStore().selected?.name).toBe('Satz B');
     await wrapper.get('[data-testid="reference-select"]').setValue('Satz A');
     expect(useReferenceStore().selected?.name).toBe('Satz A');
-    await button(wrapper, 'Satz löschen')?.trigger('click');
+    const remove = button(wrapper, 'Satz löschen');
+    (remove?.element as HTMLButtonElement).focus();
+    await remove?.trigger('click');
     await flushPromises();
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
+    // The bundled set cannot be deleted, so the button went: the focus is on the select.
+    expect(button(wrapper, 'Satz löschen')).toBeUndefined();
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="reference-select"]').element);
     await vi.waitFor(() => {
       expect(wrapper.find('[data-testid="reference-removed"]').exists()).toBe(true);
     });
     expect(wrapper.get('[data-testid="reference-removed"]').text()).toContain('Satz A');
+    wrapper.unmount();
   });
 
   it('downloads the active set as a file', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
     await button(wrapper, 'Satz herunterladen')?.trigger('click');
     expect(download).toHaveBeenCalledWith('Mein Satz.json', expect.any(String), 'application/json');
   });
