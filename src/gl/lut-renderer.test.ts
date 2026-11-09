@@ -1,13 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { identityLut } from '../lut/lut';
 import { createFakeGl } from '../test-support/fake-gl';
 
 import {
   FRAGMENT_SHADER,
+  RendererError,
   VERTEX_SHADER,
   createLutRenderer,
   describeRendererProblem,
+  rendererProblem,
 } from './lut-renderer';
 
 // The renderer error with this problem.
@@ -202,5 +204,32 @@ describe('createLutRenderer', () => {
     expect(describeRendererProblem({ key: 'createFailed', what: 'shader' })).toBe(
       'WebGL konnte einen Shader nicht anlegen.',
     );
+  });
+});
+
+describe('the problems of the renderers', () => {
+  it('name the log of the driver only where it wrote one', () => {
+    expect(describeRendererProblem({ key: 'compileFailed', log: 'ERROR: 0:1' })).toBe(
+      'Shader konnte nicht übersetzt werden: ERROR: 0:1',
+    );
+    expect(describeRendererProblem({ key: 'compileFailed', log: '' })).toBe(
+      'Shader konnte nicht übersetzt werden.',
+    );
+    expect(describeRendererProblem({ key: 'linkFailed', log: '' })).toBe(
+      'Shader-Programm konnte nicht gelinkt werden.',
+    );
+  });
+
+  it('are what a renderer names, and a preview that did not start for anything else', () => {
+    expect(rendererProblem(new RendererError({ key: 'noContext' }))).toEqual({ key: 'noContext' });
+    // A bug goes to the console as it is.
+    const logged = vi.spyOn(console, 'error').mockReturnValue();
+    const bug = new TypeError('Cannot read properties of undefined');
+    expect(rendererProblem(bug)).toEqual({ key: 'startFailed' });
+    expect(logged).toHaveBeenCalledWith(bug);
+    expect(describeRendererProblem({ key: 'startFailed' })).toBe(
+      'Die Vorschau ließ sich nicht starten.',
+    );
+    logged.mockRestore();
   });
 });

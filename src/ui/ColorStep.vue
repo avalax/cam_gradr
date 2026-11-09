@@ -44,61 +44,56 @@ function grayCheck(current: FitResult) {
 </script>
 
 <template>
-  <section class="space-y-4">
-    <div :class="TAB_COLUMNS">
-      <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
-        <p class="text-sm text-zinc-700">
-          {{ t('color.intro') }}
-        </p>
-        <p v-if="missingSet !== null" class="text-sm text-zinc-700" data-testid="reference-active">
-          {{ t('color.referenceMissing', { name: referenceLabel(missingSet) }) }}
-        </p>
-        <p
-          v-else-if="selected !== null"
-          class="text-sm text-zinc-700"
-          data-testid="reference-active"
-        >
-          {{
-            t('color.referenceActive', {
-              name: referenceLabel(selected.name),
-              count: Object.keys(selected.patches).length,
-            })
-          }}
-        </p>
-      </aside>
+  <section :class="TAB_COLUMNS">
+    <aside class="space-y-3 pb-4 lg:col-start-2 lg:row-start-1 lg:pb-0">
+      <p class="text-sm text-zinc-700">
+        {{ t('color.intro') }}
+      </p>
+      <p v-if="missingSet !== null" class="text-sm text-zinc-700" data-testid="reference-active">
+        {{ t('color.referenceMissing', { name: referenceLabel(missingSet) }) }}
+      </p>
+      <p v-else-if="selected !== null" class="text-sm text-zinc-700" data-testid="reference-active">
+        {{
+          t('color.referenceActive', {
+            name: referenceLabel(selected.name),
+            count: Object.keys(selected.patches).length,
+          })
+        }}
+      </p>
+      <!-- In the text column, as the error of the preview: under the image it would make the tab
+           taller. -->
+      <p v-if="solveError !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
+        {{ solveError }}
+      </p>
+    </aside>
 
-      <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-        <CardStage
-          :store="chart"
-          :layout="colorLayout"
-          :idle-text="t('color.idle')"
-          :wrong-text="t('color.wrong')"
-          :wrong-label="t('color.wrongLabel')"
-        >
-          <template #side>
-            <ColorWipe
-              :layout="colorLayout"
-              :measurements="measurements"
-              :model="model"
-              :reference="selected"
-              :report="result?.report ?? null"
-              :live="live"
-            >
-              <template #details>
-                <ResultReport
-                  v-if="result !== null"
-                  :result="result"
-                  :gray-check="grayCheck(result)"
-                />
-              </template>
-            </ColorWipe>
-          </template>
-        </CardStage>
-      </div>
+    <div class="min-w-0 lg:col-start-1 lg:row-start-1">
+      <CardStage
+        :store="chart"
+        :layout="colorLayout"
+        :idle-text="t('color.idle')"
+        :wrong-text="t('color.wrong')"
+        :wrong-label="t('color.wrongLabel')"
+      >
+        <template #side>
+          <ColorWipe
+            :layout="colorLayout"
+            :measurements="measurements"
+            :model="model"
+            :reference="selected"
+            :report="result?.report ?? null"
+            :live="live"
+          >
+            <template #details>
+              <ResultReport
+                v-if="result !== null"
+                :result="result"
+                :gray-check="grayCheck(result)"
+              />
+            </template>
+          </ColorWipe>
+        </template>
+      </CardStage>
     </div>
-
-    <p v-if="solveError !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
-      {{ solveError }}
-    </p>
   </section>
 </template>

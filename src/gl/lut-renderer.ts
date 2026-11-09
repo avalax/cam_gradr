@@ -65,7 +65,7 @@ export type RendererProblem =
       what: 'shader' | 'program' | 'vertexArray' | 'imageTexture' | 'lutTexture';
     }
   | { key: 'compileFailed' | 'linkFailed'; log: string }
-  | { key: 'noContext' };
+  | { key: 'noContext' | 'startFailed' };
 
 // The error of both renderers: it names the problem.
 export class RendererError extends Error {
@@ -74,11 +74,25 @@ export class RendererError extends Error {
   }
 }
 
-// The text of a problem in the language of the moment.
+// The problem a renderer names. Anything else it throws is a bug: the console gets it as it is, the
+// preview a renderer that did not start, so that the message never stays empty.
+export function rendererProblem(error: unknown): RendererProblem {
+  if (error instanceof RendererError) {
+    return error.problem;
+  }
+  console.error(error);
+  return { key: 'startFailed' };
+}
+
+// The text of a problem in the language of the moment. A driver may leave its log empty; the
+// sentence then ends without it.
 export function describeRendererProblem(problem: RendererProblem): string {
-  return problem.key === 'createFailed'
-    ? t('preview.errors.createFailed', { what: t(`preview.errors.${problem.what}`) })
-    : t(`preview.errors.${problem.key}`, problem);
+  if (problem.key === 'createFailed') {
+    return t('preview.errors.createFailed', { what: t(`preview.errors.${problem.what}`) });
+  }
+  return 'log' in problem && problem.log !== ''
+    ? t(`preview.errors.${problem.key}Log`, problem)
+    : t(`preview.errors.${problem.key}`);
 }
 
 // WebGL returns null when resources run out; this should end as an understandable error.

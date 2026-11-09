@@ -37,7 +37,7 @@
       "hint": "Brightness is fine. Reduce the contrast (lower the camera contrast or use softer light)."
     },
     "bothClipped": "Shadows underexposed and highlights overexposed: reduce the contrast, align the light more evenly and avoid reflections on the card.",
-    "shadowsCrushed": "Shadows underexposed: first increase the brightness (add light or raise the camera exposure) until the darkest stripe field is no longer black. Then check the contrast.",
+    "shadowsCrushed": "Shadows underexposed: first increase the brightness (add light or raise the camera exposure) until the darkest patch of the strip is no longer black. Then check the contrast.",
     "highlightsBright": "Highlights overexposed: reduce the brightness (dim the light or lower the camera exposure). Then check the contrast.",
     "highlightsContrast": "Highlights overexposed: reduce the contrast (lower the camera contrast or use softer light)."
   }

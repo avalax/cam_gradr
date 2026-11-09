@@ -10,6 +10,7 @@ import { usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 import { cameraSwitchStandIn } from '../test-support/camera-switch';
+import { chosenFile } from '../test-support/chosen-file';
 import { dummyReference, dummyReferenceJson } from '../test-support/dummy-reference';
 import { createFakeGl } from '../test-support/fake-gl';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
@@ -108,16 +109,20 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
   });
 
-  it('shows a camera error on the image, over a placeholder that keeps only its title', async () => {
+  it('shows a camera error on the image, over a placeholder without the hint to the camera', async () => {
     installFakeCamera({ open: () => Promise.reject(new Error('x')) });
     const wrapper = mount(PreviewTab);
     await useCameraStore().start();
     await flushPromises();
     expect(wrapper.get('[data-testid="camera-error"]').text()).toContain('nicht gestartet');
-    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toBe('Noch keine Korrektur');
+    // What a missing correction needs has nothing to do with the camera; the icon gives it room.
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain('Berechne sie zuerst');
+    const icon = () => wrapper.find('[data-testid="preview-placeholder"] svg');
+    expect(icon().exists()).toBe(false);
     computeModel();
     await flushPromises();
     expect(wrapper.get('[data-testid="preview-no-source"]').text()).toBe('Noch kein Bild');
+    expect(icon().exists()).toBe(true);
   });
 
   it('captures a still image in the live view and then switches the camera off', async () => {
@@ -385,7 +390,7 @@ describe('PreviewTab', () => {
 
   it('shows targets only from the set the correction was fitted with', async () => {
     const references = useReferenceStore();
-    await references.importFile('mein.json', dummyReferenceJson('Mein Satz'));
+    await references.importChosen(chosenFile('mein.json', dummyReferenceJson('Mein Satz')));
     useColorChartStore().measurements = measurements;
     useSolveStore().compute({ measurements, reference: references.selected ?? reference });
     const wrapper = mount(PreviewTab);

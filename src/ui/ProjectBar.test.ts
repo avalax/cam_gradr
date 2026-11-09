@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLookStore } from '../look/look-store';
 import { useProjectStore } from '../project/project-store';
+import { chooseFile, notReadable } from '../test-support/chosen-file';
 import { cubeFile } from '../test-support/look-cubes';
 import { emptyLookStorage } from '../test-support/empty-storage';
 
@@ -12,23 +13,6 @@ import ProjectBar from './ProjectBar.vue';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
-
-// Chooses a file in the file input; without a text, the browser cannot read it.
-async function chooseFile(wrapper: ReturnType<typeof mount>, text?: string) {
-  const input = wrapper.get('[data-testid="project-file"]');
-  const read = () =>
-    text === undefined
-      ? Promise.reject(
-          new DOMException('The requested file could not be read.', 'NotReadableError'),
-        )
-      : Promise.resolve(text);
-  Object.defineProperty(input.element, 'files', {
-    value: [{ name: 'project.json', text: read }],
-    configurable: true,
-  });
-  await input.trigger('change');
-  await flushPromises();
-}
 
 describe('ProjectBar', () => {
   beforeEach(() => {
@@ -94,16 +78,19 @@ describe('ProjectBar', () => {
     const wrapper = mount(ProjectBar);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     const saved = (download.mock.calls[0] as [string, string, string])[1];
-    await chooseFile(wrapper, saved);
+    await chooseFile(wrapper, 'project-file', 'project.json', saved);
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     await flushPromises();
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('project.json');
   });
 
   it('reports a file the browser cannot read', async () => {
+    // The store hands what the browser throws to the console.
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
     const wrapper = mount(ProjectBar);
-    await chooseFile(wrapper);
+    await chooseFile(wrapper, 'project-file', 'project.json', notReadable());
     expect(useProjectStore().error).toBe('Die Datei lässt sich nicht lesen.');
+    warn.mockRestore();
   });
 
   it('leaves choosing the file to the file input without the system dialogs', () => {
@@ -129,7 +116,7 @@ describe('ProjectBar', () => {
     const wrapper = mount(ProjectBar);
     const input = wrapper.get('[data-testid="project-file"]');
     Object.defineProperty(input.element, 'files', { value: [], configurable: true });
-    const load = vi.spyOn(useProjectStore(), 'load');
+    const load = vi.spyOn(useProjectStore(), 'loadChosen');
     await input.trigger('change');
     expect(load).not.toHaveBeenCalled();
   });

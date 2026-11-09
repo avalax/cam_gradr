@@ -7,8 +7,8 @@ import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import { drawFrame } from '../camera/draw-frame';
 import { createCpuRenderer } from '../gl/cpu-renderer';
-import { createLutRenderer, describeRendererProblem } from '../gl/lut-renderer';
-import type { LutRenderer, RenderSource, RendererError, RendererProblem } from '../gl/lut-renderer';
+import { createLutRenderer, describeRendererProblem, rendererProblem } from '../gl/lut-renderer';
+import type { LutRenderer, RenderSource, RendererProblem } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
 import { formatDecimal } from '../lang/format';
 import { applyLook, blendLuts } from '../look/look';
@@ -265,8 +265,7 @@ function setup(): void {
     // Without WebGL2 the software rendering takes over so the preview still works.
     renderer.value = gl ? createLutRenderer(gl) : createCpuRenderer(target);
   } catch (error_) {
-    // Both renderers throw only RendererErrors, which name the problem.
-    problem.value = (error_ as RendererError).problem;
+    problem.value = rendererProblem(error_);
     return;
   }
   if (lut.value !== null) {
@@ -383,14 +382,19 @@ const splitModel = computed({
             />
             <div class="relative">
               <!-- Placeholder the size of the image while there is nothing to show. Under a camera
-                   error only the icon and the title, at the top, as on the card tabs. -->
+                   error its lines move to the top and the hint to switch the camera on goes, as on
+                   the card tabs, so that the box of the error never covers them. What a missing
+                   correction needs has nothing to do with the camera and stays; the icon gives it
+                   the room (at 1024 px the box covered its second line). -->
               <div
                 v-if="!showImage"
                 class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
                 :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
                 :style="{ aspectRatio: aspect }"
+                data-testid="preview-placeholder"
               >
                 <svg
+                  v-if="model !== null || camera.errorMessage === null"
                   class="w-28 text-zinc-400"
                   viewBox="0 0 96 60"
                   fill="none"
@@ -421,9 +425,7 @@ const splitModel = computed({
                   <span class="block font-semibold text-zinc-800">{{
                     t('preview.noModelTitle')
                   }}</span>
-                  <template v-if="camera.errorMessage === null">{{
-                    t('preview.noModelText')
-                  }}</template>
+                  {{ t('preview.noModelText') }}
                 </p>
                 <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
                   <span class="block font-semibold text-zinc-800">{{

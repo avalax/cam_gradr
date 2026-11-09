@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { i18n } from '../lang';
+import { chosenFile } from '../test-support/chosen-file';
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 import { failingStorage } from '../test-support/failing-storage';
 import type { NamedStorage } from '../storage/indexed-db';
@@ -32,7 +33,7 @@ describe('useReferenceStore', () => {
   it('imports, selects and saves a set locally, and reports the saving', async () => {
     const store = useReferenceStore();
     expect(store.lastSaved).toBeNull();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     expect(store.error).toBeNull();
     expect(store.selected?.name).toBe('Satz A');
     expect(store.lastSaved).toBe('Satz A');
@@ -42,7 +43,7 @@ describe('useReferenceStore', () => {
 
   it('loads saved sets in addition to the bundled one and preselects it', async () => {
     const first = useReferenceStore();
-    await first.importFile('a.json', dummyReferenceJson('Satz A'));
+    await first.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     setActivePinia(createPinia());
     const again = useReferenceStore();
     await again.load();
@@ -54,8 +55,8 @@ describe('useReferenceStore', () => {
 
   it('keeps an already made selection on load', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     store.select('Satz A');
     await store.load();
     expect(store.selectedName).toBe('Satz A');
@@ -63,35 +64,35 @@ describe('useReferenceStore', () => {
 
   it('replaces a set of the same name', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('a.csv', dummyReferenceCsv());
-    await store.importFile('b.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('a.csv', dummyReferenceCsv()));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz A')));
     expect(store.sets.filter((set) => set.name === 'Satz A')).toHaveLength(1);
   });
 
   it('reports faulty files and keeps the previous sets', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('kaputt.json', '{"format":"x"}');
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     expect(store.error).toContain('Unbekanntes Format');
     expect(store.sets).toHaveLength(1);
-    await store.importFile('kaputt.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('kaputt.json', dummyReferenceJson('Satz B')));
     expect(store.error).toBeNull();
   });
 
   it('shows only the outcome of the last action', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     await store.remove('Satz A');
     expect(store.lastRemoved).toBe('Satz A');
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     expect([store.lastRemoved, store.lastSaved]).toEqual([null, 'Satz B']);
-    await store.importFile('kaputt.json', '{"format":"x"}');
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     expect(store.lastSaved).toBeNull();
     expect(store.error).not.toBeNull();
     store.choose('Satz B');
     expect(store.error).toBeNull();
-    await store.importFile('kaputt.json', '{"format":"x"}');
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     await store.remove('Satz B');
     expect(store.error).toBeNull();
   });
@@ -103,17 +104,10 @@ describe('useReferenceStore', () => {
     expect(store.warning).toBe('Gespeicherte Referenzen konnten nicht geladen werden.');
     i18n.global.locale.value = 'en';
     expect(store.warning).toBe('Saved references could not be loaded.');
-    await store.importFile('kaputt.json', '{"format":"x"}');
+    await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     expect(store.error).not.toBeNull();
     i18n.global.locale.value = 'de';
     expect(store.error).toBeNull();
-  });
-
-  it('reports unknown errors generically', async () => {
-    const store = useReferenceStore();
-    // A value that is not a string triggers a TypeError from the file selection.
-    await store.importFile('a.json', null as unknown as string);
-    expect(store.error).not.toBeNull();
   });
 
   it('keeps imported sets when loading only finishes afterwards', async () => {
@@ -125,7 +119,7 @@ describe('useReferenceStore', () => {
     });
     const store = useReferenceStore();
     const loading = store.load();
-    await store.importFile('neu.json', dummyReferenceJson('Neu'));
+    await store.importChosen(chosenFile('neu.json', dummyReferenceJson('Neu')));
     slowList.resolve([
       { name: 'Alt', patches: {} },
       { name: 'Neu', patches: {} },
@@ -140,18 +134,18 @@ describe('useReferenceStore', () => {
 
   it('selects only existing sets', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     store.select('gibt es nicht');
     expect(store.selectedName).toBe('Satz A');
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     store.select('Satz A');
     expect(store.selected?.name).toBe('Satz A');
   });
 
   it('deletes sets and selects another one', async () => {
     const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    await store.importFile('b.json', dummyReferenceJson('Satz B'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await store.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     await store.remove('Satz B');
     expect(store.selectedName).toBe('Satz A');
     await store.remove('Satz A');
@@ -166,7 +160,7 @@ describe('useReferenceStore', () => {
     await store.load();
     expect(store.warning).toContain('geladen');
     expect(store.selected?.name).toBe(BUNDLED_NAME);
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
+    await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     expect(store.selected?.name).toBe('Satz A');
     expect(store.warning).toContain('nur für diese Sitzung');
     expect(store.lastSaved).toBeNull();

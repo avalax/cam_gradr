@@ -76,6 +76,28 @@ describe('useCameraStore', () => {
     expect(api.close).toHaveBeenCalledTimes(1);
   });
 
+  it('leaves no error behind when it is switched off', async () => {
+    installFakeCamera();
+    const store = useCameraStore();
+    // A capture of the running camera fails, then the camera is switched off.
+    await store.start();
+    await store.captureStill({
+      grab: () => {
+        throw new CameraError('noCanvas');
+      },
+      nextFrame: () => Promise.resolve(),
+    });
+    expect(store.errorMessage).not.toBeNull();
+    store.stop();
+    expect(store.errorMessage).toBeNull();
+    // A start that failed goes as well.
+    installFakeCamera({ open: () => Promise.reject(new CameraError('permissionDenied')) });
+    await store.start();
+    expect(store.status).toBe('error');
+    store.stop();
+    expect(store.errorMessage).toBeNull();
+  });
+
   it('restarts the running session on a repeated start', async () => {
     const api = installFakeCamera();
     const store = useCameraStore();

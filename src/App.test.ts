@@ -10,6 +10,7 @@ import { useProjectStore } from './project/project-store';
 import { BUNDLED_NAME } from './reference/bundled';
 import { useReferenceStore } from './reference/reference-store';
 import { useSolveStore } from './solve/solve-store';
+import { chosenFile } from './test-support/chosen-file';
 import { cubeFile, importLooks } from './test-support/look-cubes';
 import { installFakeCamera, installMediaStubs } from './test-support/media';
 import { grayFrame } from './test-support/frames';
@@ -182,7 +183,7 @@ describe('App', () => {
 
   it('puts the floating project message after the panel in the order of the Tab key', async () => {
     const wrapper = mountApp();
-    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
+    await useProjectStore().loadChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     await flushPromises();
     const panel = wrapper.get('[role="tabpanel"]').element;
     const message = wrapper.get('[data-testid="project-message"]').element;

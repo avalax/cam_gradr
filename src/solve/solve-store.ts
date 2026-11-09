@@ -3,8 +3,8 @@ import { computed, ref, shallowRef } from 'vue';
 
 import { t } from '../lang';
 
-import { fitColorModel } from './fit';
-import type { ColorModel, FitInput, FitResult, SolveError, SolveProblem } from './fit';
+import { fitColorModel, solveProblem } from './fit';
+import type { ColorModel, FitInput, FitResult, SolveProblem } from './fit';
 
 // Result of the color calculation. The model is available for preview and export; the report (with
 // the reference values) only exists after a calculation, not after loading a project. The name of
@@ -31,8 +31,7 @@ export const useSolveStore = defineStore('solve', () => {
       result.value = null;
       model.value = null;
       referenceName.value = null;
-      // The calculation throws only SolveErrors, which name the problem.
-      problem.value = (error_ as SolveError).problem;
+      problem.value = solveProblem(error_);
     }
   }
 

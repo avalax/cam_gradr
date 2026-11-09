@@ -11,6 +11,7 @@ import { useReferenceStore } from '../reference/reference-store';
 import { recomputeOnChange } from '../solve/recompute';
 import { useSolveStore } from '../solve/solve-store';
 import { bothCards } from '../test-support/cards';
+import { chosenFile } from '../test-support/chosen-file';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { grayFrame } from '../test-support/frames';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
@@ -86,7 +87,7 @@ describe('ColorStep', () => {
 
   it('follows the selected set', async () => {
     const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson('Mein Satz'));
+    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson('Mein Satz')));
     await flushPromises();
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       '„Mein Satz“ mit 48 Feldern',
@@ -95,7 +96,7 @@ describe('ColorStep', () => {
 
   it('checks the correction against the measured gray cards from step 1', async () => {
     const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson()));
     useChartStore().measurements = { G50: cameraCode([76.07, 0, 0]) };
     prepareMeasurements();
     await flushPromises();
@@ -104,7 +105,7 @@ describe('ColorStep', () => {
 
   it('shows the wipe: default colors without a measurement, then camera and corrected', async () => {
     const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson()));
     await flushPromises();
     const camera = wrapper.get('[data-testid="color-wipe-camera"]');
     expect(camera.attributes('data-measured')).toBe('false');
@@ -138,12 +139,13 @@ describe('ColorStep', () => {
 
   it('reports calculation errors', async () => {
     const wrapper = mount(ColorStep);
-    await useReferenceStore().importFile('a.json', dummyReferenceJson());
+    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson()));
     const chart = prepareMeasurements();
     chart.measurements = { '1A': [0.5, 0.5, 0.5] };
     await flushPromises();
     await flushPromises();
-    expect(wrapper.text()).toContain('Zu wenige Messwerte');
+    // In the text column, as the error of the preview.
+    expect(wrapper.get('aside [role="alert"]').text()).toContain('Zu wenige Messwerte');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 });

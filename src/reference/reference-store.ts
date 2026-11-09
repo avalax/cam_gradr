@@ -3,6 +3,7 @@ import { computed, ref, shallowRef } from 'vue';
 
 import { onLocaleChange, t } from '../lang';
 import { APP_ID } from '../ui/app-info';
+import type { ChosenFile } from '../ui/chosen-file';
 import { downloadFile } from '../lut/download';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
@@ -10,12 +11,6 @@ import type { NamedStorage } from '../storage/indexed-db';
 import { BUNDLED_NAME, bundledReference } from './bundled';
 import { parseReferenceFile, serializeReferenceJson } from './reference';
 import type { ReferenceSet } from './reference';
-
-// A file chosen in the dialog: its name and a way to read it.
-interface ChosenFile {
-  name: string;
-  text: () => Promise<string>;
-}
 
 const holder: { storage: NamedStorage<ReferenceSet> | null } = { storage: null };
 
@@ -91,7 +86,7 @@ export const useReferenceStore = defineStore('reference', () => {
     selectedName.value ??= BUNDLED_NAME;
   }
 
-  // Reads a file, validates it and saves it locally (a set of the same name is replaced).
+  // Validates the text of a file and saves the set locally (a set of the same name is replaced).
   async function importFile(fileName: string, text: string): Promise<void> {
     clearOutcome();
     try {
@@ -165,7 +160,6 @@ export const useReferenceStore = defineStore('reference', () => {
     lastSaved,
     lastRemoved,
     load,
-    importFile,
     importChosen,
     download,
     select,

@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useProjectStore } from '../project/project-store';
+import { chosenFile } from '../test-support/chosen-file';
 
 import ProjectStatus from './ProjectStatus.vue';
 
@@ -45,13 +46,13 @@ describe('ProjectStatus', () => {
     };
 
     save.focus();
-    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
+    await useProjectStore().loadChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     await wrapper.vm.$nextTick();
     await close();
     expect(document.activeElement).toBe(save);
 
     // The button that had the focus went with its tab: the focus goes to the open tab.
-    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
+    await useProjectStore().loadChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     await wrapper.vm.$nextTick();
     save.remove();
     await close();
@@ -59,7 +60,7 @@ describe('ProjectStatus', () => {
 
     // Nothing had the focus: the open tab as well.
     tab.blur();
-    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
+    await useProjectStore().loadChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     await wrapper.vm.$nextTick();
     await close();
     expect(document.activeElement).toBe(tab);
@@ -69,7 +70,7 @@ describe('ProjectStatus', () => {
 
   it('shows the error of a faulty file', async () => {
     const wrapper = mount(ProjectStatus);
-    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
+    await useProjectStore().loadChosen(chosenFile('kaputt.json', '{"format":"x"}'));
     await wrapper.vm.$nextTick();
     expect(wrapper.get('[data-testid="project-error"]').text()).toContain('Unbekanntes Format');
   });

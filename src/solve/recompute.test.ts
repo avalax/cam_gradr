@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useColorChartStore } from '../chart/chart-store';
 import { useReferenceStore } from '../reference/reference-store';
+import { chosenFile } from '../test-support/chosen-file';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
@@ -43,14 +44,14 @@ describe('recomputeOnChange', () => {
     await nextTick();
     expect(useSolveStore().model).toBeNull();
     useColorChartStore().restore({ points: {}, measurements: {}, rotated: false });
-    await useReferenceStore().importFile('a.json', dummyReferenceJson('Satz A'));
+    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     await nextTick();
     expect(useSolveStore().model).toBeNull();
     expect(useSolveStore().error).toBeNull();
   });
 
   it('computes from measurements without corner points, as a project without still images has', async () => {
-    await useReferenceStore().importFile('a.json', dummyReferenceJson('Satz A'));
+    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     measurementsWithoutCorners();
     await nextTick();
     expect(useSolveStore().result).not.toBeNull();
@@ -62,7 +63,9 @@ describe('recomputeOnChange', () => {
     useSolveStore().loadModel(IDENTITY_MODEL, 'Fehlender Satz');
     await nextTick();
     expect(useSolveStore().result).toBeNull();
-    await useReferenceStore().importFile('fehlt.json', dummyReferenceJson('Fehlender Satz'));
+    await useReferenceStore().importChosen(
+      chosenFile('fehlt.json', dummyReferenceJson('Fehlender Satz')),
+    );
     await nextTick();
     expect(useSolveStore().result).not.toBeNull();
     expect(useSolveStore().referenceName).toBe('Fehlender Satz');
@@ -70,8 +73,8 @@ describe('recomputeOnChange', () => {
 
   it('recomputes when the measurements change or another set is chosen', async () => {
     const references = useReferenceStore();
-    await references.importFile('a.json', dummyReferenceJson('Satz A'));
-    await references.importFile('b.json', dummyReferenceJson('Satz B'));
+    await references.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
+    await references.importChosen(chosenFile('b.json', dummyReferenceJson('Satz B')));
     const compute = vi.spyOn(useSolveStore(), 'compute');
     measurementsWithoutCorners();
     await nextTick();

@@ -40,7 +40,7 @@ async function onFiles(event: Event): Promise<void> {
   const chosen = [...(input.files ?? [])];
   // The same files should be selectable again.
   input.value = '';
-  await looks.importFiles(chosen.map((entry) => ({ name: entry.name, text: () => entry.text() })));
+  await looks.importFiles(chosen);
 }
 
 // Deleting a look or undoing it removes the button that did it (the trash goes with the chosen look,

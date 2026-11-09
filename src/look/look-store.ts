@@ -5,6 +5,7 @@ import { usePreviewStore } from '../lut/preview-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { APP_ID } from '../ui/app-info';
+import type { ChosenFile } from '../ui/chosen-file';
 
 import { LookError, isCubeFile, isLogConversion, parseLookCube } from './look';
 import type { LookLut, LookProblem } from './look';
@@ -21,12 +22,6 @@ export type LookMessage =
   | { kind: 'saveFailed'; names: string[] }
   | { kind: 'removeFailed' }
   | { kind: 'storeFailed' };
-
-// A file chosen in the dialog: its name and a way to read it.
-interface LookFile {
-  name: string;
-  text: () => Promise<string>;
-}
 
 const holder: { storage: NamedStorage<LookLut> | null } = { storage: null };
 
@@ -96,7 +91,7 @@ export const useLookStore = defineStore('look', () => {
 
   // Reads the chosen files; each valid one is saved (a look of the same name is replaced) and the
   // last one is chosen in the preview. Invalid files are named with the reason.
-  async function importFiles(files: readonly LookFile[]): Promise<void> {
+  async function importFiles(files: readonly ChosenFile[]): Promise<void> {
     const before = usePreviewStore().look;
     const imported: LookLut[] = [];
     const unsaved: string[] = [];

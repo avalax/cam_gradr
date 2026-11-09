@@ -1,6 +1,8 @@
 import { fileDialogs } from '../project/project-file';
 import type { FileDialogs } from '../project/project-file';
 
+import { chosenFile } from './chosen-file';
+
 // The fake system dialogs installed by the test (fails the test if they are missing).
 export function installedDialogs(): FileDialogs {
   const dialogs = fileDialogs();
@@ -10,12 +12,13 @@ export function installedDialogs(): FileDialogs {
   return dialogs;
 }
 
-// A file in the system dialogs (Chrome, Edge): it can be read, and what is written to it is kept.
-export function fakeHandle(name: string, text = '') {
+// A file in the system dialogs (Chrome, Edge): reading it gives its text, or fails with the error
+// the browser throws for it, and what is written to it is kept.
+export function fakeHandle(name: string, text: string | DOMException = '') {
   const written: string[] = [];
   const handle = {
     name,
-    getFile: () => Promise.resolve({ name, text: () => Promise.resolve(text) }),
+    getFile: () => Promise.resolve(chosenFile(name, text)),
     createWritable: () =>
       Promise.resolve({
         write: (content: string) => {

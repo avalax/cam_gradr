@@ -88,9 +88,12 @@ export const useCameraStore = defineStore('camera', () => {
     }
   }
 
+  // A camera that is off has nothing to report: the error of a failed start or capture goes with
+  // it, so that the image area shows its hint again.
   function stop(): void {
     release();
     status.value = 'idle';
+    errorCode.value = null;
     settle();
   }
 

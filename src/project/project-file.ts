@@ -40,6 +40,29 @@ export function fileDialogs(): FileDialogs | null {
     : null;
 }
 
+// Why the browser could not open or save a file: the key of its sentence (project.errors).
+export type FileProblem = 'accessDenied' | 'fileInUse' | 'noSpace' | 'unreadable';
+
+// The names of the errors the browser throws, by what they mean for the file. A file that went
+// away or became unreadable after it was chosen counts as one that cannot be read.
+const FILE_PROBLEMS = new Map<string, FileProblem>([
+  ['NotAllowedError', 'accessDenied'],
+  ['SecurityError', 'accessDenied'],
+  ['NoModificationAllowedError', 'fileInUse'],
+  ['InvalidStateError', 'fileInUse'],
+  ['QuotaExceededError', 'noSpace'],
+  ['NotReadableError', 'unreadable'],
+  ['NotFoundError', 'unreadable'],
+]);
+
+// What an error of the browser means for the file, told by its name alone: its message is the
+// browser's own English text, which fits into no sentence of the app. Null where the name says
+// nothing the user could act on.
+export function fileProblem(error: unknown): FileProblem | null {
+  const name = error instanceof Error ? error.name : '';
+  return FILE_PROBLEMS.get(name) ?? null;
+}
+
 // Closing a dialog without choosing a file is no error.
 function cancelled(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';

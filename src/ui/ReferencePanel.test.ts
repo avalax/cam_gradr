@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
+import { chooseFile, notReadable } from '../test-support/chosen-file';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { emptyReferenceStorage } from '../test-support/empty-storage';
 
@@ -20,23 +21,6 @@ async function mountLoaded(options: { attach?: boolean } = {}) {
   await useReferenceStore().load();
   await flushPromises();
   return wrapper;
-}
-
-// Chooses a file in the file input; without a text, the browser cannot read it.
-async function chooseFile(wrapper: ReturnType<typeof mount>, name: string, text?: string) {
-  const input = wrapper.get('[data-testid="reference-file"]');
-  const read = () =>
-    text === undefined
-      ? Promise.reject(
-          new DOMException('The requested file could not be read.', 'NotReadableError'),
-        )
-      : Promise.resolve(text);
-  Object.defineProperty(input.element, 'files', {
-    value: [{ name, text: read }],
-    configurable: true,
-  });
-  await input.trigger('change');
-  await flushPromises();
 }
 
 function button(wrapper: ReturnType<typeof mount>, text: string) {
@@ -68,7 +52,7 @@ describe('ReferencePanel', () => {
 
   it('imports a JSON file and selects it', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
     expect(useReferenceStore().selected?.name).toBe('Mein Satz');
     expect(
       (wrapper.get('[data-testid="reference-select"]').element as HTMLSelectElement).value,
@@ -78,7 +62,7 @@ describe('ReferencePanel', () => {
   it('shows that the set was saved locally', async () => {
     const wrapper = await mountLoaded();
     expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
     await vi.waitFor(() => {
       expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(true);
     });
@@ -87,15 +71,15 @@ describe('ReferencePanel', () => {
 
   it('reports faulty files and keeps the selection', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'kaputt.json', '{"format":"x"}');
+    await chooseFile(wrapper, 'reference-file', 'kaputt.json', '{"format":"x"}');
     expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
   });
 
   it('reports a file the browser cannot read instead of what the last import did', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
-    await chooseFile(wrapper, 'weg.json');
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'weg.json', notReadable());
     expect(wrapper.get('[role="alert"]').text()).toBe('Die Datei lässt sich nicht lesen.');
     expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
   });
@@ -111,8 +95,8 @@ describe('ReferencePanel', () => {
 
   it('switches between sets and deletes custom sets', async () => {
     const wrapper = await mountLoaded({ attach: true });
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Satz A'));
-    await chooseFile(wrapper, 'b.json', dummyReferenceJson('Satz B'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Satz A'));
+    await chooseFile(wrapper, 'reference-file', 'b.json', dummyReferenceJson('Satz B'));
     expect(useReferenceStore().selected?.name).toBe('Satz B');
     await wrapper.get('[data-testid="reference-select"]').setValue('Satz A');
     expect(useReferenceStore().selected?.name).toBe('Satz A');
@@ -133,7 +117,7 @@ describe('ReferencePanel', () => {
 
   it('downloads the active set as a file', async () => {
     const wrapper = await mountLoaded();
-    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
     await button(wrapper, 'Satz herunterladen')?.trigger('click');
     expect(download).toHaveBeenCalledWith('Mein Satz.json', expect.any(String), 'application/json');
   });

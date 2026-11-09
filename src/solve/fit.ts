@@ -706,15 +706,24 @@ function summarize(
 
 // Why the calculation is not possible: the key of its text (solve) with its values, which the
 // store translates when it is read, so that it follows a language switch.
-export interface SolveProblem {
-  key: 'tooFewMeasurements';
-  params: { patches: number; neutral: number };
-}
+export type SolveProblem =
+  | { key: 'tooFewMeasurements'; params: { patches: number; neutral: number } }
+  | { key: 'calculationFailed'; params: Record<string, never> };
 
 export class SolveError extends RangeError {
   constructor(readonly problem: SolveProblem) {
     super(problem.key);
   }
+}
+
+// The problem the calculation names. Anything else it throws is a bug: the console gets it as it
+// is, the user a calculation that failed, so that the message never stays empty.
+export function solveProblem(error: unknown): SolveProblem {
+  if (error instanceof SolveError) {
+    return error.problem;
+  }
+  console.error(error);
+  return { key: 'calculationFailed', params: {} };
 }
 
 export function fitColorModel(input: FitInput): FitResult {

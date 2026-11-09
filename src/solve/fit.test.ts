@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { NEUTRAL_IDS } from '../chart/layouts';
 import type { Rgb } from '../chart/types';
@@ -17,7 +17,7 @@ import bundledJson from '../data/reference/spyder-checkr-48.reference.json';
 import { dummyIds, dummyLab } from '../test-support/dummy-reference';
 import { FLAT_HUE } from '../test-support/identity-model';
 
-import { applyColorModel, fitColorModel } from './fit';
+import { SolveError, applyColorModel, fitColorModel, solveProblem } from './fit';
 
 function referenceSet(ids = dummyIds()): ReferenceSet {
   return {
@@ -536,5 +536,18 @@ describe('fitColorModel', () => {
     for (const [index, row] of fit.model.matrix.entries()) {
       expect(row[index]).toBeGreaterThan(0.5);
     }
+  });
+});
+
+describe('solveProblem', () => {
+  it('takes the problem the calculation names, and a failed calculation for anything else', () => {
+    const problem = { key: 'tooFewMeasurements', params: { patches: 8, neutral: 4 } } as const;
+    expect(solveProblem(new SolveError(problem))).toBe(problem);
+    // A bug goes to the console as it is.
+    const logged = vi.spyOn(console, 'error').mockReturnValue();
+    const bug = new TypeError('Cannot read properties of undefined');
+    expect(solveProblem(bug)).toEqual({ key: 'calculationFailed', params: {} });
+    expect(logged).toHaveBeenCalledWith(bug);
+    logged.mockRestore();
   });
 });

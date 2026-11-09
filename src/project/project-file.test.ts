@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fakeHandle, installedDialogs } from '../test-support/file-dialogs';
 
-import { fileDialogs, openProjectFile, saveProjectFile } from './project-file';
+import { fileDialogs, fileProblem, openProjectFile, saveProjectFile } from './project-file';
 import type { FileDialogs } from './project-file';
 
 const download = vi.hoisted(() => vi.fn());
@@ -96,5 +96,34 @@ describe('project file', () => {
     await expect(saveProjectFile('content', null, 'default.json')).resolves.toBeNull();
     showSaveFilePicker.mockRejectedValueOnce(new Error('Disk full'));
     await expect(saveProjectFile('content', null, 'default.json')).rejects.toThrow('Disk full');
+  });
+});
+
+describe('fileProblem', () => {
+  it('tells what the error of the browser means for the file by its name', () => {
+    const problems = [
+      'NotAllowedError',
+      'SecurityError',
+      'NoModificationAllowedError',
+      'InvalidStateError',
+      'QuotaExceededError',
+      'NotReadableError',
+      'NotFoundError',
+    ].map((name) => fileProblem(new DOMException('The text of the browser.', name)));
+    expect(problems).toEqual([
+      'accessDenied',
+      'accessDenied',
+      'fileInUse',
+      'fileInUse',
+      'noSpace',
+      'unreadable',
+      'unreadable',
+    ]);
+  });
+
+  it('knows no reason for other errors and for what is no error at all', () => {
+    expect(fileProblem(new DOMException('', 'TypeMismatchError'))).toBeNull();
+    expect(fileProblem(new Error('Disk full'))).toBeNull();
+    expect(fileProblem('NotAllowedError')).toBeNull();
   });
 });
