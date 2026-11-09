@@ -24,12 +24,12 @@
   },
   "errors": {
     "notCube": "Only .cube files are possible.",
-    "unreadable": "The file cannot be read.",
     "oneDimensional": "The file contains a 1D LUT (LUT_1D_SIZE). A look LUT must be a 3D LUT (LUT_3D_SIZE).",
     "noSize": "LUT_3D_SIZE is missing before the values, the file is not a 3D LUT.",
     "size": "LUT_3D_SIZE {size} is not supported ({min} to {max}).",
     "numbers": "Line {line} contains no valid numbers.",
     "count": "Expected {expected} value lines, the file has {actual}.",
-    "domain": "DOMAIN_MIN must be smaller than DOMAIN_MAX in every channel."
+    "domain": "DOMAIN_MIN must be smaller than DOMAIN_MAX in every channel.",
+    "parseFailed": "The file could not be processed."
   }
 }

@@ -1,0 +1,7 @@
+{
+  "accessDenied": "The browser refused access to the file.",
+  "fileInUse": "The file is in use by another program.",
+  "noSpace": "There is no space left on the drive.",
+  "unreachable": "The file or its folder can no longer be reached.",
+  "unreadable": "The file cannot be read."
+}

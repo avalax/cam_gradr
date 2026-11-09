@@ -3,7 +3,9 @@ import { computed, ref, shallowRef } from 'vue';
 
 import { onLocaleChange, t } from '../lang';
 import { APP_ID } from '../ui/app-info';
+import { readChosen } from '../ui/chosen-file';
 import type { ChosenFile } from '../ui/chosen-file';
+import type { ReadProblem } from '../ui/file-problem';
 import { downloadFile } from '../lut/download';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
@@ -27,16 +29,20 @@ function storage(): NamedStorage<ReferenceSet> {
 export const useReferenceStore = defineStore('reference', () => {
   const sets = ref<ReferenceSet[]>([]);
   const selectedName = ref<string | null>(null);
-  // Why the import failed: a file the browser cannot read, translated when read, or the problem
-  // the validation names. The validation puts its text together deep in the parser, in the
-  // language of the moment, so that text cannot follow a language switch and goes away with it.
-  const failure = shallowRef<{ key: 'unreadable' } | { key: 'invalid'; text: string } | null>(null);
+  // Why the import failed, after the sentence that it did: why the browser did not hand over the
+  // file, translated when read, or the problem the validation names. The validation puts its text
+  // together deep in the parser, in the language of the moment, so that text cannot follow a
+  // language switch and goes away with it.
+  const failure = shallowRef<
+    { key: 'unread'; problem: ReadProblem } | { key: 'invalid'; text: string } | null
+  >(null);
   const error = computed(() => {
     const current = failure.value;
     if (current === null) {
       return null;
     }
-    return current.key === 'invalid' ? current.text : t('reference.errors.unreadable');
+    const why = current.key === 'invalid' ? current.text : t(`file.${current.problem}`);
+    return `${t('reference.errors.importFailed')} ${why}`;
   });
   // A problem of the local storage: the key of its text, translated when read.
   const warningKey = ref<'loadFailed' | 'saveFailed' | 'removeFailed' | null>(null);
@@ -105,18 +111,16 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  // Reads a file chosen in the dialog and imports it; a file the browser cannot read (moved or
-  // locked since it was chosen) is reported as such.
+  // Reads a file chosen in the dialog and imports it; a file the browser does not hand over (moved
+  // or locked since it was chosen) is reported with the reason.
   async function importChosen(file: ChosenFile): Promise<void> {
-    let text: string;
-    try {
-      text = await file.text();
-    } catch {
+    const read = await readChosen(file);
+    if ('problem' in read) {
       clearOutcome();
-      failure.value = { key: 'unreadable' };
+      failure.value = { key: 'unread', problem: read.problem };
       return;
     }
-    await importFile(file.name, text);
+    await importFile(file.name, read.text);
   }
 
   // Saves a set as a JSON file so it can be imported later or elsewhere.

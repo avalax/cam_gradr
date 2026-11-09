@@ -5,16 +5,19 @@ import { usePreviewStore } from '../lut/preview-store';
 import { createIndexedDbStorage } from '../storage/indexed-db';
 import type { NamedStorage } from '../storage/indexed-db';
 import { APP_ID } from '../ui/app-info';
+import { readChosen } from '../ui/chosen-file';
 import type { ChosenFile } from '../ui/chosen-file';
+import type { ReadProblem } from '../ui/file-problem';
 
-import { LookError, isCubeFile, isLogConversion, parseLookCube } from './look';
+import { isCubeFile, isLogConversion, lookProblem, parseLookCube } from './look';
 import type { LookLut, LookProblem } from './look';
 
 // What the bar under the preview reports after an action; the texts come from the language files
-// when shown, so that they follow a language switch.
+// when shown, so that they follow a language switch. A file is rejected for what the parser names
+// or for why the browser did not hand it over.
 export type LookMessage =
   | { kind: 'imported'; names: string[] }
-  | { kind: 'rejected'; file: string; reason: LookProblem }
+  | { kind: 'rejected'; file: string; reason: LookProblem | ReadProblem }
   // `fallback` is the look the preview shows again when this one is removed through the warning.
   | { kind: 'logConversion'; name: string; fallback: string | null }
   | { kind: 'removed'; name: string }
@@ -37,6 +40,22 @@ function storage(): NamedStorage<LookLut> {
 
 function byName(first: LookLut, second: LookLut): number {
   return first.name.localeCompare(second.name);
+}
+
+// Reads one chosen file: its look, or the message that names why it was rejected.
+async function readLook(file: ChosenFile): Promise<LookLut | LookMessage> {
+  if (!isCubeFile(file.name)) {
+    return { kind: 'rejected', file: file.name, reason: { key: 'notCube', params: {} } };
+  }
+  const read = await readChosen(file);
+  if ('problem' in read) {
+    return { kind: 'rejected', file: file.name, reason: read.problem };
+  }
+  try {
+    return parseLookCube(file.name, read.text);
+  } catch (error) {
+    return { kind: 'rejected', file: file.name, reason: lookProblem(error) };
+  }
 }
 
 // The imported look LUTs, sorted by name. Which one the preview uses and how strongly is set in
@@ -97,27 +116,15 @@ export const useLookStore = defineStore('look', () => {
     const unsaved: string[] = [];
     const problems: LookMessage[] = [];
     for (const file of files) {
-      if (!isCubeFile(file.name)) {
-        problems.push({
-          kind: 'rejected',
-          file: file.name,
-          reason: { key: 'notCube', params: {} },
-        });
+      const look = await readLook(file);
+      if ('kind' in look) {
+        problems.push(look);
         continue;
       }
-      try {
-        const look = parseLookCube(file.name, await file.text());
-        put(look);
-        imported.push(look);
-        if (!(await save(look))) {
-          unsaved.push(look.name);
-        }
-      } catch (error) {
-        // The parser names the problem; a file the browser cannot read (moved or locked since it
-        // was chosen) has none of its own.
-        const reason: LookProblem =
-          error instanceof LookError ? error.problem : { key: 'unreadable', params: {} };
-        problems.push({ kind: 'rejected', file: file.name, reason });
+      put(look);
+      imported.push(look);
+      if (!(await save(look))) {
+        unsaved.push(look.name);
       }
     }
     // A look that looks like a log conversion gets the warning instead of a place in the line that

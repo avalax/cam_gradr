@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLookStore } from '../look/look-store';
 import { useProjectStore } from '../project/project-store';
-import { chooseFile, notReadable } from '../test-support/chosen-file';
+import { chooseFile } from '../test-support/file-input';
 import { cubeFile } from '../test-support/look-cubes';
 import { emptyLookStorage } from '../test-support/empty-storage';
 
@@ -82,15 +82,6 @@ describe('ProjectBar', () => {
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     await flushPromises();
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('project.json');
-  });
-
-  it('reports a file the browser cannot read', async () => {
-    // The store hands what the browser throws to the console.
-    const warn = vi.spyOn(console, 'warn').mockReturnValue();
-    const wrapper = mount(ProjectBar);
-    await chooseFile(wrapper, 'project-file', 'project.json', notReadable());
-    expect(useProjectStore().error).toBe('Die Datei lässt sich nicht lesen.');
-    warn.mockRestore();
   });
 
   it('leaves choosing the file to the file input without the system dialogs', () => {

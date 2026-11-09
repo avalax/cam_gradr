@@ -11,11 +11,14 @@ import { useExportStore } from '../lut/export-store';
 import { LOOK_DEFAULTS, usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
+import { readChosen, readFailure } from '../ui/chosen-file';
 import type { ChosenFile } from '../ui/chosen-file';
+import { writeProblem } from '../ui/file-problem';
+import type { ReadProblem, WriteProblem } from '../ui/file-problem';
 
 import { decodeFrame, encodeFrame } from './frame-codec';
-import { fileProblem, openProjectFile, saveProjectFile } from './project-file';
-import type { FileDialogs, FileProblem, ProjectFile } from './project-file';
+import { openProjectFile, saveProjectFile } from './project-file';
+import type { FileDialogs, ProjectFile } from './project-file';
 import { PROJECT_FORMAT, parseProject, serializeProject } from './project';
 import type { LookSettings, Project } from './project';
 import { decodeLook, encodeLook } from './look-codec';
@@ -168,40 +171,23 @@ async function lookSettings(): Promise<LookSettings> {
 
 export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 
-// What the message over the page says: the keys of its texts in the language files, translated when
-// read, so that it follows a language switch. A file the browser could not save or open names the
-// reason where the browser's error tells one. The validation of a file is the exception: it puts its
-// text together deep in the parser, in the language of the moment, so that text goes away with a
-// switch.
+// What the message over the page says: what failed, and why as a sentence of its own where it is
+// known. The keys of the texts in the language files are translated when read, so that the message
+// follows a language switch. The validation of a file is the exception: it puts its text together
+// deep in the parser, in the language of the moment, so that text goes away with a switch.
 type ProjectFailure =
-  | { key: 'saveFailed' | 'openFailed'; reason: FileProblem | null }
-  | { key: 'unreadable' }
+  | { key: 'saveFailed'; problem: WriteProblem | null }
+  | { key: 'openFailed'; problem: ReadProblem }
   | { key: 'invalid'; text: string };
-
-// The failure to save or open a file, in the words of the app. The error itself goes to the console,
-// so that what the browser said is not lost. A file that cannot be read is named as such, in the
-// dialog as in the file input; that it could not be opened says nothing more.
-function fileFailure(key: 'saveFailed' | 'openFailed', error: unknown): ProjectFailure {
-  console.warn(error);
-  const reason = fileProblem(error);
-  return key === 'openFailed' && reason === 'unreadable' ? { key: 'unreadable' } : { key, reason };
-}
 
 // The text of a failure in the language of the moment.
 function describeFailure(failure: ProjectFailure): string {
-  switch (failure.key) {
-    case 'invalid': {
-      return failure.text;
-    }
-    case 'unreadable': {
-      return t('project.errors.unreadable');
-    }
-    default: {
-      // The reason follows as a sentence of its own.
-      const reason = failure.reason === null ? [] : [t(`project.errors.${failure.reason}`)];
-      return [t(`project.errors.${failure.key}`), ...reason].join(' ');
-    }
+  if (failure.key === 'saveFailed') {
+    const why = failure.problem === null ? [] : [t(`file.${failure.problem}`)];
+    return [t('project.errors.saveFailed'), ...why].join(' ');
   }
+  const why = failure.key === 'invalid' ? failure.text : t(`file.${failure.problem}`);
+  return `${t('project.errors.openFailed')} ${why}`;
 }
 
 // Saving and loading the working state as a JSON file (without the manufacturers' reference values).
@@ -250,7 +236,9 @@ export const useProjectStore = defineStore('project', () => {
         file.value = saved;
       }
     } catch (error_) {
-      failure.value = fileFailure('saveFailed', error_);
+      // What the browser threw goes to the console, so that it is not lost.
+      console.warn(error_);
+      failure.value = { key: 'saveFailed', problem: writeProblem(error_) };
     }
   }
 
@@ -283,30 +271,34 @@ export const useProjectStore = defineStore('project', () => {
     notices.value = found;
   }
 
+  // A file that could not be opened. The notices of the file loaded before do not belong to its
+  // message.
+  function openFailed(problem: ReadProblem): void {
+    dismiss();
+    failure.value = { key: 'openFailed', problem };
+  }
+
   // Loads a file chosen in the file input (browsers without the system dialogs).
   async function loadChosen(file: ChosenFile): Promise<void> {
-    let text: string;
-    try {
-      text = await file.text();
-    } catch (error_) {
-      dismiss();
-      failure.value = fileFailure('openFailed', error_);
+    const read = await readChosen(file);
+    if ('problem' in read) {
+      openFailed(read.problem);
       return;
     }
-    await load(text, { name: file.name });
+    await load(read.text, { name: file.name });
   }
 
   // Lets the user choose a project file in the system dialog and loads it.
   async function open(dialogs: FileDialogs): Promise<void> {
+    let picked: Awaited<ReturnType<typeof openProjectFile>>;
     try {
-      const picked = await openProjectFile(dialogs);
-      if (picked !== null) {
-        await load(picked.text, picked.file);
-      }
+      picked = await openProjectFile(dialogs);
     } catch (error_) {
-      // The notices of the file loaded before do not belong to this message.
-      dismiss();
-      failure.value = fileFailure('openFailed', error_);
+      openFailed(readFailure(error_));
+      return;
+    }
+    if (picked !== null) {
+      await load(picked.text, picked.file);
     }
   }
 

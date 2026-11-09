@@ -167,7 +167,7 @@ function download(current: ColorModel): void {
       aria-labelledby="lut-heading"
     >
       <h2 id="lut-heading" class="text-sm font-semibold">{{ t('export.lut.heading') }}</h2>
-      <I18nT keypath="export.lut.description" tag="p" class="text-xs text-zinc-600">
+      <I18nT keypath="export.lut.description" tag="p" scope="global" class="text-xs text-zinc-600">
         <template #file><code>.cube</code></template>
       </I18nT>
       <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
@@ -241,7 +241,12 @@ function download(current: ColorModel): void {
       <h2 id="project-heading" class="text-sm font-semibold">
         {{ t('export.project.heading') }}
       </h2>
-      <I18nT keypath="export.project.description" tag="p" class="text-xs text-zinc-600">
+      <I18nT
+        keypath="export.project.description"
+        tag="p"
+        scope="global"
+        class="text-xs text-zinc-600"
+      >
         <template #file><code>.json</code></template>
       </I18nT>
       <dl class="text-sm" data-testid="project-facts">

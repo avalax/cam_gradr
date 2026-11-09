@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
-import { chooseFile, notReadable } from '../test-support/chosen-file';
+import { notReadable } from '../test-support/chosen-file';
+import { chooseFile } from '../test-support/file-input';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { emptyReferenceStorage } from '../test-support/empty-storage';
 
@@ -77,11 +78,17 @@ describe('ReferencePanel', () => {
   });
 
   it('reports a file the browser cannot read instead of what the last import did', async () => {
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
     const wrapper = await mountLoaded();
     await chooseFile(wrapper, 'reference-file', 'a.json', dummyReferenceJson('Mein Satz'));
-    await chooseFile(wrapper, 'reference-file', 'weg.json', notReadable());
-    expect(wrapper.get('[role="alert"]').text()).toBe('Die Datei lässt sich nicht lesen.');
+    const gone = notReadable();
+    await chooseFile(wrapper, 'reference-file', 'weg.json', gone);
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      'Der Satz ließ sich nicht importieren. Die Datei lässt sich nicht lesen.',
+    );
     expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
+    expect(warn).toHaveBeenCalledWith(gone);
+    warn.mockRestore();
   });
 
   it('does nothing without a selected file', async () => {

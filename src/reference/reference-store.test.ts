@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { i18n } from '../lang';
-import { chosenFile } from '../test-support/chosen-file';
+import { chosenFile, notReadable } from '../test-support/chosen-file';
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 import { failingStorage } from '../test-support/failing-storage';
 import type { NamedStorage } from '../storage/indexed-db';
@@ -74,10 +74,30 @@ describe('useReferenceStore', () => {
     const store = useReferenceStore();
     await store.importChosen(chosenFile('a.json', dummyReferenceJson('Satz A')));
     await store.importChosen(chosenFile('kaputt.json', '{"format":"x"}'));
-    expect(store.error).toContain('Unbekanntes Format');
+    // What failed first, then what the validation found.
+    expect(store.error).toBe(
+      'Der Satz ließ sich nicht importieren. Unbekanntes Format, erwartet wird „cam_gradr-reference/1“.',
+    );
     expect(store.sets).toHaveLength(1);
     await store.importChosen(chosenFile('kaputt.json', dummyReferenceJson('Satz B')));
     expect(store.error).toBeNull();
+  });
+
+  it('names why the browser did not hand over a file, and logs what it threw', async () => {
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
+    const store = useReferenceStore();
+    const denied = new DOMException('Not allowed.', 'NotAllowedError');
+    await store.importChosen(chosenFile('a.json', denied));
+    expect(store.error).toBe(
+      'Der Satz ließ sich nicht importieren. Der Browser hat den Zugriff auf die Datei verweigert.',
+    );
+    expect(warn).toHaveBeenCalledWith(denied);
+    const gone = notReadable();
+    await store.importChosen(chosenFile('a.json', gone));
+    expect(warn).toHaveBeenLastCalledWith(gone);
+    i18n.global.locale.value = 'en';
+    expect(store.error).toBe('The set could not be imported. The file cannot be read.');
+    warn.mockRestore();
   });
 
   it('shows only the outcome of the last action', async () => {

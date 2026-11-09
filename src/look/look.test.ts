@@ -1,16 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { identityLut, sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
 import { INVERT_CUBE } from '../test-support/look-cubes';
 
 import {
+  LookError,
   applyLook,
   blendColor,
   blendLuts,
   isCubeFile,
   isLogConversion,
   lookName,
+  lookProblem,
   lookSlug,
   lookedLut,
   parseLookCube,
@@ -168,5 +170,18 @@ describe('applying a look', () => {
     const base = identityLut(2);
     expect(lookedLut(base, null, 1)).toBe(base);
     expectClose([...lookedLut(base, invertLook(), 1).data.slice(0, 3)], [1, 1, 1]);
+  });
+});
+
+describe('lookProblem', () => {
+  it('takes the problem the parser names, and a file that could not be processed for anything else', () => {
+    const problem: LookProblem = { key: 'noSize', params: {} };
+    expect(lookProblem(new LookError(problem))).toBe(problem);
+    // A bug goes to the console as it is.
+    const logged = vi.spyOn(console, 'error').mockReturnValue();
+    const bug = new TypeError('Cannot read properties of undefined');
+    expect(lookProblem(bug)).toEqual({ key: 'parseFailed', params: {} });
+    expect(logged).toHaveBeenCalledWith(bug);
+    logged.mockRestore();
   });
 });

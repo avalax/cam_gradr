@@ -421,7 +421,10 @@ describe('useProjectStore', () => {
     useChartStore().restore({ points: { 3: [{ x: 5, y: 6 }] }, measurements: {}, rotated: false });
     await project.loadChosen(projectFile('{"format":"anderes"}'));
 
-    expect(project.error).toContain('Unbekanntes Format');
+    // What failed first, then what the validation found.
+    expect(project.error).toBe(
+      'Die Projektdatei ließ sich nicht öffnen. Unbekanntes Format, erwartet wird „cam_gradr-project/2“.',
+    );
     expect(project.notice).toBeNull();
     expect(useChartStore().points).toEqual({ 3: [{ x: 5, y: 6 }] });
   });
@@ -517,18 +520,57 @@ describe('the project file that saving suggests', () => {
     expect(project.error).toBeNull();
   });
 
-  it('names why a file cannot be opened or saved in its own words, the browser in the console', async () => {
+  it('names why a file cannot be saved in its own words, the browser in the console', async () => {
+    const full = new DOMException('Quota exceeded.', 'QuotaExceededError');
+    const gone = new DOMException('A requested file could not be found.', 'NotFoundError');
+    const unknown = new DOMException('The operation failed.', 'UnknownError');
+    const aborted = new DOMException('The user aborted a request.', 'AbortError');
+    Object.assign(globals, {
+      showOpenFilePicker: vi.fn(),
+      showSaveFilePicker: vi
+        .fn()
+        .mockRejectedValueOnce(full)
+        .mockRejectedValueOnce(gone)
+        .mockRejectedValueOnce(unknown)
+        .mockResolvedValueOnce(fakeHandle('mein-projekt.json', '', aborted).handle),
+    });
+    const project = useProjectStore();
+    await project.save(PLAIN);
+    expect(project.error).toBe(
+      'Das Projekt ließ sich nicht speichern. Auf dem Laufwerk ist kein Platz mehr frei.',
+    );
+    expect(warn).toHaveBeenLastCalledWith(full);
+    // A file or folder that went away is not a file that cannot be read.
+    await project.save(PLAIN);
+    expect(project.error).toBe(
+      'Das Projekt ließ sich nicht speichern. Die Datei oder ihr Ordner ist nicht mehr erreichbar.',
+    );
+    expect(warn).toHaveBeenLastCalledWith(gone);
+    i18n.global.locale.value = 'en';
+    expect(project.error).toBe(
+      'The project could not be saved. The file or its folder can no longer be reached.',
+    );
+    // An error that names no reason leaves only what failed, and so does an abort after the dialog.
+    await project.save(PLAIN);
+    expect(project.error).toBe('The project could not be saved.');
+    expect(warn).toHaveBeenLastCalledWith(unknown);
+    await project.save(PLAIN);
+    expect(project.error).toBe('The project could not be saved.');
+    expect(warn).toHaveBeenLastCalledWith(aborted);
+  });
+
+  it('names why a file cannot be opened, in the dialog as in the file input', async () => {
     const denied = new DOMException(
       'The request is not allowed by the user agent or the platform in the current context.',
       'NotAllowedError',
     );
-    const full = new DOMException('Quota exceeded.', 'QuotaExceededError');
+    const unreadable = notReadable();
     Object.assign(globals, {
-      showOpenFilePicker: vi.fn().mockRejectedValue(denied),
-      showSaveFilePicker: vi
+      showOpenFilePicker: vi
         .fn()
-        .mockRejectedValueOnce(full)
-        .mockRejectedValueOnce(new DOMException('The operation failed.', 'UnknownError')),
+        .mockRejectedValueOnce(denied)
+        .mockResolvedValueOnce([fakeHandle('mein-projekt.json', unreadable).handle]),
+      showSaveFilePicker: vi.fn(),
     });
     const project = useProjectStore();
     await project.open(installedDialogs());
@@ -536,30 +578,17 @@ describe('the project file that saving suggests', () => {
       'Die Projektdatei ließ sich nicht öffnen. Der Browser hat den Zugriff auf die Datei verweigert.',
     );
     expect(warn).toHaveBeenLastCalledWith(denied);
-    await project.save(PLAIN);
-    expect(project.error).toBe(
-      'Das Projekt ließ sich nicht speichern. Auf dem Laufwerk ist kein Platz mehr frei.',
-    );
-    i18n.global.locale.value = 'en';
-    expect(project.error).toBe(
-      'The project could not be saved. There is no space left on the drive.',
-    );
-    // An error that names no reason leaves only what failed.
-    await project.save(PLAIN);
-    expect(project.error).toBe('The project could not be saved.');
-  });
-
-  it('names a file the browser cannot read without the text of the browser', async () => {
-    const gone = fakeHandle('mein-projekt.json', notReadable());
-    Object.assign(globals, {
-      showOpenFilePicker: vi.fn().mockResolvedValue([gone.handle]),
-      showSaveFilePicker: vi.fn(),
-    });
-    const project = useProjectStore();
+    const cannotRead = 'Die Projektdatei ließ sich nicht öffnen. Die Datei lässt sich nicht lesen.';
     await project.open(installedDialogs());
-    expect(project.error).toBe('Die Datei lässt sich nicht lesen.');
+    expect(project.error).toBe(cannotRead);
+    expect(warn).toHaveBeenLastCalledWith(unreadable);
+    project.dismiss();
+    const gone = notReadable();
+    await project.loadChosen(chosenFile('mein-projekt.json', gone));
+    expect(project.error).toBe(cannotRead);
+    expect(warn).toHaveBeenLastCalledWith(gone);
     i18n.global.locale.value = 'en';
-    expect(project.error).toBe('The file cannot be read.');
+    expect(project.error).toBe('The project file could not be opened. The file cannot be read.');
   });
 
   it('drops the notices of the file loaded before when the next one cannot be opened', async () => {

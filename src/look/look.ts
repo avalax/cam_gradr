@@ -24,13 +24,13 @@ const LOG_NAME = /s-?log|log-?c|v-?log|c-?log|f-?log|n-?log|d-?log|log-?3g/i;
 export interface LookProblem {
   key:
     | 'notCube'
-    | 'unreadable'
     | 'oneDimensional'
     | 'noSize'
     | 'size'
     | 'numbers'
     | 'count'
-    | 'domain';
+    | 'domain'
+    | 'parseFailed';
   params: Record<string, string | number>;
 }
 
@@ -39,6 +39,16 @@ export class LookError extends Error {
   constructor(readonly problem: LookProblem) {
     super(problem.key);
   }
+}
+
+// The problem the parser names. Anything else it throws is a bug: the console gets it as it is, the
+// user a file that could not be processed, so that the message never stays empty.
+export function lookProblem(error: unknown): LookProblem {
+  if (error instanceof LookError) {
+    return error.problem;
+  }
+  console.error(error);
+  return { key: 'parseFailed', params: {} };
 }
 
 export function isCubeFile(fileName: string): boolean {

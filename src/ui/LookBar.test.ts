@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../lang';
 import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
-import { chosenFile } from '../test-support/chosen-file';
 import { failingStorage } from '../test-support/failing-storage';
 import { IDENTITY_CUBE, cubeFile as file } from '../test-support/look-cubes';
 import { emptyLookStorage } from '../test-support/empty-storage';
@@ -166,10 +165,12 @@ describe('LookBar', () => {
 
   it('names the reasons of rejected files, also of an unreadable one, in the language shown', async () => {
     const wrapper = mount(LookBar);
-    await useLookStore().importFiles([
-      chosenFile('notes.txt', 'x'),
-      chosenFile('Gone.cube', new DOMException('', 'NotFoundError')),
-    ]);
+    // As the store keeps them (tested there): what the parser found, or why the browser did not
+    // hand over the file.
+    useLookStore().messages = [
+      { kind: 'rejected', file: 'notes.txt', reason: { key: 'notCube', params: {} } },
+      { kind: 'rejected', file: 'Gone.cube', reason: 'unreadable' },
+    ];
     await flushPromises();
     const alerts = () =>
       wrapper.findAll('[data-testid="look-messages"] [role="alert"]').map((alert) => alert.text());

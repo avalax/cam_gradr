@@ -24,7 +24,7 @@ type CardNumber = keyof typeof CARD_PIXELS;
 const LIGHTING = { large18: 0.46, large50: 0.74, stripDark: 0.12, stripLight: 0.85 };
 
 // The gray cards or the color cards (step 2).
-export type SceneName = 'gray' | 'colors';
+type SceneName = 'gray' | 'colors';
 
 // One filled rectangle of the synthetic image (pixels, color 0..255).
 interface SceneRect {

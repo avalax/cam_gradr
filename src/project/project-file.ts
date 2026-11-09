@@ -40,48 +40,31 @@ export function fileDialogs(): FileDialogs | null {
     : null;
 }
 
-// Why the browser could not open or save a file: the key of its sentence (project.errors).
-export type FileProblem = 'accessDenied' | 'fileInUse' | 'noSpace' | 'unreadable';
-
-// The names of the errors the browser throws, by what they mean for the file. A file that went
-// away or became unreadable after it was chosen counts as one that cannot be read.
-const FILE_PROBLEMS = new Map<string, FileProblem>([
-  ['NotAllowedError', 'accessDenied'],
-  ['SecurityError', 'accessDenied'],
-  ['NoModificationAllowedError', 'fileInUse'],
-  ['InvalidStateError', 'fileInUse'],
-  ['QuotaExceededError', 'noSpace'],
-  ['NotReadableError', 'unreadable'],
-  ['NotFoundError', 'unreadable'],
-]);
-
-// What an error of the browser means for the file, told by its name alone: its message is the
-// browser's own English text, which fits into no sentence of the app. Null where the name says
-// nothing the user could act on.
-export function fileProblem(error: unknown): FileProblem | null {
-  const name = error instanceof Error ? error.name : '';
-  return FILE_PROBLEMS.get(name) ?? null;
-}
-
-// Closing a dialog without choosing a file is no error.
-function cancelled(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'AbortError';
+// What the user chose in a system dialog; null if the dialog was closed without a choice, which is
+// no error. Only the dialog itself can be cancelled: an AbortError while reading or writing the file
+// afterwards is an error like any other.
+async function choice<T>(dialog: Promise<T>): Promise<T | null> {
+  try {
+    return await dialog;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return null;
+    }
+    throw error;
+  }
 }
 
 // Lets the user choose a project file in the system dialog; null if the dialog was cancelled.
 export async function openProjectFile(
   dialogs: FileDialogs,
 ): Promise<{ file: ProjectFile; text: string } | null> {
-  try {
-    const [handle] = await dialogs.showOpenFilePicker({ types: JSON_FILES, multiple: false });
-    const file = await handle.getFile();
-    return { file: { name: file.name, handle }, text: await file.text() };
-  } catch (error) {
-    if (cancelled(error)) {
-      return null;
-    }
-    throw error;
+  const picked = await choice(dialogs.showOpenFilePicker({ types: JSON_FILES, multiple: false }));
+  if (picked === null) {
+    return null;
   }
+  const [handle] = picked;
+  const file = await handle.getFile();
+  return { file: { name: file.name, handle }, text: await file.text() };
 }
 
 // Saves the content: in the system dialog, opened in the folder of the last file with its name
@@ -98,20 +81,18 @@ export async function saveProjectFile(
     downloadFile(name, content, 'application/json');
     return { name };
   }
-  try {
-    const handle = await dialogs.showSaveFilePicker({
+  const handle = await choice(
+    dialogs.showSaveFilePicker({
       types: JSON_FILES,
       suggestedName: name,
       ...(last?.handle !== undefined && { startIn: last.handle }),
-    });
-    const writable = await handle.createWritable();
-    await writable.write(content);
-    await writable.close();
-    return { name: handle.name, handle };
-  } catch (error) {
-    if (cancelled(error)) {
-      return null;
-    }
-    throw error;
+    }),
+  );
+  if (handle === null) {
+    return null;
   }
+  const writable = await handle.createWritable();
+  await writable.write(content);
+  await writable.close();
+  return { name: handle.name, handle };
 }

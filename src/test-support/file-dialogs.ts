@@ -13,8 +13,13 @@ export function installedDialogs(): FileDialogs {
 }
 
 // A file in the system dialogs (Chrome, Edge): reading it gives its text, or fails with the error
-// the browser throws for it, and what is written to it is kept.
-export function fakeHandle(name: string, text: string | DOMException = '') {
+// the browser throws for it, and what is written to it is kept, unless writing fails with
+// `writeError`.
+export function fakeHandle(
+  name: string,
+  text: string | DOMException = '',
+  writeError: DOMException | null = null,
+) {
   const written: string[] = [];
   const handle = {
     name,
@@ -22,6 +27,9 @@ export function fakeHandle(name: string, text: string | DOMException = '') {
     createWritable: () =>
       Promise.resolve({
         write: (content: string) => {
+          if (writeError !== null) {
+            return Promise.reject(writeError);
+          }
           written.push(content);
           return Promise.resolve();
         },

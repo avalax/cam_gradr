@@ -1,8 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { usePreviewStore } from '../lut/preview-store';
 import type { NamedStorage } from '../storage/indexed-db';
+import { chosenFile, notReadable } from '../test-support/chosen-file';
 import { failingStorage } from '../test-support/failing-storage';
 import { IDENTITY_CUBE, INVERT_CUBE, cubeFile as file } from '../test-support/look-cubes';
 import { emptyLookStorage } from '../test-support/empty-storage';
@@ -55,10 +56,13 @@ describe('useLookStore', () => {
   });
 
   it('names rejected files with the reason and keeps the valid ones', async () => {
+    const warn = vi.spyOn(console, 'warn').mockReturnValue();
     const store = useLookStore();
+    const gone = notReadable();
     await store.importFiles([
       file('notes.txt'),
       file('broken.cube', 'LUT_1D_SIZE 2'),
+      chosenFile('Gone.cube', gone),
       file('Ok.cube'),
     ]);
     expect(store.looks.map((entry) => entry.name)).toEqual(['Ok']);
@@ -74,7 +78,15 @@ describe('useLookStore', () => {
       file: 'broken.cube',
       reason: { key: 'oneDimensional', params: {} },
     });
-    expect(store.messages[2]).toEqual({ kind: 'imported', names: ['Ok'] });
+    // A file the browser did not hand over: why goes to the message, what it threw to the console.
+    expect(store.messages[2]).toEqual({
+      kind: 'rejected',
+      file: 'Gone.cube',
+      reason: 'unreadable',
+    });
+    expect(warn).toHaveBeenCalledWith(gone);
+    expect(store.messages[3]).toEqual({ kind: 'imported', names: ['Ok'] });
+    warn.mockRestore();
   });
 
   it('chooses nothing when no file was valid', async () => {
