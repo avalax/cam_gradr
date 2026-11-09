@@ -22,7 +22,7 @@ const { strength } = storeToRefs(preview);
 const file = useTemplateRef<HTMLInputElement>('file');
 const current = computed(() => looks.find(preview.look));
 const strengthText = computed(() =>
-  current.value === null ? '–' : t('look.percent', { value: strength.value }),
+  current.value === null ? '–' : t('app.percent', { value: strength.value }),
 );
 
 const names = computed(() => list.value.map((look) => look.name));
@@ -137,7 +137,7 @@ function text(message: LookMessage): string {
       <IconButton
         v-if="current !== null"
         size="sm"
-        class="border border-zinc-800 bg-white dark:bg-zinc-100"
+        class="border border-zinc-800 bg-surface"
         :label="t('look.remove', { name: current.name })"
         data-testid="look-remove"
         @click="remove(current.name)"

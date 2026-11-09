@@ -26,8 +26,6 @@
     "duplicateId": "Duplicate patch ID: {id}.",
     "tooFewPatches": "Too few patches: at least {min} required.",
     "tooFewNeutral": "Too few neutral patches (gray ramps): at least {min} required.",
-    "invalidJson": "The file is not valid JSON.",
-    "unknownFormat": "Unknown format, expected “{format}”.",
     "onlyD50": "Only Lab values with white point D50 are supported.",
     "patchShape": "A patch needs “id” and “lab”.",
     "patchWhere": "Patch {id}",

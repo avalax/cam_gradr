@@ -19,7 +19,7 @@ export type Rgb = Vec3;
 // Corners of a chart in the image: top left, top right, bottom right, bottom left.
 export type Corners = readonly [Point, Point, Point, Point];
 
-export interface PatchLayout {
+interface PatchLayout {
   id: string;
   rect: Rect;
   role?: 'large' | 'strip' | 'neutral';
@@ -27,7 +27,7 @@ export interface PatchLayout {
   nominalLab?: Vec3;
 }
 
-export interface CardLayout {
+interface CardLayout {
   card: number;
   patches: readonly PatchLayout[];
 }

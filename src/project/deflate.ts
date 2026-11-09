@@ -4,36 +4,18 @@ export type Bytes = Uint8Array<ArrayBuffer>;
 
 const CHUNK = 0x80_00;
 
-async function collect(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<Bytes> {
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  let next = await reader.read();
-  while (!next.done) {
-    chunks.push(next.value);
-    total += next.value.length;
-    next = await reader.read();
-  }
-  const result = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return result;
-}
-
-// Sends the bytes through the packer or unpacker. Reading runs concurrently with writing,
-// otherwise the stream backs up.
+// Sends the bytes through the packer or unpacker and collects what comes out; the streams of the
+// browser do the reading and writing. With corrupt or truncated data the pipe rejects. (Reading the
+// output through a Response would make Firefox log the rejection to the console as well.)
 async function pump(stream: CompressionStream | DecompressionStream, bytes: Bytes): Promise<Bytes> {
-  const writer = stream.writable.getWriter();
-  const writing = (async () => {
-    await writer.write(bytes);
-    await writer.close();
-  })();
-  // Both sides are awaited together: with corrupt data both fail, and no rejection is left
-  // unhandled.
-  const [, output] = await Promise.all([writing, collect(stream.readable.getReader())]);
-  return output;
+  const chunks: Bytes[] = [];
+  const collect = new WritableStream<Bytes>({
+    write: (chunk) => {
+      chunks.push(chunk);
+    },
+  });
+  await new Blob([bytes]).stream().pipeThrough(stream).pipeTo(collect);
+  return new Uint8Array(await new Blob(chunks).arrayBuffer());
 }
 
 function toBase64(bytes: Bytes): string {

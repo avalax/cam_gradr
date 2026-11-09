@@ -9,7 +9,6 @@
     "correctedLayer": "Farben nach der Korrektur",
     "defaultValue": "{id} (Standardwert)",
     "divider": "Trennlinie: links Farben der Kamera, rechts korrigierte",
-    "noCorrection": "Noch keine Korrektur",
     "noReport": "Ohne Bericht (Referenz fehlt)"
   },
   "wrong": "Das sind keine Farbkarten. Halte die beiden Farbkarten in die Kamera.",

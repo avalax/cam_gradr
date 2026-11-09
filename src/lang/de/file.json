@@ -1,4 +1,6 @@
 {
+  "invalidJson": "Die Datei ist kein gültiges JSON.",
+  "unknownFormat": "Unbekanntes Format, erwartet wird „{format}“.",
   "accessDenied": "Der Browser hat den Zugriff auf die Datei verweigert.",
   "fileInUse": "Die Datei wird gerade von einem anderen Programm verwendet.",
   "noSpace": "Auf dem Laufwerk ist kein Platz mehr frei.",

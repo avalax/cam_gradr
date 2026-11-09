@@ -148,7 +148,7 @@ watch([active, open], async ([index]) => {
       aria-controls="look-list"
       :aria-expanded="open"
       :aria-activedescendant="open ? `look-option-${String(active)}` : undefined"
-      class="flex h-[26px] w-full min-w-0 items-center gap-1 rounded border border-zinc-800 bg-white px-1.5 text-left hover:bg-zinc-200 dark:bg-zinc-100"
+      class="flex h-[26px] w-full min-w-0 items-center gap-1 rounded border border-zinc-800 bg-surface px-1.5 text-left hover:bg-zinc-200"
       data-testid="look-select"
       @click="toggle"
       @keydown="onKey"
@@ -165,7 +165,7 @@ watch([active, open], async ([index]) => {
       id="look-list"
       ref="list"
       role="listbox"
-      class="absolute bottom-full left-0 z-20 mb-0.5 max-h-[min(15rem,calc(100vh-15rem))] min-w-full overflow-auto rounded border border-zinc-500 bg-white py-1 shadow-lg dark:bg-zinc-100"
+      class="absolute bottom-full left-0 z-20 mb-0.5 max-h-[min(15rem,calc(100vh-15rem))] min-w-full overflow-auto rounded border border-zinc-500 bg-surface py-1 shadow-lg"
       data-testid="look-list"
     >
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/interactive-supports-focus -- the combobox keeps the focus and handles the keys for its options (aria-activedescendant) -->

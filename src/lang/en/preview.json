@@ -4,7 +4,6 @@
   "captureTitle": "Take a still image and switch the camera off",
   "rendererWebgl": "Rendering: graphics card (WebGL2)",
   "rendererCpu": "Rendering: software, downscaled (WebGL2 not available)",
-  "noModelTitle": "No correction yet",
   "noModelText": "Calculate it first in the “Color cards” tab. Then you will see the camera image before and after here.",
   "noSourceTitle": "No image yet",
   "noSourceText": "Switch the camera on above with “{button}” to see the live image or to take a still image.",

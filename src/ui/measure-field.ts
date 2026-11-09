@@ -42,7 +42,7 @@ export const OK_BOX: Box = {
 };
 
 function percent(value: number): string {
-  return t('measure.percent', { value: formatDecimal(value * 100, 0) });
+  return t('app.percent', { value: formatDecimal(value * 100, 0) });
 }
 
 function signed(value: number): string {

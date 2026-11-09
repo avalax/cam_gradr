@@ -4,7 +4,6 @@
     "description": "The color correction as a {file} file. Larger LUTs are more accurate; some devices only accept 17³ or 33³ (see the manual).",
     "sizeLabel": "LUT size (grid points per axis)",
     "sizeOption": "{size}³",
-    "noModelTitle": "No correction yet",
     "noModelText": "Calculate it in the “Color cards” tab or load a project.",
     "gotoColor": "Go to color cards",
     "download": "Download",
@@ -20,12 +19,9 @@
     "description": "To continue working without a new capture, as {file}. This is what it contains:",
     "corners": "{corners} corner points · {fields} patches",
     "fields": "{fields} patches",
-    "gray": "Gray cards",
-    "color": "Color cards",
     "correction": "Correction",
     "correctionValue": "Curves + matrix + hue table",
     "reference": "Reference",
-    "look": "Look LUT",
     "lookValue": "{name} · {strength}%"
   }
 }

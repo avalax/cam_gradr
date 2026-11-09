@@ -60,7 +60,7 @@ const summary = computed(() => {
   if (props.report !== null) {
     return deviationSummary(props.report);
   }
-  return t(props.model === null ? 'color.wipe.noCorrection' : 'color.wipe.noReport');
+  return t(props.model === null ? 'app.noCorrection' : 'color.wipe.noReport');
 });
 </script>
 

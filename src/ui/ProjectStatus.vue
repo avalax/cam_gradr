@@ -36,7 +36,7 @@ function close(): void {
   <!-- Floats above the page and does not push the content away. -->
   <div
     v-if="shown"
-    class="fixed bottom-4 left-1/2 z-30 flex w-max max-w-[min(64rem,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-lg border border-zinc-400 bg-white dark:bg-zinc-100 p-3 shadow-lg"
+    class="fixed bottom-4 left-1/2 z-30 flex w-max max-w-[min(64rem,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-lg border border-zinc-400 bg-surface p-3 shadow-lg"
     data-testid="project-message"
   >
     <div class="min-w-0 flex-1 space-y-1">

@@ -1,4 +1,6 @@
 {
+  "percent": "{value}%",
+  "noCorrection": "No correction yet",
   "tabs": {
     "gray": "Gray cards",
     "color": "Color cards",

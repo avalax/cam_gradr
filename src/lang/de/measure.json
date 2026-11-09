@@ -3,7 +3,6 @@
   "normal": "Helligkeit und Kontrast befinden sich im Normalbereich.",
   "aria": "Helligkeit und Kontrast: {hint}",
   "caption": "Helligkeit der Graufelder im Bild (0 % schwarz, 100 % weiß)",
-  "percent": "{value} %",
   "points": "{value} Punkte",
   "target": "{level} (Soll {target})",
   "tolerance": "Toleranz ±{value}",

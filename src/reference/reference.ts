@@ -1,4 +1,4 @@
-import { isRecord } from '../chart/layout';
+import { isRecord } from '../storage/json';
 import { COLOR_IDS, NEUTRAL_IDS } from '../chart/layouts';
 import type { Vec3 } from '../color/lab';
 import { t } from '../lang';
@@ -57,7 +57,7 @@ function build(name: string, entries: [string, Vec3][]): ReferenceSet {
 // Checks a set in the JSON format that is already parsed (the bundled set is imported as such).
 export function parseReferenceData(raw: unknown): ReferenceSet {
   if (!isRecord(raw) || raw.format !== FORMAT || !Array.isArray(raw.patches)) {
-    throw new TypeError(t('reference.errors.unknownFormat', { format: FORMAT }));
+    throw new TypeError(t('file.unknownFormat', { format: FORMAT }));
   }
   if (raw.illuminant !== undefined && raw.illuminant !== 'D50') {
     throw new RangeError(t('reference.errors.onlyD50'));
@@ -80,7 +80,7 @@ export function parseReferenceJson(text: string): ReferenceSet {
   try {
     raw = JSON.parse(text);
   } catch (error) {
-    throw new SyntaxError(t('reference.errors.invalidJson'), { cause: error });
+    throw new SyntaxError(t('file.invalidJson'), { cause: error });
   }
   return parseReferenceData(raw);
 }

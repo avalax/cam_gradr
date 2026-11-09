@@ -38,7 +38,7 @@ const STYLES = {
     group: 'flex flex-wrap gap-1.5',
     option: 'rounded-full border px-3 py-0.5 text-xs disabled:opacity-50',
     on: 'border-zinc-800 bg-zinc-800 text-zinc-50',
-    off: 'border-zinc-400 bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
+    off: 'border-zinc-400 bg-surface text-zinc-800 enabled:hover:bg-zinc-200',
   },
   // The chosen card has a border of 2 px; the others have 1 px and a margin of 1 px, so that the cards
   // keep their size. The group is a size container, so that all cards put their detail beside or
@@ -48,14 +48,14 @@ const STYLES = {
     group: '@container grid grid-cols-3 gap-2',
     option:
       'flex flex-col rounded-lg px-2 py-1.5 text-left leading-snug disabled:opacity-50 @md:px-3',
-    on: 'border-2 border-zinc-800 bg-white dark:bg-zinc-100',
+    on: 'border-2 border-zinc-800 bg-surface',
     off: 'm-px border border-zinc-300 bg-zinc-50 enabled:hover:bg-zinc-200',
   },
   segmented: {
     group: 'flex w-full overflow-hidden rounded border border-zinc-500 text-[11px] font-semibold',
     option: 'focus-ring-inset flex-1 border-zinc-500 px-1 py-1 [&:not(:first-child)]:border-l',
     on: 'bg-zinc-800 text-zinc-50',
-    off: 'bg-white text-zinc-800 enabled:hover:bg-zinc-200 dark:bg-zinc-100',
+    off: 'bg-surface text-zinc-800 enabled:hover:bg-zinc-200',
   },
 } as const;
 const styles = computed(() => STYLES[props.variant]);

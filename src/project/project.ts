@@ -1,4 +1,4 @@
-import { isRecord } from '../chart/layout';
+import { isRecord } from '../storage/json';
 import { COLOR_IDS, GRAY_IDS, colorLayout, grayLayout } from '../chart/layouts';
 import type { ChartLayout, Point, Rgb } from '../chart/types';
 import { t } from '../lang';
@@ -314,15 +314,15 @@ export function parseProject(text: string): Project {
   try {
     raw = JSON.parse(text);
   } catch (error) {
-    throw new SyntaxError(t('project.errors.invalidJson'), { cause: error });
+    throw new SyntaxError(t('file.invalidJson'), { cause: error });
   }
   if (!isRecord(raw) || raw.format !== PROJECT_FORMAT) {
-    throw new TypeError(t('project.errors.unknownFormat', { format: PROJECT_FORMAT }));
+    throw new TypeError(t('file.unknownFormat', { format: PROJECT_FORMAT }));
   }
   if (typeof raw.savedAt !== 'string') {
     throw new TypeError(t('project.errors.savedAt'));
   }
-  const color = parseChart(raw.color, t('project.errors.chartColor'), colorLayout, COLOR_IDS);
+  const color = parseChart(raw.color, t('app.tabs.color'), colorLayout, COLOR_IDS);
   // parseChart has already checked that raw.color is an object.
   const reference = (raw.color as Record<string, unknown>).reference;
   if (reference !== null && typeof reference !== 'string') {
@@ -334,7 +334,7 @@ export function parseProject(text: string): Project {
   return {
     format: PROJECT_FORMAT,
     savedAt: raw.savedAt,
-    gray: parseChart(raw.gray, t('project.errors.chartGray'), grayLayout, GRAY_IDS),
+    gray: parseChart(raw.gray, t('app.tabs.gray'), grayLayout, GRAY_IDS),
     color: { ...color, reference },
     model: parseModel(raw.model),
     preview: { split: parsePercent(raw.preview.split, t('project.errors.splitName')) },

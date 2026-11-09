@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
             :class="[
               entry.width,
               tab === entry.key
-                ? 'z-10 -mb-px border-zinc-800 bg-white dark:bg-zinc-100 text-zinc-900'
+                ? 'z-10 -mb-px border-zinc-800 bg-surface text-zinc-900'
                 : 'border-zinc-400 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-50',
             ]"
             :tabindex="tab === entry.key ? 0 : -1"
@@ -193,7 +193,7 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <div class="rounded-b-lg rounded-tr-lg border border-zinc-800 bg-white dark:bg-zinc-100 p-3">
+      <div class="rounded-b-lg rounded-tr-lg border border-zinc-800 bg-surface p-3">
         <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
           <GrayStep v-if="tab === 'gray'" />
           <ColorStep v-else-if="tab === 'color'" />

@@ -4,7 +4,6 @@
   "captureTitle": "Standbild aufnehmen und Kamera ausschalten",
   "rendererWebgl": "Darstellung: Grafikkarte (WebGL2)",
   "rendererCpu": "Darstellung: Software, verkleinert (kein WebGL2 verfügbar)",
-  "noModelTitle": "Noch keine Korrektur",
   "noModelText": "Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und nachher.",
   "noSourceTitle": "Noch kein Bild",
   "noSourceText": "Schalte die Kamera oben mit „{button}“ ein, um das Livebild zu sehen oder ein Standbild aufzunehmen.",
