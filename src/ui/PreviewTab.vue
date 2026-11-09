@@ -171,7 +171,7 @@ const shownStill = computed(
 const stage = computed(() => stageState(shownStill.value !== null, isLive.value));
 const band = computed(() =>
   model.value === null
-    ? { state: 'off' as const, label: t('preview.noModelTitle') }
+    ? { state: 'off' as const, label: t('app.noCorrection') }
     : { state: stage.value, label: null },
 );
 // Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
@@ -422,9 +422,7 @@ const splitModel = computed({
                   class="max-w-xs text-sm leading-snug"
                   data-testid="preview-no-model"
                 >
-                  <span class="block font-semibold text-zinc-800">{{
-                    t('preview.noModelTitle')
-                  }}</span>
+                  <span class="block font-semibold text-zinc-800">{{ t('app.noCorrection') }}</span>
                   {{ t('preview.noModelText') }}
                 </p>
                 <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">

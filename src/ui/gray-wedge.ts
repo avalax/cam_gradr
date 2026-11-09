@@ -6,6 +6,7 @@ import type { ReferenceSet } from '../reference/reference';
 import { applyColorModel, targetLab } from '../solve/fit';
 import type { ColorModel, FitResult } from '../solve/fit';
 import { t } from '../lang';
+import type { messages } from '../lang';
 import { formatDecimal, formatSigned } from '../lang/format';
 
 import { cssColor } from './color-css';
@@ -108,15 +109,16 @@ export function worstPatches(report: FitResult['report']): WorstPatch[] {
     .map((patch) => ({ id: patch.id, deviation: patch.after }));
 }
 
-const CHANNELS = ['red', 'green', 'blue'] as const;
-type Channel = (typeof CHANNELS)[number];
+// The names of the channels and zones in the language files. The typed `t` takes any string as a
+// key, so these unions make a channel or a zone without a text fail the typecheck.
+type Wedge = (typeof messages)['en']['wedge'];
+type Channel = keyof Wedge['channels'];
+type Zone = keyof Wedge['zones'];
+
+const CHANNELS = ['red', 'green', 'blue'] as const satisfies readonly Channel[];
 
 function channelName(channel: Channel): string {
-  return {
-    red: t('wedge.channels.red'),
-    green: t('wedge.channels.green'),
-    blue: t('wedge.channels.blue'),
-  }[channel];
+  return t(`wedge.channels.${channel}`);
 }
 
 // Tonal ranges of the gray wedge (camera value from 0 to 1) and the resolution of the analysis.
@@ -124,14 +126,10 @@ const ZONES = [
   { key: 'shadows', from: 0.1, to: 0.3 },
   { key: 'midtones', from: 0.4, to: 0.6 },
   { key: 'highlights', from: 0.7, to: 0.9 },
-] as const;
+] as const satisfies readonly { key: Zone; from: number; to: number }[];
 
-function zoneName(key: (typeof ZONES)[number]['key']): string {
-  return {
-    shadows: t('wedge.zones.shadows'),
-    midtones: t('wedge.zones.midtones'),
-    highlights: t('wedge.zones.highlights'),
-  }[key];
+function zoneName(key: Zone): string {
+  return t(`wedge.zones.${key}`);
 }
 const STEPS = 32;
 const PERCENT = 100;

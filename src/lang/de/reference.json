@@ -26,8 +26,6 @@
     "duplicateId": "Doppelte Feld-ID: {id}.",
     "tooFewPatches": "Zu wenige Felder: mindestens {min} nötig.",
     "tooFewNeutral": "Zu wenige Neutralfelder (Grauleitern): mindestens {min} nötig.",
-    "invalidJson": "Die Datei ist kein gültiges JSON.",
-    "unknownFormat": "Unbekanntes Format, erwartet wird „{format}“.",
     "onlyD50": "Es werden nur Lab-Werte mit Weißpunkt D50 unterstützt.",
     "patchShape": "Ein Feld braucht „id“ und „lab“.",
     "patchWhere": "Feld {id}",

@@ -67,8 +67,8 @@ function chartFacts(state: { points: Record<number, unknown[]>; measurements: ob
   return t('export.project.corners', { corners: String(corners), fields: String(fields) });
 }
 const facts = computed(() => [
-  { label: t('export.project.gray'), value: chartFacts(gray.committed()) },
-  { label: t('export.project.color'), value: chartFacts(color.committed()) },
+  { label: t('app.tabs.gray'), value: chartFacts(gray.committed()) },
+  { label: t('app.tabs.color'), value: chartFacts(color.committed()) },
   {
     label: t('export.project.correction'),
     value: model.value === null ? '–' : t('export.project.correctionValue'),
@@ -83,7 +83,7 @@ const facts = computed(() => [
     ),
   },
   {
-    label: t('export.project.look'),
+    label: t('look.label'),
     value:
       preview.look === null || !withLooks.value
         ? '–'
@@ -171,7 +171,7 @@ function download(current: ColorModel): void {
         <template #file><code>.cube</code></template>
       </I18nT>
       <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
-        <span class="block font-semibold">{{ t('export.lut.noModelTitle') }}</span>
+        <span class="block font-semibold">{{ t('app.noCorrection') }}</span>
         {{ t('export.lut.noModelText') }}
         <button type="button" :class="LINK_BUTTON" @click="emit('goto', 'color')">
           {{ t('export.lut.gotoColor') }}
@@ -194,9 +194,7 @@ function download(current: ColorModel): void {
           :look="sliceLook"
         />
       </div>
-      <div
-        class="flex flex-col gap-3 rounded-lg border border-zinc-300 bg-white dark:bg-zinc-100 p-3"
-      >
+      <div class="flex flex-col gap-3 rounded-lg border border-zinc-300 bg-surface p-3">
         <!-- The three sizes, each with its file size and what it is for. -->
         <ChoiceChips
           variant="cards"
@@ -210,7 +208,7 @@ function download(current: ColorModel): void {
         <div class="flex items-center gap-3">
           <span
             aria-hidden="true"
-            class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-white dark:bg-zinc-100 pb-0.5 text-[8px] font-bold"
+            class="grid h-10 w-8 place-items-end justify-items-center rounded border-[1.5px] border-zinc-500 bg-surface pb-0.5 text-[8px] font-bold"
             >.cube</span
           >
           <div class="min-w-0 flex-1 text-sm">

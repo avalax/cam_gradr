@@ -4,7 +4,6 @@
     "description": "Die Farbkorrektur als {file}-Datei. Größere LUTs sind genauer, manche Geräte nehmen nur 17³ oder 33³ an (siehe Handbuch).",
     "sizeLabel": "Größe der LUT (Stützstellen je Achse)",
     "sizeOption": "{size}³",
-    "noModelTitle": "Noch keine Korrektur",
     "noModelText": "Berechne sie im Tab „Farbkarten“ oder lade ein Projekt.",
     "gotoColor": "Zu den Farbkarten",
     "download": "Herunterladen",
@@ -20,12 +19,9 @@
     "description": "Zum Weiterarbeiten ohne neue Aufnahme, als {file}. Das steckt darin:",
     "corners": "{corners} Eckpunkte · {fields} Felder",
     "fields": "{fields} Felder",
-    "gray": "Graukarten",
-    "color": "Farbkarten",
     "correction": "Korrektur",
     "correctionValue": "Kurven + Matrix + Farbton-Tabelle",
     "reference": "Referenz",
-    "look": "Look-LUT",
     "lookValue": "{name} · {strength} %"
   }
 }

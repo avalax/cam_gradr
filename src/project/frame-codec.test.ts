@@ -42,10 +42,13 @@ describe('frame-codec', () => {
     expect(encoded.data.length).toBeLessThan(256 * 144 * 3);
   });
 
-  it('reports data that cannot be unpacked', async () => {
+  it('reports data that cannot be unpacked, also when it breaks off', async () => {
     await expect(
       decodeFrame({ width: 1, height: 1, encoding: FRAME_ENCODING, data: 'AAAA' }),
     ).rejects.toThrow('lässt sich nicht lesen');
+    const encoded = await encodeFrame(gradient(64, 36));
+    const cut = encoded.data.slice(0, Math.floor(encoded.data.length / 8) * 4);
+    await expect(decodeFrame({ ...encoded, data: cut })).rejects.toThrow('lässt sich nicht lesen');
   });
 
   it('reports a wrong size', async () => {

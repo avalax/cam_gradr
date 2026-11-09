@@ -14,8 +14,6 @@
     "looksRemoved": "{count} importierte Look-LUTs, die das Projekt nicht enthält, wurden aus dem Browser entfernt."
   },
   "errors": {
-    "invalidJson": "Die Datei ist kein gültiges JSON.",
-    "unknownFormat": "Unbekanntes Format, erwartet wird „{format}“.",
     "savedAt": "Der Zeitpunkt des Speicherns fehlt.",
     "triple": "{where}: erwartet werden 3 Zahlen.",
     "pointXY": "{where}: ein Eckpunkt braucht x und y.",
@@ -26,8 +24,6 @@
     "fieldWhere": "{where}, Feld {id}",
     "fieldRange": "{where}, Feld {id}: Werte müssen zwischen 0 und 1 liegen.",
     "chartShape": "{where}: erwartet werden corners, measurements und rotated.",
-    "chartGray": "Graukarten",
-    "chartColor": "Farbkarten",
     "curveWhere": "Modell, Kurve {index}",
     "curveShape": "{where}: erwartet werden xs und ys.",
     "curvePoints": "{where}: ungültige Stützpunkte.",

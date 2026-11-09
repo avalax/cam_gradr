@@ -6,8 +6,15 @@
 /* Dark appearance: the page carries data-theme="dark" (see theme-store.ts). The neutral scales are
    turned around, so every bg-zinc-100 or text-zinc-800 of the components has its dark counterpart
    without a second class; `dark:` variants only exist where a color must not simply be turned
-   around (white surfaces, error red, the green dot). */
+   around (error red, the green dot). */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* The surface of the frame, the cards, the controls and the popups (bg-surface): white, and in the
+   dark appearance the step above the page, as zinc-100 is there. White stays white where it is drawn
+   on an image (the divider, the measuring dot). */
+@theme {
+  --color-surface: #fff;
+}
 
 /* The LUT slices of the export in their box (a size container): two rows where it is at most three
    times as wide as tall, so that the box is filled and the slices of two rows keep at least two
@@ -41,6 +48,7 @@
   --color-zinc-700: #c6c6cc;
   --color-zinc-800: #e4e4e7;
   --color-zinc-900: #f4f4f5;
+  --color-surface: var(--color-zinc-100);
 }
 
 body {

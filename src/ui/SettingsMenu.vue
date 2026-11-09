@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
       v-if="open"
       role="dialog"
       :aria-label="t('settings.title')"
-      class="absolute right-0 top-full z-20 mt-2 max-h-[80vh] w-[min(26rem,calc(100vw-1.5rem))] divide-y divide-zinc-200 overflow-auto rounded-lg border border-zinc-400 bg-white dark:bg-zinc-100 shadow-lg"
+      class="absolute right-0 top-full z-20 mt-2 max-h-[80vh] w-[min(26rem,calc(100vw-1.5rem))] divide-y divide-zinc-200 overflow-auto rounded-lg border border-zinc-400 bg-surface shadow-lg"
       data-testid="settings-panel"
     >
       <section v-for="entry in SECTIONS" :key="entry.key" :aria-labelledby="`${entry.key}-heading`">
