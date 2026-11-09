@@ -7,8 +7,8 @@ import { useCameraStore } from '../camera/camera-store';
 import { useColorChartStore } from '../chart/chart-store';
 import { drawFrame } from '../camera/draw-frame';
 import { createCpuRenderer } from '../gl/cpu-renderer';
-import { createLutRenderer } from '../gl/lut-renderer';
-import type { LutRenderer, RenderSource } from '../gl/lut-renderer';
+import { createLutRenderer, describeRendererProblem } from '../gl/lut-renderer';
+import type { LutRenderer, RenderSource, RendererError, RendererProblem } from '../gl/lut-renderer';
 import { startPreviewLoop } from '../gl/preview-loop';
 import { formatDecimal } from '../lang/format';
 import { applyLook, blendLuts } from '../look/look';
@@ -102,7 +102,12 @@ const CAST_COLORS = {
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
-const error = ref<string | null>(null);
+// Why the preview cannot draw; its text is translated when shown, so that it follows a language
+// switch.
+const problem = shallowRef<RendererProblem | null>(null);
+const error = computed(() =>
+  problem.value === null ? null : describeRendererProblem(problem.value),
+);
 // A capture only makes sense once the video delivers an image.
 const videoReady = ref(false);
 
@@ -260,7 +265,8 @@ function setup(): void {
     // Without WebGL2 the software rendering takes over so the preview still works.
     renderer.value = gl ? createLutRenderer(gl) : createCpuRenderer(target);
   } catch (error_) {
-    error.value = (error_ as Error).message;
+    // Both renderers throw only RendererErrors, which name the problem.
+    problem.value = (error_ as RendererError).problem;
     return;
   }
   if (lut.value !== null) {
@@ -376,10 +382,12 @@ const splitModel = computed({
               data-testid="stage-label"
             />
             <div class="relative">
-              <!-- Placeholder the size of the image while there is nothing to show. -->
+              <!-- Placeholder the size of the image while there is nothing to show. Under a camera
+                   error only the icon and the title, at the top, as on the card tabs. -->
               <div
                 v-if="!showImage"
-                class="flex w-full flex-col items-center justify-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+                class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+                :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
                 :style="{ aspectRatio: aspect }"
               >
                 <svg
@@ -413,13 +421,17 @@ const splitModel = computed({
                   <span class="block font-semibold text-zinc-800">{{
                     t('preview.noModelTitle')
                   }}</span>
-                  {{ t('preview.noModelText') }}
+                  <template v-if="camera.errorMessage === null">{{
+                    t('preview.noModelText')
+                  }}</template>
                 </p>
                 <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
                   <span class="block font-semibold text-zinc-800">{{
                     t('preview.noSourceTitle')
                   }}</span>
-                  {{ t('preview.noSourceText', { button: t('camera.toggle.start') }) }}
+                  <template v-if="camera.errorMessage === null">{{
+                    t('preview.noSourceText', { button: t('camera.toggle.start') })
+                  }}</template>
                 </p>
               </div>
               <canvas

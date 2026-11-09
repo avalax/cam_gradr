@@ -167,6 +167,15 @@ async function lookSettings(): Promise<LookSettings> {
 
 export const PROJECT_FILE_NAME = 'cam_gradr-project.json';
 
+// A file chosen in the file input: its name and a way to read it.
+interface ChosenFile {
+  name: string;
+  text: () => Promise<string>;
+}
+
+// What the browser throws for a file that went away or became unreadable after it was chosen.
+const UNREADABLE = new Set(['NotReadableError', 'NotFoundError']);
+
 // Saving and loading the working state as a JSON file (without the manufacturers' reference values).
 export const useProjectStore = defineStore('project', () => {
   // What the message over the page says: the key of a text in the language files with its values,
@@ -174,7 +183,9 @@ export const useProjectStore = defineStore('project', () => {
   // exception: it puts its text together deep in the parser, in the language of the moment, so
   // that text goes away with a switch. `reason` is the browser's own text.
   type ProjectFailure =
-    { key: 'saveFailed' | 'openFailed'; reason: string } | { key: 'invalid'; text: string };
+    | { key: 'saveFailed' | 'openFailed'; reason: string }
+    | { key: 'unreadable' }
+    | { key: 'invalid'; text: string };
   type ProjectNotice =
     | { key: 'missingReference'; name: string }
     | { key: 'lookRemoved' | 'looksRemoved'; count: number };
@@ -189,9 +200,7 @@ export const useProjectStore = defineStore('project', () => {
     if (current === null) {
       return null;
     }
-    return current.key === 'invalid'
-      ? current.text
-      : t(`project.errors.${current.key}`, { reason: current.reason });
+    return current.key === 'invalid' ? current.text : t(`project.errors.${current.key}`, current);
   });
   const notice = computed(() =>
     notices.value.length === 0
@@ -260,6 +269,19 @@ export const useProjectStore = defineStore('project', () => {
     notices.value = found;
   }
 
+  // Loads a file chosen in the file input (browsers without the system dialogs).
+  async function loadChosen(file: ChosenFile): Promise<void> {
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      dismiss();
+      failure.value = { key: 'unreadable' };
+      return;
+    }
+    await load(text, { name: file.name });
+  }
+
   // Lets the user choose a project file in the system dialog and loads it.
   async function open(dialogs: FileDialogs): Promise<void> {
     try {
@@ -268,7 +290,10 @@ export const useProjectStore = defineStore('project', () => {
         await load(picked.text, picked.file);
       }
     } catch (error_) {
-      failure.value = { key: 'openFailed', reason: (error_ as Error).message };
+      const { name, message } = error_ as Error;
+      failure.value = UNREADABLE.has(name)
+        ? { key: 'unreadable' }
+        : { key: 'openFailed', reason: message };
     }
   }
 
@@ -278,5 +303,5 @@ export const useProjectStore = defineStore('project', () => {
     notices.value = [];
   }
 
-  return { failure, notices, error, notice, save, load, open, dismiss };
+  return { notices, error, notice, save, load, loadChosen, open, dismiss };
 });

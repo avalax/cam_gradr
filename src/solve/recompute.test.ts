@@ -8,7 +8,7 @@ import { useReferenceStore } from '../reference/reference-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
-import { emptyReferenceStorage } from '../test-support/reference-storage';
+import { emptyReferenceStorage } from '../test-support/empty-storage';
 
 import { recomputeOnChange } from './recompute';
 import { useSolveStore } from './solve-store';

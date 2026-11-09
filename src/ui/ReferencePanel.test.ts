@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNDLED_NAME, BUNDLED_SOURCE_URL } from '../reference/bundled';
 import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
-import { emptyReferenceStorage } from '../test-support/reference-storage';
+import { emptyReferenceStorage } from '../test-support/empty-storage';
 
 import ReferencePanel from './ReferencePanel.vue';
 
@@ -22,10 +22,17 @@ async function mountLoaded(options: { attach?: boolean } = {}) {
   return wrapper;
 }
 
-async function chooseFile(wrapper: ReturnType<typeof mount>, name: string, text: string) {
+// Chooses a file in the file input; without a text, the browser cannot read it.
+async function chooseFile(wrapper: ReturnType<typeof mount>, name: string, text?: string) {
   const input = wrapper.get('[data-testid="reference-file"]');
+  const read = () =>
+    text === undefined
+      ? Promise.reject(
+          new DOMException('The requested file could not be read.', 'NotReadableError'),
+        )
+      : Promise.resolve(text);
   Object.defineProperty(input.element, 'files', {
-    value: [{ name, text: () => Promise.resolve(text) }],
+    value: [{ name, text: read }],
     configurable: true,
   });
   await input.trigger('change');
@@ -83,6 +90,14 @@ describe('ReferencePanel', () => {
     await chooseFile(wrapper, 'kaputt.json', '{"format":"x"}');
     expect(wrapper.get('[role="alert"]').text()).toContain('Unbekanntes Format');
     expect(useReferenceStore().selected?.name).toBe(BUNDLED_NAME);
+  });
+
+  it('reports a file the browser cannot read instead of what the last import did', async () => {
+    const wrapper = await mountLoaded();
+    await chooseFile(wrapper, 'a.json', dummyReferenceJson('Mein Satz'));
+    await chooseFile(wrapper, 'weg.json');
+    expect(wrapper.get('[role="alert"]').text()).toBe('Die Datei lässt sich nicht lesen.');
+    expect(wrapper.find('[data-testid="reference-saved"]').exists()).toBe(false);
   });
 
   it('does nothing without a selected file', async () => {

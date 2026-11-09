@@ -1,8 +1,8 @@
 import { MAX_CODE, toByte } from '../color/srgb';
 import { sampleLut } from '../lut/lut';
 import type { Lut } from '../lut/lut';
-import { t } from '../lang';
 
+import { RendererError } from './lut-renderer';
 import type { LutRenderer, RenderSource } from './lut-renderer';
 
 // Software rendering on the CPU for browsers without WebGL2: lower resolution, runs anywhere.
@@ -13,7 +13,7 @@ const CHANNELS = 4;
 function context2d(canvas: HTMLCanvasElement, willReadFrequently: boolean) {
   const context = canvas.getContext('2d', { willReadFrequently });
   if (context === null) {
-    throw new Error(t('preview.errors.noContext'));
+    throw new RendererError({ key: 'noContext' });
   }
   return context;
 }

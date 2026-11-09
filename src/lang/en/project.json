@@ -14,6 +14,7 @@
     "looksRemoved": "{count} imported look LUTs that the project does not contain were removed from the browser."
   },
   "errors": {
+    "unreadable": "The file cannot be read.",
     "invalidJson": "The file is not valid JSON",
     "unknownFormat": "Unknown format, expected “{format}”.",
     "savedAt": "The time of saving is missing",
@@ -22,9 +23,9 @@
     "unknownCard": "{where}: unknown card {key}",
     "badCornerList": "{where}: card {key} has an invalid list of corner points",
     "cardWhere": "{where}, card {key}",
-    "unknownField": "{where}: unknown field {id}",
-    "fieldWhere": "{where}, field {id}",
-    "fieldRange": "{where}, field {id}: values must be between 0 and 1",
+    "unknownField": "{where}: unknown patch {id}",
+    "fieldWhere": "{where}, patch {id}",
+    "fieldRange": "{where}, patch {id}: values must be between 0 and 1",
     "chartShape": "{where}: corners, measurements and rotated expected",
     "chartGray": "Gray cards",
     "chartColor": "Color cards",

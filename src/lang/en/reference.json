@@ -19,6 +19,7 @@
     "removeFailed": "The set could not be deleted locally."
   },
   "errors": {
+    "unreadable": "The file cannot be read.",
     "notNumbers": "{where}: Lab values are not numbers",
     "labRange": "{where}: Lab value outside the valid range",
     "unknownId": "Unknown patch ID: {id}",

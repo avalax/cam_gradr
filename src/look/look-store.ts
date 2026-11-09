@@ -18,7 +18,7 @@ export type LookMessage =
   | { kind: 'logConversion'; name: string; fallback: string | null }
   | { kind: 'removed'; name: string }
   | { kind: 'loadFailed' }
-  | { kind: 'saveFailed'; name: string }
+  | { kind: 'saveFailed'; names: string[] }
   | { kind: 'removeFailed' }
   | { kind: 'storeFailed' };
 
@@ -84,11 +84,13 @@ export const useLookStore = defineStore('look', () => {
     }
   }
 
-  async function save(look: LookLut, report: LookMessage[]): Promise<void> {
+  // Saves the look in the browser; false where the storage fails.
+  async function save(look: LookLut): Promise<boolean> {
     try {
       await storage().save(look);
+      return true;
     } catch {
-      report.push({ kind: 'saveFailed', name: look.name });
+      return false;
     }
   }
 
@@ -97,6 +99,7 @@ export const useLookStore = defineStore('look', () => {
   async function importFiles(files: readonly LookFile[]): Promise<void> {
     const before = usePreviewStore().look;
     const imported: LookLut[] = [];
+    const unsaved: string[] = [];
     const problems: LookMessage[] = [];
     for (const file of files) {
       if (!isCubeFile(file.name)) {
@@ -111,7 +114,9 @@ export const useLookStore = defineStore('look', () => {
         const look = parseLookCube(file.name, await file.text());
         put(look);
         imported.push(look);
-        await save(look, problems);
+        if (!(await save(look))) {
+          unsaved.push(look.name);
+        }
       } catch (error) {
         // The parser names the problem; a file the browser cannot read (moved or locked since it
         // was chosen) has none of its own.
@@ -121,10 +126,11 @@ export const useLookStore = defineStore('look', () => {
       }
     }
     // A look that looks like a log conversion gets the warning instead of a place in the line that
-    // names the imported looks. Errors and warnings come first, that line last: the room under the
-    // bar shows two lines, and what needs attention has to be in them. Removed through the warning,
-    // the look gives way to the one the import would otherwise have chosen: the last other look of
-    // this import, or the look from before.
+    // names the imported looks, and so does a look the browser could not save, in one line for all
+    // of them. Errors and the warnings with their action come first, those lines last: the room
+    // under the bar shows two lines, and what needs attention has to be in them. Removed through
+    // the warning, the look gives way to the one the import would otherwise have chosen: the last
+    // other look of this import, or the look from before.
     const plain = imported.filter((look) => !isLogConversion(look.name)).map((look) => look.name);
     const fallback = plain.at(-1) ?? before;
     const warnings: LookMessage[] = imported
@@ -134,7 +140,14 @@ export const useLookStore = defineStore('look', () => {
     if (last !== undefined) {
       usePreviewStore().setLook(last.name);
     }
-    const report: LookMessage[] = plain.length > 0 ? [{ kind: 'imported', names: plain }] : [];
+    const saved = plain.filter((name) => !unsaved.includes(name));
+    const report: LookMessage[] = [];
+    if (unsaved.length > 0) {
+      report.push({ kind: 'saveFailed', names: unsaved });
+    }
+    if (saved.length > 0) {
+      report.push({ kind: 'imported', names: saved });
+    }
     removed.value = null;
     messages.value = [...problems, ...warnings, ...report];
   }
@@ -211,9 +224,8 @@ export const useLookStore = defineStore('look', () => {
       usePreviewStore().setLook(last.look.name);
     }
     const others = warningsExcept(last.look.name);
-    const report: LookMessage[] = [];
-    await save(last.look, report);
-    messages.value = [...report, ...others];
+    const saved = await save(last.look);
+    messages.value = saved ? others : [...others, { kind: 'saveFailed', names: [last.look.name] }];
   }
 
   function dismiss(): void {

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { SCENE_NAMES, sceneFor } from './synthetic-cards';
-import type { Scene, SceneName } from './synthetic-cards';
+import type { Scene } from './synthetic-cards';
 
 const REDRAW_MS = 100;
 const FRAME_RATE = 30;
@@ -110,12 +110,12 @@ export async function setScene(page: Page, name: string): Promise<void> {
   }, name);
 }
 
-// Holds other cards in front of the camera and waits until the new image arrives in the video
-// element.
-export async function showScene(page: Page, name: SceneName): Promise<void> {
-  await setScene(page, name);
+// Holds the color cards in front of the running camera and waits until their image arrives in the
+// video element.
+export async function showColorScene(page: Page): Promise<void> {
+  await setScene(page, 'colors');
   // Probe point: center of the last drawn patch of the scene.
-  const probe = sceneFor(name).rects.at(-1);
+  const probe = sceneFor('colors').rects.at(-1);
   if (probe === undefined) {
     throw new Error('The scene is empty.');
   }

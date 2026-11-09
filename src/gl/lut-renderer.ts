@@ -57,28 +57,55 @@ export interface LutRenderer {
   dispose: () => void;
 }
 
+// What keeps the preview from drawing: the key of its text (preview.errors) with its values. The
+// preview translates it when it shows it, so that it follows a language switch.
+export type RendererProblem =
+  | {
+      key: 'createFailed';
+      what: 'shader' | 'program' | 'vertexArray' | 'imageTexture' | 'lutTexture';
+    }
+  | { key: 'compileFailed' | 'linkFailed'; log: string }
+  | { key: 'noContext' };
+
+// The error of both renderers: it names the problem.
+export class RendererError extends Error {
+  constructor(readonly problem: RendererProblem) {
+    super(problem.key);
+  }
+}
+
+// The text of a problem in the language of the moment.
+export function describeRendererProblem(problem: RendererProblem): string {
+  return problem.key === 'createFailed'
+    ? t('preview.errors.createFailed', { what: t(`preview.errors.${problem.what}`) })
+    : t(`preview.errors.${problem.key}`, problem);
+}
+
 // WebGL returns null when resources run out; this should end as an understandable error.
-function required<T>(value: T | null, what: string): T {
+function required<T>(
+  value: T | null,
+  what: Extract<RendererProblem, { key: 'createFailed' }>['what'],
+): T {
   if (value === null) {
-    throw new Error(t('preview.errors.createFailed', { what }));
+    throw new RendererError({ key: 'createFailed', what });
   }
   return value;
 }
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-  const shader = required(gl.createShader(type), t('preview.errors.shader'));
+  const shader = required(gl.createShader(type), 'shader');
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   if (gl.getShaderParameter(shader, gl.COMPILE_STATUS) === false) {
     const log = gl.getShaderInfoLog(shader) ?? '';
     gl.deleteShader(shader);
-    throw new Error(t('preview.errors.compileFailed', { log }));
+    throw new RendererError({ key: 'compileFailed', log });
   }
   return shader;
 }
 
 function link(gl: WebGL2RenderingContext): WebGLProgram {
-  const program = required(gl.createProgram(), t('preview.errors.program'));
+  const program = required(gl.createProgram(), 'program');
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
   const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
   gl.attachShader(program, vertex);
@@ -89,7 +116,7 @@ function link(gl: WebGL2RenderingContext): WebGLProgram {
   if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
     const log = gl.getProgramInfoLog(program) ?? '';
     gl.deleteProgram(program);
-    throw new Error(t('preview.errors.linkFailed', { log }));
+    throw new RendererError({ key: 'linkFailed', log });
   }
   return program;
 }
@@ -117,10 +144,10 @@ function toRgba8(lut: Lut): Uint8Array {
 // Thin adapter around WebGL2: draws an image (video, canvas) with the 3D LUT applied.
 export function createLutRenderer(gl: WebGL2RenderingContext): LutRenderer {
   const program = link(gl);
-  const vao = required(gl.createVertexArray(), t('preview.errors.vertexArray'));
-  const imageTexture = required(gl.createTexture(), t('preview.errors.imageTexture'));
-  const lutTexture = required(gl.createTexture(), t('preview.errors.lutTexture'));
-  const leftLutTexture = required(gl.createTexture(), t('preview.errors.lutTexture'));
+  const vao = required(gl.createVertexArray(), 'vertexArray');
+  const imageTexture = required(gl.createTexture(), 'imageTexture');
+  const lutTexture = required(gl.createTexture(), 'lutTexture');
+  const leftLutTexture = required(gl.createTexture(), 'lutTexture');
   const uniforms = {
     image: gl.getUniformLocation(program, 'uImage'),
     lut: gl.getUniformLocation(program, 'uLut'),

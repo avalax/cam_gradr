@@ -209,6 +209,8 @@ describe('GrayStep', () => {
       'nicht gestartet',
     );
     expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
+    // The placeholder keeps only its title, the error box says what to do.
+    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toBe('Die Kamera ist aus');
   });
 
   describe('search with held state', () => {

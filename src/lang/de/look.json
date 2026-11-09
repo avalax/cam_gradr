@@ -17,7 +17,8 @@
     "removed": "Look-LUT „{name}“ lokal gelöscht.",
     "undo": "Rückgängig",
     "loadFailed": "Gespeicherte Look-LUTs konnten nicht geladen werden.",
-    "saveFailed": "„{name}“ konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
+    "saveFailedOne": "„{name}“ konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
+    "saveFailedMany": "{count} Look-LUTs konnten nicht lokal gespeichert werden und gelten nur für diese Sitzung.",
     "removeFailed": "Die Look-LUT konnte lokal nicht gelöscht werden.",
     "storeFailed": "Die Look-LUTs des Projekts ließen sich nicht lokal speichern und gelten nur für diese Sitzung."
   },

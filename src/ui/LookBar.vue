@@ -86,7 +86,9 @@ function text(message: LookMessage): string {
       return t('look.messages.removed', { name: message.name });
     }
     case 'saveFailed': {
-      return t('look.messages.saveFailed', { name: message.name });
+      return message.names.length === 1
+        ? t('look.messages.saveFailedOne', { name: message.names[0] })
+        : t('look.messages.saveFailedMany', { count: message.names.length });
     }
     default: {
       return t(`look.messages.${message.kind}`);

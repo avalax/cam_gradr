@@ -1,4 +1,3 @@
-import { t } from '../lang';
 import {
   LUMINANCE,
   deltaE2000,
@@ -705,13 +704,27 @@ function summarize(
   };
 }
 
+// Why the calculation is not possible: the key of its text (solve) with its values, which the
+// store translates when it is read, so that it follows a language switch.
+export interface SolveProblem {
+  key: 'tooFewMeasurements';
+  params: { patches: number; neutral: number };
+}
+
+export class SolveError extends RangeError {
+  constructor(readonly problem: SolveProblem) {
+    super(problem.key);
+  }
+}
+
 export function fitColorModel(input: FitInput): FitResult {
   const all = samples(input);
   const neutrals = all.filter((sample) => sample.isNeutral);
   if (all.length < MIN_PATCHES || neutrals.length < MIN_NEUTRAL) {
-    throw new RangeError(
-      t('solve.tooFewMeasurements', { patches: MIN_PATCHES, neutral: MIN_NEUTRAL }),
-    );
+    throw new SolveError({
+      key: 'tooFewMeasurements',
+      params: { patches: MIN_PATCHES, neutral: MIN_NEUTRAL },
+    });
   }
   const blocks = poolNeutrals(neutrals);
   const gain = exposureGain(blocks);

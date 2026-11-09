@@ -3,29 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { i18n } from '../lang';
 import { grayFrame } from '../test-support/frames';
+import { FAKE_STREAM, installFakeCamera } from '../test-support/media';
 
 import { CameraError } from './camera-error';
-import { setCameraApi, useCameraStore } from './camera-store';
+import { useCameraStore } from './camera-store';
 import { RESOLUTIONS } from './types';
-import type { CameraApi, CameraSession } from './types';
-
-function session(deviceId = 'cam1'): CameraSession {
-  return {
-    stream: { id: 'stream' } as unknown as MediaStream,
-    settings: { width: 1280, height: 720, deviceId },
-  };
-}
-
-function fakeApi(overrides: Partial<CameraApi> = {}) {
-  const api = {
-    enumerate: vi.fn(() => Promise.resolve([{ id: 'cam1', label: 'Webcam' }])),
-    open: vi.fn(() => Promise.resolve(session())),
-    close: vi.fn(),
-    ...overrides,
-  } satisfies CameraApi;
-  setCameraApi(api);
-  return api;
-}
 
 // Red component of the shown still image.
 function shown(store: ReturnType<typeof useCameraStore>): number | undefined {
@@ -38,25 +20,31 @@ describe('useCameraStore', () => {
   });
 
   it('starts the camera and adopts device, resolution and device list', async () => {
-    const api = fakeApi();
+    const api = installFakeCamera();
     const store = useCameraStore();
     await store.start();
     expect(store.status).toBe('live');
     expect(store.actual).toEqual({ width: 1280, height: 720 });
     expect(store.selectedDeviceId).toBe('cam1');
-    expect(store.devices).toEqual([{ id: 'cam1', label: 'Webcam' }]);
+    expect(store.devices.map((device) => device.id)).toEqual(['cam1', 'cam2']);
     expect(api.open).toHaveBeenCalledWith(null, { width: 1280, height: 720 });
   });
 
   it('leaves the device selection empty when the camera reports no ID', async () => {
-    fakeApi({ open: () => Promise.resolve(session('')) });
+    installFakeCamera({
+      open: () =>
+        Promise.resolve({
+          stream: FAKE_STREAM,
+          settings: { width: 1280, height: 720, deviceId: '' },
+        }),
+    });
     const store = useCameraStore();
     await store.start();
     expect(store.selectedDeviceId).toBeNull();
   });
 
   it('reports errors and releases the camera', async () => {
-    const api = fakeApi({
+    const api = installFakeCamera({
       open: vi.fn().mockRejectedValue(new CameraError('permissionDenied')),
     });
     const store = useCameraStore();
@@ -68,7 +56,7 @@ describe('useCameraStore', () => {
   });
 
   it('releases the session when listing fails after opening', async () => {
-    const api = fakeApi({ enumerate: () => Promise.reject(new CameraError('unknown')) });
+    const api = installFakeCamera({ enumerate: () => Promise.reject(new CameraError('unknown')) });
     const store = useCameraStore();
     await store.start();
     expect(store.status).toBe('error');
@@ -76,7 +64,7 @@ describe('useCameraStore', () => {
   });
 
   it('stops the camera', async () => {
-    const api = fakeApi();
+    const api = installFakeCamera();
     const store = useCameraStore();
     await store.start();
     store.stop();
@@ -89,7 +77,7 @@ describe('useCameraStore', () => {
   });
 
   it('restarts the running session on a repeated start', async () => {
-    const api = fakeApi();
+    const api = installFakeCamera();
     const store = useCameraStore();
     await store.start();
     await store.start();
@@ -98,7 +86,7 @@ describe('useCameraStore', () => {
   });
 
   it('switches the device immediately only in live mode', async () => {
-    const api = fakeApi();
+    const api = installFakeCamera();
     const store = useCameraStore();
     await store.selectDevice('cam2');
     expect(store.selectedDeviceId).toBe('cam2');
@@ -109,7 +97,7 @@ describe('useCameraStore', () => {
   });
 
   it('switches the resolution immediately only in live mode', async () => {
-    const api = fakeApi();
+    const api = installFakeCamera();
     const store = useCameraStore();
     const full = RESOLUTIONS[2];
     if (full === undefined) {
@@ -124,7 +112,7 @@ describe('useCameraStore', () => {
   });
 
   it('captures an averaged still image', async () => {
-    fakeApi();
+    installFakeCamera();
     const store = useCameraStore();
     const grab = vi.fn(() => ({ width: 1, height: 1, data: [255, 255, 255, 255] }));
     await store.captureStill({ grab, nextFrame: () => Promise.resolve() });
@@ -134,7 +122,7 @@ describe('useCameraStore', () => {
   });
 
   it('reports errors during capture in the language shown', async () => {
-    fakeApi();
+    installFakeCamera();
     const store = useCameraStore();
     const failing = (thrown: Error) => ({
       grab: () => {
@@ -153,7 +141,7 @@ describe('useCameraStore', () => {
   });
 
   it('discards the still image on clearing and on every camera start', async () => {
-    fakeApi();
+    installFakeCamera();
     const store = useCameraStore();
     const grabber = {
       grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }),
@@ -168,7 +156,7 @@ describe('useCameraStore', () => {
   });
 
   it('stores the still image when switching steps and restores the image of the other step', async () => {
-    fakeApi();
+    installFakeCamera();
     const store = useCameraStore();
     const grabber = {
       grab: () => ({ width: 1, height: 1, data: [0, 0, 0, 0] }),
@@ -212,7 +200,7 @@ describe('useCameraStore', () => {
     };
 
     it('holds the previous still image on camera start and returns it on stop', async () => {
-      fakeApi();
+      installFakeCamera();
       const store = useCameraStore();
       const old = grayFrame(1, 1, 0.2);
       store.still = old;
@@ -225,7 +213,7 @@ describe('useCameraStore', () => {
     });
 
     it('keeps a new still image and drops the previous one', async () => {
-      fakeApi();
+      installFakeCamera();
       const store = useCameraStore();
       const old = grayFrame(1, 1, 0.2);
       store.still = old;
@@ -239,7 +227,7 @@ describe('useCameraStore', () => {
     });
 
     it('returns the previous still image even after a start error', async () => {
-      fakeApi({ open: vi.fn().mockRejectedValue(new CameraError('permissionDenied')) });
+      installFakeCamera({ open: vi.fn().mockRejectedValue(new CameraError('permissionDenied')) });
       const store = useCameraStore();
       const old = grayFrame(1, 1, 0.2);
       store.still = old;
@@ -249,7 +237,7 @@ describe('useCameraStore', () => {
     });
 
     it('also deletes the held still image with clearStill and discardStills', async () => {
-      fakeApi();
+      installFakeCamera();
       const store = useCameraStore();
       store.still = grayFrame(1, 1, 0.2);
       await store.start();
@@ -264,7 +252,7 @@ describe('useCameraStore', () => {
     });
 
     it('stores the still image on tab switch with a running camera and holds the image of the new tab', async () => {
-      fakeApi();
+      installFakeCamera();
       const store = useCameraStore();
       const grayStill = grayFrame(1, 1, 0.1);
       store.still = grayStill;
@@ -286,7 +274,7 @@ describe('useCameraStore', () => {
   });
 
   it('knows the owner of the still image, returns all still images and restores them', () => {
-    fakeApi();
+    installFakeCamera();
     const store = useCameraStore();
     expect(store.stillOwner).toBe('gray');
     expect(store.allStills()).toEqual({});

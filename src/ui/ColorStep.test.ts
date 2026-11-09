@@ -16,7 +16,7 @@ import { grayFrame } from '../test-support/frames';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
 import { installFakeCamera, installMediaStubs } from '../test-support/media';
 import { cameraCode, syntheticMeasurements } from '../test-support/synthetic-camera';
-import { emptyReferenceStorage } from '../test-support/reference-storage';
+import { emptyReferenceStorage } from '../test-support/empty-storage';
 
 import ColorStep from './ColorStep.vue';
 

@@ -293,9 +293,12 @@ watch(actual, (next, previous) => {
       <StageLabel :state="stage" :class="IMAGE_BAND" data-testid="stage-label" />
       <div class="relative" data-testid="stage-image">
         <!-- Placeholder the size of the image while the camera is off and there is no still image. -->
+        <!-- Under a camera error only the icon and the title, at the top: the box of the error at the
+             bottom of the image says what to do, and on a small image it would cover the rest. -->
         <div
           v-if="showPlaceholder"
-          class="flex w-full flex-col items-center justify-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+          class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+          :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
           :style="{ aspectRatio: size.width / size.height }"
           data-testid="card-placeholder"
         >
@@ -322,8 +325,10 @@ watch(actual, (next, previous) => {
               <span class="block font-semibold text-zinc-800">{{
                 t('cards.stage.off.title')
               }}</span>
-              {{ t('cards.stage.off.text', { button: t('camera.toggle.start') }) }}
-              {{ idleText }}
+              <template v-if="camera.errorMessage === null">
+                {{ t('cards.stage.off.text', { button: t('camera.toggle.start') }) }}
+                {{ idleText }}
+              </template>
             </template>
           </p>
         </div>

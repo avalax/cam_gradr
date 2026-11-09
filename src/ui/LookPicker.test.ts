@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import type { VueWrapper } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import LookPicker from './LookPicker.vue';
 
@@ -129,24 +129,40 @@ describe('LookPicker', () => {
     expect(wrapper.find('[data-testid="look-list"]').exists()).toBe(false);
   });
 
-  it('scrolls only the list to the highlighted entry', async () => {
-    const { press, wrapper } = picker(null);
-    await press('Enter');
-    // Five entries of 20 px in a list that shows 50 px.
-    const list = wrapper.get('[data-testid="look-list"]').element as HTMLElement;
-    Object.defineProperty(list, 'clientHeight', { value: 50 });
-    for (const [index, item] of [...list.children].entries()) {
-      Object.defineProperties(item, {
-        offsetTop: { value: index * 20 },
-        offsetHeight: { value: 20 },
+  describe('in a long list', () => {
+    // happy-dom lays nothing out: entries of 20 px in a list that shows 50 px.
+    afterEach(() => {
+      Reflect.deleteProperty(HTMLUListElement.prototype, 'clientHeight');
+      Reflect.deleteProperty(HTMLLIElement.prototype, 'offsetTop');
+      Reflect.deleteProperty(HTMLLIElement.prototype, 'offsetHeight');
+    });
+
+    it('scrolls only the list, to the chosen look as it opens and to every highlighted entry', async () => {
+      Object.defineProperty(HTMLUListElement.prototype, 'clientHeight', {
+        configurable: true,
+        get: () => 50,
       });
-    }
-    await press('ArrowDown');
-    await press('ArrowDown');
-    await press('ArrowDown');
-    expect(list.scrollTop).toBe(30);
-    await press('Home');
-    expect(list.scrollTop).toBe(0);
+      Object.defineProperties(HTMLLIElement.prototype, {
+        offsetTop: {
+          configurable: true,
+          get(this: HTMLLIElement) {
+            return Number(this.id.replace('look-option-', '')) * 20;
+          },
+        },
+        offsetHeight: { configurable: true, get: () => 20 },
+      });
+      const { press, wrapper } = picker('Warm');
+      await press('Enter');
+      await flushPromises();
+      const list = wrapper.get('[data-testid="look-list"]').element as HTMLElement;
+      expect(list.scrollTop).toBe(30);
+      await press('Home');
+      await flushPromises();
+      expect(list.scrollTop).toBe(0);
+      await press('End');
+      await flushPromises();
+      expect(list.scrollTop).toBe(50);
+    });
   });
 
   it('ignores other keys', async () => {

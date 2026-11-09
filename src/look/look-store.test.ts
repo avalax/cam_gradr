@@ -4,12 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { usePreviewStore } from '../lut/preview-store';
 import type { NamedStorage } from '../storage/indexed-db';
 import { failingStorage } from '../test-support/failing-storage';
-import {
-  IDENTITY_CUBE,
-  INVERT_CUBE,
-  cubeFile as file,
-  emptyLookStorage,
-} from '../test-support/look-cubes';
+import { IDENTITY_CUBE, INVERT_CUBE, cubeFile as file } from '../test-support/look-cubes';
+import { emptyLookStorage } from '../test-support/empty-storage';
 
 import { parseLookCube } from './look';
 import type { LookLut } from './look';
@@ -198,16 +194,25 @@ describe('useLookStore', () => {
     const store = useLookStore();
     await store.load();
     expect(store.messages).toEqual([{ kind: 'loadFailed' }]);
-    await store.importFiles([file('Warm.cube')]);
-    expect(store.looks).toHaveLength(1);
+    // One line for all looks that were not saved, after the warning with its action and instead of
+    // the line that names them as saved.
+    await store.importFiles([file('Warm.cube'), file('SLOG3.cube'), file('notes.txt')]);
+    expect(store.looks).toHaveLength(2);
     expect(store.messages).toEqual([
-      { kind: 'saveFailed', name: 'Warm' },
-      { kind: 'imported', names: ['Warm'] },
+      { kind: 'rejected', file: 'notes.txt', reason: { key: 'notCube', params: {} } },
+      { kind: 'logConversion', name: 'SLOG3', fallback: 'Warm' },
+      { kind: 'saveFailed', names: ['Warm', 'SLOG3'] },
     ]);
     await store.remove('Warm');
-    expect(store.messages).toEqual([{ kind: 'removeFailed' }]);
+    expect(store.messages).toEqual([
+      { kind: 'removeFailed' },
+      { kind: 'logConversion', name: 'SLOG3', fallback: 'Warm' },
+    ]);
     await store.undo();
-    expect(store.messages).toEqual([{ kind: 'saveFailed', name: 'Warm' }]);
+    expect(store.messages).toEqual([
+      { kind: 'logConversion', name: 'SLOG3', fallback: 'Warm' },
+      { kind: 'saveFailed', names: ['Warm'] },
+    ]);
   });
 
   it('makes the look LUTs of a project the whole list, also in the browser storage', async () => {

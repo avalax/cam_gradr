@@ -165,7 +165,6 @@ export const useCameraStore = defineStore('camera', () => {
     selectedDeviceId,
     resolution,
     status,
-    errorCode,
     errorMessage,
     stream,
     actual,

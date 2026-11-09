@@ -44,7 +44,7 @@ async function onFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file !== undefined) {
-    await project.load(await file.text(), { name: file.name });
+    await project.loadChosen(file);
   }
   // The same file should be selectable again.
   input.value = '';

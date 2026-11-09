@@ -5,17 +5,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLookStore } from '../look/look-store';
 import { useProjectStore } from '../project/project-store';
-import { cubeFile, emptyLookStorage } from '../test-support/look-cubes';
+import { cubeFile } from '../test-support/look-cubes';
+import { emptyLookStorage } from '../test-support/empty-storage';
 
 import ProjectBar from './ProjectBar.vue';
 
 const download = vi.hoisted(() => vi.fn());
 vi.mock('../lut/download', () => ({ downloadFile: download }));
 
-async function chooseFile(wrapper: ReturnType<typeof mount>, text: string) {
+// Chooses a file in the file input; without a text, the browser cannot read it.
+async function chooseFile(wrapper: ReturnType<typeof mount>, text?: string) {
   const input = wrapper.get('[data-testid="project-file"]');
+  const read = () =>
+    text === undefined
+      ? Promise.reject(
+          new DOMException('The requested file could not be read.', 'NotReadableError'),
+        )
+      : Promise.resolve(text);
   Object.defineProperty(input.element, 'files', {
-    value: [{ name: 'project.json', text: () => Promise.resolve(text) }],
+    value: [{ name: 'project.json', text: read }],
     configurable: true,
   });
   await input.trigger('change');
@@ -90,6 +98,12 @@ describe('ProjectBar', () => {
     await wrapper.get('[data-testid="project-save"]').trigger('click');
     await flushPromises();
     expect((download.mock.calls.at(-1) as [string, string, string])[0]).toBe('project.json');
+  });
+
+  it('reports a file the browser cannot read', async () => {
+    const wrapper = mount(ProjectBar);
+    await chooseFile(wrapper);
+    expect(useProjectStore().error).toBe('Die Datei lässt sich nicht lesen.');
   });
 
   it('leaves choosing the file to the file input without the system dialogs', () => {

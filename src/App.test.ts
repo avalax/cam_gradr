@@ -182,7 +182,7 @@ describe('App', () => {
 
   it('puts the floating project message after the panel in the order of the Tab key', async () => {
     const wrapper = mountApp();
-    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
+    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
     await flushPromises();
     const panel = wrapper.get('[role="tabpanel"]').element;
     const message = wrapper.get('[data-testid="project-message"]').element;

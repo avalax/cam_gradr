@@ -18,8 +18,8 @@
   "project": {
     "heading": "Save project",
     "description": "To continue working without a new capture, as {file}. This is what it contains:",
-    "corners": "{corners} corner points · {fields} fields",
-    "fields": "{fields} fields",
+    "corners": "{corners} corner points · {fields} patches",
+    "fields": "{fields} patches",
     "gray": "Gray cards",
     "color": "Color cards",
     "correction": "Correction",

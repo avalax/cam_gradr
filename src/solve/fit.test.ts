@@ -515,16 +515,17 @@ describe('fitColorModel', () => {
 
   it('throws with too few patches or neutral patches', () => {
     const few = referenceSet(['1D', '2D', '3D']);
-    expect(() => fitColorModel({ measurements: measure(few), reference: few })).toThrow(
-      'Zu wenige Messwerte',
-    );
+    const tooFew = expect.objectContaining({
+      problem: { key: 'tooFewMeasurements', params: { patches: 8, neutral: 4 } },
+    }) as Error;
+    expect(() => fitColorModel({ measurements: measure(few), reference: few })).toThrow(tooFew);
     const colourOnly = referenceSet(dummyIds().filter((id) => !NEUTRAL_IDS.has(id)));
     expect(() =>
       fitColorModel({
         measurements: measure(colourOnly),
         reference: colourOnly,
       }),
-    ).toThrow('Zu wenige Messwerte');
+    ).toThrow(tooFew);
   });
 
   it('stays close to the identity matrix for indistinguishable patches', () => {

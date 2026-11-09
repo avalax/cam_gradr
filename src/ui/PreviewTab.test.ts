@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCameraStore } from '../camera/camera-store';
+import { setLocale } from '../lang';
 import { useColorChartStore } from '../chart/chart-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { useReferenceStore } from '../reference/reference-store';
@@ -107,12 +108,16 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
   });
 
-  it('shows a camera error on the image', async () => {
+  it('shows a camera error on the image, over a placeholder that keeps only its title', async () => {
     installFakeCamera({ open: () => Promise.reject(new Error('x')) });
     const wrapper = mount(PreviewTab);
     await useCameraStore().start();
     await flushPromises();
     expect(wrapper.get('[data-testid="camera-error"]').text()).toContain('nicht gestartet');
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toBe('Noch keine Korrektur');
+    computeModel();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toBe('Noch kein Bild');
   });
 
   it('captures a still image in the live view and then switches the camera off', async () => {
@@ -491,6 +496,9 @@ describe('PreviewTab', () => {
     const wrapper = mount(PreviewTab);
     await flushPromises();
     expect(wrapper.get('[role="alert"]').text()).toContain('Shader konnte nicht übersetzt werden');
+    setLocale('en');
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('Shader could not be compiled');
   });
 
   it('ends the draw cycle and releases WebGL resources', () => {

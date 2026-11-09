@@ -111,11 +111,8 @@ describe('createCpuRenderer', () => {
   });
 
   it('reports a missing 2D context of the drawing surface or the work surface', () => {
-    expect(() => createCpuRenderer(setup({ canvasContext: false }).canvas)).toThrow(
-      'Weder WebGL2 noch ein 2D-Zeichenkontext',
-    );
-    expect(() => createCpuRenderer(setup({ scratchContext: false }).canvas)).toThrow(
-      'Weder WebGL2 noch ein 2D-Zeichenkontext',
-    );
+    const noContext = expect.objectContaining({ problem: { key: 'noContext' } }) as Error;
+    expect(() => createCpuRenderer(setup({ canvasContext: false }).canvas)).toThrow(noContext);
+    expect(() => createCpuRenderer(setup({ scratchContext: false }).canvas)).toThrow(noContext);
   });
 });

@@ -8,7 +8,8 @@ import { setLocale } from '../lang';
 import { setLookStorage, useLookStore } from '../look/look-store';
 import { usePreviewStore } from '../lut/preview-store';
 import { failingStorage } from '../test-support/failing-storage';
-import { IDENTITY_CUBE, cubeFile as file, emptyLookStorage } from '../test-support/look-cubes';
+import { IDENTITY_CUBE, cubeFile as file } from '../test-support/look-cubes';
+import { emptyLookStorage } from '../test-support/empty-storage';
 
 import LookBar from './LookBar.vue';
 
@@ -199,8 +200,15 @@ describe('LookBar', () => {
     await useLookStore().load();
     await flushPromises();
     expect(wrapper.text()).toContain('Gespeicherte Look-LUTs konnten nicht geladen werden.');
-    await useLookStore().importFiles([file('Warm.cube')]);
+    await useLookStore().importFiles([file('Warm.cube'), file('Cold.cube')]);
     await flushPromises();
-    expect(wrapper.text()).toContain('„Warm“ konnte nicht lokal gespeichert werden');
+    expect(wrapper.text()).toContain(
+      '2 Look-LUTs konnten nicht lokal gespeichert werden und gelten nur für diese Sitzung.',
+    );
+    expect(wrapper.text()).not.toContain('importiert');
+    await useLookStore().remove('Cold');
+    await useLookStore().undo();
+    await flushPromises();
+    expect(wrapper.text()).toContain('„Cold“ konnte nicht lokal gespeichert werden');
   });
 });

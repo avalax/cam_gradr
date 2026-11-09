@@ -202,6 +202,22 @@ describe('SettingsMenu', () => {
     wrapper.unmount();
   });
 
+  it('closes when the focus moves on past it, not when it goes nowhere', async () => {
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    const wrapper = mountAttached();
+    await wrapper.get('[data-testid="settings-button"]').trigger('click');
+    const root = wrapper.get('[data-settings-root]');
+    await root.trigger('focusout', { relatedTarget: null });
+    expect(panel(wrapper).exists()).toBe(true);
+    const inside = wrapper.get('[data-testid="section-camera"]').element;
+    await root.trigger('focusout', { relatedTarget: inside });
+    expect(panel(wrapper).exists()).toBe(true);
+    await root.trigger('focusout', { relatedTarget: outside });
+    expect(panel(wrapper).exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it('ignores outside clicks when the menu is closed', async () => {
     const wrapper = mountAttached();
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));

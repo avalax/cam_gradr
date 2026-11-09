@@ -19,6 +19,7 @@
     "removeFailed": "Der Satz konnte lokal nicht gelöscht werden."
   },
   "errors": {
+    "unreadable": "Die Datei lässt sich nicht lesen.",
     "notNumbers": "{where}: Lab-Werte sind keine Zahlen",
     "labRange": "{where}: Lab-Wert außerhalb des gültigen Bereichs",
     "unknownId": "Unbekannte Feld-ID: {id}",

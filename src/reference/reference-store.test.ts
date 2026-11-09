@@ -5,7 +5,7 @@ import { i18n } from '../lang';
 import { dummyReferenceCsv, dummyReferenceJson } from '../test-support/dummy-reference';
 import { failingStorage } from '../test-support/failing-storage';
 import type { NamedStorage } from '../storage/indexed-db';
-import { emptyReferenceStorage } from '../test-support/reference-storage';
+import { emptyReferenceStorage } from '../test-support/empty-storage';
 
 import { BUNDLED_NAME } from './bundled';
 import { setReferenceStorage, useReferenceStore } from './reference-store';
@@ -38,14 +38,6 @@ describe('useReferenceStore', () => {
     expect(store.lastSaved).toBe('Satz A');
     const saved = await storage.list();
     expect(saved.map((set) => set.name)).toEqual(['Satz A']);
-  });
-
-  it('reports as soon as a set is deleted locally', async () => {
-    const store = useReferenceStore();
-    await store.importFile('a.json', dummyReferenceJson('Satz A'));
-    expect(store.lastRemoved).toBeNull();
-    await store.remove('Satz A');
-    expect(store.lastRemoved).toBe('Satz A');
   });
 
   it('loads saved sets in addition to the bundled one and preselects it', async () => {
@@ -97,7 +89,7 @@ describe('useReferenceStore', () => {
     await store.importFile('kaputt.json', '{"format":"x"}');
     expect(store.lastSaved).toBeNull();
     expect(store.error).not.toBeNull();
-    store.select('Satz B');
+    store.choose('Satz B');
     expect(store.error).toBeNull();
     await store.importFile('kaputt.json', '{"format":"x"}');
     await store.remove('Satz B');

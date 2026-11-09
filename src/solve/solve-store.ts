@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
+
+import { t } from '../lang';
 
 import { fitColorModel } from './fit';
-import type { ColorModel, FitInput, FitResult } from './fit';
+import type { ColorModel, FitInput, FitResult, SolveError, SolveProblem } from './fit';
 
 // Result of the color calculation. The model is available for preview and export; the report (with
 // the reference values) only exists after a calculation, not after loading a project. The name of
@@ -12,20 +14,25 @@ export const useSolveStore = defineStore('solve', () => {
   const result = shallowRef<FitResult | null>(null);
   const model = shallowRef<ColorModel | null>(null);
   const referenceName = ref<string | null>(null);
-  const error = ref<string | null>(null);
+  // Why the last calculation failed; its text is translated when read, so that it follows a
+  // language switch.
+  const problem = shallowRef<SolveProblem | null>(null);
+  const error = computed(() =>
+    problem.value === null ? null : t(`solve.${problem.value.key}`, problem.value.params),
+  );
 
   function compute(input: FitInput): void {
     try {
       result.value = fitColorModel(input);
       model.value = result.value.model;
       referenceName.value = input.reference.name;
-      error.value = null;
+      problem.value = null;
     } catch (error_) {
       result.value = null;
       model.value = null;
       referenceName.value = null;
-      // The calculation throws only Error objects with an understandable message.
-      error.value = (error_ as Error).message;
+      // The calculation throws only SolveErrors, which name the problem.
+      problem.value = (error_ as SolveError).problem;
     }
   }
 
@@ -35,7 +42,7 @@ export const useSolveStore = defineStore('solve', () => {
     result.value = null;
     model.value = next;
     referenceName.value = next === null ? null : reference;
-    error.value = null;
+    problem.value = null;
   }
 
   return { result, model, referenceName, error, compute, loadModel };

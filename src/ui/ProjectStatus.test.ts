@@ -45,13 +45,13 @@ describe('ProjectStatus', () => {
     };
 
     save.focus();
-    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
+    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
     await wrapper.vm.$nextTick();
     await close();
     expect(document.activeElement).toBe(save);
 
     // The button that had the focus went with its tab: the focus goes to the open tab.
-    useProjectStore().failure = { key: 'invalid', text: 'Unbekanntes Format' };
+    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
     await wrapper.vm.$nextTick();
     save.remove();
     await close();
@@ -59,7 +59,7 @@ describe('ProjectStatus', () => {
 
     // Nothing had the focus: the open tab as well.
     tab.blur();
-    useProjectStore().notices = [{ key: 'missingReference', name: 'Mein Satz' }];
+    await useProjectStore().load('{"format":"x"}', { name: 'kaputt.json' });
     await wrapper.vm.$nextTick();
     await close();
     expect(document.activeElement).toBe(tab);

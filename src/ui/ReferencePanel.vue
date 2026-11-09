@@ -17,14 +17,14 @@ async function onFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file !== undefined) {
-    await references.importFile(file.name, await file.text());
+    await references.importChosen(file);
   }
   // The same file should be selectable again.
   input.value = '';
 }
 
 function onSelect(event: Event): void {
-  references.select((event.target as HTMLSelectElement).value);
+  references.choose((event.target as HTMLSelectElement).value);
 }
 
 // Deleting the active set takes its button away (the bundled set that follows cannot be deleted):

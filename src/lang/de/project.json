@@ -14,6 +14,7 @@
     "looksRemoved": "{count} importierte Look-LUTs, die das Projekt nicht enthält, wurden aus dem Browser entfernt."
   },
   "errors": {
+    "unreadable": "Die Datei lässt sich nicht lesen.",
     "invalidJson": "Die Datei ist kein gültiges JSON",
     "unknownFormat": "Unbekanntes Format, erwartet wird „{format}“.",
     "savedAt": "Der Zeitpunkt des Speicherns fehlt",

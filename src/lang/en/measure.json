@@ -2,7 +2,7 @@
   "noMeasurement": "No measurement yet.",
   "normal": "Brightness and contrast are within the normal range.",
   "aria": "Brightness and contrast: {hint}",
-  "caption": "Brightness of the gray fields in the image (0% black, 100% white)",
+  "caption": "Brightness of the gray patches in the image (0% black, 100% white)",
   "percent": "{value}%",
   "points": "{value} points",
   "target": "{level} (target {target})",

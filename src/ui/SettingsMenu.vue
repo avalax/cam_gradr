@@ -67,6 +67,15 @@ function onPointerDown(event: PointerEvent): void {
   }
 }
 
+// The Tab key moving on past the menu closes it as well. Focus that goes nowhere (the window loses
+// it, a button inside goes away) leaves it open.
+function onFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget as Element | null;
+  if (next !== null && next.closest('[data-settings-root]') === null) {
+    open.value = false;
+  }
+}
+
 // Escape closes the menu and gives the focus back to the gear, so that the keyboard does not lose
 // its place with the panel.
 function onKeyDown(event: KeyboardEvent): void {
@@ -88,7 +97,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="relative" data-settings-root>
+  <div class="relative" data-settings-root @focusout="onFocusOut">
     <button
       ref="gear"
       type="button"

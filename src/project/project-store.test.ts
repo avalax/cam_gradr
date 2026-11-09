@@ -8,14 +8,15 @@ import { i18n } from '../lang';
 import { useLookStore } from '../look/look-store';
 import { useExportStore } from '../lut/export-store';
 import { usePreviewStore } from '../lut/preview-store';
-import { useReferenceStore } from '../reference/reference-store';
+import { setReferenceStorage, useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 import { dummyReferenceJson } from '../test-support/dummy-reference';
+import { failingStorage } from '../test-support/failing-storage';
 import { fakeHandle, installedDialogs } from '../test-support/file-dialogs';
 import { IDENTITY_MODEL } from '../test-support/identity-model';
-import { INVERT_CUBE, cubeFile, emptyLookStorage } from '../test-support/look-cubes';
+import { INVERT_CUBE, cubeFile } from '../test-support/look-cubes';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
-import { emptyReferenceStorage } from '../test-support/reference-storage';
+import { emptyLookStorage, emptyReferenceStorage } from '../test-support/empty-storage';
 import { grayFrame } from '../test-support/frames';
 
 import { parseProject } from './project';
@@ -315,14 +316,12 @@ describe('useProjectStore', () => {
     expect(useLookStore().find('Warm')).not.toBeNull();
   });
 
-  it('closes error and notice with dismiss', async () => {
+  it('closes the error with dismiss', async () => {
     const project = useProjectStore();
     await project.load('{"format":"x"}', FILE);
     expect(project.error).not.toBeNull();
-    project.notices = [{ key: 'missingReference', name: 'Mein Satz' }];
     project.dismiss();
     expect(project.error).toBeNull();
-    expect(project.notice).toBeNull();
   });
 
   it('drops the text of the validation when the language changes', async () => {
@@ -348,6 +347,20 @@ describe('useProjectStore', () => {
     expect(project.notice).toContain('Referenzsatz „Mein Satz“ ist nicht vorhanden');
     i18n.global.locale.value = 'en';
     expect(project.notice).toContain('The reference set “Mein Satz” is not available');
+    project.dismiss();
+    expect(project.notice).toBeNull();
+  });
+
+  it('keeps what the reference sets report when a project loads', async () => {
+    const text = await workedState();
+    setActivePinia(createPinia());
+    setReferenceStorage(failingStorage());
+    await useReferenceStore().importFile('a.json', dummyReferenceJson('Mein Satz'));
+    await useProjectStore().load(text, FILE);
+    expect(useReferenceStore().selectedName).toBe('Mein Satz');
+    expect(useReferenceStore().warning).toBe(
+      'Gespeicherte Referenzen konnten nicht geladen werden.',
+    );
   });
 
   it('keeps naming the missing set of a loaded correction when saving again', async () => {
@@ -516,5 +529,26 @@ describe('the project file that saving suggests', () => {
     expect(project.error).toBe('Das Projekt ließ sich nicht speichern: Disk full');
     i18n.global.locale.value = 'en';
     expect(project.error).toBe('The project could not be saved: Disk full');
+  });
+
+  it('names a file the browser cannot read without the text of the browser', async () => {
+    const unreadable = new DOMException(
+      'The requested file could not be read.',
+      'NotReadableError',
+    );
+    const gone = {
+      name: 'mein-projekt.json',
+      getFile: () =>
+        Promise.resolve({ name: 'mein-projekt.json', text: () => Promise.reject(unreadable) }),
+    };
+    Object.assign(globals, {
+      showOpenFilePicker: vi.fn().mockResolvedValue([gone]),
+      showSaveFilePicker: vi.fn(),
+    });
+    const project = useProjectStore();
+    await project.open(installedDialogs());
+    expect(project.error).toBe('Die Datei lässt sich nicht lesen.');
+    i18n.global.locale.value = 'en';
+    expect(project.error).toBe('The file cannot be read.');
   });
 });

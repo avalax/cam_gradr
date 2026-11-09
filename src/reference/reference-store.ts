@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
 import { onLocaleChange, t } from '../lang';
 import { APP_ID } from '../ui/app-info';
@@ -10,6 +10,12 @@ import type { NamedStorage } from '../storage/indexed-db';
 import { BUNDLED_NAME, bundledReference } from './bundled';
 import { parseReferenceFile, serializeReferenceJson } from './reference';
 import type { ReferenceSet } from './reference';
+
+// A file chosen in the dialog: its name and a way to read it.
+interface ChosenFile {
+  name: string;
+  text: () => Promise<string>;
+}
 
 const holder: { storage: NamedStorage<ReferenceSet> | null } = { storage: null };
 
@@ -26,10 +32,17 @@ function storage(): NamedStorage<ReferenceSet> {
 export const useReferenceStore = defineStore('reference', () => {
   const sets = ref<ReferenceSet[]>([]);
   const selectedName = ref<string | null>(null);
-  // Why the imported file is no reference set. The validation puts the text together deep in the
-  // parser, in the language of the moment, so it cannot follow a language switch and goes away
-  // with it.
-  const error = ref<string | null>(null);
+  // Why the import failed: a file the browser cannot read, translated when read, or the problem
+  // the validation names. The validation puts its text together deep in the parser, in the
+  // language of the moment, so that text cannot follow a language switch and goes away with it.
+  const failure = shallowRef<{ key: 'unreadable' } | { key: 'invalid'; text: string } | null>(null);
+  const error = computed(() => {
+    const current = failure.value;
+    if (current === null) {
+      return null;
+    }
+    return current.key === 'invalid' ? current.text : t('reference.errors.unreadable');
+  });
   // A problem of the local storage: the key of its text, translated when read.
   const warningKey = ref<'loadFailed' | 'saveFailed' | 'removeFailed' | null>(null);
   const warning = computed(() =>
@@ -41,12 +54,14 @@ export const useReferenceStore = defineStore('reference', () => {
   const lastRemoved = ref<string | null>(null);
 
   onLocaleChange(() => {
-    error.value = null;
+    if (failure.value?.key === 'invalid') {
+      failure.value = null;
+    }
   });
 
-  // Each action shows only its own outcome.
+  // Each action of the panel shows only its own outcome.
   function clearOutcome(): void {
-    error.value = null;
+    failure.value = null;
     warningKey.value = null;
     lastSaved.value = null;
     lastRemoved.value = null;
@@ -91,8 +106,22 @@ export const useReferenceStore = defineStore('reference', () => {
       }
     } catch (error_) {
       // The validation throws only Error objects with an understandable message.
-      error.value = (error_ as Error).message;
+      failure.value = { key: 'invalid', text: (error_ as Error).message };
     }
+  }
+
+  // Reads a file chosen in the dialog and imports it; a file the browser cannot read (moved or
+  // locked since it was chosen) is reported as such.
+  async function importChosen(file: ChosenFile): Promise<void> {
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      clearOutcome();
+      failure.value = { key: 'unreadable' };
+      return;
+    }
+    await importFile(file.name, text);
   }
 
   // Saves a set as a JSON file so it can be imported later or elsewhere.
@@ -100,11 +129,17 @@ export const useReferenceStore = defineStore('reference', () => {
     downloadFile(`${set.name}.json`, serializeReferenceJson(set), 'application/json');
   }
 
+  // Selects a set, also when a project is loaded: what the panel reports stays.
   function select(name: string): void {
     if (sets.value.some((set) => set.name === name)) {
-      clearOutcome();
       selectedName.value = name;
     }
+  }
+
+  // The choice in the panel, which shows only its own outcome.
+  function choose(name: string): void {
+    clearOutcome();
+    select(name);
   }
 
   async function remove(name: string): Promise<void> {
@@ -126,14 +161,15 @@ export const useReferenceStore = defineStore('reference', () => {
     selectedName,
     selected,
     error,
-    warningKey,
     warning,
     lastSaved,
     lastRemoved,
     load,
     importFile,
+    importChosen,
     download,
     select,
+    choose,
     remove,
   };
 });

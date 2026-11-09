@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { i18n } from '../lang';
 import { dummyReference } from '../test-support/dummy-reference';
 import { syntheticMeasurements } from '../test-support/synthetic-camera';
 
@@ -29,7 +30,9 @@ describe('useSolveStore', () => {
     expect(store.result).toBeNull();
     expect(store.model).toBeNull();
     expect(store.referenceName).toBeNull();
-    expect(store.error).toContain('Zu wenige Messwerte');
+    expect(store.error).toBe('Zu wenige Messwerte: mindestens 8 Felder, davon 4 neutrale');
+    i18n.global.locale.value = 'en';
+    expect(store.error).toBe('Too few measurements: at least 8 patches, 4 of them neutral');
   });
 
   it('provides the model, even without a report after loading', () => {

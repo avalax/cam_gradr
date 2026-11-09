@@ -5,7 +5,7 @@ import type { Locator, Page } from '@playwright/test';
 
 import { dummyReferenceJson } from '../../src/test-support/dummy-reference';
 
-import { setScene, showScene } from './camera-stub';
+import { setScene, showColorScene } from './camera-stub';
 
 // Page object of the app: wraps operating and reading the interface for the acceptance tests.
 export class AppPage {
@@ -114,7 +114,7 @@ export class AppPage {
 
   // Holds the color cards in front of the running camera (after step 1).
   async showColorCards(): Promise<void> {
-    await showScene(this.page, 'colors');
+    await showColorScene(this.page);
   }
 
   // Gray cards complete: camera on, cards are detected and captured, then on to the color cards.
@@ -261,15 +261,15 @@ export class AppPage {
   // Holds up the color cards and waits for the capture and corner points (step 2, the camera is
   // already running).
   async captureColorCards(): Promise<void> {
-    // After the automatic capture the camera is off: choose the scene first, then start, so that
-    // the search does not find the old cards. Started that way, the camera shows the color cards
-    // from its first image; waiting for them in the video could miss them, because the app may find
-    // and capture them and switch the camera off before the probe looks. A camera that already runs
-    // shows the old scene until the new image arrives.
-    await setScene(this.page, 'colors');
+    // A camera that already runs shows the old scene until the new image arrives. After the
+    // automatic capture the camera is off: choose the scene first, then start, so that the search
+    // does not find the old cards. Started that way, the camera shows the color cards from its
+    // first image; waiting for them in the video could miss them, because the app may find and
+    // capture them and switch the camera off before the probe looks.
     if ((await this.cameraSwitch.getAttribute('aria-checked')) === 'true') {
       await this.showColorCards();
     } else {
+      await setScene(this.page, 'colors');
       await this.startSearch();
     }
     await this.captureStill();
