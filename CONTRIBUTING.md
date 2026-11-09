@@ -32,11 +32,13 @@ npm run readme:image # renders the picture in the README (docs/preview.png) with
    comment links its preview on GitHub Pages (`https://avalax.github.io/cam_gradr/pr-preview/pr-<number>/`),
    so the change can be tried with a real camera. The preview follows every push a few minutes later
    and is removed when the pull request is closed. It shares the browser storage (reference sets,
-   language, appearance) with the app.
+   look LUTs, language, appearance) with the app.
 4. Merge with **Squash and merge**. The pull request title becomes the commit on `main` and drives the
    changelog and the version, so it must be a Conventional Commit title such as
    `feat(ui): new brightness scale` (the `pr-title` workflow checks it). A merge commit is allowed in
-   justified cases, but it adds an extra changelog entry.
+   justified cases, but it adds an extra changelog entry. A few minutes after the merge the current
+   `main` is at `https://avalax.github.io/cam_gradr/main/`; the app at the root stays on the latest
+   release until the next one.
 
 ## Rules
 

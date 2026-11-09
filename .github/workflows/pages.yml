@@ -1,12 +1,12 @@
 name: Pages
 
-# Publishes the app on GitHub Pages: the latest release at the root and the preview of every open
-# pull request (from the branch pr-previews) under pr-preview/pr-<number>/. It runs after the
-# release workflow and after every change of a preview, always from main, because only main may
-# deploy to the github-pages environment.
+# Publishes the app on GitHub Pages: the latest release at the root, and from the branch pr-previews
+# the preview of main under main/ and of every open pull request under pr-preview/pr-<number>/. It
+# runs after the release workflow and after every change of a preview, always from main, because
+# only main may deploy to the github-pages environment.
 on:
   workflow_run:
-    workflows: [Release, PR preview]
+    workflows: [Release, Preview]
     types: [completed]
   workflow_dispatch:
 
@@ -43,10 +43,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
-      - name: Add the previews of the open pull requests
+      - name: Add the previews of main and the open pull requests
         run: |
-          if git fetch -q --depth 1 origin pr-previews && git cat-file -e FETCH_HEAD:pr-preview 2> /dev/null; then
-            git archive FETCH_HEAD pr-preview | tar -x -C dist
+          if git fetch -q --depth 1 origin pr-previews; then
+            for dir in main pr-preview; do
+              if git cat-file -e "FETCH_HEAD:$dir" 2> /dev/null; then
+                git archive FETCH_HEAD "$dir" | tar -x -C dist
+              fi
+            done
           fi
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
