@@ -5,7 +5,6 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **ui:** project files of format 1 (cam_gradr 1.x) can no longer be loaded, and every saved model needs its hue table.
 * **project:** project files of format 1 (cam_gradr 1.x) can no longer be loaded, and every saved model needs its hue table.
 
 ### Features
