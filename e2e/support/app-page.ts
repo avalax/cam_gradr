@@ -192,7 +192,7 @@ export class AppPage {
 
   // What the preview draws with: 'webgl2' (graphics card) or 'cpu' (software rendering).
   async previewRenderer(): Promise<string | null> {
-    return this.page.getByTestId('preview-renderer').getAttribute('data-renderer');
+    return this.page.getByTestId('preview-canvas').getAttribute('data-renderer');
   }
 
   // Waits until the preview shows the expected color at the position; on failure the message names

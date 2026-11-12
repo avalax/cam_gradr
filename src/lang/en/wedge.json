@@ -1,7 +1,4 @@
 {
-  "target": "Target",
-  "camera": "Camera",
-  "corrected": "Corrected",
   "grayAria": "Gray levels of the color cards: target, camera and after correction",
   "grayAriaNoTarget": "Gray levels of the color cards: camera and after correction",
   "tilesAria": "Color patches: target, camera and after correction",

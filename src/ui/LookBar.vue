@@ -118,7 +118,7 @@ function text(message: LookMessage): string {
       <LookPicker
         v-model="chosen"
         :names="names"
-        :none-text="t(list.length === 0 ? 'look.empty' : 'look.none')"
+        :none-text="t('look.none')"
         :import-text="t('look.import')"
         @import="file?.click()"
       />
@@ -172,18 +172,16 @@ function text(message: LookMessage): string {
     </div>
   </div>
 
-  <!-- Exactly two lines, as long as the hint: more messages at once (an import with a warning and a
-       rejected file) scroll inside, so that they never make the preview taller than the window. The
-       store puts errors and warnings first, so that they and their actions are in these lines. A
+  <!-- Room for exactly two lines, also while there is no message, so that the preview does not jump
+       when one comes: more messages at once (an import with a warning and a rejected file) scroll
+       inside, so that they never make the preview taller than the window. The store puts errors and
+       warnings first, so that they and their actions are in these lines. A
        padding of 2 px on top and below and 4 px at the sides (taken back by the negative margin)
        keeps the focus rings of the links inside the box, which clips them otherwise. -->
   <div
     class="-mx-1 mt-1 box-content flex h-[2lh] flex-col overflow-y-auto px-1 py-0.5 text-xs leading-snug [&_button]:outline-offset-0"
     data-testid="look-messages"
   >
-    <p v-if="list.length === 0 && messages.length === 0" class="text-zinc-600">
-      {{ t('look.hint') }}
-    </p>
     <template v-for="(message, index) in messages" :key="index">
       <p v-if="message.kind === 'rejected'" class="text-red-700 dark:text-red-400" role="alert">
         {{ text(message) }}

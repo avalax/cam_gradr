@@ -13,26 +13,18 @@ describe('WipeLabels', () => {
     expect(wrapper.get('[data-testid="labels-line"]').attributes('style')).toContain('left: 50%');
   });
 
-  it('follows the divider: a narrow side keeps only its dot', () => {
-    const wrapper = labels(15);
-    expect(wrapper.text()).toBe('Korrigiert');
-    expect(wrapper.findAll('i')).toHaveLength(3);
-    const right = labels(85);
-    expect(right.text()).toBe('Kamera');
-    expect(right.findAll('i')).toHaveLength(3);
+  it('follows the divider: a narrow side drops its name', () => {
+    expect(labels(15).text()).toBe('Korrigiert');
+    expect(labels(85).text()).toBe('Kamera');
+    expect(labels(0).text()).toBe('Korrigiert');
+    expect(labels(100).text()).toBe('Kamera');
   });
 
-  it('takes other names for both sides and a green dot for a corrected left side', () => {
+  it('takes other names for both sides', () => {
     const wrapper = mount(WipeLabels, {
-      props: {
-        split: 50,
-        leftLabel: 'Korrigiert',
-        rightLabel: 'Korrigiert + Look-LUT 70 %',
-        leftCorrected: true,
-      },
+      props: { split: 50, leftLabel: 'Korrigiert', rightLabel: 'Korrigiert + Look-LUT 70 %' },
     });
     expect(wrapper.text()).toBe('KorrigiertKorrigiert + Look-LUT 70 %');
-    expect(wrapper.findAll('.bg-emerald-700')).toHaveLength(2);
   });
 
   it('makes both halves buttons that switch their side and say what a click shows', async () => {
@@ -40,7 +32,6 @@ describe('WipeLabels', () => {
       props: {
         split: 50,
         rightLabel: 'Kamera + Look-LUT 70 %',
-        rightCamera: true,
         switchable: true,
         leftTip: 'Klicken: korrigiert zeigen',
         rightTip: 'Klicken: Look-LUT mit Korrektur',
@@ -53,8 +44,6 @@ describe('WipeLabels', () => {
     expect(right.attributes('aria-label')).toBe(
       'Kamera + Look-LUT 70 %. Klicken: Look-LUT mit Korrektur',
     );
-    // Without a look the right dot is green; on the camera image it is grey like the camera.
-    expect(right.find('i').classes()).toContain('bg-zinc-400');
     await left.trigger('click');
     await right.trigger('click');
     expect(wrapper.emitted('switch')).toEqual([['left'], ['right']]);
@@ -69,14 +58,5 @@ describe('WipeLabels', () => {
     expect(wrapper.emitted('switch')).toBeUndefined();
     const named = mount(WipeLabels, { props: { split: 50, switchable: true } });
     expect(named.get('[data-testid="labels-left"]').attributes('aria-label')).toBe('Kamera');
-  });
-
-  it('shows only one side when the divider is at the edge', () => {
-    const left = labels(0);
-    expect(left.text()).toBe('Korrigiert');
-    expect(left.findAll('i')).toHaveLength(2);
-    const right = labels(100);
-    expect(right.text()).toBe('Kamera');
-    expect(right.findAll('i')).toHaveLength(2);
   });
 });

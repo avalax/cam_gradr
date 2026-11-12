@@ -239,14 +239,6 @@ function download(current: ColorModel): void {
       <h2 id="project-heading" class="text-sm font-semibold">
         {{ t('export.project.heading') }}
       </h2>
-      <I18nT
-        keypath="export.project.description"
-        tag="p"
-        scope="global"
-        class="text-xs text-zinc-600"
-      >
-        <template #file><code>.json</code></template>
-      </I18nT>
       <dl class="text-sm" data-testid="project-facts">
         <div
           v-for="fact in facts"

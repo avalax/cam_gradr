@@ -40,7 +40,6 @@ import {
 } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
-import GrayWedge from './GrayWedge.vue';
 import { previewSides } from './preview-sides';
 import StageLabel from './StageLabel.vue';
 import { stageState } from './stage-state';
@@ -86,9 +85,14 @@ const fittedReference = computed(() =>
 const tiles = computed(() =>
   colorCards(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
+// Both views split their tiles the same way.
+const tilesLegend = computed(() =>
+  t(fittedReference.value === null ? 'preview.tilesLegendNoTarget' : 'preview.tilesLegend'),
+);
 const worst = computed(() => (result.value === null ? [] : worstPatches(result.value.report)));
 
-// Gray wedge from the measured neutral patches and what the correction changes per tonal range.
+// The neutral patches from light to dark, as tiles like the colors, and what the correction changes
+// per tonal range.
 const rows = computed(() =>
   wedgeRows(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
@@ -165,14 +169,13 @@ function switchSide(side: 'left' | 'right'): void {
 const shownStill = computed(
   () => still.value ?? (isLive.value ? null : (camera.allStills().color ?? null)),
 );
-// What the preview shows, as in the band of the card tabs: a badge on the image while there is one,
-// otherwise the band above the placeholder. Without a correction the camera shows nothing here, so
-// the band names what is missing instead of a live image it does not show.
-const stage = computed(() => stageState(shownStill.value !== null, isLive.value));
+// The band above the placeholder, as on the card tabs (over the image the band names the sides).
+// Without a correction the camera shows nothing here, so the band names what is missing instead of a
+// live image it does not show.
 const band = computed(() =>
   model.value === null
     ? { state: 'off' as const, label: t('app.noCorrection') }
-    : { state: stage.value, label: null },
+    : { state: stageState(shownStill.value !== null, isLive.value), label: null },
 );
 // Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
 // of this image area must not differ from it.
@@ -333,13 +336,13 @@ const splitModel = computed({
       <p v-if="error !== null" class="text-sm text-red-700 dark:text-red-400" role="alert">
         {{ error }}
       </p>
+      <!-- Only the software rendering is worth a word: it shows the image smaller. -->
       <p
-        v-if="renderer !== null"
+        v-if="renderer?.kind === 'cpu'"
         class="text-xs text-zinc-600"
         data-testid="preview-renderer"
-        :data-renderer="renderer.kind"
       >
-        {{ t(renderer.kind === 'webgl2' ? 'preview.rendererWebgl' : 'preview.rendererCpu') }}
+        {{ t('preview.rendererCpu') }}
       </p>
     </aside>
 
@@ -364,8 +367,6 @@ const splitModel = computed({
               :split="splitModel"
               :left-label="leftLabel"
               :right-label="rightLabel"
-              :left-corrected="leftCorrected"
-              :right-camera="rightCamera"
               :switchable="chosenLook !== null"
               :left-tip="leftTip"
               :right-tip="rightTip"
@@ -438,15 +439,9 @@ const splitModel = computed({
                 v-show="showImage"
                 ref="canvas"
                 class="w-full bg-black"
+                :data-renderer="renderer?.kind"
                 data-testid="preview-canvas"
               ></canvas>
-              <!-- Live image or still image, as in the band of the card tabs. -->
-              <StageLabel
-                v-if="showImage"
-                :state="stage"
-                variant="badge"
-                data-testid="preview-source"
-              />
               <WipeDivider
                 v-if="showImage"
                 v-model="splitModel"
@@ -507,13 +502,7 @@ const splitModel = computed({
                 {{ t('preview.emptyNoCards') }}
               </p>
               <p v-if="tiles.length > 0" class="text-[10px] leading-snug text-zinc-500">
-                {{
-                  t(
-                    fittedReference === null
-                      ? 'preview.tilesLegendNoTarget'
-                      : 'preview.tilesLegend',
-                  )
-                }}
+                {{ tilesLegend }}
               </p>
               <div
                 v-if="worst.length > 0"
@@ -534,7 +523,7 @@ const splitModel = computed({
               class="focus-ring-inset absolute inset-0 flex flex-col gap-2 overflow-y-auto p-2"
             >
               <div v-if="rows.length > 0" class="min-h-24 flex-1">
-                <GrayWedge :rows="rows" />
+                <ColorTiles :cards="[rows]" grays />
               </div>
               <p
                 v-else-if="model !== null"
@@ -543,10 +532,13 @@ const splitModel = computed({
               >
                 {{ t('preview.emptyNoCards') }}
               </p>
+              <p v-if="rows.length > 0" class="text-[10px] leading-snug text-zinc-500">
+                {{ tilesLegend }}
+              </p>
               <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
                 <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
                   <dt class="font-semibold">{{ zone.name }}</dt>
-                  <!-- Room for three lines, so the gray wedge keeps its size when the texts change. A
+                  <!-- Room for three lines, so the gray tiles keep their size when the texts change. A
                      channel with its value never breaks apart. -->
                   <dd class="min-h-[3lh]">
                     {{ brightnessText(zone.brighter) }}

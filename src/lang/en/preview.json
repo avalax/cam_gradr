@@ -2,7 +2,6 @@
   "intro": "The preview shows the camera image with the calculated color correction. What you see left and right of the divider is named above the image: without a look LUT the camera image and the corrected image; with a look LUT a click on a label switches what that side shows. You can drag the divider in the image or move it with the arrow keys. The camera icon at the top right of the image takes a still image and switches the camera off.",
   "capture": "Take still image",
   "captureTitle": "Take a still image and switch the camera off",
-  "rendererWebgl": "Rendering: graphics card (WebGL2)",
   "rendererCpu": "Rendering: software, downscaled (WebGL2 not available)",
   "noModelText": "Calculate it first in the “Color cards” tab. Then you will see the camera image before and after here.",
   "noSourceTitle": "No image yet",

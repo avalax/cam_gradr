@@ -13,7 +13,7 @@
   },
   "tablist": "Sections",
   "imageToolbar": "Image actions",
-  "footer": "{id} · version {version} · LUT generator for the Spyder Checkr Photo.",
+  "footer": "{id} · version {version} · LUT generator for color cards.",
   "status": {
     "notMeasured": "Not measured yet",
     "lightOk": "Lighting is fine",

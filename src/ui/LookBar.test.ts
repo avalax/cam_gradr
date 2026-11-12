@@ -50,12 +50,16 @@ describe('LookBar', () => {
     vi.restoreAllMocks();
   });
 
-  it('offers only the import without looks; the strength waits for a look', async () => {
+  it('is the import button without looks; the strength waits for a look', async () => {
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockReturnValue(undefined);
     const wrapper = mount(LookBar);
-    expect(await options(wrapper)).toEqual(['Noch keine Look-LUT', '+ Look-LUT importieren …']);
-    expect(wrapper.get('[data-testid="look-messages"]').text()).toContain(
-      '„+ Look-LUT importieren …“',
-    );
+    const picker = wrapper.get('[data-testid="look-select"]');
+    expect(picker.text()).toBe('+ Look-LUT importieren …');
+    expect(picker.attributes('role')).toBeUndefined();
+    await picker.trigger('click');
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[data-testid="look-list"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="look-messages"]').text()).toBe('');
     expect(wrapper.find('[data-testid="look-remove"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="look-strength"]').attributes('disabled')).toBeDefined();
     expect(wrapper.get('output').text()).toBe('–');
@@ -67,7 +71,7 @@ describe('LookBar', () => {
     preview.setLook(null);
     const wrapper = mount(LookBar);
     expect(await options(wrapper)).toEqual([
-      'Keine Look-LUT',
+      'Ohne Look-LUT',
       'Cold',
       'Warm',
       '+ Look-LUT importieren …',
@@ -83,7 +87,7 @@ describe('LookBar', () => {
     expect(preview.strength).toBe(40);
     expect(wrapper.get('output').text()).toBe('40 %');
 
-    await pick(wrapper, 'Keine Look-LUT');
+    await pick(wrapper, 'Ohne Look-LUT');
     expect(preview.look).toBeNull();
     expect(wrapper.find('[data-testid="look-remove"]').exists()).toBe(false);
   });

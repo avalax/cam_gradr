@@ -1,7 +1,4 @@
 {
-  "target": "Soll",
-  "camera": "Kamera",
-  "corrected": "Korrigiert",
   "grayAria": "Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur",
   "grayAriaNoTarget": "Graustufen der Farbkarten: Kamera und nach der Korrektur",
   "tilesAria": "Farbfelder: Soll, Kamera und nach der Korrektur",

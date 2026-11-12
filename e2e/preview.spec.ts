@@ -101,13 +101,13 @@ test.describe('Preview', () => {
     await app.page.keyboard.press('End');
     await expectPatch(app, RIGHT_PATCH, codes(cameraCode(dummyLab(RIGHT_PATCH))));
 
-    // A look LUT over the correction, imported through the last entry of the list: with the divider
-    // on the left the whole image shows it, at half strength the inversion meets in the middle.
+    // A look LUT over the correction, imported by the picker, which is the import button while there
+    // is none: with the divider on the left the whole image shows it, at half strength the inversion
+    // meets in the middle.
     await app.page.keyboard.press('Home');
     const picker = app.page.getByTestId('look-select');
     const chooser = app.page.waitForEvent('filechooser');
     await picker.click();
-    await app.page.getByRole('option', { name: '+ Look-LUT importieren …' }).click();
     const dialog = await chooser;
     await dialog.setFiles({
       name: 'Invert.cube',

@@ -6,12 +6,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import LookPicker from './LookPicker.vue';
 
 // The picker with three looks; the chosen look follows v-model like in the bar.
-function picker(chosen: string | null = 'Cold') {
+function picker(chosen: string | null = 'Cold', names = ['Cold', 'Teal', 'Warm']) {
   let current = chosen;
   const wrapper: VueWrapper = mount(LookPicker, {
     props: {
-      names: ['Cold', 'Teal', 'Warm'],
-      noneText: 'Keine Look-LUT',
+      names,
+      noneText: 'Ohne Look-LUT',
       importText: '+ Look-LUT importieren …',
       modelValue: chosen,
       'onUpdate:modelValue': (value: string | null) => {
@@ -31,7 +31,28 @@ function picker(chosen: string | null = 'Cold') {
 describe('LookPicker', () => {
   it('shows the chosen look, or the first entry without one', () => {
     expect(picker().box.text()).toBe('Cold');
-    expect(picker(null).box.text()).toBe('Keine Look-LUT');
+    expect(picker(null).box.text()).toBe('Ohne Look-LUT');
+  });
+
+  it('is a plain import button without looks, and stays that element when the first comes', async () => {
+    const { wrapper, box, press, value } = picker(null, []);
+    expect(box.text()).toBe('+ Look-LUT importieren …');
+    expect(box.attributes('role')).toBeUndefined();
+    expect(box.attributes('aria-expanded')).toBeUndefined();
+    // The picker handles no keys: the arrows choose nothing, and Enter and Space stay the button's
+    // own (the browser turns them into one click, not two).
+    await press('ArrowDown');
+    await press('Enter');
+    expect(value()).toBeNull();
+    expect(wrapper.emitted('import')).toBeUndefined();
+    await box.trigger('click');
+    expect(wrapper.emitted('import')).toHaveLength(1);
+    expect(wrapper.find('[data-testid="look-list"]').exists()).toBe(false);
+
+    await wrapper.setProps({ names: ['Warm'], modelValue: 'Warm' });
+    expect(wrapper.get('[data-testid="look-select"]').element).toBe(box.element);
+    expect(box.attributes('role')).toBe('combobox');
+    expect(box.text()).toBe('Warm');
   });
 
   it('applies every arrow step at once while closed and leaves out the import', async () => {
@@ -109,7 +130,7 @@ describe('LookPicker', () => {
     await box.trigger('click');
     const options = wrapper.findAll('[role="option"]');
     expect(options.map((option) => option.text())).toEqual([
-      'Keine Look-LUT',
+      'Ohne Look-LUT',
       'Cold',
       'Teal',
       'Warm',

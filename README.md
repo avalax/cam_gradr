@@ -1,8 +1,8 @@
 # cam_gradr
 
-**Correct the colors of your webcam with the Datacolor Spyder Checkr Photo.** Hold the cards in front of
-the camera: the app helps you set the light, measures the colors and calculates a 3D LUT that corrects
-them. You download the LUT as a `.cube` file for a camera monitor or video software.
+**Correct the colors of your webcam with gray and color cards.** Hold the cards in front of the camera:
+the app helps you set the light, measures the colors and calculates a 3D LUT that corrects them. You
+download the LUT as a `.cube` file for a camera monitor or video software.
 
 ![The preview of cam_gradr: a room seen by a webcam with a color cast on the left, corrected on the right](docs/preview.png)
 
@@ -12,9 +12,13 @@ Everything runs in your browser. Images and measurements never leave your comput
 
 ## What you need
 
-- a webcam and the **Datacolor Spyder Checkr Photo** (two gray cards and two color cards with 48 patches)
+- a webcam and one of the [supported cards](#supported-cards)
 - a current Chrome, Edge or Firefox
 - even light on the cards, without reflections and shadows
+
+## Supported cards
+
+- **Datacolor Spyder Checkr Photo**: two gray cards and two color cards with 48 patches
 
 ## How it works
 
@@ -33,19 +37,19 @@ Everything runs in your browser. Images and measurements never leave your comput
 4. **Preview: check the result.** The camera image on the left and the corrected image on the right
    of a divider that you drag or move with the arrow keys; with the camera off it shows the still image
    of the color cards. The side column shows each colored patch as target, camera and corrected and
-   names the largest deviations; switched to the grays it shows the gray ramp and how shadows, midtones
-   and highlights change. The camera icon at the top right of the image takes a still image to check the
+   names the largest deviations; switched to the grays it shows the gray patches the same way, from light
+   to dark, and how shadows, midtones and highlights change. The camera icon at the top right of the image takes a still image to check the
    correction on a steady image; in the card tabs the same corner holds the trash icon.
    Below the image you can lay a **look LUT** over the correction, a ready-made `.cube` file such as a
-   cinema look: the last entry of the list imports one (several at once are fine), and the slider sets
-   its strength. The arrow keys switch the look at once, also with the list open, and Escape goes back
+   cinema look: without one the field itself imports it, after that the last entry of its list (several
+   at once are fine); an imported look LUT is chosen at once, and the slider sets its strength. The arrow keys switch the look at once, also with the list open, and Escape goes back
    to the one before. The trash icon next to the list deletes the chosen look LUT. With a look LUT, a
    click on the label above the image switches its side: the left one between camera and corrected, the
    right one between the look over the correction and the look alone on the camera image.
 5. **Export: download the LUT.** Choose 17³, 33³ or 65³ and download the `.cube` file. Larger LUTs are
    more accurate, but some devices only accept 17³ or 33³ (see their manual). With a look LUT chosen in
-   the preview, the file holds correction and look at the set strength; with "No look LUT" it holds the
-   correction alone. The file name and the first lines of the file name the look and its strength.
+   the preview, the file holds correction and look at the set strength; with "Without look LUT" it holds
+   the correction alone. The file name and the first lines of the file name the look and its strength.
 
 You can switch between the tabs at any time. Below each name is a short result with four bars: green
 means good (light in the normal range, or a mean deviation of at most 2 after the correction), yellow
