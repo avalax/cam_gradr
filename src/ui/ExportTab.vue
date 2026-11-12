@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { I18nT, useI18n } from 'vue-i18n';
 
-import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { lookedLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
@@ -22,8 +21,9 @@ import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
 import ChoiceChips from './ChoiceChips.vue';
 import { LINK_BUTTON } from './control-styles';
-import { IMAGE_BAND, IMAGE_BLOCK, imageWidth, previewImage } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, imageWidth } from './image-size';
 import LookBar from './LookBar.vue';
+import { usePreviewArea } from './preview-area';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
 import { fittedReferenceLabel } from './reference-label';
@@ -114,15 +114,7 @@ const fileInfo = computed(() => t('export.lut.points', { size: size.value }));
 // The export is as tall as the preview: an invisible copy of the preview's image area (band, image
 // and, while the preview has an image, the look bar) follows the same rules as the image of the
 // other tabs, so the height follows the window and never depends on the tab opened before.
-const camera = useCameraStore();
-const previewArea = computed(() =>
-  previewImage({
-    corrected: model.value !== null,
-    live: camera.status === 'live',
-    stills: camera.allStills(),
-    actual: camera.actual,
-  }),
-);
+const previewArea = usePreviewArea();
 
 // The button only works with a correction, so the template hands it over.
 function download(current: ColorModel): void {

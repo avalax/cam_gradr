@@ -83,6 +83,15 @@ test.describe('Preview', () => {
     await app.openTab('Vorschau');
     await expectSplitImage(app);
 
+    // The frame around the tabs keeps the height of the preview on every tab: the card tabs keep the
+    // room of its look bar free under their image, the export copies the preview.
+    const frame = await app.panelHeight();
+    for (const tab of ['Graukarten', 'Farbkarten', 'Export'] as const) {
+      await app.openTab(tab);
+      expect(Math.abs((await app.panelHeight()) - frame), tab).toBeLessThanOrEqual(1);
+    }
+    await app.openTab('Vorschau');
+
     await app.startCamera();
     // On some machines Firefox runs without WebGL2 and then uses the software rendering.
     const allowedByBrowser: Record<string, string[]> = {

@@ -36,10 +36,10 @@ import {
   IMAGE_ROW,
   TAB_COLUMNS,
   imageWidth as widthFor,
-  previewImage,
 } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
+import { usePreviewArea } from './preview-area';
 import { previewSides } from './preview-sides';
 import StageLabel from './StageLabel.vue';
 import { stageState } from './stage-state';
@@ -57,7 +57,7 @@ const { t } = useI18n();
 const camera = useCameraStore();
 const solve = useSolveStore();
 const preview = usePreviewStore();
-const { stream, status, still, actual } = storeToRefs(camera);
+const { stream, status, still } = storeToRefs(camera);
 const { model, result, referenceName } = storeToRefs(solve);
 const { split, look: lookName, strength, left, right } = storeToRefs(preview);
 const looks = useLookStore();
@@ -173,15 +173,8 @@ const band = computed(() =>
     : { state: stageState(shownStill.value !== null, isLive.value), label: null },
 );
 // Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
-// of this image area must not differ from it.
-const area = computed(() =>
-  previewImage({
-    corrected: model.value !== null,
-    live: isLive.value,
-    stills: camera.allStills(),
-    actual: actual.value,
-  }),
-);
+// of this image area must not differ from it, and with the card tabs.
+const area = usePreviewArea();
 const showImage = computed(() => area.value.shown);
 const aspect = computed(() => area.value.aspect);
 const width = computed(() => widthFor(aspect.value));
