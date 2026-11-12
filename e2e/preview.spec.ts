@@ -83,6 +83,15 @@ test.describe('Preview', () => {
     await app.openTab('Vorschau');
     await expectSplitImage(app);
 
+    // The frame around the tabs keeps the height of the preview on every tab: the card tabs keep the
+    // room of its look bar free under their image, the export copies the preview.
+    const frame = await app.panelHeight();
+    for (const tab of ['Graukarten', 'Farbkarten', 'Export'] as const) {
+      await app.openTab(tab);
+      expect(Math.abs((await app.panelHeight()) - frame), tab).toBeLessThanOrEqual(1);
+    }
+    await app.openTab('Vorschau');
+
     await app.startCamera();
     // On some machines Firefox runs without WebGL2 and then uses the software rendering.
     const allowedByBrowser: Record<string, string[]> = {
@@ -101,13 +110,13 @@ test.describe('Preview', () => {
     await app.page.keyboard.press('End');
     await expectPatch(app, RIGHT_PATCH, codes(cameraCode(dummyLab(RIGHT_PATCH))));
 
-    // A look LUT over the correction, imported through the last entry of the list: with the divider
-    // on the left the whole image shows it, at half strength the inversion meets in the middle.
+    // A look LUT over the correction, imported by the picker, which is the import button while there
+    // is none: with the divider on the left the whole image shows it, at half strength the inversion
+    // meets in the middle.
     await app.page.keyboard.press('Home');
     const picker = app.page.getByTestId('look-select');
     const chooser = app.page.waitForEvent('filechooser');
     await picker.click();
-    await app.page.getByRole('option', { name: '+ Look-LUT importieren …' }).click();
     const dialog = await chooser;
     await dialog.setFiles({
       name: 'Invert.cube',

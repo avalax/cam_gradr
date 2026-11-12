@@ -95,7 +95,6 @@ describe('PreviewTab', () => {
     await useCameraStore().start();
     await flushPromises();
     expect(band.text()).toBe('Noch keine Korrektur');
-    expect(wrapper.find('[data-testid="preview-source"]').exists()).toBe(false);
     // The icon of the placeholder has no circle: the tests count the corner points as circles.
     expect(wrapper.find('circle').exists()).toBe(false);
   });
@@ -139,8 +138,6 @@ describe('PreviewTab', () => {
 
     await camera.start();
     await flushPromises();
-    // A badge on the image says live image or still image, as the band of the card tabs does.
-    expect(wrapper.get('[data-testid="preview-source"]').text()).toBe('Livebild');
     expect(take().attributes('aria-label')).toBe('Standbild aufnehmen');
     expect(take().attributes('disabled')).toBeDefined();
     await wrapper.get('video').trigger('loadeddata');
@@ -155,7 +152,6 @@ describe('PreviewTab', () => {
     // The button left with the live image: the focus is on the camera switch.
     expect(document.activeElement).toBe(cameraSwitch);
     cameraSwitch.remove();
-    expect(wrapper.get('[data-testid="preview-source"]').text()).toBe('Standbild');
     await camera.start();
     await flushPromises();
     expect(camera.still).toBeNull();
@@ -206,9 +202,11 @@ describe('PreviewTab', () => {
     expect(wrapper.get('[data-testid="wipe-line"]').attributes('style')).toContain('left: 25%');
     expect(wrapper.get('[data-testid="preview-canvas"]').element).toHaveProperty('width', 8);
     await flushPromises();
-    expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe(
+    expect(wrapper.get('[data-testid="preview-canvas"]').attributes('data-renderer')).toBe(
       'webgl2',
     );
+    // The graphics card is the normal case and needs no word.
+    expect(wrapper.find('[data-testid="preview-renderer"]').exists()).toBe(false);
   });
 
   it('lays the chosen look LUT over the correction and can show the correction left', async () => {
@@ -228,7 +226,8 @@ describe('PreviewTab', () => {
           ]),
       );
     expect(wrapper.find('[data-testid="look-bar"]').exists()).toBe(true);
-    expect(labels()).toBe('KameraKorrigiert + Look-LUT 100 %');
+    // The preview shows a still image: its side without correction is named after it.
+    expect(labels()).toBe('StandbildKorrigiert + Look-LUT 100 %');
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
 
     preview.setStrength(50);
@@ -243,7 +242,7 @@ describe('PreviewTab', () => {
 
     preview.setLook(null);
     await flushPromises();
-    expect(labels()).toBe('KameraKorrigiert');
+    expect(labels()).toBe('StandbildKorrigiert');
     animation.runFrame();
     expect(floats()).toMatchObject({ uLeftCorrected: 0 });
   });
@@ -261,7 +260,7 @@ describe('PreviewTab', () => {
 
     await wrapper.get('[data-testid="labels-right"]').trigger('click');
     expect(preview.right).toBe('camera');
-    expect(labels()).toBe('KameraKamera + Look-LUT 100 %');
+    expect(labels()).toBe('StandbildStandbild + Look-LUT 100 %');
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
     // Without correction the inverting look turns black into white.
     const bytes = fake.call('texImage3D').mock.calls[1]?.[9] as Uint8Array;
@@ -269,11 +268,14 @@ describe('PreviewTab', () => {
 
     await wrapper.get('[data-testid="labels-left"]').trigger('click');
     expect(preview.left).toBe('corrected');
-    expect(labels()).toBe('KorrigiertKamera + Look-LUT 100 %');
+    expect(labels()).toBe('KorrigiertStandbild + Look-LUT 100 %');
+    expect(wrapper.get('[data-testid="labels-left"]').attributes('title')).toBe(
+      'Klicken: Standbild zeigen',
+    );
     // The divider names the sides that are shown.
     const wipe = wrapper.get('[data-testid="wipe"]');
     expect(wipe.attributes('aria-label')).toBe(
-      'Trennlinie: links Korrigiert, rechts Kamera + Look-LUT 100 %',
+      'Trennlinie: links Korrigiert, rechts Standbild + Look-LUT 100 %',
     );
     expect(wipe.attributes('aria-valuetext')).toBe('50 % Korrigiert');
     await wrapper.get('[data-testid="labels-left"]').trigger('click');
@@ -293,6 +295,20 @@ describe('PreviewTab', () => {
     computeModel();
     await useCameraStore().start();
     const wrapper = mount(PreviewTab);
+    await flushPromises();
+    // The live image is the camera's, also in the names of the sides and in the tip of a click.
+    expect(wrapper.get('[data-testid="preview-labels"]').text()).toBe('KameraKorrigiert');
+    await chooseInvert();
+    usePreviewStore().setLeft('corrected');
+    usePreviewStore().setRight('camera');
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-labels"]').text()).toBe(
+      'KorrigiertKamera + Look-LUT 100 %',
+    );
+    expect(wrapper.get('[data-testid="labels-left"]').attributes('title')).toBe(
+      'Klicken: Kamerabild zeigen',
+    );
+    usePreviewStore().setLook(null);
     await flushPromises();
     const video = wrapper.get('video').element;
     animation.runFrame();
@@ -384,7 +400,7 @@ describe('PreviewTab', () => {
     expect(
       wrapper.get('[data-testid="preview-view"] [data-option="grays"]').attributes('aria-checked'),
     ).toBe('false');
-    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="gray-tiles"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="worst-patches"]').text()).toContain('Größte Abweichung');
   });
 
@@ -406,7 +422,7 @@ describe('PreviewTab', () => {
     expect(wrapper.text()).toContain('Jedes Feld: Kamera, korrigiert');
   });
 
-  it('switches to the gray wedge with the tonal ranges and the result, and back to colors', async () => {
+  it('switches to the gray tiles with the tonal ranges and the result, and back to colors', async () => {
     computeModel();
     useColorChartStore().measurements = measurements;
     const wrapper = mount(PreviewTab);
@@ -415,20 +431,34 @@ describe('PreviewTab', () => {
     expect(
       wrapper.get('[data-testid="preview-view"] [data-option="grays"]').attributes('aria-checked'),
     ).toBe('true');
-    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(true);
+    // The neutral patches in the tiles of the colors, with the same legend (here without a target:
+    // the correction was not fitted with the active set).
+    expect(
+      wrapper.get('[data-testid="gray-tiles"] [data-patch]').findAll('[data-stripe]'),
+    ).toHaveLength(2);
+    expect(wrapper.text()).toContain('Jedes Feld: Kamera, korrigiert');
     expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('Schatten');
     expect(wrapper.get('[data-testid="preview-summary"]').text()).toContain('Ø Abweichung');
     expect(wrapper.find('[data-testid="preview-side-empty"]').exists()).toBe(false);
     await wrapper.get('[data-testid="preview-view"] [data-option="colors"]').trigger('click');
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="gray-tiles"]').exists()).toBe(false);
   });
 
-  it('calls tonal ranges neutral where the correction shifts no color', async () => {
+  it('shows the tonal ranges as a table, with zeros where the correction changes nothing', async () => {
     useSolveStore().loadModel(IDENTITY_MODEL, null);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
-    expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');
+    const table = wrapper.get('[data-testid="zone-changes"]');
+    const cells = (selector: string) =>
+      table.findAll(selector).map((row) => row.findAll('th, td').map((cell) => cell.text()));
+    // Short heads; the full names are for screen readers.
+    expect(cells('thead tr')).toEqual([['', 'HellHelligkeit', 'RRot', 'GGrün', 'BBlau']]);
+    expect(cells('tbody tr')).toEqual([
+      ['Schatten', '0', '0', '0', '0'],
+      ['Mitten', '0', '0', '0', '0'],
+      ['Lichter', '0', '0', '0', '0'],
+    ]);
     // A correction without a report says so in the band, as under the color cards' divider.
     expect(wrapper.get('[data-testid="preview-summary"]').text()).toBe(
       'Ohne Bericht (Referenz fehlt)',
@@ -440,7 +470,7 @@ describe('PreviewTab', () => {
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="color-tiles"]').exists()).toBe(false);
     await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
-    expect(wrapper.find('[data-testid="gray-wedge"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="gray-tiles"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="preview-side-empty"]').text()).toContain('Farbkarten');
   });
 
@@ -480,7 +510,8 @@ describe('PreviewTab', () => {
     const wrapper = mount(PreviewTab);
     await flushPromises();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="preview-renderer"]').attributes('data-renderer')).toBe('cpu');
+    expect(wrapper.get('[data-testid="preview-canvas"]').attributes('data-renderer')).toBe('cpu');
+    expect(wrapper.get('[data-testid="preview-renderer"]').text()).toContain('verkleinert');
     // The still image was already drawn to the work canvas on mount.
     const before = context2d.putImageData.mock.calls.length;
     animation.runFrame();

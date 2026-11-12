@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
+import type { ButtonHTMLAttributes } from 'vue';
 
 import { CHEVRON_PATH } from './icons';
 import LineIcon from './LineIcon.vue';
 
 // Choosing the look LUT, as a select-only combobox (WAI-ARIA): unlike the browser's own select, every
 // step with the arrow keys applies the look at once, also while the list is open; Escape goes back to
-// the look from before. The last entry is an action, it only runs on Enter or a click.
+// the look from before. The last entry is an action, it only runs on Enter or a click. Without looks
+// there is nothing to choose: the picker is the import button itself.
 const props = defineProps<{
   // Names of the imported looks.
   names: readonly string[];
@@ -23,6 +25,21 @@ const active = ref(0);
 // The look when the list opened, for Escape.
 let before: string | null = null;
 const list = useTemplateRef<HTMLUListElement>('list');
+
+// Without looks the button is a plain button that imports; it stays the same element when the first
+// look comes or the last one goes, so that it keeps the focus.
+const empty = computed(() => props.names.length === 0);
+const combobox = computed((): ButtonHTMLAttributes =>
+  empty.value
+    ? {}
+    : {
+        role: 'combobox',
+        'aria-haspopup': 'listbox',
+        'aria-controls': 'look-list',
+        'aria-expanded': open.value,
+        'aria-activedescendant': open.value ? `look-option-${String(active.value)}` : undefined,
+      },
+);
 
 const lastLook = computed(() => props.names.length);
 const importIndex = computed(() => props.names.length + 1);
@@ -70,7 +87,9 @@ function choose(index: number): void {
 }
 
 function toggle(): void {
-  if (open.value) {
+  if (empty.value) {
+    emit('import');
+  } else if (open.value) {
     close();
   } else {
     openList();
@@ -114,7 +133,8 @@ const KEYS: Record<string, (event: KeyboardEvent) => void> = {
 };
 
 function onKey(event: KeyboardEvent): void {
-  const handle = KEYS[event.key];
+  // A plain button handles its keys itself.
+  const handle = empty.value ? undefined : KEYS[event.key];
   if (handle !== undefined) {
     event.preventDefault();
     handle(event);
@@ -143,19 +163,18 @@ watch([active, open], async ([index]) => {
     <button
       id="look-select"
       type="button"
-      role="combobox"
-      aria-haspopup="listbox"
-      aria-controls="look-list"
-      :aria-expanded="open"
-      :aria-activedescendant="open ? `look-option-${String(active)}` : undefined"
+      v-bind="combobox"
       class="flex h-[26px] w-full min-w-0 items-center gap-1 rounded border border-zinc-800 bg-surface px-1.5 text-left hover:bg-zinc-200"
       data-testid="look-select"
       @click="toggle"
       @keydown="onKey"
       @blur="close"
     >
-      <span class="min-w-0 flex-1 truncate" :title="shown">{{ shown }}</span>
-      <LineIcon class="size-3.5 shrink-0"><path :d="CHEVRON_PATH" /></LineIcon>
+      <span v-if="empty" class="min-w-0 flex-1 truncate font-semibold">{{ importText }}</span>
+      <template v-else>
+        <span class="min-w-0 flex-1 truncate" :title="shown">{{ shown }}</span>
+        <LineIcon class="size-3.5 shrink-0"><path :d="CHEVRON_PATH" /></LineIcon>
+      </template>
     </button>
     <!-- The list opens upwards, over the image: below the bar it would lengthen the page. At most
          15 rem and 15 rem less than the window: the image above the bar is at least that high, so

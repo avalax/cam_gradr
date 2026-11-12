@@ -6,3 +6,6 @@ export const TRASH_PATH =
 
 // Chevron pointing down: opens a list or a section (look picker, settings); turned for "close".
 export const CHEVRON_PATH = 'M6 9l6 6 6-6';
+
+// Cross: closes a floating message (project, look LUT).
+export const CROSS_PATH = 'M6 6l12 12M18 6 6 18';

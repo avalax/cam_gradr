@@ -8,14 +8,14 @@ import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import { cssColor } from './color-css';
 import {
-  brightnessText,
   byRowThenColumn,
   colorCards,
   deviationSummary,
-  signedPoints,
   wedgeRows,
   worstPatches,
   zoneChanges,
+  zoneColumns,
+  zonePoints,
 } from './gray-wedge';
 
 const IDENTITY = IDENTITY_MODEL;
@@ -129,61 +129,54 @@ describe('worstPatches', () => {
 });
 
 describe('zoneChanges', () => {
+  // Brightening, red, green, blue.
+  const values = (zone: { values: number[] } | undefined) => zone?.values ?? [];
+
   it('reports no change in all three ranges for the identity', () => {
     const changes = zoneChanges(IDENTITY);
     expect(changes.map((zone) => zone.name)).toEqual(['Schatten', 'Mitten', 'Lichter']);
     for (const zone of changes) {
-      expect(zone.brighter).toBeCloseTo(0, 6);
-      expect(zone.casts).toEqual([]);
+      expect(zone.values).toHaveLength(4);
+      for (const value of zone.values) {
+        expect(value).toBeCloseTo(0, 6);
+      }
     }
   });
 
-  it('brightens with a raised red channel and names red first', () => {
-    const [shadows] = zoneChanges(RED_LIFT);
-    expect(shadows?.brighter).toBeGreaterThan(0);
-    expect(shadows?.casts[0]?.channel).toBe('Rot');
-    expect(shadows?.casts[0]?.points).toBeGreaterThan(0);
-  });
-
-  it('makes green and blue weaker in the process', () => {
-    const [shadows] = zoneChanges(RED_LIFT);
-    // Green and blue lose the same: their order among themselves is open.
-    expect(
-      shadows?.casts
-        .slice(1)
-        .map((cast) => cast.channel)
-        .toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(['Blau', 'Grün']);
-    expect(shadows?.casts.slice(1).every((cast) => cast.points < 0)).toBe(true);
+  it('brightens with a raised red channel, which gets stronger while green and blue get weaker', () => {
+    const [brighter = 0, red = 0, green = 0, blue = 0] = values(zoneChanges(RED_LIFT)[0]);
+    expect(brighter).toBeGreaterThan(0);
+    expect(red).toBeGreaterThan(0);
+    expect(green).toBeLessThan(0);
+    expect(green).toBeCloseTo(blue, 6);
+    // The shifts are relative to the brightening: together they make no change.
+    expect(red + green + blue).toBeCloseTo(0, 6);
   });
 
   it('shifts the color most in the shadows and least in the highlights', () => {
-    const [shadows, mids, lights] = zoneChanges(RED_LIFT);
-    const red = (zone: typeof shadows) => zone?.casts[0]?.points ?? 0;
-    expect(red(shadows)).toBeGreaterThan(red(mids));
-    expect(red(mids)).toBeGreaterThan(red(lights));
+    const [shadows = 0, mids = 0, lights = 0] = zoneChanges(RED_LIFT).map(
+      (zone) => values(zone)[1] ?? 0,
+    );
+    expect(shadows).toBeGreaterThan(mids);
+    expect(mids).toBeGreaterThan(lights);
   });
 
-  it('ignores shifts below 1.5 points', () => {
-    const faint: ColorModel = {
-      ...IDENTITY,
-      curves: [{ xs: [0, 1], ys: [0.0005, 1] }, IDENTITY.curves[1], IDENTITY.curves[2]],
-    };
-    expect(zoneChanges(faint)[0]?.casts).toEqual([]);
+  it('names its columns short for the head and in full for screen readers', () => {
+    expect(zoneColumns().map((column) => [column.short, column.name])).toEqual([
+      ['Hell', 'Helligkeit'],
+      ['R', 'Rot'],
+      ['G', 'Grün'],
+      ['B', 'Blau'],
+    ]);
   });
 });
 
 describe('texts', () => {
-  it('writes points with a sign', () => {
-    expect(signedPoints(3.4)).toBe('+3');
-    expect(signedPoints(-2.2)).toBe('−2');
-    expect(signedPoints(0)).toBe('+0');
-  });
-
-  it('describes the brightening in words', () => {
-    expect(brightnessText(12.6)).toBe('13 heller');
-    expect(brightnessText(-4.6)).toBe('5 dunkler');
-    expect(brightnessText(0.2)).toBe('gleich hell');
+  it('writes whole points with a sign, and no change as a plain 0', () => {
+    expect(zonePoints(3.4)).toBe('+3');
+    expect(zonePoints(-2.2)).toBe('−2');
+    expect(zonePoints(0.4)).toBe('0');
+    expect(zonePoints(-0.4)).toBe('0');
   });
 
   it('names the deviation before and after with a comma', () => {

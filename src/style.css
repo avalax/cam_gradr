@@ -30,6 +30,15 @@
   --page-fg: #18181b;
   /* Thickness of the bands above and below the images and color fields. */
   --band-line: 3px;
+  /* Height of everything on a tab but its camera image: page header and spacing (12 rem), and the
+     look bar under the image of the preview (2.8125 rem, 45 px; its messages float over the image).
+     Gray cards, color cards and preview share it, so that the image is the same size and in the
+     same place on every tab and the preview fits the window with its look bar; on a short window
+     the image of every tab gets smaller (see image-size.ts). */
+  --image-chrome: 14.8125rem;
+  /* The column beside the image grows with the image, so that it keeps its proportions next to a
+     large one; the text column gives up the same room, so that the image keeps its size. */
+  --side-column: clamp(11rem, (100vh - var(--image-chrome)) * 0.33, 20rem);
 }
 
 /* Every step is lighter than the one before, as every light step is darker: a text in zinc-700 stays

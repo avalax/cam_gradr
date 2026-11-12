@@ -5,12 +5,20 @@ import { useI18n } from 'vue-i18n';
 import type { WedgeRow } from './gray-wedge';
 
 const { t } = useI18n();
-const props = defineProps<{ cards: readonly (readonly WedgeRow[])[] }>();
+// The chromatic patches per card, or with `grays` the neutral patches as one card from light to dark,
+// in two columns like the two gray columns of the cards.
+const props = defineProps<{ cards: readonly (readonly WedgeRow[])[]; grays?: boolean }>();
 
 // Target only if there is a reference set.
 const hasTarget = computed(() =>
   props.cards.some((card) => card.some((row) => row.target !== null)),
 );
+const label = computed(() => {
+  if (props.grays) {
+    return hasTarget.value ? 'wedge.grayAria' : 'wedge.grayAriaNoTarget';
+  }
+  return hasTarget.value ? 'wedge.tilesAria' : 'wedge.tilesAriaNoTarget';
+});
 const stripes = computed(() =>
   hasTarget.value
     ? (['target', 'camera', 'corrected'] as const)
@@ -23,13 +31,14 @@ const stripes = computed(() =>
   <div
     class="flex size-full flex-col gap-1.5"
     role="img"
-    :aria-label="t(hasTarget ? 'wedge.tilesAria' : 'wedge.tilesAriaNoTarget')"
-    data-testid="color-tiles"
+    :aria-label="t(label)"
+    :data-testid="grays ? 'gray-tiles' : 'color-tiles'"
   >
     <div
       v-for="(card, index) in cards"
       :key="index"
-      class="grid min-h-0 flex-1 grid-cols-3 gap-0.5"
+      class="grid min-h-0 flex-1 gap-0.5"
+      :class="grays ? 'grid-cols-2' : 'grid-cols-3'"
     >
       <div
         v-for="row in card"

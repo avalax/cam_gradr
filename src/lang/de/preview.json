@@ -2,7 +2,6 @@
   "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Was links und rechts der Trennlinie zu sehen ist, steht über dem Bild: ohne Look-LUT das Kamerabild und das korrigierte Bild; mit Look-LUT wechselt ein Klick auf eine Beschriftung, was die Seite zeigt. Die Trennlinie kannst du im Bild ziehen oder mit den Pfeiltasten verschieben. Mit dem Kamera-Symbol oben rechts im Bild nimmst du ein Standbild auf; die Kamera geht dann aus.",
   "capture": "Standbild aufnehmen",
   "captureTitle": "Standbild aufnehmen und Kamera ausschalten",
-  "rendererWebgl": "Darstellung: Grafikkarte (WebGL2)",
   "rendererCpu": "Darstellung: Software, verkleinert (kein WebGL2 verfügbar)",
   "noModelText": "Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und nachher.",
   "noSourceTitle": "Noch kein Bild",
@@ -10,6 +9,7 @@
   "divider": "Trennlinie: links {left}, rechts {right}",
   "labelCamera": "Kamera",
   "labelCorrected": "Korrigiert",
+  "labelStill": "Standbild",
   "viewLabel": "Ansicht der Seitenspalte",
   "viewColors": "Farben",
   "viewGrays": "Graustufen",
@@ -17,8 +17,8 @@
   "tilesLegend": "Jedes Feld: Soll, Kamera, korrigiert (von links nach rechts).",
   "tilesLegendNoTarget": "Jedes Feld: Kamera, korrigiert (von links nach rechts).",
   "worstTitle": "Größte Abweichung",
-  "neutral": ", neutral",
-  "pointsLegend": "Punkte auf der Skala 0–100: + Farbe wird stärker, − schwächer.",
+  "zonesCaption": "Was die Korrektur an einem neutralen Grau ändert, je Tonbereich",
+  "pointsLegend": "Punkte auf der Skala 0–100. Hell: + heller, − dunkler; R, G, B: + Farbe stärker, − schwächer.",
   "errors": {
     "createFailed": "WebGL konnte {what} nicht anlegen.",
     "shader": "einen Shader",
@@ -35,9 +35,11 @@
   },
   "labelLook": "Korrigiert + Look-LUT",
   "labelLookCamera": "Kamera + Look-LUT",
+  "labelLookStill": "Standbild + Look-LUT",
   "labelStrength": "{name} {strength} %",
   "switchToCorrected": "Klicken: korrigiert zeigen",
   "switchToCamera": "Klicken: Kamerabild zeigen",
+  "switchToStill": "Klicken: Standbild zeigen",
   "switchLookCamera": "Klicken: Look-LUT ohne Korrektur",
   "switchLookCorrected": "Klicken: Look-LUT mit Korrektur"
 }

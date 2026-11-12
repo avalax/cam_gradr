@@ -24,7 +24,9 @@ import { TRASH_PATH } from './icons';
 import { IMAGE_BAND, IMAGE_BLOCK, IMAGE_ROW, imageWidth as widthFor } from './image-size';
 import ImageCornerButton from './ImageCornerButton.vue';
 import ImageMessages from './ImageMessages.vue';
+import LookBar from './LookBar.vue';
 import { buildShapes, clientToImage } from './overlay-geometry';
+import { usePreviewArea } from './preview-area';
 import StageLabel from './StageLabel.vue';
 import { stageState } from './stage-state';
 import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings';
@@ -105,6 +107,7 @@ const handles = computed(() =>
 // Image and buttons should fit on one screen together: the image height is limited to the window
 // height minus header, hint line and button bar (width = height × aspect ratio).
 const imageWidth = computed(() => widthFor(size.value.width / size.value.height));
+const previewArea = usePreviewArea();
 
 function imagePoint(event: PointerEvent | MouseEvent) {
   const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -436,5 +439,17 @@ watch(actual, (next, previous) => {
       </div>
     </div>
     <slot name="side" />
+  </div>
+  <!-- While the preview shows its image with the look bar under it, the card tabs keep that room
+       free under their image (an invisible copy of the bar, as wide as the bar of the preview), so
+       that the frame around the tabs is equally high on every tab, as the export does. -->
+  <div
+    v-if="previewArea.shown"
+    class="invisible min-w-0 max-w-full dark:border-x dark:px-2.5"
+    :style="{ width: imageWidth }"
+    aria-hidden="true"
+    data-testid="look-bar-room"
+  >
+    <LookBar />
   </div>
 </template>

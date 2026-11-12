@@ -112,8 +112,8 @@ const summary = computed(() => {
     <!-- The summary is also the trigger: on hover or keyboard focus the color correction result
          appears as a popup over the image beside the column, like the details on the gray cards'
          measuring field. It is placed against the image row (IMAGE_ROW, whose side column is
-         11 rem wide): at most as wide as the image, so it never leaves the window, and within the
-         height of the row, so it never covers the tabs. It starts at the bottom, where the trigger
+         --side-column wide): at most as wide as the image, so it never leaves the window, and within
+         the height of the row, so it never covers the tabs. It starts at the bottom, where the trigger
          is, so that the pointer can move into it to scroll. The Tab key also moves into it to scroll
          (its ring is drawn inside, where it shows on the dark popup over the image); a click does
          not focus the trigger, so it does not keep the result open once the pointer leaves. Escape
@@ -136,7 +136,7 @@ const summary = computed(() => {
       </p>
       <div
         v-if="report !== null && !dismissed"
-        class="absolute bottom-0 left-0 right-[11rem] z-20 hidden max-h-full flex-col items-end pr-3 group-hover:flex group-focus-within:flex"
+        class="absolute bottom-0 left-0 right-(--side-column) z-20 hidden max-h-full flex-col items-end pr-3 group-hover:flex group-focus-within:flex"
         role="tooltip"
         data-testid="color-wipe-popup"
       >

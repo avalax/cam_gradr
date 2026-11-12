@@ -1,7 +1,4 @@
 {
-  "target": "Soll",
-  "camera": "Kamera",
-  "corrected": "Korrigiert",
   "grayAria": "Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur",
   "grayAriaNoTarget": "Graustufen der Farbkarten: Kamera und nach der Korrektur",
   "tilesAria": "Farbfelder: Soll, Kamera und nach der Korrektur",
@@ -12,14 +9,22 @@
     "midtones": "Mitten",
     "highlights": "Lichter"
   },
-  "channels": {
-    "red": "Rot",
-    "green": "Grün",
-    "blue": "Blau"
-  },
-  "brightness": {
-    "same": "gleich hell",
-    "brighter": "{points} heller",
-    "darker": "{points} dunkler"
+  "columns": {
+    "brightness": {
+      "short": "Hell",
+      "name": "Helligkeit"
+    },
+    "red": {
+      "short": "R",
+      "name": "Rot"
+    },
+    "green": {
+      "short": "G",
+      "name": "Grün"
+    },
+    "blue": {
+      "short": "B",
+      "name": "Blau"
+    }
   }
 }

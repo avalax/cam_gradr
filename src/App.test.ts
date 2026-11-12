@@ -60,6 +60,10 @@ describe('App', () => {
     await importLooks(cubeFile('Warm.cube'));
     await flushPromises();
     expect(preview()).toContain('Kamera / Korrigiert + Look-LUT');
+    // With a still image to show, the side without correction is named after it.
+    useCameraStore().restoreStills({ color: grayFrame(4, 3) });
+    await flushPromises();
+    expect(preview()).toContain('Standbild / Korrigiert + Look-LUT');
   });
 
   it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {

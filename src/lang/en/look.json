@@ -1,12 +1,10 @@
 {
   "label": "Look LUT",
-  "none": "No look LUT",
-  "empty": "No look LUT yet",
+  "none": "Without look LUT",
   "import": "+ Import look LUT …",
   "importFile": "Import look LUT (.cube)",
   "remove": "Delete look LUT “{name}”",
   "strength": "Strength",
-  "hint": "With “+ Import look LUT …” in the list you add a look LUT (.cube, 3D LUT for Rec.709 input), for example a cinema look.",
   "messages": {
     "importedOne": "“{name}” imported and saved locally in the browser.",
     "importedMany": "{count} look LUTs imported and saved locally in the browser.",
@@ -15,6 +13,7 @@
     "removeAgain": "Remove it",
     "removed": "Look LUT “{name}” deleted locally.",
     "undo": "Undo",
+    "close": "Dismiss messages",
     "loadFailed": "Saved look LUTs could not be loaded.",
     "saveFailedOne": "“{name}” could not be saved locally and only applies to this session.",
     "saveFailedMany": "{count} look LUTs could not be saved locally and only apply to this session.",

@@ -43,6 +43,21 @@ describe('ColorTiles', () => {
     );
   });
 
+  it('names the neutral patches as the grays of the color cards', () => {
+    const wrapper = mount(ColorTiles, { props: { cards: [[first]], grays: true } });
+    // In two columns, like the gray columns of the cards.
+    expect(wrapper.get('[data-testid="gray-tiles"] > div').classes()).toContain('grid-cols-2');
+    expect(wrapper.get('[data-testid="gray-tiles"]').attributes('aria-label')).toBe(
+      'Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur',
+    );
+    const plain = mount(ColorTiles, {
+      props: { cards: [[{ ...first, target: null }]], grays: true },
+    });
+    expect(plain.get('[data-testid="gray-tiles"]').attributes('aria-label')).toBe(
+      'Graustufen der Farbkarten: Kamera und nach der Korrektur',
+    );
+  });
+
   it('leaves the target of a single patch empty when only that one has no reference value', () => {
     const wrapper = mount(ColorTiles, {
       props: { cards: [[first, { ...second, target: null }]] },

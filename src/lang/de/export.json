@@ -16,7 +16,6 @@
   },
   "project": {
     "heading": "Projekt speichern",
-    "description": "Zum Weiterarbeiten ohne neue Aufnahme, als {file}. Das steckt darin:",
     "corners": "{corners} Eckpunkte · {fields} Felder",
     "fields": "{fields} Felder",
     "correction": "Korrektur",

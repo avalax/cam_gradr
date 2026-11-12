@@ -1,12 +1,10 @@
 {
   "label": "Look-LUT",
-  "none": "Keine Look-LUT",
-  "empty": "Noch keine Look-LUT",
+  "none": "Ohne Look-LUT",
   "import": "+ Look-LUT importieren …",
   "importFile": "Look-LUT importieren (.cube)",
   "remove": "Look-LUT „{name}“ löschen",
   "strength": "Stärke",
-  "hint": "Über „+ Look-LUT importieren …“ in der Liste holst du eine Look-LUT (.cube, 3D-LUT für Rec.709-Eingang), etwa einen Kino-Look.",
   "messages": {
     "importedOne": "„{name}“ importiert und lokal im Browser gespeichert.",
     "importedMany": "{count} Look-LUTs importiert und lokal im Browser gespeichert.",
@@ -15,6 +13,7 @@
     "removeAgain": "Wieder löschen",
     "removed": "Look-LUT „{name}“ lokal gelöscht.",
     "undo": "Rückgängig",
+    "close": "Meldungen schließen",
     "loadFailed": "Gespeicherte Look-LUTs konnten nicht geladen werden.",
     "saveFailedOne": "„{name}“ konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
     "saveFailedMany": "{count} Look-LUTs konnten nicht lokal gespeichert werden und gelten nur für diese Sitzung.",

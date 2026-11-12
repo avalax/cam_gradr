@@ -6,10 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCameraStore } from '../camera/camera-store';
 import type { Frame } from '../camera/frame';
 import { useChartStore } from '../chart/chart-store';
+import { useSolveStore } from '../solve/solve-store';
 import { cameraSwitchStandIn } from '../test-support/camera-switch';
 import { bothCards } from '../test-support/cards';
 import { FAKE_STREAM, installFakeCamera, installMediaStubs } from '../test-support/media';
 import { grayFrame } from '../test-support/frames';
+import { IDENTITY_MODEL } from '../test-support/identity-model';
 
 import GrayStep from './GrayStep.vue';
 
@@ -156,7 +158,20 @@ describe('GrayStep', () => {
   it('sizes the image so that it fits on one screen, with room for the look bar', async () => {
     const wrapper = await mountLive();
     const style = wrapper.get('[data-testid="image-block"]').attributes('style');
-    expect(style).toContain('width: calc((100vh - 17.375rem) * 1.77');
+    expect(style).toContain('width: calc((100vh - var(--image-chrome)) * 1.77');
+  });
+
+  it('keeps the room of the look bar free under the image while the preview shows one', async () => {
+    const wrapper = mount(GrayStep);
+    expect(wrapper.find('[data-testid="look-bar-room"]').exists()).toBe(false);
+    // A correction and the still image of the color cards: the preview has an image and its bar.
+    useSolveStore().loadModel(IDENTITY_MODEL, null);
+    useCameraStore().restoreStills({ color: grayFrame(1280, 720, 0.5) });
+    await flushPromises();
+    const room = wrapper.get('[data-testid="look-bar-room"]');
+    expect(room.classes()).toContain('invisible');
+    expect(room.attributes('aria-hidden')).toBe('true');
+    expect(room.find('[data-testid="look-bar"]').exists()).toBe(true);
   });
 
   it('binds stream and existing still image on mount', async () => {

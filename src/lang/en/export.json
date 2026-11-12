@@ -16,7 +16,6 @@
   },
   "project": {
     "heading": "Save project",
-    "description": "To continue working without a new capture, as {file}. This is what it contains:",
     "corners": "{corners} corner points · {fields} patches",
     "fields": "{fields} patches",
     "correction": "Correction",

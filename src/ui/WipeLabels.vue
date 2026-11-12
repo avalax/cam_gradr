@@ -13,34 +13,22 @@ const props = defineProps<{
   split: number;
   leftLabel?: string;
   rightLabel?: string;
-  leftCorrected?: boolean;
-  rightCamera?: boolean;
   switchable?: boolean;
   leftTip?: string;
   rightTip?: string;
 }>();
 const emit = defineEmits<{ switch: [side: 'left' | 'right'] }>();
 
-// From this share of the width on a side shows its dot, from the next one also its name.
-const MIN_DOT = 8;
+// From this share of the width on a side shows its name.
 const MIN_NAME = 24;
 const FULL = 100;
 
-function mode(share: number): 'none' | 'dot' | 'name' {
-  if (share < MIN_DOT) {
-    return 'none';
-  }
-  return share < MIN_NAME ? 'dot' : 'name';
-}
-
-const left = computed(() => mode(props.split));
-const right = computed(() => mode(FULL - props.split));
+const leftShown = computed(() => props.split >= MIN_NAME);
+const rightShown = computed(() => FULL - props.split >= MIN_NAME);
 const leftName = computed(() => props.leftLabel ?? t('preview.labelCamera'));
 const rightName = computed(() => props.rightLabel ?? t('preview.labelCorrected'));
 
-const CAMERA_DOT = 'bg-zinc-400 dark:bg-zinc-500';
-const CORRECTED_DOT = 'bg-emerald-700 dark:bg-emerald-400';
-const HALF = 'flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-1 py-1.5';
+const HALF = 'flex min-w-0 items-center justify-center overflow-hidden px-1 py-1.5';
 // A switchable half looks like the label it is and only shows on hover or focus that it reacts.
 const BUTTON = 'focus-ring-inset cursor-pointer hover:bg-zinc-300';
 
@@ -51,7 +39,7 @@ function described(name: string, tip: string | undefined): string {
 </script>
 
 <template>
-  <!-- Names the two sides of a wipe: camera on the left, corrected on the right (grey and green dot). -->
+  <!-- Names the two sides of a wipe: camera on the left, corrected on the right. -->
   <div
     class="relative grid border-b-(length:--band-line) border-zinc-700 bg-zinc-200 text-[11px] font-semibold leading-tight text-zinc-800"
     :style="{ gridTemplateColumns: `${String(split)}% minmax(0, 1fr)` }"
@@ -65,14 +53,7 @@ function described(name: string, tip: string | undefined): string {
       data-testid="labels-left"
       @click="switchable === true && emit('switch', 'left')"
     >
-      <template v-if="left !== 'none'">
-        <i
-          class="size-2.5 shrink-0 rounded-full"
-          :class="leftCorrected === true ? CORRECTED_DOT : CAMERA_DOT"
-          aria-hidden="true"
-        ></i>
-        <template v-if="left === 'name'">{{ leftName }}</template>
-      </template>
+      <template v-if="leftShown">{{ leftName }}</template>
     </component>
     <component
       :is="switchable === true ? 'button' : 'span'"
@@ -83,14 +64,7 @@ function described(name: string, tip: string | undefined): string {
       data-testid="labels-right"
       @click="switchable === true && emit('switch', 'right')"
     >
-      <template v-if="right !== 'none'">
-        <template v-if="right === 'name'">{{ rightName }}</template>
-        <i
-          class="size-2.5 shrink-0 rounded-full"
-          :class="rightCamera === true ? CAMERA_DOT : CORRECTED_DOT"
-          aria-hidden="true"
-        ></i>
-      </template>
+      <template v-if="rightShown">{{ rightName }}</template>
     </component>
     <!-- The same line as the divider in the image, continued through the header. -->
     <i

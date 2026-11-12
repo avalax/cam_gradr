@@ -8,18 +8,15 @@ describe('previewImage', () => {
   const none = { corrected: true, live: false, stills: {}, actual: null };
 
   it('has no image without a correction or without a source, at 16:9', () => {
-    expect(previewImage(none)).toEqual({ shown: false, aspect: 16 / 9 });
+    expect(previewImage(none)).toEqual({ shown: false, aspect: 16 / 9, still: false });
     expect(previewImage({ ...none, corrected: false, stills: { color: grayFrame(4, 3) } })).toEqual(
-      {
-        shown: false,
-        aspect: 4 / 3,
-      },
+      { shown: false, aspect: 4 / 3, still: true },
     );
   });
 
   it('shows its own still image first, else the one of the color cards', () => {
     const stills = { preview: grayFrame(2, 1), color: grayFrame(4, 3) };
-    expect(previewImage({ ...none, stills })).toEqual({ shown: true, aspect: 2 });
+    expect(previewImage({ ...none, stills })).toEqual({ shown: true, aspect: 2, still: true });
     expect(previewImage({ ...none, stills: { color: grayFrame(4, 3) } }).aspect).toBe(4 / 3);
   });
 
@@ -28,6 +25,7 @@ describe('previewImage', () => {
     expect(previewImage({ ...live, actual: { width: 1920, height: 1080 } })).toEqual({
       shown: true,
       aspect: 16 / 9,
+      still: false,
     });
     expect(previewImage(live).shown).toBe(false);
   });

@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { useProjectStore } from '../project/project-store';
 
 import IconButton from './IconButton.vue';
+import { CROSS_PATH } from './icons';
 
 const { t } = useI18n();
 const project = useProjectStore();
@@ -63,7 +64,7 @@ function close(): void {
       data-testid="project-message-close"
       @click="close"
     >
-      <path d="M6 6l12 12M18 6 6 18" />
+      <path :d="CROSS_PATH" />
     </IconButton>
   </div>
 </template>

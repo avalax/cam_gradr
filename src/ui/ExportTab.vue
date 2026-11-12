@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { I18nT, useI18n } from 'vue-i18n';
 
-import { useCameraStore } from '../camera/camera-store';
 import { useChartStore, useColorChartStore } from '../chart/chart-store';
 import { lookedLut } from '../look/look';
 import { useLookStore } from '../look/look-store';
@@ -22,8 +21,9 @@ import type { ExportLook } from './export-file';
 import LutSlices from './LutSlices.vue';
 import ChoiceChips from './ChoiceChips.vue';
 import { LINK_BUTTON } from './control-styles';
-import { IMAGE_BAND, IMAGE_BLOCK, imageWidth, previewImage } from './image-size';
+import { IMAGE_BAND, IMAGE_BLOCK, imageWidth } from './image-size';
 import LookBar from './LookBar.vue';
+import { usePreviewArea } from './preview-area';
 import ProjectBar from './ProjectBar.vue';
 import { cubeSizeText } from './lut-slices';
 import { fittedReferenceLabel } from './reference-label';
@@ -114,15 +114,7 @@ const fileInfo = computed(() => t('export.lut.points', { size: size.value }));
 // The export is as tall as the preview: an invisible copy of the preview's image area (band, image
 // and, while the preview has an image, the look bar) follows the same rules as the image of the
 // other tabs, so the height follows the window and never depends on the tab opened before.
-const camera = useCameraStore();
-const previewArea = computed(() =>
-  previewImage({
-    corrected: model.value !== null,
-    live: camera.status === 'live',
-    stills: camera.allStills(),
-    actual: camera.actual,
-  }),
-);
+const previewArea = usePreviewArea();
 
 // The button only works with a correction, so the template hands it over.
 function download(current: ColorModel): void {
@@ -141,8 +133,8 @@ function download(current: ColorModel): void {
 
 <template>
   <!-- On the grid of the other tabs: the LUT where their image is (as wide as the image), the
-       project where their side column and their text column are (11 rem, a gap of 1.5 rem and
-       21 rem). On a wide but short window both stay together and the free room collects at the right
+       project where their side column and their text column are (together 32 rem, and the gap of
+       1.5 rem between them). On a wide but short window both stay together and the free room collects at the right
        edge, as on the other tabs. -->
   <section class="grid gap-3 lg:grid-cols-[minmax(0,max-content)_33.5rem] lg:justify-start">
     <!-- Invisible, under the LUT card: gives the export the height of the preview and the width of
@@ -239,14 +231,6 @@ function download(current: ColorModel): void {
       <h2 id="project-heading" class="text-sm font-semibold">
         {{ t('export.project.heading') }}
       </h2>
-      <I18nT
-        keypath="export.project.description"
-        tag="p"
-        scope="global"
-        class="text-xs text-zinc-600"
-      >
-        <template #file><code>.json</code></template>
-      </I18nT>
       <dl class="text-sm" data-testid="project-facts">
         <div
           v-for="fact in facts"
