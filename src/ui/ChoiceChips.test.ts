@@ -83,14 +83,14 @@ describe('ChoiceChips', () => {
     wrapper.unmount();
   });
 
-  it('fills a narrow band as a segmented control, with the focus ring inside where it clips', () => {
+  it('is a band of equal parts with the chosen one dark, the focus ring inside where it clips', () => {
     const wrapper = mount(ChoiceChips, {
-      props: { options: SIZES, selected: 'small', variant: 'segmented' },
+      props: { options: SIZES, selected: 'small', variant: 'band' },
     });
     const group = wrapper.get('[role="radiogroup"]');
-    expect(group.classes()).toEqual(expect.arrayContaining(['w-full', 'overflow-hidden']));
-    expect(wrapper.get('[role="radio"]').classes()).toEqual(
-      expect.arrayContaining(['flex-1', 'focus-ring-inset']),
-    );
+    expect(group.classes()).toEqual(expect.arrayContaining(['auto-cols-fr', 'bg-zinc-200']));
+    const [small, large] = wrapper.findAll('[role="radio"]');
+    expect(small?.classes()).toEqual(expect.arrayContaining(['focus-ring-inset', 'bg-zinc-800']));
+    expect(large?.classes()).not.toContain('bg-zinc-800');
   });
 });

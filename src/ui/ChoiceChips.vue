@@ -3,9 +3,9 @@ import { computed, useTemplateRef } from 'vue';
 
 import { rovingTarget } from './roving';
 
-// A choice as a row of radio buttons: chips (language, appearance, resolution), a segmented control
-// that fills a narrow band in small type (the view of the preview's side column) or cards that also
-// show a detail and a hint (the sizes of the export). `key` tells the options apart (`selected` is the
+// A choice as a row of radio buttons: chips (language, appearance, resolution), a band whose parts
+// are the options, as high as the band over the image (the view of the preview's side column), or
+// cards that also show a detail and a hint (the sizes of the export). `key` tells the options apart (`selected` is the
 // key of the chosen one), `lang` names the language of a label for screen readers, and `disabled`
 // locks the whole group. The label of the group (aria-label or aria-labelledby) and a test id go to
 // the group. As a WAI-ARIA radio group it is one stop of the Tab key; the arrow keys choose the next
@@ -23,7 +23,7 @@ const props = withDefaults(
     }[];
     selected: string;
     disabled?: boolean;
-    variant?: 'chips' | 'segmented' | 'cards';
+    variant?: 'chips' | 'band' | 'cards';
   }>(),
   { disabled: false, variant: 'chips' },
 );
@@ -31,8 +31,8 @@ const emit = defineEmits<{ choose: [value: T] }>();
 
 const group = useTemplateRef<HTMLElement>('group');
 
-// Hover only reaches options that can be chosen. The segmented control clips its corners, so its
-// options draw the focus ring inside.
+// Hover only reaches options that can be chosen. The band lies in a column that clips its corners,
+// so its options draw the focus ring inside.
 const STYLES = {
   chips: {
     group: 'flex flex-wrap gap-1.5',
@@ -51,11 +51,13 @@ const STYLES = {
     on: 'border-2 border-zinc-800 bg-surface',
     off: 'm-px border border-zinc-300 bg-zinc-50 enabled:hover:bg-zinc-200',
   },
-  segmented: {
-    group: 'flex w-full overflow-hidden rounded border border-zinc-500 text-[11px] font-semibold',
-    option: 'focus-ring-inset flex-1 border-zinc-500 px-1 py-1 [&:not(:first-child)]:border-l',
+  // The same type, padding and line as the names over the image (WipeLabels); the chosen part is dark.
+  band: {
+    group:
+      'grid auto-cols-fr grid-flow-col border-b-(length:--band-line) border-zinc-700 bg-zinc-200 text-[11px] font-semibold leading-tight',
+    option: 'focus-ring-inset px-1 py-1.5',
     on: 'bg-zinc-800 text-zinc-50',
-    off: 'bg-surface text-zinc-800 enabled:hover:bg-zinc-200',
+    off: 'text-zinc-800 enabled:hover:bg-zinc-300',
   },
 } as const;
 const styles = computed(() => STYLES[props.variant]);

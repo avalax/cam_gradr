@@ -156,7 +156,7 @@ describe('GrayStep', () => {
   it('sizes the image so that it fits on one screen, with room for the look bar', async () => {
     const wrapper = await mountLive();
     const style = wrapper.get('[data-testid="image-block"]').attributes('style');
-    expect(style).toContain('width: calc((100vh - 17.375rem) * 1.77');
+    expect(style).toContain('width: calc((100vh - var(--image-chrome)) * 1.77');
   });
 
   it('binds stream and existing still image on mount', async () => {

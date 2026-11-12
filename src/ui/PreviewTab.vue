@@ -19,13 +19,13 @@ import { useReferenceStore } from '../reference/reference-store';
 import { useSolveStore } from '../solve/solve-store';
 
 import {
-  brightnessText,
   colorCards,
   deviationSummary,
-  signedPoints,
   wedgeRows,
   worstPatches,
   zoneChanges,
+  zoneColumns,
+  zonePoints,
 } from './gray-wedge';
 import ChoiceChips from './ChoiceChips.vue';
 import ColorTiles from './ColorTiles.vue';
@@ -97,12 +97,7 @@ const rows = computed(() =>
   wedgeRows(measurements.value, model.value, fittedReference.value, exposureGain.value),
 );
 const changes = computed(() => (model.value === null ? [] : zoneChanges(model.value)));
-// Colors of the dots in front of the channels.
-const CAST_COLORS = {
-  red: '#b45353',
-  green: '#4f8f5b',
-  blue: '#4f6fb4',
-} as const;
+const columns = computed(() => zoneColumns());
 
 const video = useTemplateRef<HTMLVideoElement>('video');
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -347,146 +342,150 @@ const splitModel = computed({
     </aside>
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-      <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the same size everywhere. -->
-      <div :class="IMAGE_ROW">
-        <div data-testid="image-block" :class="IMAGE_BLOCK" :style="{ width }">
-          <div class="relative">
-            <!-- The video only serves as an image source and stays invisible. -->
-            <video
-              ref="video"
-              class="hidden"
-              muted
-              playsinline
-              @loadeddata="videoReady = true"
-            ></video>
-            <!-- The band above the image names the two sides, as above the color cards' wipe; without
-                 an image it says what the camera does, as on the card tabs, or that the correction is
-                 missing. -->
-            <WipeLabels
-              v-if="showImage"
-              :split="splitModel"
-              :left-label="leftLabel"
-              :right-label="rightLabel"
-              :switchable="chosenLook !== null"
-              :left-tip="leftTip"
-              :right-tip="rightTip"
-              :class="IMAGE_BAND"
-              data-testid="preview-labels"
-              @switch="switchSide"
-            />
-            <StageLabel
-              v-else
-              :state="band.state"
-              :label="band.label"
-              :class="IMAGE_BAND"
-              data-testid="stage-label"
-            />
-            <div class="relative">
-              <!-- Placeholder the size of the image while there is nothing to show. Under a camera
-                   error its lines move to the top and the hint to switch the camera on goes, as on
-                   the card tabs, so that the box of the error never covers them. What a missing
-                   correction needs has nothing to do with the camera and stays; the icon gives it
-                   the room (at 1024 px the box covered its second line). -->
-              <div
-                v-if="!showImage"
-                class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
-                :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
-                :style="{ aspectRatio: aspect }"
-                data-testid="preview-placeholder"
+      <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the
+           same size everywhere. Image and column share the rows (subgrid): band, image, look bar,
+           and the lines of its messages, which the column leaves to the image. So the band of the
+           column is as high as the band over the image and its foot as high as the look bar, in
+           both appearances and also where the look bar takes two lines. -->
+      <div :class="[IMAGE_ROW, 'grid-rows-[auto_1fr_auto_auto]']">
+        <div
+          data-testid="image-block"
+          :class="[IMAGE_BLOCK, 'row-span-4 grid grid-cols-[minmax(0,1fr)] grid-rows-subgrid']"
+          :style="{ width }"
+        >
+          <!-- The video only serves as an image source and stays invisible. -->
+          <video
+            ref="video"
+            class="hidden"
+            muted
+            playsinline
+            @loadeddata="videoReady = true"
+          ></video>
+          <!-- The band above the image names the two sides, as above the color cards' wipe; without
+               an image it says what the camera does, as on the card tabs, or that the correction is
+               missing. -->
+          <WipeLabels
+            v-if="showImage"
+            :split="splitModel"
+            :left-label="leftLabel"
+            :right-label="rightLabel"
+            :switchable="chosenLook !== null"
+            :left-tip="leftTip"
+            :right-tip="rightTip"
+            :class="IMAGE_BAND"
+            data-testid="preview-labels"
+            @switch="switchSide"
+          />
+          <StageLabel
+            v-else
+            :state="band.state"
+            :label="band.label"
+            :class="IMAGE_BAND"
+            data-testid="stage-label"
+          />
+          <!-- Without an image the placeholder also takes the rows of the look bar and its messages. -->
+          <div class="relative" :class="{ 'row-span-3': !showImage }">
+            <!-- Placeholder the size of the image while there is nothing to show. Under a camera
+                 error its lines move to the top and the hint to switch the camera on goes, as on
+                 the card tabs, so that the box of the error never covers them. What a missing
+                 correction needs has nothing to do with the camera and stays; the icon gives it
+                 the room (at 1024 px the box covered its second line). -->
+            <div
+              v-if="!showImage"
+              class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+              :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
+              :style="{ aspectRatio: aspect }"
+              data-testid="preview-placeholder"
+            >
+              <svg
+                v-if="model !== null || camera.errorMessage === null"
+                class="w-28 text-zinc-400"
+                viewBox="0 0 96 60"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
               >
-                <svg
-                  v-if="model !== null || camera.errorMessage === null"
-                  class="w-28 text-zinc-400"
-                  viewBox="0 0 96 60"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <rect x="2" y="2" width="92" height="56" rx="5" />
-                  <path
-                    d="M3 56 L3 3 H47 V56 Z"
-                    fill="currentColor"
-                    fill-opacity="0.25"
-                    stroke="none"
-                  />
-                  <path d="M48 2 V58" stroke-width="3" />
-                  <!-- The grip of the divider as a path: the tests count the corner points as circles. -->
-                  <path
-                    d="M43 30a5 5 0 1 0 10 0a5 5 0 1 0-10 0z"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                </svg>
-                <p
-                  v-if="model === null"
-                  class="max-w-xs text-sm leading-snug"
-                  data-testid="preview-no-model"
-                >
-                  <span class="block font-semibold text-zinc-800">{{ t('app.noCorrection') }}</span>
-                  {{ t('preview.noModelText') }}
-                </p>
-                <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
-                  <span class="block font-semibold text-zinc-800">{{
-                    t('preview.noSourceTitle')
-                  }}</span>
-                  <template v-if="camera.errorMessage === null">{{
-                    t('preview.noSourceText', { button: t('camera.toggle.start') })
-                  }}</template>
-                </p>
-              </div>
-              <canvas
-                v-show="showImage"
-                ref="canvas"
-                class="w-full bg-black"
-                :data-renderer="renderer?.kind"
-                data-testid="preview-canvas"
-              ></canvas>
-              <WipeDivider
-                v-if="showImage"
-                v-model="splitModel"
-                :label="t('preview.divider', { left: leftLabel, right: rightLabel })"
-                :left-name="leftLabel"
-              />
-              <ImageMessages :error="camera.errorMessage" :hint="null" />
-              <!-- Takes a still image while the camera runs, where the card tabs have the trash. -->
-              <ImageCornerButton
-                v-if="model !== null && isLive"
-                :label="t('preview.capture')"
-                :title="t('preview.captureTitle')"
-                :disabled="!videoReady"
-                data-testid="preview-capture"
-                @click="capture"
-              >
+                <rect x="2" y="2" width="92" height="56" rx="5" />
                 <path
-                  d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                  d="M3 56 L3 3 H47 V56 Z"
+                  fill="currentColor"
+                  fill-opacity="0.25"
+                  stroke="none"
                 />
-                <path d="M15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z" />
-              </ImageCornerButton>
+                <path d="M48 2 V58" stroke-width="3" />
+                <!-- The grip of the divider as a path: the tests count the corner points as circles. -->
+                <path d="M43 30a5 5 0 1 0 10 0a5 5 0 1 0-10 0z" fill="currentColor" stroke="none" />
+              </svg>
+              <p
+                v-if="model === null"
+                class="max-w-xs text-sm leading-snug"
+                data-testid="preview-no-model"
+              >
+                <span class="block font-semibold text-zinc-800">{{ t('app.noCorrection') }}</span>
+                {{ t('preview.noModelText') }}
+              </p>
+              <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
+                <span class="block font-semibold text-zinc-800">{{
+                  t('preview.noSourceTitle')
+                }}</span>
+                <template v-if="camera.errorMessage === null">{{
+                  t('preview.noSourceText', { button: t('camera.toggle.start') })
+                }}</template>
+              </p>
             </div>
-            <LookBar v-if="showImage" />
+            <canvas
+              v-show="showImage"
+              ref="canvas"
+              class="w-full bg-black"
+              :data-renderer="renderer?.kind"
+              data-testid="preview-canvas"
+            ></canvas>
+            <WipeDivider
+              v-if="showImage"
+              v-model="splitModel"
+              :label="t('preview.divider', { left: leftLabel, right: rightLabel })"
+              :left-name="leftLabel"
+            />
+            <ImageMessages :error="camera.errorMessage" :hint="null" />
+            <!-- Takes a still image while the camera runs, where the card tabs have the trash. -->
+            <ImageCornerButton
+              v-if="model !== null && isLive"
+              :label="t('preview.capture')"
+              :title="t('preview.captureTitle')"
+              :disabled="!videoReady"
+              data-testid="preview-capture"
+              @click="capture"
+            >
+              <path
+                d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+              />
+              <path d="M15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z" />
+            </ImageCornerButton>
           </div>
+          <LookBar v-if="showImage" />
         </div>
 
-        <!-- Without a correction the placeholder says what is missing; the column stays empty. -->
+        <!-- Without a correction the placeholder says what is missing; the column stays empty. Its
+             edge is an outline inside it rather than a border, so that it takes no room from the
+             rows it shares with the image. -->
         <div
-          class="flex flex-col overflow-hidden rounded-lg border border-zinc-500 bg-zinc-50 text-zinc-800"
+          class="row-span-3 grid grid-rows-subgrid overflow-hidden rounded-lg bg-zinc-50 text-zinc-800 outline-1 -outline-offset-1 outline-zinc-500"
           data-testid="preview-side"
         >
-          <div class="border-b-(length:--band-line) border-zinc-700 bg-zinc-200 p-1.5">
-            <ChoiceChips
-              variant="segmented"
-              :options="viewOptions"
-              :selected="view"
-              :aria-label="t('preview.viewLabel')"
-              data-testid="preview-view"
-              @choose="view = $event"
-            />
-          </div>
+          <!-- The band is the switch, as high as the band over the image. -->
+          <ChoiceChips
+            variant="band"
+            :options="viewOptions"
+            :selected="view"
+            :aria-label="t('preview.viewLabel')"
+            data-testid="preview-view"
+            @choose="view = $event"
+          />
           <!-- The views take the height the image gives the column and scroll inside where they
                need more (the grays on a narrow window), so that the preview keeps the height of
                its image, and with it the export. -->
-          <div class="relative min-h-0 flex-1">
+          <div class="relative min-h-0" :class="{ 'row-span-2': summary === null }">
             <div
               v-if="view === 'colors'"
               class="focus-ring-inset absolute inset-0 flex flex-col gap-2 overflow-y-auto p-2"
@@ -535,35 +534,53 @@ const splitModel = computed({
               <p v-if="rows.length > 0" class="text-[10px] leading-snug text-zinc-500">
                 {{ tilesLegend }}
               </p>
-              <dl v-if="changes.length > 0" class="space-y-1.5" data-testid="zone-changes">
-                <div v-for="zone in changes" :key="zone.name" class="text-[11px] leading-snug">
-                  <dt class="font-semibold">{{ zone.name }}</dt>
-                  <!-- Room for three lines, so the gray tiles keep their size when the texts change. A
-                     channel with its value never breaks apart. -->
-                  <dd class="min-h-[3lh]">
-                    {{ brightnessText(zone.brighter) }}
-                    <template v-if="zone.casts.length === 0">{{ t('preview.neutral') }}</template>
-                    <template v-for="cast in zone.casts" :key="cast.key">
-                      ·
-                      <span class="whitespace-nowrap">
-                        <i
-                          class="inline-block size-2 rounded-full"
-                          :style="{ background: CAST_COLORS[cast.key] }"
-                        ></i>
-                        {{ cast.channel }} {{ signedPoints(cast.points) }}
-                      </span>
-                    </template>
-                  </dd>
-                </div>
-              </dl>
+              <table
+                v-if="changes.length > 0"
+                class="w-full text-[11px] leading-snug tabular-nums"
+                data-testid="zone-changes"
+              >
+                <caption class="sr-only">
+                  {{
+                    t('preview.zonesCaption')
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    <td></td>
+                    <!-- Short heads for the narrow column, the full names for screen readers. -->
+                    <th
+                      v-for="column in columns"
+                      :key="column.key"
+                      scope="col"
+                      class="pb-0.5 pl-1 text-right font-semibold"
+                    >
+                      <span aria-hidden="true">{{ column.short }}</span>
+                      <span class="sr-only">{{ column.name }}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="zone in changes" :key="zone.name" class="border-t border-zinc-300">
+                    <th scope="row" class="py-0.5 text-left font-semibold">{{ zone.name }}</th>
+                    <td
+                      v-for="(value, index) in zone.values"
+                      :key="index"
+                      class="py-0.5 pl-1 text-right"
+                    >
+                      {{ zonePoints(value) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
               <p v-if="changes.length > 0" class="text-[10px] leading-snug text-zinc-500">
                 {{ t('preview.pointsLegend') }}
               </p>
             </div>
           </div>
+          <!-- As high as the look bar beside it, with the text in the middle. -->
           <p
             v-if="summary !== null"
-            class="border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight"
+            class="flex items-center justify-center border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight"
             data-testid="preview-summary"
           >
             {{ summary }}

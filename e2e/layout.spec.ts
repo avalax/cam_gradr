@@ -92,7 +92,7 @@ test.describe('Layout', () => {
     expect(sizes[0]).toMatch(/^[1-9]\d*x[1-9]\d*$/);
 
     // On a tall window the image uses the width: window width minus margins, frame around the
-    // content, control column (21 rem) and measuring field.
+    // content, and measuring field and text column (together 32 rem).
     for (const [width, height, minImageWidth] of [
       [1280, 720, 0],
       [1366, 768, 0],

@@ -16,8 +16,8 @@
   "tilesLegend": "Each patch: target, camera, corrected (from left to right).",
   "tilesLegendNoTarget": "Each patch: camera, corrected (from left to right).",
   "worstTitle": "Largest deviation",
-  "neutral": ", neutral",
-  "pointsLegend": "Points on the 0–100 scale: + color gets stronger, − weaker.",
+  "zonesCaption": "What the correction changes in a neutral gray, per tonal range",
+  "pointsLegend": "Points on the 0–100 scale. Light: + brighter, − darker; R, G, B: + color stronger, − weaker.",
   "errors": {
     "createFailed": "WebGL could not create {what}.",
     "shader": "a shader",

@@ -141,8 +141,8 @@ function download(current: ColorModel): void {
 
 <template>
   <!-- On the grid of the other tabs: the LUT where their image is (as wide as the image), the
-       project where their side column and their text column are (11 rem, a gap of 1.5 rem and
-       21 rem). On a wide but short window both stay together and the free room collects at the right
+       project where their side column and their text column are (together 32 rem, and the gap of
+       1.5 rem between them). On a wide but short window both stay together and the free room collects at the right
        edge, as on the other tabs. -->
   <section class="grid gap-3 lg:grid-cols-[minmax(0,max-content)_33.5rem] lg:justify-start">
     <!-- Invisible, under the LUT card: gives the export the height of the preview and the width of

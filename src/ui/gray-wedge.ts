@@ -109,16 +109,22 @@ export function worstPatches(report: FitResult['report']): WorstPatch[] {
     .map((patch) => ({ id: patch.id, deviation: patch.after }));
 }
 
-// The names of the channels and zones in the language files. The typed `t` takes any string as a
-// key, so these unions make a channel or a zone without a text fail the typecheck.
+// The names of the columns and zones in the language files. The typed `t` takes any string as a
+// key, so these unions make a column or a zone without a text fail the typecheck.
 type Wedge = (typeof messages)['en']['wedge'];
-type Channel = keyof Wedge['channels'];
+type Column = keyof Wedge['columns'];
 type Zone = keyof Wedge['zones'];
 
-const CHANNELS = ['red', 'green', 'blue'] as const satisfies readonly Channel[];
+// The table of the tonal ranges: how much lighter or darker, then the three channels.
+const COLUMNS = ['brightness', 'red', 'green', 'blue'] as const satisfies readonly Column[];
 
-function channelName(channel: Channel): string {
-  return t(`wedge.channels.${channel}`);
+// Each column with a short name for its head and its full name for screen readers.
+export function zoneColumns(): { key: Column; short: string; name: string }[] {
+  return COLUMNS.map((key) => ({
+    key,
+    short: t(`wedge.columns.${key}.short`),
+    name: t(`wedge.columns.${key}.name`),
+  }));
 }
 
 // Tonal ranges of the gray wedge (camera value from 0 to 1) and the resolution of the analysis.
@@ -133,22 +139,12 @@ function zoneName(key: Zone): string {
 }
 const STEPS = 32;
 const PERCENT = 100;
-// Shifts below this value (in points) count as no change.
-const MIN_POINTS = 1.5;
-
-interface CastChange {
-  // Which channel it is (stable, for colors) and its name in the current language.
-  key: Channel;
-  channel: string;
-  // Shift of the channel relative to the other two, in points (positive = stronger).
-  points: number;
-}
 
 interface ZoneChange {
   name: string;
-  // Mean brightening (negative = darkened) in points.
-  brighter: number;
-  casts: CastChange[];
+  // In the order of the columns, in points: the mean brightening (negative = darkened), then the
+  // shift of each channel relative to the other two (positive = stronger).
+  values: number[];
 }
 
 // What the correction changes at a neutral gray per tonal range: how much lighter or darker and
@@ -158,35 +154,21 @@ export function zoneChanges(model: ColorModel): ZoneChange[] {
     const samples = Array.from({ length: STEPS + 1 }, (_, index) => index / STEPS)
       .filter((value) => value >= from && value <= to)
       .map((value) => ({ value, out: applyColorModel(model, [value, value, value]) }));
-    const deltas = CHANNELS.map(
-      (_, channel) =>
+    const deltas = [0, 1, 2].map(
+      (channel) =>
         (samples.reduce((sum, { value, out }) => sum + Number(out[channel]) - value, 0) /
           samples.length) *
         PERCENT,
     );
     const brighter = deltas.reduce((sum, delta) => sum + delta, 0) / deltas.length;
-    const casts = CHANNELS.map((channel, index) => ({
-      key: channel,
-      channel: channelName(channel),
-      points: Number(deltas[index]) - brighter,
-    }))
-      .filter((cast) => Math.abs(cast.points) >= MIN_POINTS)
-      .toSorted((a, b) => Math.abs(b.points) - Math.abs(a.points));
-    return { name: zoneName(key), brighter, casts };
+    return { name: zoneName(key), values: [brighter, ...deltas.map((delta) => delta - brighter)] };
   });
 }
 
-export function signedPoints(value: number): string {
-  return formatSigned(Math.round(value));
-}
-
-// "13 brighter", "5 darker" or "same brightness" for the mean brightening.
-export function brightnessText(brighter: number): string {
-  const points = Math.abs(Math.round(brighter));
-  if (points === 0) {
-    return t('wedge.brightness.same');
-  }
-  return t(brighter > 0 ? 'wedge.brightness.brighter' : 'wedge.brightness.darker', { points });
+// Whole points with a sign; no change is a plain 0.
+export function zonePoints(value: number): string {
+  const points = Math.round(value);
+  return points === 0 ? '0' : formatSigned(points);
 }
 
 // Mean error before and after the correction as a label, e.g. "Ø deviation 18.4 → 8.0".

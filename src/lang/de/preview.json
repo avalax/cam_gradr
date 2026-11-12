@@ -16,8 +16,8 @@
   "tilesLegend": "Jedes Feld: Soll, Kamera, korrigiert (von links nach rechts).",
   "tilesLegendNoTarget": "Jedes Feld: Kamera, korrigiert (von links nach rechts).",
   "worstTitle": "Größte Abweichung",
-  "neutral": ", neutral",
-  "pointsLegend": "Punkte auf der Skala 0–100: + Farbe wird stärker, − schwächer.",
+  "zonesCaption": "Was die Korrektur an einem neutralen Grau ändert, je Tonbereich",
+  "pointsLegend": "Punkte auf der Skala 0–100. Hell: + heller, − dunkler; R, G, B: + Farbe stärker, − schwächer.",
   "errors": {
     "createFailed": "WebGL konnte {what} nicht anlegen.",
     "shader": "einen Shader",

@@ -45,6 +45,8 @@ describe('ColorTiles', () => {
 
   it('names the neutral patches as the grays of the color cards', () => {
     const wrapper = mount(ColorTiles, { props: { cards: [[first]], grays: true } });
+    // In two columns, like the gray columns of the cards.
+    expect(wrapper.get('[data-testid="gray-tiles"] > div').classes()).toContain('grid-cols-2');
     expect(wrapper.get('[data-testid="gray-tiles"]').attributes('aria-label')).toBe(
       'Graustufen der Farbkarten: Soll, Kamera und nach der Korrektur',
     );

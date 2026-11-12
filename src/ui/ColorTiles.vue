@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n';
 import type { WedgeRow } from './gray-wedge';
 
 const { t } = useI18n();
-// The chromatic patches per card, or with `grays` the neutral patches as one card from light to dark.
+// The chromatic patches per card, or with `grays` the neutral patches as one card from light to dark,
+// in two columns like the two gray columns of the cards.
 const props = defineProps<{ cards: readonly (readonly WedgeRow[])[]; grays?: boolean }>();
 
 // Target only if there is a reference set.
@@ -36,7 +37,8 @@ const stripes = computed(() =>
     <div
       v-for="(card, index) in cards"
       :key="index"
-      class="grid min-h-0 flex-1 grid-cols-3 gap-0.5"
+      class="grid min-h-0 flex-1 gap-0.5"
+      :class="grays ? 'grid-cols-2' : 'grid-cols-3'"
     >
       <div
         v-for="row in card"

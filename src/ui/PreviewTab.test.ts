@@ -427,11 +427,20 @@ describe('PreviewTab', () => {
     expect(wrapper.find('[data-testid="gray-tiles"]').exists()).toBe(false);
   });
 
-  it('calls tonal ranges neutral where the correction shifts no color', async () => {
+  it('shows the tonal ranges as a table, with zeros where the correction changes nothing', async () => {
     useSolveStore().loadModel(IDENTITY_MODEL, null);
     const wrapper = mount(PreviewTab);
     await wrapper.get('[data-testid="preview-view"] [data-option="grays"]').trigger('click');
-    expect(wrapper.get('[data-testid="zone-changes"]').text()).toContain('neutral');
+    const table = wrapper.get('[data-testid="zone-changes"]');
+    const cells = (selector: string) =>
+      table.findAll(selector).map((row) => row.findAll('th, td').map((cell) => cell.text()));
+    // Short heads; the full names are for screen readers.
+    expect(cells('thead tr')).toEqual([['', 'HellHelligkeit', 'RRot', 'GGrün', 'BBlau']]);
+    expect(cells('tbody tr')).toEqual([
+      ['Schatten', '0', '0', '0', '0'],
+      ['Mitten', '0', '0', '0', '0'],
+      ['Lichter', '0', '0', '0', '0'],
+    ]);
     // A correction without a report says so in the band, as under the color cards' divider.
     expect(wrapper.get('[data-testid="preview-summary"]').text()).toBe(
       'Ohne Bericht (Referenz fehlt)',
