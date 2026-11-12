@@ -13,6 +13,7 @@
     "removeAgain": "Remove it",
     "removed": "Look LUT “{name}” deleted locally.",
     "undo": "Undo",
+    "close": "Dismiss messages",
     "loadFailed": "Saved look LUTs could not be loaded.",
     "saveFailedOne": "“{name}” could not be saved locally and only applies to this session.",
     "saveFailedMany": "{count} look LUTs could not be saved locally and only apply to this session.",

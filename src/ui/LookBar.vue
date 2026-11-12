@@ -10,7 +10,7 @@ import { usePreviewStore } from '../lut/preview-store';
 import { LINK_BUTTON } from './control-styles';
 import { focusById } from './focus';
 import IconButton from './IconButton.vue';
-import { TRASH_PATH } from './icons';
+import { CROSS_PATH, TRASH_PATH } from './icons';
 import LookPicker from './LookPicker.vue';
 
 const { t } = useI18n();
@@ -43,8 +43,9 @@ async function onFiles(event: Event): Promise<void> {
   await looks.importFiles(chosen);
 }
 
-// Deleting a look or undoing it removes the button that did it (the trash goes with the chosen look,
-// the message with its link is replaced): the focus goes to the picker, which stays.
+// Deleting a look, undoing it or closing the messages removes the button that did it (the trash goes
+// with the chosen look, the message with its link is replaced, the cross goes with the messages): the
+// focus goes to the picker, which stays.
 const PICKER_ID = 'look-select';
 
 function remove(name: string): void {
@@ -61,6 +62,11 @@ function removeWarned(name: string, fallback: string | null): void {
 function undo(): void {
   focusById(PICKER_ID);
   void looks.undo();
+}
+
+function close(): void {
+  focusById(PICKER_ID);
+  looks.dismiss();
 }
 
 function onStrength(event: Event): void {
@@ -106,7 +112,7 @@ function text(message: LookMessage): string {
   <!-- The look LUT under the preview: choose or import in one list, delete only the chosen one,
        strength. What the sides of the divider show is switched by a click on their labels. -->
   <div
-    class="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-b border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2.5 py-2 text-xs text-zinc-800"
+    class="relative flex flex-wrap items-center gap-x-5 gap-y-2 rounded-b border-t-(length:--band-line) border-zinc-700 bg-zinc-200 px-2.5 py-2 text-xs text-zinc-800"
     role="group"
     :aria-label="t('look.label')"
     data-testid="look-bar"
@@ -170,51 +176,64 @@ function text(message: LookMessage): string {
         >{{ strengthText }}</output
       >
     </div>
-  </div>
 
-  <!-- Room for exactly two lines, also while there is no message, so that the preview does not jump
-       when one comes: more messages at once (an import with a warning and a rejected file) scroll
-       inside, so that they never make the preview taller than the window. The store puts errors and
-       warnings first, so that they and their actions are in these lines. A
-       padding of 2 px on top and below and 4 px at the sides (taken back by the negative margin)
-       keeps the focus rings of the links inside the box, which clips them otherwise. -->
-  <div
-    class="-mx-1 mt-1 box-content flex h-[2lh] flex-col overflow-y-auto px-1 py-0.5 text-xs leading-snug [&_button]:outline-offset-0"
-    data-testid="look-messages"
-  >
-    <template v-for="(message, index) in messages" :key="index">
-      <p v-if="message.kind === 'rejected'" class="text-red-700 dark:text-red-400" role="alert">
-        {{ text(message) }}
-      </p>
-      <!-- A warning with its action at the start, so that the action shows in the first line even
-           where the text needs more than the room has. -->
-      <p
-        v-else-if="message.kind === 'logConversion'"
-        class="text-amber-800 dark:text-amber-300"
-        role="status"
+    <!-- The messages float over the image, just above the bar, so that the image needs no room for
+         them; more of them at once (an import with a warning and a rejected file) scroll inside. The
+         store puts errors and warnings first, so that they and their actions come first. -->
+    <div
+      v-if="messages.length > 0"
+      class="absolute bottom-full left-1/2 z-10 mb-2.5 flex w-max max-w-[calc(100%-2rem)] -translate-x-1/2 items-start gap-2 rounded-lg border border-zinc-400 bg-surface py-1.5 pl-3 pr-1.5 shadow-lg"
+      data-testid="look-messages"
+    >
+      <!-- A padding of 2 px on top and below and 4 px at the sides (taken back by the negative
+           margin) keeps the focus rings of the links inside the scrolling box, which clips them
+           otherwise. -->
+      <div
+        class="-mx-1 max-h-32 min-w-0 flex-1 overflow-y-auto px-1 py-0.5 leading-snug [&_button]:outline-offset-0"
       >
-        <button
-          type="button"
-          :class="LINK_BUTTON"
-          data-testid="look-remove-again"
-          @click="removeWarned(message.name, message.fallback)"
-        >
-          {{ t('look.messages.removeAgain') }}
-        </button>
-        · {{ text(message) }}
-      </p>
-      <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
-        {{ text(message) }}
-        <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="undo">
-          {{ t('look.messages.undo') }}
-        </button>
-      </p>
-      <p v-else-if="message.kind === 'imported'" class="text-zinc-600" role="status">
-        {{ text(message) }}
-      </p>
-      <p v-else class="text-amber-800 dark:text-amber-300" role="status">
-        {{ text(message) }}
-      </p>
-    </template>
+        <template v-for="(message, index) in messages" :key="index">
+          <p v-if="message.kind === 'rejected'" class="text-red-700 dark:text-red-400" role="alert">
+            {{ text(message) }}
+          </p>
+          <!-- A warning with its action at the start, so that the action shows in the first line even
+               where the text needs more than the room has. -->
+          <p
+            v-else-if="message.kind === 'logConversion'"
+            class="text-amber-800 dark:text-amber-300"
+            role="status"
+          >
+            <button
+              type="button"
+              :class="LINK_BUTTON"
+              data-testid="look-remove-again"
+              @click="removeWarned(message.name, message.fallback)"
+            >
+              {{ t('look.messages.removeAgain') }}
+            </button>
+            · {{ text(message) }}
+          </p>
+          <p v-else-if="message.kind === 'removed'" class="text-zinc-600" role="status">
+            {{ text(message) }}
+            <button type="button" :class="LINK_BUTTON" data-testid="look-undo" @click="undo">
+              {{ t('look.messages.undo') }}
+            </button>
+          </p>
+          <p v-else-if="message.kind === 'imported'" class="text-zinc-600" role="status">
+            {{ text(message) }}
+          </p>
+          <p v-else class="text-amber-800 dark:text-amber-300" role="status">
+            {{ text(message) }}
+          </p>
+        </template>
+      </div>
+      <IconButton
+        size="sm"
+        :label="t('look.messages.close')"
+        data-testid="look-messages-close"
+        @click="close"
+      >
+        <path :d="CROSS_PATH" />
+      </IconButton>
+    </div>
   </div>
 </template>

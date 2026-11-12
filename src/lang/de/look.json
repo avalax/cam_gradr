@@ -13,6 +13,7 @@
     "removeAgain": "Wieder löschen",
     "removed": "Look-LUT „{name}“ lokal gelöscht.",
     "undo": "Rückgängig",
+    "close": "Meldungen schließen",
     "loadFailed": "Gespeicherte Look-LUTs konnten nicht geladen werden.",
     "saveFailedOne": "„{name}“ konnte nicht lokal gespeichert werden und gilt nur für diese Sitzung.",
     "saveFailedMany": "{count} Look-LUTs konnten nicht lokal gespeichert werden und gelten nur für diese Sitzung.",

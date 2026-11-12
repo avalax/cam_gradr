@@ -59,7 +59,8 @@ describe('LookBar', () => {
     await picker.trigger('click');
     expect(click).toHaveBeenCalledTimes(1);
     expect(wrapper.find('[data-testid="look-list"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="look-messages"]').text()).toBe('');
+    // Without a message there is no box over the image.
+    expect(wrapper.find('[data-testid="look-messages"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="look-remove"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="look-strength"]').attributes('disabled')).toBeDefined();
     expect(wrapper.get('output').text()).toBe('–');
@@ -164,6 +165,19 @@ describe('LookBar', () => {
     await flushPromises();
     expect(usePreviewStore().look).toBe('Warm');
     expect(document.activeElement).toBe(picker);
+    wrapper.unmount();
+  });
+
+  it('closes the messages with the cross and leaves the focus on the picker', async () => {
+    const wrapper = mount(LookBar, { attachTo: document.body });
+    useLookStore().messages = [{ kind: 'removed', name: 'Warm' }];
+    await flushPromises();
+    expect(wrapper.get('[data-testid="look-messages"]').text()).toContain('lokal gelöscht');
+    await press(wrapper, 'look-messages-close');
+    await flushPromises();
+    expect(useLookStore().messages).toEqual([]);
+    expect(wrapper.find('[data-testid="look-messages"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="look-select"]').element);
     wrapper.unmount();
   });
 

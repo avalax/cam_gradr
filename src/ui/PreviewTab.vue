@@ -341,14 +341,13 @@ const splitModel = computed({
 
     <div class="min-w-0 lg:col-start-1 lg:row-start-1">
       <!-- As in the card tabs: image on the left, a narrow column on the right; so the image is the
-           same size everywhere. Image and column share the rows (subgrid): band, image, look bar,
-           and the lines of its messages, which the column leaves to the image. So the band of the
-           column is as high as the band over the image and its foot as high as the look bar, in
-           both appearances and also where the look bar takes two lines. -->
-      <div :class="[IMAGE_ROW, 'grid-rows-[auto_1fr_auto_auto]']">
+           same size everywhere. Image and column share the rows (subgrid): band, image and look bar.
+           So the band of the column is as high as the band over the image and its foot as high as
+           the look bar, in both appearances and also where the look bar takes two lines. -->
+      <div :class="[IMAGE_ROW, 'grid-rows-[auto_1fr_auto]']">
         <div
           data-testid="image-block"
-          :class="[IMAGE_BLOCK, 'row-span-4 grid grid-cols-[minmax(0,1fr)] grid-rows-subgrid']"
+          :class="[IMAGE_BLOCK, 'row-span-3 grid grid-cols-[minmax(0,1fr)] grid-rows-subgrid']"
           :style="{ width }"
         >
           <!-- The video only serves as an image source and stays invisible. -->
@@ -381,8 +380,8 @@ const splitModel = computed({
             :class="IMAGE_BAND"
             data-testid="stage-label"
           />
-          <!-- Without an image the placeholder also takes the rows of the look bar and its messages. -->
-          <div class="relative" :class="{ 'row-span-3': !showImage }">
+          <!-- Without an image the placeholder also takes the row of the look bar. -->
+          <div class="relative" :class="{ 'row-span-2': !showImage }">
             <!-- Placeholder the size of the image while there is nothing to show. Under a camera
                  error its lines move to the top and the hint to switch the camera on goes, as on
                  the card tabs, so that the box of the error never covers them. What a missing
