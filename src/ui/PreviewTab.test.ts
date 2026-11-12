@@ -226,7 +226,8 @@ describe('PreviewTab', () => {
           ]),
       );
     expect(wrapper.find('[data-testid="look-bar"]').exists()).toBe(true);
-    expect(labels()).toBe('KameraKorrigiert + Look-LUT 100 %');
+    // The preview shows a still image: its side without correction is named after it.
+    expect(labels()).toBe('StandbildKorrigiert + Look-LUT 100 %');
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(1);
 
     preview.setStrength(50);
@@ -241,7 +242,7 @@ describe('PreviewTab', () => {
 
     preview.setLook(null);
     await flushPromises();
-    expect(labels()).toBe('KameraKorrigiert');
+    expect(labels()).toBe('StandbildKorrigiert');
     animation.runFrame();
     expect(floats()).toMatchObject({ uLeftCorrected: 0 });
   });
@@ -259,7 +260,7 @@ describe('PreviewTab', () => {
 
     await wrapper.get('[data-testid="labels-right"]').trigger('click');
     expect(preview.right).toBe('camera');
-    expect(labels()).toBe('KameraKamera + Look-LUT 100 %');
+    expect(labels()).toBe('StandbildStandbild + Look-LUT 100 %');
     expect(fake.call('texImage3D')).toHaveBeenCalledTimes(2);
     // Without correction the inverting look turns black into white.
     const bytes = fake.call('texImage3D').mock.calls[1]?.[9] as Uint8Array;
@@ -267,11 +268,14 @@ describe('PreviewTab', () => {
 
     await wrapper.get('[data-testid="labels-left"]').trigger('click');
     expect(preview.left).toBe('corrected');
-    expect(labels()).toBe('KorrigiertKamera + Look-LUT 100 %');
+    expect(labels()).toBe('KorrigiertStandbild + Look-LUT 100 %');
+    expect(wrapper.get('[data-testid="labels-left"]').attributes('title')).toBe(
+      'Klicken: Standbild zeigen',
+    );
     // The divider names the sides that are shown.
     const wipe = wrapper.get('[data-testid="wipe"]');
     expect(wipe.attributes('aria-label')).toBe(
-      'Trennlinie: links Korrigiert, rechts Kamera + Look-LUT 100 %',
+      'Trennlinie: links Korrigiert, rechts Standbild + Look-LUT 100 %',
     );
     expect(wipe.attributes('aria-valuetext')).toBe('50 % Korrigiert');
     await wrapper.get('[data-testid="labels-left"]').trigger('click');
@@ -291,6 +295,20 @@ describe('PreviewTab', () => {
     computeModel();
     await useCameraStore().start();
     const wrapper = mount(PreviewTab);
+    await flushPromises();
+    // The live image is the camera's, also in the names of the sides and in the tip of a click.
+    expect(wrapper.get('[data-testid="preview-labels"]').text()).toBe('KameraKorrigiert');
+    await chooseInvert();
+    usePreviewStore().setLeft('corrected');
+    usePreviewStore().setRight('camera');
+    await flushPromises();
+    expect(wrapper.get('[data-testid="preview-labels"]').text()).toBe(
+      'KorrigiertKamera + Look-LUT 100 %',
+    );
+    expect(wrapper.get('[data-testid="labels-left"]').attributes('title')).toBe(
+      'Klicken: Kamerabild zeigen',
+    );
+    usePreviewStore().setLook(null);
     await flushPromises();
     const video = wrapper.get('video').element;
     animation.runFrame();

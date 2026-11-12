@@ -9,6 +9,7 @@
   "divider": "Divider: {left} on the left, {right} on the right",
   "labelCamera": "Camera",
   "labelCorrected": "Corrected",
+  "labelStill": "Still image",
   "viewLabel": "Side column view",
   "viewColors": "Colors",
   "viewGrays": "Grays",
@@ -34,9 +35,11 @@
   },
   "labelLook": "Corrected + look LUT",
   "labelLookCamera": "Camera + look LUT",
+  "labelLookStill": "Still image + look LUT",
   "labelStrength": "{name} {strength}%",
   "switchToCorrected": "Click: show corrected",
   "switchToCamera": "Click: show camera image",
+  "switchToStill": "Click: show still image",
   "switchLookCamera": "Click: look LUT without correction",
   "switchLookCorrected": "Click: look LUT with correction"
 }

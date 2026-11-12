@@ -39,16 +39,18 @@ const DEFAULT_ASPECT = 16 / 9;
 
 // What the preview shows, worked out without the preview (the export takes its height from it). It
 // has an image with a correction and a source: the live image, its own still image or, while the
-// camera is off, the one of the color cards; that image also gives the aspect ratio.
+// camera is off, the one of the color cards; that image also gives the aspect ratio. `still` says
+// that the source is a still image, so that the sides are named after it.
 export function previewImage(input: {
   corrected: boolean;
   live: boolean;
   stills: Stills;
   actual: Resolution | null;
-}): { shown: boolean; aspect: number } {
+}): { shown: boolean; aspect: number; still: boolean } {
   const source = input.live ? input.actual : (input.stills.preview ?? input.stills.color ?? null);
   return {
     shown: input.corrected && source !== null,
     aspect: source === null ? DEFAULT_ASPECT : source.width / source.height,
+    still: !input.live && source !== null,
   };
 }

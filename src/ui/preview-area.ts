@@ -10,7 +10,7 @@ import { previewImage } from './image-size';
 // What the preview shows (previewImage), from the stores: one rule for the preview itself, for the
 // export, which takes its height from it, and for the card tabs, which keep the room of its look bar
 // free under their image, so that the frame around the tabs is equally high on every tab.
-export function usePreviewArea(): ComputedRef<{ shown: boolean; aspect: number }> {
+export function usePreviewArea(): ComputedRef<{ shown: boolean; aspect: number; still: boolean }> {
   const camera = useCameraStore();
   const { model } = storeToRefs(useSolveStore());
   return computed(() =>

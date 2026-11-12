@@ -111,13 +111,18 @@ const error = computed(() =>
 const videoReady = ref(false);
 
 const isLive = computed(() => status.value === 'live');
+// Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
+// of this image area must not differ from it, and with the card tabs.
+const area = usePreviewArea();
 const correctedLut = computed(() =>
   model.value === null ? null : buildLut(model.value, PREVIEW_LUT_SIZE),
 );
 const IDENTITY = identityLut(PREVIEW_LUT_SIZE);
 const chosenLook = computed(() => (model.value === null ? null : looks.find(lookName.value)));
 // What the sides show and how they are named, with the same names as the hint of the tab.
-const sides = computed(() => previewSides(chosenLook.value !== null, left.value, right.value));
+const sides = computed(() =>
+  previewSides(chosenLook.value !== null, left.value, right.value, area.value.still),
+);
 // With a look the right side lays it over the correction or, without correction, over the camera
 // image (the identity).
 const rightCamera = computed(() => sides.value.rightCamera);
@@ -145,9 +150,12 @@ const rightLabel = computed(() =>
     : t('preview.labelStrength', { name: sides.value.rightName, strength: strength.value }),
 );
 // A click on a label switches what its side starts from (only with a look).
-const leftTip = computed(() =>
-  t(leftCorrected.value ? 'preview.switchToCamera' : 'preview.switchToCorrected'),
-);
+const leftTip = computed(() => {
+  if (!leftCorrected.value) {
+    return t('preview.switchToCorrected');
+  }
+  return t(area.value.still ? 'preview.switchToStill' : 'preview.switchToCamera');
+});
 const rightTip = computed(() =>
   t(rightCamera.value ? 'preview.switchLookCorrected' : 'preview.switchLookCamera'),
 );
@@ -172,9 +180,6 @@ const band = computed(() =>
     ? { state: 'off' as const, label: t('app.noCorrection') }
     : { state: stageState(shownStill.value !== null, isLive.value), label: null },
 );
-// Whether there is an image, and its aspect ratio: one rule with the export, whose invisible copy
-// of this image area must not differ from it, and with the card tabs.
-const area = usePreviewArea();
 const showImage = computed(() => area.value.shown);
 const aspect = computed(() => area.value.aspect);
 const width = computed(() => widthFor(aspect.value));

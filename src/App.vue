@@ -21,6 +21,7 @@ import StatusGauge from './ui/StatusGauge.vue';
 import { APP_ID, APP_NAME } from './ui/app-info';
 import { APP_VERSION } from './ui/app-version';
 import { CAMERA_SWITCH_ID, focusById } from './ui/focus';
+import { usePreviewArea } from './ui/preview-area';
 import { previewSides } from './ui/preview-sides';
 import { rovingTarget } from './ui/roving';
 import { colorStatus, grayStatus } from './ui/tab-status';
@@ -64,10 +65,16 @@ const { t } = useI18n();
 
 const preview = usePreviewStore();
 const looks = useLookStore();
+const previewArea = usePreviewArea();
 
 // The hint names what lies left and right of the divider, with the names of the preview's labels.
 function previewHint(): string {
-  const sides = previewSides(looks.find(preview.look) !== null, preview.left, preview.right);
+  const sides = previewSides(
+    looks.find(preview.look) !== null,
+    preview.left,
+    preview.right,
+    previewArea.value.still,
+  );
   return t('app.hints.preview', { left: sides.leftName, right: sides.rightName });
 }
 

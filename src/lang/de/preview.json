@@ -9,6 +9,7 @@
   "divider": "Trennlinie: links {left}, rechts {right}",
   "labelCamera": "Kamera",
   "labelCorrected": "Korrigiert",
+  "labelStill": "Standbild",
   "viewLabel": "Ansicht der Seitenspalte",
   "viewColors": "Farben",
   "viewGrays": "Graustufen",
@@ -34,9 +35,11 @@
   },
   "labelLook": "Korrigiert + Look-LUT",
   "labelLookCamera": "Kamera + Look-LUT",
+  "labelLookStill": "Standbild + Look-LUT",
   "labelStrength": "{name} {strength} %",
   "switchToCorrected": "Klicken: korrigiert zeigen",
   "switchToCamera": "Klicken: Kamerabild zeigen",
+  "switchToStill": "Klicken: Standbild zeigen",
   "switchLookCamera": "Klicken: Look-LUT ohne Korrektur",
   "switchLookCorrected": "Klicken: Look-LUT mit Korrektur"
 }
