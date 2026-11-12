@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.11.2...cam-gradr-v2.0.0) (2026-11-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* **project:** project files of format 1 (cam_gradr 1.x) can no longer be loaded, and every saved model needs its hue table.
+
+### Features
+
+* **project:** keep the look LUTs with all their settings in project format 2 ([#108](https://github.com/avalax/cam_gradr/issues/108)) ([b16607c](https://github.com/avalax/cam_gradr/commit/b16607c2e553dcbd33ff1b6b75b78472036d36c5))
+
+
+### Bug Fixes
+
+* **ui:** keep the focus, one export height and the last polish for 2.0 ([#111](https://github.com/avalax/cam_gradr/issues/111)) ([e99c705](https://github.com/avalax/cam_gradr/commit/e99c705f250641bb2f9fe18ac848a5e2c081e655))
+* **ui:** make layout, controls and wording consistent ([#109](https://github.com/avalax/cam_gradr/issues/109)) ([d7b5167](https://github.com/avalax/cam_gradr/commit/d7b5167a47fdc74874fbf19e6851b86df8ab83e0))
+
 ## [1.11.2](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.11.1...cam-gradr-v1.11.2) (2026-11-07)
 
 
