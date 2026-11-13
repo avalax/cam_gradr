@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.2.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v2.1.0...cam-gradr-v2.2.0) (2026-11-13)
+
+
+### Features
+
+* **ui:** measuring field zooms out, short hints, courts not dimmed, empty color foot ([#123](https://github.com/avalax/cam_gradr/issues/123)) ([b11519a](https://github.com/avalax/cam_gradr/commit/b11519a9c6d3b9e8bd0999805ba9b362eadc62de))
+* **ui:** quieter placeholders and short tab descriptions ([#127](https://github.com/avalax/cam_gradr/issues/127)) ([bbd7368](https://github.com/avalax/cam_gradr/commit/bbd73681ccf3dc3d342070e005f0b7be0b8542d7))
+
+
+### Bug Fixes
+
+* **ui:** the project card and the text column reach the right edge ([#126](https://github.com/avalax/cam_gradr/issues/126)) ([b7bb699](https://github.com/avalax/cam_gradr/commit/b7bb69954a5a80f740090b1d48baf1dc341a3a74))
+
 ## [2.1.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v2.0.0...cam-gradr-v2.1.0) (2026-11-13)
 
 
