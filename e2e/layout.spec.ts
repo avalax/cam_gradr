@@ -10,6 +10,11 @@ const SIDE_COLUMNS = {
   Vorschau: 'preview-side',
 } as const;
 
+// The right edge of a box on the page.
+function rightOf(box: { x: number; width: number } | null): number {
+  return box === null ? 0 : box.x + box.width;
+}
+
 test.describe('Layout', () => {
   test('Image, side column and content area have the same size on all tabs', async ({ app }) => {
     await app.open();
@@ -42,8 +47,9 @@ test.describe('Layout', () => {
     await app.openTab('Graukarten');
     expect(Math.abs((await app.panelHeight()) - exportHeight)).toBeLessThanOrEqual(1);
     // There the window height makes the image narrower than the room there is: image, side column
-    // and text stay together (the column 12 px after the image), the free room collects at the right
-    // edge, and the export puts its project card where the side column is.
+    // and text stay together (the column 12 px after the image), the text takes the free room up to
+    // the right edge, and the export puts its project card where the side column is, up to that edge
+    // as well.
     const besideImage = async (column: string): Promise<number> => {
       const image = await app.page.getByTestId('image-block').boundingBox();
       const side = await app.page.getByTestId(column).boundingBox();
@@ -59,6 +65,8 @@ test.describe('Layout', () => {
       .getByRole('article', { name: 'Projekt speichern' })
       .boundingBox();
     expect(Math.abs((projectCard?.x ?? 0) - (grayColumn?.x ?? -1))).toBeLessThanOrEqual(1);
+    const panel = await app.page.getByRole('tabpanel').boundingBox();
+    expect(Math.abs(rightOf(projectCard) - rightOf(panel))).toBeLessThanOrEqual(1);
   });
 
   test('The image keeps its size while the camera starts and captures, and fits on one screen', async ({
