@@ -20,49 +20,68 @@ function exposure(overrides: Partial<ExposureResult>): ExposureResult {
 
 describe('grayStatus', () => {
   it('is open without a measurement', () => {
-    expect(grayStatus(null)).toEqual({ level: 'off', fill: 0, text: 'Noch nicht gemessen' });
+    expect(grayStatus(null)).toEqual({
+      level: 'off',
+      fill: 0,
+      text: 'Noch nicht gemessen',
+      rating: null,
+    });
   });
 
-  it('is green in the normal range', () => {
-    expect(grayStatus(exposure({}))).toEqual({ level: 'ok', fill: 4, text: 'Licht passt' });
+  it('is very good in the normal range', () => {
+    expect(grayStatus(exposure({}))).toEqual({
+      level: 'ok',
+      fill: 4,
+      text: 'Belichtung im Normalbereich',
+      rating: 'sehr gut',
+    });
   });
 
-  it('warns with the most important hint when the light does not fit', () => {
+  it('is still good and green just outside the normal range, and says so', () => {
+    // Up to twice the tolerances: brightness ±0.12, contrast ±0.10.
+    expect(grayStatus(exposure({ verdict: 'low-contrast', contrast: -0.06 }))).toEqual({
+      level: 'ok',
+      fill: 3,
+      text: 'Kontrast leicht zu niedrig',
+      rating: 'gut',
+    });
+    const dark = grayStatus(exposure({ verdict: 'too-dark', delta: -0.12, contrast: 0.1 }));
+    expect(dark).toMatchObject({ fill: 3, text: 'Helligkeit leicht zu niedrig' });
+  });
+
+  it('counts the contrast as much as the brightness', () => {
+    const flat = grayStatus(exposure({ verdict: 'too-bright', delta: 0.08, contrast: -0.15 }));
+    expect(flat).toEqual({
+      level: 'warn',
+      fill: 2,
+      text: 'Helligkeit zu hoch',
+      rating: 'brauchbar',
+    });
+  });
+
+  it('is fair further out, with the most important hint', () => {
     const status = grayStatus(exposure({ verdict: 'too-dark', delta: -0.2 }));
-    expect(status.level).toBe('warn');
-    expect(status.fill).toBe(2);
-    expect(status.text).toBe('Helligkeit zu niedrig');
+    expect(status).toMatchObject({ level: 'warn', fill: 2, text: 'Helligkeit zu niedrig' });
   });
 
-  it('is not green while the contrast lies outside the normal range of the measuring field', () => {
+  it('is poor and red for clipped highlights or crushed shadows, however close the rest is', () => {
+    const clipped = grayStatus(exposure({ verdict: 'too-bright', highlightsClipped: true }));
+    expect(clipped).toMatchObject({ level: 'bad', fill: 1, rating: 'schwach' });
+    const crushed = grayStatus(exposure({ verdict: 'too-dark', shadowsCrushed: true }));
+    expect(crushed).toMatchObject({ level: 'bad', fill: 1, text: 'Helligkeit zu niedrig' });
+  });
+
+  it('follows the assessment of a real measurement', () => {
     const grey = (value: number) => [value, value, value] as const;
     const status = grayStatus(
       assessExposure({
         large18: grey(0.41),
-        large50: grey(0.79),
+        large50: grey(0.78),
         stripDark: grey(0.2),
         stripLight: grey(0.85),
       }),
     );
-    expect(status.level).toBe('warn');
-    expect(status.text).toBe('Kontrast zu hoch');
-  });
-
-  it('also warns when there is no single hint', () => {
-    const status = grayStatus(exposure({ verdict: 'too-bright' }));
-    expect(status).toEqual({ level: 'warn', fill: 3, text: 'Licht prüfen' });
-  });
-});
-
-describe('grayStatus bars', () => {
-  it('grades the distance to the normal range', () => {
-    expect(grayStatus(exposure({ verdict: 'too-bright', delta: 0.08 })).fill).toBe(3);
-    expect(grayStatus(exposure({ verdict: 'too-bright', delta: 0.2 })).fill).toBe(2);
-  });
-
-  it('shows one bar for clipped highlights or crushed shadows', () => {
-    expect(grayStatus(exposure({ verdict: 'too-bright', highlightsClipped: true })).fill).toBe(1);
-    expect(grayStatus(exposure({ verdict: 'too-dark', shadowsCrushed: true })).fill).toBe(1);
+    expect(status).toMatchObject({ level: 'ok', fill: 3, text: 'Kontrast leicht zu hoch' });
   });
 });
 
@@ -72,37 +91,44 @@ describe('colorStatus', () => {
       level: 'off',
       fill: 0,
       text: 'Noch nicht berechnet',
+      rating: null,
     });
   });
 
   it('says that a correction without a report has no report', () => {
-    expect(colorStatus(null, true)).toEqual({ level: 'off', fill: 0, text: 'Ohne Bericht' });
+    expect(colorStatus(null, true)).toEqual({
+      level: 'off',
+      fill: 0,
+      text: 'Ohne Bericht',
+      rating: null,
+    });
   });
 
-  it('is green up to a mean deviation of 2', () => {
-    expect(colorStatus({ meanBefore: 5.1, meanAfter: 0.4 }, true)).toEqual({
+  it('is very good up to a mean deviation of 3 and good up to 4, both green', () => {
+    expect(colorStatus({ meanBefore: 5.1, meanAfter: 3 }, true)).toEqual({
       level: 'ok',
       fill: 4,
-      text: 'Ø 5,1 → 0,4',
+      text: 'Ø 5,1 → 3,0',
+      rating: 'sehr gut',
     });
-    expect(colorStatus({ meanBefore: 9, meanAfter: 2 }, true).level).toBe('ok');
+    expect(colorStatus({ meanBefore: 9, meanAfter: 4 }, true)).toMatchObject({
+      level: 'ok',
+      fill: 3,
+      rating: 'gut',
+    });
   });
 
-  it('warns above that, more strongly above 4 and 7', () => {
-    expect(colorStatus({ meanBefore: 9, meanAfter: 3.5 }, true)).toEqual({
-      level: 'warn',
-      fill: 3,
-      text: 'Ø 9,0 → 3,5',
-    });
-    expect(colorStatus({ meanBefore: 20.2, meanAfter: 5.6 }, true)).toEqual({
+  it('is fair and yellow up to 6, poor and red above', () => {
+    expect(colorStatus({ meanBefore: 20.2, meanAfter: 6 }, true)).toEqual({
       level: 'warn',
       fill: 2,
-      text: 'Ø 20,2 → 5,6',
+      text: 'Ø 20,2 → 6,0',
+      rating: 'brauchbar',
     });
-    expect(colorStatus({ meanBefore: 20.2, meanAfter: 8 }, true)).toEqual({
-      level: 'warn',
+    expect(colorStatus({ meanBefore: 20.2, meanAfter: 6.1 }, true)).toMatchObject({
+      level: 'bad',
       fill: 1,
-      text: 'Ø 20,2 → 8,0',
+      rating: 'schwach',
     });
   });
 });

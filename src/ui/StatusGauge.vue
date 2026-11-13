@@ -7,8 +7,15 @@ const props = defineProps<{ level: StatusLevel; fill: number }>();
 
 const BARS = [0, 1, 2, 3] as const;
 
-// Filled: green for a good result, yellow for a hint.
-const filledClass = computed(() => (props.level === 'ok' ? 'bg-[#4f8f5b]' : 'bg-[#b8892f]'));
+// Filled: green for a good result, yellow for a hint, red for a problem. The yellow stands apart
+// from the green also for red-green color blindness; the number of bars says the same in addition.
+const FILLED: Readonly<Record<StatusLevel, string>> = {
+  off: 'bg-zinc-200',
+  bad: 'bg-[#b2402f]',
+  warn: 'bg-[#c9962a]',
+  ok: 'bg-[#4f8f5b]',
+};
+const filledClass = computed(() => FILLED[props.level]);
 </script>
 
 <template>

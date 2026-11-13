@@ -4,21 +4,19 @@ import { useI18n } from 'vue-i18n';
 
 import type { ExposureResult } from '../chart/exposure';
 
-import type { Edge } from './measure-field';
-import { OK_BOX, detailRows, fieldHint, fieldPosition, mainIssue } from './measure-field';
+import {
+  OK_BOX,
+  SLIGHT_BOX,
+  detailRows,
+  fieldHint,
+  fieldPosition,
+  fieldTitle,
+} from './measure-field';
 import { usePopupDismiss } from './popup-dismiss';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
 const { t } = useI18n();
 const { dismissed, onKey, reset } = usePopupDismiss();
-
-// The message sits at the edge of the field the measurement deviates towards: dark line with gray label.
-const EDGE_CLASSES: Readonly<Record<Edge, string>> = {
-  top: 'inset-x-0 top-0 border-b-(length:--band-line)',
-  bottom: 'inset-x-0 bottom-0 border-t-(length:--band-line)',
-  left: 'inset-y-0 left-0 border-r-(length:--band-line) [writing-mode:vertical-rl] rotate-180',
-  right: 'inset-y-0 right-0 border-l-(length:--band-line) [writing-mode:vertical-rl]',
-};
 
 // Five fine gray levels vertically (light = brightness too high, dark = too low), similar to the
 // zone system of photography. In the dark appearance the same steps are much dimmer, so the field
@@ -34,14 +32,18 @@ const BANDS = [
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
 
-const boxStyle = {
-  left: `${String(OK_BOX.left)}%`,
-  top: `${String(OK_BOX.top)}%`,
-  width: `${String(OK_BOX.width)}%`,
-  height: `${String(OK_BOX.height)}%`,
-};
+function boxStyle(box: typeof OK_BOX): Record<string, string> {
+  return {
+    left: `${String(box.left)}%`,
+    top: `${String(box.top)}%`,
+    width: `${String(box.width)}%`,
+    height: `${String(box.height)}%`,
+  };
+}
+const okStyle = boxStyle(OK_BOX);
+const slightStyle = boxStyle(SLIGHT_BOX);
+const title = computed(() => fieldTitle(props.exposure));
 const hint = computed(() => fieldHint(props.exposure));
-const issue = computed(() => mainIssue(props.exposure));
 const markerStyle = computed(() => {
   if (props.exposure === null) {
     return null;
@@ -53,11 +55,19 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
 </script>
 
 <template>
-  <!-- Measuring field as tall as the camera image: brightness vertically, contrast horizontally; details on hover or keyboard focus. -->
-  <div class="flex flex-col">
+  <!-- Measuring field as tall as the camera image: on top the most important hint, in a band as high
+       as the band over the image; below it brightness vertically, contrast horizontally; details on
+       hover or keyboard focus. -->
+  <div class="flex flex-col rounded-lg border border-zinc-500" data-testid="measure-side">
+    <p
+      class="rounded-t-[7px] border-b-(length:--band-line) border-zinc-700 bg-zinc-200 px-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
+      data-testid="measure-title"
+    >
+      {{ title }}
+    </p>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the focusable trigger of the details closes them with Escape -->
     <div
-      class="group relative min-h-0 w-full flex-1 rounded-lg border border-zinc-500"
+      class="group relative min-h-0 w-full flex-1 rounded-b-[7px]"
       tabindex="0"
       role="img"
       :aria-label="t('measure.aria', { hint })"
@@ -77,24 +87,20 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
         </div>
         <div class="absolute inset-0 dark:opacity-40" :style="{ background: CONTRAST_SHADE }"></div>
 
-        <!-- Normal range: brightness and contrast may deviate this far from the target. -->
+        <!-- Two lighter courts around the target: the outer one for slight deviations (good), the
+             inner, lighter one for the normal range (very good). -->
         <div
-          class="pointer-events-none absolute rounded-sm border-2 border-zinc-900 bg-white/20 ring-2 ring-white/70"
-          :class="exposure === null ? 'opacity-40' : ''"
-          :style="boxStyle"
+          class="pointer-events-none absolute rounded-[3px] bg-white/22 dark:bg-white/7"
+          :class="{ 'opacity-40': exposure === null }"
+          :style="slightStyle"
+          data-testid="measure-slight-box"
+        ></div>
+        <div
+          class="pointer-events-none absolute rounded-[3px] bg-white/60 dark:bg-white/17"
+          :class="{ 'opacity-40': exposure === null }"
+          :style="okStyle"
           data-testid="measure-ok-box"
         ></div>
-
-        <!-- Most important message at the edge the measurement deviates towards. -->
-        <div
-          v-if="issue !== null"
-          class="absolute flex items-center justify-center border-zinc-700 text-center bg-zinc-200 px-2 py-1.5 text-xs font-semibold leading-tight text-zinc-800"
-          :class="EDGE_CLASSES[issue.edge]"
-          :data-edge="issue.edge"
-          data-testid="measure-issue"
-        >
-          {{ issue.label }}
-        </div>
       </div>
 
       <div

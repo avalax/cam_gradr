@@ -66,7 +66,7 @@ describe('App', () => {
     expect(preview()).toContain('Standbild / Korrigiert + Look-LUT');
   });
 
-  it('shows the result in the tab: light is fine, but the colors still have a high deviation', async () => {
+  it('shows the result in the tab: exposure very good, but the colors still poor', async () => {
     const wrapper = mountApp();
     const gauges = () =>
       wrapper
@@ -89,9 +89,11 @@ describe('App', () => {
     } as never;
     await flushPromises();
     const [gray, color] = tabs(wrapper);
-    expect(gray?.text()).toContain('Licht passt');
+    expect(gray?.text()).toContain('Belichtung im Normalbereich');
     expect(color?.text()).toContain('Ø 20,2 → 8,0');
-    expect(gauges()).toEqual(['ok', 'warn']);
+    expect(gauges()).toEqual(['ok', 'bad']);
+    // The scale is hidden from screen readers: the hint of the tab names the rating in words.
+    expect(wrapper.get('#tab-hint-color').text()).toBe('Ø 20,2 → 8,0 (schwach)');
   });
 
   it('offers four tabs, all freely selectable', () => {

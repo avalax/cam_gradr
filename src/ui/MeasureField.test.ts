@@ -18,18 +18,18 @@ const exposure: ExposureResult = {
 };
 
 describe('MeasureField', () => {
-  // Positions, edges and texts are computed and tested in measure-field.ts; here the field shows them.
+  // Positions and texts are computed and tested in measure-field.ts; here the field shows them.
   it('shows an empty, keyboard focusable field without a dot when there is no measurement', () => {
     const wrapper = mount(MeasureField, { props: { exposure: null } });
     expect(wrapper.find('[data-testid="measure-marker"]').exists()).toBe(false);
-    expect(wrapper.find('[data-testid="measure-issue"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="measure-title"]').text()).toBe('Noch nicht gemessen');
     const field = wrapper.get('[data-testid="measure-field"]');
     expect(field.attributes('tabindex')).toBe('0');
     expect(field.attributes('aria-label')).toBe('Helligkeit und Kontrast: Noch keine Messung.');
     expect(wrapper.get('[data-testid="measure-details"]').text()).toBe('Noch keine Messung.');
   });
 
-  it('shows dot, normal range, edge message and details of a measurement', () => {
+  it('shows dot, both ranges, the hint on top and details of a measurement', () => {
     const wrapper = mount(MeasureField, { props: { exposure } });
     const marker = wrapper.get('[data-testid="measure-marker"]').attributes('style');
     expect(marker).toContain('left: 25%');
@@ -37,9 +37,10 @@ describe('MeasureField', () => {
     expect(wrapper.get('[data-testid="measure-ok-box"]').attributes('style')).toContain(
       'left: 40%',
     );
-    const issue = wrapper.get('[data-testid="measure-issue"]');
-    expect(issue.text()).toBe('Helligkeit zu hoch');
-    expect(issue.attributes('data-edge')).toBe('top');
+    expect(wrapper.get('[data-testid="measure-slight-box"]').attributes('style')).toContain(
+      'left: 30%',
+    );
+    expect(wrapper.get('[data-testid="measure-title"]').text()).toBe('Helligkeit zu hoch');
     const details = wrapper.get('[data-testid="measure-details"]');
     expect(details.attributes('role')).toBe('tooltip');
     expect(details.text()).toContain('60 % (Soll 46 %)');
@@ -67,7 +68,7 @@ describe('MeasureField', () => {
   it('shows English texts and follows a language switch', async () => {
     setLocale('en');
     const wrapper = mount(MeasureField, { props: { exposure } });
-    expect(wrapper.get('[data-testid="measure-issue"]').text()).toBe('Brightness too high');
+    expect(wrapper.get('[data-testid="measure-title"]').text()).toBe('Brightness too high');
     expect(wrapper.get('[data-testid="measure-details"]').text()).toContain(
       'Brightness of the gray patches in the image',
     );
@@ -76,6 +77,6 @@ describe('MeasureField', () => {
     );
     setLocale('de');
     await wrapper.vm.$nextTick();
-    expect(wrapper.get('[data-testid="measure-issue"]').text()).toBe('Helligkeit zu hoch');
+    expect(wrapper.get('[data-testid="measure-title"]').text()).toBe('Helligkeit zu hoch');
   });
 });

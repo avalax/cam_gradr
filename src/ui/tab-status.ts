@@ -1,68 +1,77 @@
-import { DEFAULT_EXPOSURE_CONFIG } from '../chart/exposure';
 import type { ExposureResult } from '../chart/exposure';
 import { t } from '../lang';
 import { formatDecimal } from '../lang/format';
 
-import { mainIssue } from './measure-field';
+import { fieldTitle, isSlight } from './measure-field';
 
-export type StatusLevel = 'off' | 'warn' | 'ok';
+export type StatusLevel = 'off' | 'bad' | 'warn' | 'ok';
 
-// Status of a tab: level, fill of the mini scale (0 to 4 bars) and a short result text.
+// Status of a tab: level, fill of the mini scale (0 to 4 bars), a short result text and the rating in
+// words (for screen readers, which do not see the scale; null without a result).
 export interface TabStatus {
   level: StatusLevel;
   fill: number;
   text: string;
+  rating: string | null;
 }
 
-// Mean error (ΔE2000) after the correction: the limits of the four bars (good, fair, poor, else bad).
-const COLOR_GOOD = 2;
-const COLOR_FAIR = 4;
-const COLOR_POOR = 7;
+// Mean error (ΔE2000) after the correction: the limits of four, three and two bars (very good, good,
+// fair; above that poor). Very good ends at 3, about the best a shot reaches with the bundled
+// reference set: the rest is the uncertainty of the reference values and of the light.
+const COLOR_VERY_GOOD = 3;
+const COLOR_GOOD = 4;
+const COLOR_FAIR = 6;
 
-// Gray cards: a deviation of the large patches up to this multiple of the tolerance still counts as
-// slightly off.
-const SLIGHT_DEVIATION = 2;
+const FILL_VERY_GOOD = 4;
+const FILL_GOOD = 3;
+const FILL_FAIR = 2;
+const FILL_POOR = 1;
 
-const FILL_OK = 4;
-const FILL_FAIR = 3;
-const FILL_POOR = 2;
-const FILL_BAD = 1;
+type Fill = typeof FILL_VERY_GOOD | typeof FILL_GOOD | typeof FILL_FAIR | typeof FILL_POOR;
 
-// Bars of a gray card result that is not in the normal range: clipped highlights or crushed shadows
-// are the worst case, otherwise the distance of the brightness to the target decides.
-function grayFill(exposure: ExposureResult): number {
-  if (exposure.highlightsClipped || exposure.shadowsCrushed) {
-    return FILL_BAD;
+// The color of the scale follows its bars (three or four are good, two a hint, one a problem), with
+// the rating in words.
+const GRADES: Readonly<Record<Fill, { level: StatusLevel; rating: string }>> = {
+  [FILL_VERY_GOOD]: { level: 'ok', rating: 'app.rating.veryGood' },
+  [FILL_GOOD]: { level: 'ok', rating: 'app.rating.good' },
+  [FILL_FAIR]: { level: 'warn', rating: 'app.rating.fair' },
+  [FILL_POOR]: { level: 'bad', rating: 'app.rating.poor' },
+};
+
+function rated(fill: Fill, text: string): TabStatus {
+  const { level, rating } = GRADES[fill];
+  return { level, fill, text, rating: t(rating) };
+}
+
+// Bars of a gray card result: the normal range is very good, a slight deviation good, clipped
+// highlights or crushed shadows the worst case.
+function grayFill(exposure: ExposureResult): Fill {
+  if (exposure.verdict === 'ok') {
+    return FILL_VERY_GOOD;
   }
-  return Math.abs(exposure.delta) <= SLIGHT_DEVIATION * DEFAULT_EXPOSURE_CONFIG.tolerance
-    ? FILL_FAIR
-    : FILL_POOR;
+  if (exposure.highlightsClipped || exposure.shadowsCrushed) {
+    return FILL_POOR;
+  }
+  return isSlight(exposure) ? FILL_GOOD : FILL_FAIR;
 }
 
 // Bars of the color result, from the mean error after the correction.
-function colorFill(meanAfter: number): number {
+function colorFill(meanAfter: number): Fill {
+  if (meanAfter <= COLOR_VERY_GOOD) {
+    return FILL_VERY_GOOD;
+  }
   if (meanAfter <= COLOR_GOOD) {
-    return FILL_OK;
+    return FILL_GOOD;
   }
-  if (meanAfter <= COLOR_FAIR) {
-    return FILL_FAIR;
-  }
-  return meanAfter <= COLOR_POOR ? FILL_POOR : FILL_BAD;
+  return meanAfter <= COLOR_FAIR ? FILL_FAIR : FILL_POOR;
 }
 
-// Gray cards: green only if the measuring point is in the normal range; otherwise the most important hint.
+// Gray cards: the line on top of the measuring field.
 export function grayStatus(exposure: ExposureResult | null): TabStatus {
   if (exposure === null) {
-    return { level: 'off', fill: 0, text: t('app.status.notMeasured') };
+    return { level: 'off', fill: 0, text: fieldTitle(null), rating: null };
   }
-  if (exposure.verdict === 'ok') {
-    return { level: 'ok', fill: FILL_OK, text: t('app.status.lightOk') };
-  }
-  return {
-    level: 'warn',
-    fill: grayFill(exposure),
-    text: mainIssue(exposure)?.label ?? t('app.status.checkLight'),
-  };
+  return rated(grayFill(exposure), fieldTitle(exposure));
 }
 
 // Color cards: the status follows the mean error after the correction, not mere computation. A
@@ -77,12 +86,12 @@ export function colorStatus(
       level: 'off',
       fill: 0,
       text: t(corrected ? 'app.status.noReport' : 'app.status.notComputed'),
+      rating: null,
     };
   }
   const text = t('app.status.meanChange', {
     before: formatDecimal(report.meanBefore),
     after: formatDecimal(report.meanAfter),
   });
-  const fill = colorFill(report.meanAfter);
-  return { level: report.meanAfter <= COLOR_GOOD ? 'ok' : 'warn', fill, text };
+  return rated(colorFill(report.meanAfter), text);
 }

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import StatusGauge from './StatusGauge.vue';
 
-function classes(level: 'off' | 'warn' | 'ok', fill: number) {
+function classes(level: 'off' | 'bad' | 'warn' | 'ok', fill: number) {
   const wrapper = mount(StatusGauge, { props: { level, fill } });
   return wrapper.findAll('i').map((bar) => bar.classes());
 }
@@ -17,9 +17,10 @@ describe('StatusGauge', () => {
     expect(bars[3]).toContain('bg-zinc-200');
   });
 
-  it('colors green for good and yellow for a hint', () => {
+  it('colors green for good, yellow for a hint and red for a problem', () => {
     expect(classes('ok', 1)[0]).toContain('bg-[#4f8f5b]');
-    expect(classes('warn', 1)[0]).toContain('bg-[#b8892f]');
+    expect(classes('warn', 1)[0]).toContain('bg-[#c9962a]');
+    expect(classes('bad', 1)[0]).toContain('bg-[#b2402f]');
   });
 
   it('stays completely empty without a fill and is hidden from screen readers', () => {

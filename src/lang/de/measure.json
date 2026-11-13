@@ -21,18 +21,22 @@
   "issue": {
     "tooDark": {
       "label": "Helligkeit zu niedrig",
+      "slight": "Helligkeit leicht zu niedrig",
       "hint": "Helligkeit erhöhen (Beleuchtung verstärken oder Belichtung der Kamera erhöhen). Danach den Kontrast prüfen."
     },
     "tooBright": {
       "label": "Helligkeit zu hoch",
+      "slight": "Helligkeit leicht zu hoch",
       "hint": "Helligkeit verringern (Beleuchtung abschwächen oder Belichtung der Kamera verringern). Danach den Kontrast prüfen."
     },
     "lowContrast": {
       "label": "Kontrast zu niedrig",
+      "slight": "Kontrast leicht zu niedrig",
       "hint": "Helligkeit passt. Kontrast erhöhen (Kontrast der Kamera erhöhen)."
     },
     "highContrast": {
       "label": "Kontrast zu hoch",
+      "slight": "Kontrast leicht zu hoch",
       "hint": "Helligkeit passt. Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden)."
     },
     "bothClipped": "Schatten unterbelichtet und Lichter überbelichtet: Kontrast verringern, das Licht gleichmäßiger ausrichten und Reflexe auf der Karte vermeiden.",

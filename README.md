@@ -28,8 +28,9 @@ Everything runs in your browser. Images and measurements never leave your comput
    on at the top right.
 2. **Gray cards: set the light.** Hold both gray cards steady where the subject will be. The app finds
    them, takes a still image and switches the camera off. A dot in the measuring field next to the image
-   shows brightness (vertical) and contrast (horizontal). Change the light or the camera and start the
-   camera again until the dot sits in the framed window in the middle; hover the field for details.
+   shows brightness (vertical) and contrast (horizontal), the line on top of the field names the next
+   step. Change the light or the camera and start the camera again until the dot sits in the bright
+   area in the middle (the fainter area around it is still good); hover the field for details.
 3. **Color cards: calculate the correction.** Without changing the light or the camera, hold both color
    cards in the same place. The correction is calculated by itself. A divider compares the camera
    colors with the corrected ones, and the label below gives the mean deviation before and after (hover
@@ -51,9 +52,17 @@ Everything runs in your browser. Images and measurements never leave your comput
    the preview, the file holds correction and look at the set strength; with "Without look LUT" it holds
    the correction alone. The file name and the first lines of the file name the look and its strength.
 
-You can switch between the tabs at any time. Below each name is a short result with four bars: green
-means good (light in the normal range, or a mean deviation of at most 2 after the correction), yellow
-means check the hint.
+You can switch between the tabs at any time. Below each name is a short result with four bars:
+
+| Bars      | Rating    | Gray cards                                     | Color cards (mean deviation after the correction) |
+| --------- | --------- | ---------------------------------------------- | ------------------------------------------------- |
+| 4, green  | very good | exposure in the normal range                   | at most 3                                         |
+| 3, green  | good      | at most twice the tolerances off               | at most 4                                         |
+| 2, yellow | fair      | further off                                    | at most 6                                         |
+| 1, red    | poor      | highlights overexposed or shadows underexposed | more than 6                                       |
+
+A mean deviation of about 3 is close to the best a shot reaches with the bundled reference set: the
+rest is the uncertainty of the reference values and of the light.
 
 **Corner points:** You can drag them on the still image. The trash icon in the corner of the image
 deletes them and starts a new search. Starting the camera searches again too; if it stops without a new

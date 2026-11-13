@@ -186,9 +186,12 @@ onBeforeUnmount(() => {
             />
             <span>
               <span class="block">{{ entry.label }}</span>
-              <small :id="`tab-hint-${entry.key}`" class="block text-[10px] text-zinc-500">{{
-                entry.text
-              }}</small>
+              <small :id="`tab-hint-${entry.key}`" class="block text-[10px] text-zinc-500"
+                >{{ entry.text
+                }}<span v-if="entry.status?.rating" class="sr-only">
+                  ({{ entry.status.rating }})</span
+                ></small
+              >
             </span>
           </button>
         </div>
