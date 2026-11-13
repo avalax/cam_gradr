@@ -50,48 +50,33 @@ describe('ColorStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows the preselected reference set and only computes after the capture', async () => {
+  it('says what the tab is for and only computes after the capture', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().load();
     await flushPromises();
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
-      `„${BUNDLED_NAME}“ mit 48 Feldern`,
-    );
-    expect(wrapper.text()).toContain('Halte beide Farbkarten ruhig dorthin, wo das Motiv steht');
+    expect(wrapper.text()).toContain('Hier entsteht die Farbkorrektur');
+    // The active set shows in the settings, where it is chosen.
+    expect(wrapper.text()).not.toContain(BUNDLED_NAME);
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 
-  it('names the missing set of a loaded correction without a report instead of the active one', async () => {
+  it('names the missing set of a loaded correction without a report', async () => {
     const wrapper = mount(ColorStep);
     await useReferenceStore().load();
     useSolveStore().loadModel(IDENTITY_MODEL, 'Fehlender Satz');
     await flushPromises();
-    const sentence = wrapper.get('[data-testid="reference-active"]').text();
+    const sentence = wrapper.get('[data-testid="reference-missing"]').text();
     expect(sentence).toContain('Referenzsatz „Fehlender Satz“ (fehlt)');
     expect(sentence).not.toContain(BUNDLED_NAME);
     expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe(
       'Ohne Bericht (Referenz fehlt)',
     );
-    // Without a name, or with a set the browser has, the active set is named as usual.
+    // Without a name, or with a set the browser has, there is nothing to say.
     for (const name of [null, BUNDLED_NAME]) {
       useSolveStore().loadModel(IDENTITY_MODEL, name);
       await flushPromises();
-      expect(wrapper.get('[data-testid="reference-active"]').text()).toContain('mit 48 Feldern');
+      expect(wrapper.find('[data-testid="reference-missing"]').exists()).toBe(false);
     }
-  });
-
-  it('shows no reference info before the references are loaded', () => {
-    const wrapper = mount(ColorStep);
-    expect(wrapper.find('[data-testid="reference-active"]').exists()).toBe(false);
-  });
-
-  it('follows the selected set', async () => {
-    const wrapper = mount(ColorStep);
-    await useReferenceStore().importChosen(chosenFile('a.json', dummyReferenceJson('Mein Satz')));
-    await flushPromises();
-    expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
-      '„Mein Satz“ mit 48 Feldern',
-    );
   });
 
   it('checks the correction against the measured gray cards from step 1', async () => {

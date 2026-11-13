@@ -34,8 +34,6 @@ import { attachStream, captureFromVideo, grabVideoFrame } from './video-bindings
 const props = defineProps<{
   store: ChartStore;
   layout: ChartLayout;
-  // Hint shown while no still image has been captured yet.
-  idleText: string;
   // Message when the cards in the image are not the expected ones (e.g. gray cards in the color step).
   wrongText: string;
   // Short form of the message, shown on the frame around the cards.
@@ -317,22 +315,10 @@ watch(actual, (next, previous) => {
             <rect x="14" y="3" width="30" height="54" rx="4" />
             <rect x="52" y="3" width="30" height="54" rx="4" />
           </svg>
-          <p class="max-w-xs text-sm leading-snug">
-            <template v-if="status === 'starting'">
-              <span class="block font-semibold text-zinc-800">{{
-                t('cards.stage.starting.title')
-              }}</span>
-              {{ t('cards.stage.starting.text') }}
-            </template>
-            <template v-else>
-              <span class="block font-semibold text-zinc-800">{{
-                t('cards.stage.off.title')
-              }}</span>
-              <template v-if="camera.errorMessage === null">
-                {{ t('cards.stage.off.text', { button: t('camera.toggle.start') }) }}
-                {{ idleText }}
-              </template>
-            </template>
+          <!-- Only the state: the switch of the camera is at the top right, the text column says
+               what the tab is for. -->
+          <p class="max-w-xs text-sm font-semibold leading-snug text-zinc-800">
+            {{ t(status === 'starting' ? 'cards.stage.starting.title' : 'cards.stage.off.title') }}
           </p>
         </div>
         <video

@@ -49,16 +49,10 @@ function grayCheck(current: FitResult) {
       <p class="text-sm text-zinc-700">
         {{ t('color.intro') }}
       </p>
-      <p v-if="missingSet !== null" class="text-sm text-zinc-700" data-testid="reference-active">
+      <!-- The active reference set shows in the settings, where it is chosen; here only a loaded
+           correction whose set is missing, since it has no report without it. -->
+      <p v-if="missingSet !== null" class="text-sm text-zinc-700" data-testid="reference-missing">
         {{ t('color.referenceMissing', { name: referenceLabel(missingSet) }) }}
-      </p>
-      <p v-else-if="selected !== null" class="text-sm text-zinc-700" data-testid="reference-active">
-        {{
-          t('color.referenceActive', {
-            name: referenceLabel(selected.name),
-            count: Object.keys(selected.patches).length,
-          })
-        }}
       </p>
       <!-- In the text column, as the error of the preview: under the image it would make the tab
            taller. -->
@@ -71,7 +65,6 @@ function grayCheck(current: FitResult) {
       <CardStage
         :store="chart"
         :layout="colorLayout"
-        :idle-text="t('color.idle')"
         :wrong-text="t('color.wrong')"
         :wrong-label="t('color.wrongLabel')"
       >

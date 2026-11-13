@@ -1,11 +1,9 @@
 {
-  "intro": "Die Vorschau zeigt das Kamerabild mit der berechneten Farbkorrektur. Was links und rechts der Trennlinie zu sehen ist, steht über dem Bild: ohne Look-LUT das Kamerabild und das korrigierte Bild; mit Look-LUT wechselt ein Klick auf eine Beschriftung, was die Seite zeigt. Die Trennlinie kannst du im Bild ziehen oder mit den Pfeiltasten verschieben. Mit dem Kamera-Symbol oben rechts im Bild nimmst du ein Standbild auf; die Kamera geht dann aus.",
+  "intro": "Das Kamerabild vor und nach der Farbkorrektur, wahlweise mit einer Look-LUT.",
   "capture": "Standbild aufnehmen",
   "captureTitle": "Standbild aufnehmen und Kamera ausschalten",
   "rendererCpu": "Darstellung: Software, verkleinert (kein WebGL2 verfügbar)",
-  "noModelText": "Berechne sie zuerst im Tab „Farbkarten“. Dann siehst du hier das Kamerabild vorher und nachher.",
   "noSourceTitle": "Noch kein Bild",
-  "noSourceText": "Schalte die Kamera oben mit „{button}“ ein, um das Livebild zu sehen oder ein Standbild aufzunehmen.",
   "divider": "Trennlinie: links {left}, rechts {right}",
   "labelCamera": "Kamera",
   "labelCorrected": "Korrigiert",
