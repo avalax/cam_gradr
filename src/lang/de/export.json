@@ -4,7 +4,6 @@
     "description": "Die Farbkorrektur als {file}-Datei. Größere LUTs sind genauer, manche Geräte nehmen nur 17³ oder 33³ an (siehe Handbuch).",
     "sizeLabel": "Größe der LUT (Stützstellen je Achse)",
     "sizeOption": "{size}³",
-    "noModelText": "Berechne sie im Tab „Farbkarten“ oder lade ein Projekt.",
     "gotoColor": "Zu den Farbkarten",
     "download": "Herunterladen",
     "sizeKb": "ca.\u00a0{value}\u00a0KB",

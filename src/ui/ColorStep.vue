@@ -71,7 +71,6 @@ function grayCheck(current: FitResult) {
       <CardStage
         :store="chart"
         :layout="colorLayout"
-        :idle-text="t('color.idle')"
         :wrong-text="t('color.wrong')"
         :wrong-label="t('color.wrongLabel')"
       >

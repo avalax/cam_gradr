@@ -57,7 +57,7 @@ describe('ColorStep', () => {
     expect(wrapper.get('[data-testid="reference-active"]').text()).toContain(
       `„${BUNDLED_NAME}“ mit 48 Feldern`,
     );
-    expect(wrapper.text()).toContain('Halte beide Farbkarten ruhig dorthin, wo das Motiv steht');
+    expect(wrapper.text()).toContain('Hier entsteht die Farbkorrektur');
     expect(wrapper.find('[data-testid="report"]').exists()).toBe(false);
   });
 

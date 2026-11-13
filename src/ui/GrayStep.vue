@@ -27,7 +27,6 @@ const { t } = useI18n();
       <CardStage
         :store="chart"
         :layout="grayLayout"
-        :idle-text="t('cards.gray.idle')"
         :wrong-text="t('cards.gray.wrong')"
         :wrong-label="t('cards.gray.wrongLabel')"
       >

@@ -127,11 +127,11 @@ describe('GrayStep', () => {
     vi.restoreAllMocks();
   });
 
-  it('points to the camera switch when the camera is off', () => {
+  it('says that the camera is off, and what the tab is for', () => {
     installFakeCamera();
     const wrapper = mount(GrayStep);
     expect(wrapper.text()).toContain('Die Kamera ist aus');
-    expect(wrapper.text()).toContain('Die App erkennt sie selbst');
+    expect(wrapper.text()).toContain('Hier stellst du die Belichtung ein');
     expect(wrapper.text()).toContain('Noch keine Messung');
   });
 
@@ -187,7 +187,7 @@ describe('GrayStep', () => {
     expect(resetButton(wrapper)).toBeDefined();
   });
 
-  it('shows the corner points only on the still image and hints at dragging there', async () => {
+  it('shows the corner points only on the still image', async () => {
     const wrapper = await mountLive();
     placeAll();
     await flushPromises();
@@ -195,7 +195,6 @@ describe('GrayStep', () => {
     useCameraStore().still = grayFrame(1280, 720, 0.5);
     await flushPromises();
     expect(wrapper.findAll('circle')).toHaveLength(8);
-    expect(wrapper.text()).toContain('ziehe sie bei Bedarf');
   });
 
   it('shows only the placeholder with the camera off and no still image, even with corner points', async () => {
@@ -205,13 +204,10 @@ describe('GrayStep', () => {
     await flushPromises();
     expect(wrapper.find('[data-testid="card-placeholder"]').exists()).toBe(true);
     expect(wrapper.findAll('polygon')).toHaveLength(0);
-    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain(
-      'Halte beide Graukarten',
-    );
-    // The band is there before the camera starts, so the image never moves; the hint names the
-    // button as it is labelled.
+    // The band is there before the camera starts, so the image never moves. The placeholder only
+    // names the state: the switch is at the top right, the text column says what the tab is for.
     expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
-    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toContain('„Kamera starten“');
+    expect(wrapper.get('[data-testid="card-placeholder"]').text()).toBe('Die Kamera ist aus');
   });
 
   it('shows a camera error on the image, where the camera image would be', async () => {

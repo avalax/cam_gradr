@@ -4,20 +4,17 @@
     "labelLive": "Live image",
     "labelStill": "Still image",
     "starting": {
-      "title": "The camera is starting …",
-      "text": "One moment please."
+      "title": "The camera is starting …"
     },
     "off": {
-      "title": "The camera is off",
-      "text": "Switch it on above with “{button}”."
+      "title": "The camera is off"
     },
     "deleteCorners": "Delete corner points",
     "deleteCornersTitle": "Delete the corner points and detect the cards again",
     "autoHint": "Hold the cards where the subject will be and make sure they are fully visible. As soon as they are detected, the app takes the still image itself and switches the camera off."
   },
   "gray": {
-    "intro": "This tab sets the room brightness. Switch the camera on above and hold both gray cards where the subject will be: the app detects them by itself and takes a still image. Check the corner points and drag them into place if needed. Then change the lighting and switch the camera on again until the dot in the measuring field next to the image is inside the bright normal range (details appear when you hover over the field). Measuring only happens on still images; starting the camera begins a new search, and if the camera ends without a new still image the old state comes back.",
-    "idle": "Hold both gray cards steady where the subject will be, in the same light. The size in the image does not matter.",
+    "intro": "Here you set the exposure. Hold the gray cards where the subject will be and adjust the light or the camera until the dot lies in the bright normal range.",
     "wrong": "These are not gray cards. Hold both gray cards in front of the camera.",
     "wrongLabel": "Not gray cards"
   }

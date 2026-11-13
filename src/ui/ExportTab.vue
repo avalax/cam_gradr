@@ -163,8 +163,8 @@ function download(current: ColorModel): void {
         <template #file><code>.cube</code></template>
       </I18nT>
       <p v-if="model === null" class="text-xs text-zinc-700" data-testid="export-no-model">
-        <span class="block font-semibold">{{ t('app.noCorrection') }}</span>
-        {{ t('export.lut.noModelText') }}
+        <!-- The line break in the template is no space: the margin keeps the link apart. -->
+        <span class="mr-1 font-semibold">{{ t('app.noCorrection') }}</span>
         <button type="button" :class="LINK_BUTTON" @click="emit('goto', 'color')">
           {{ t('export.lut.gotoColor') }}
         </button>

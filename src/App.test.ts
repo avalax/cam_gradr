@@ -47,7 +47,7 @@ describe('App', () => {
     expect(wrapper.get('h1').text()).toBe(APP_NAME);
     expect(wrapper.get('[data-testid="camera-toggle"]').text()).toBe('Kamera starten');
     expect(wrapper.find('[data-testid="settings-button"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('Dieser Tab stellt die Raumhelligkeit ein');
+    expect(wrapper.text()).toContain('Hier stellst du die Belichtung ein');
     expect(wrapper.get('footer').text()).toContain(APP_ID);
     expect(wrapper.get('footer').text()).toContain(`Version ${APP_VERSION}`);
   });

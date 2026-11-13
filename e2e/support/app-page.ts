@@ -125,7 +125,7 @@ export class AppPage {
     await this.expectCorners();
     await this.expectNormalLight();
     await this.openTab('Farbkarten');
-    await expect(this.page.getByText('Dieser Tab berechnet die Farbkorrektur')).toBeVisible();
+    await expect(this.page.getByText('Hier entsteht die Farbkorrektur')).toBeVisible();
   }
 
   // All the way to the computed color correction: gray cards, reference values, color cards,

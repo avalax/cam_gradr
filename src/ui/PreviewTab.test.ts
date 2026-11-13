@@ -99,11 +99,13 @@ describe('PreviewTab', () => {
     expect(wrapper.find('circle').exists()).toBe(false);
   });
 
-  it('points to camera or still image without an image source', () => {
+  it('names a missing image source, in a placeholder that cannot be selected', () => {
     computeModel();
     const wrapper = mount(PreviewTab);
     expect(wrapper.find('[data-testid="preview-no-model"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toContain('„Kamera starten“');
+    expect(wrapper.get('[data-testid="preview-no-source"]').text()).toBe('Noch kein Bild');
+    // As on the card tabs, whose image area belongs to the corner points.
+    expect(wrapper.get('[data-testid="preview-placeholder"]').classes()).toContain('select-none');
     // Without an image the band says what the camera does, as on the card tabs.
     expect(wrapper.get('[data-testid="stage-label"]').text()).toBe('Kamera aus');
   });
@@ -114,8 +116,8 @@ describe('PreviewTab', () => {
     await useCameraStore().start();
     await flushPromises();
     expect(wrapper.get('[data-testid="camera-error"]').text()).toContain('nicht gestartet');
-    // What a missing correction needs has nothing to do with the camera; the icon gives it room.
-    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toContain('Berechne sie zuerst');
+    // A missing correction has nothing to do with the camera and stays; the icon gives it room.
+    expect(wrapper.get('[data-testid="preview-no-model"]').text()).toBe('Noch keine Korrektur');
     const icon = () => wrapper.find('[data-testid="preview-placeholder"] svg');
     expect(icon().exists()).toBe(false);
     computeModel();

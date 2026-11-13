@@ -382,14 +382,13 @@ const splitModel = computed({
           />
           <!-- Without an image the placeholder also takes the row of the look bar. -->
           <div class="relative" :class="{ 'row-span-2': !showImage }">
-            <!-- Placeholder the size of the image while there is nothing to show. Under a camera
-                 error its lines move to the top and the hint to switch the camera on goes, as on
-                 the card tabs, so that the box of the error never covers them. What a missing
-                 correction needs has nothing to do with the camera and stays; the icon gives it
-                 the room (at 1024 px the box covered its second line). -->
+            <!-- Placeholder the size of the image while there is nothing to show, with only the
+                 state, as on the card tabs, and like them not selectable. Under a camera error its
+                 line moves to the top, so that the box of the error never covers it; without a
+                 correction the icon gives the line the room (at 1024 px the box covered it). -->
             <div
               v-if="!showImage"
-              class="flex w-full flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
+              class="flex w-full select-none flex-col items-center gap-3 rounded-b border-2 border-t-0 border-dashed border-zinc-300 bg-zinc-100 p-6 text-center text-zinc-600"
               :class="camera.errorMessage === null ? 'justify-center' : 'justify-start'"
               :style="{ aspectRatio: aspect }"
               data-testid="preview-placeholder"
@@ -416,19 +415,17 @@ const splitModel = computed({
               </svg>
               <p
                 v-if="model === null"
-                class="max-w-xs text-sm leading-snug"
+                class="max-w-xs text-sm font-semibold leading-snug text-zinc-800"
                 data-testid="preview-no-model"
               >
-                <span class="block font-semibold text-zinc-800">{{ t('app.noCorrection') }}</span>
-                {{ t('preview.noModelText') }}
+                {{ t('app.noCorrection') }}
               </p>
-              <p v-else class="max-w-xs text-sm leading-snug" data-testid="preview-no-source">
-                <span class="block font-semibold text-zinc-800">{{
-                  t('preview.noSourceTitle')
-                }}</span>
-                <template v-if="camera.errorMessage === null">{{
-                  t('preview.noSourceText', { button: t('camera.toggle.start') })
-                }}</template>
+              <p
+                v-else
+                class="max-w-xs text-sm font-semibold leading-snug text-zinc-800"
+                data-testid="preview-no-source"
+              >
+                {{ t('preview.noSourceTitle') }}
               </p>
             </div>
             <canvas
