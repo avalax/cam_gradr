@@ -53,6 +53,11 @@ const layers = computed(() =>
 
 // While the live image runs, the corrected layer and the divider would show nothing meaningful.
 const shownLayers = computed(() => (props.live ? layers.value.slice(0, 1) : layers.value));
+// The band then says what the tab says without a correction; with one from before, that the comparison
+// follows the capture.
+const liveCaption = computed(() =>
+  t(props.model === null ? 'app.status.notComputed' : 'color.wipe.liveCaption'),
+);
 
 // A correction without a report (loaded from a project whose reference set is missing) says so: its
 // colors are corrected, only the deviations are unknown.
@@ -71,7 +76,7 @@ const summary = computed(() => {
       v-if="live"
       class="rounded-t-[7px] border-b-(length:--band-line) border-zinc-700 bg-zinc-200 px-2 py-1.5 text-center text-[11px] font-semibold leading-tight text-zinc-800"
     >
-      {{ t('color.wipe.liveCaption') }}
+      {{ liveCaption }}
     </p>
     <WipeLabels v-else :split="split" class="rounded-t-[7px]" />
 

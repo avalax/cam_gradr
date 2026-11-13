@@ -179,11 +179,16 @@ describe('ColorWipe', () => {
 });
 
 describe('ColorWipe with the live image', () => {
-  it('shows only the camera layer without a divider and says when the comparison comes', () => {
+  it('shows only the camera layer without a divider and, like the tab, that nothing is computed', () => {
     const wrapper = mountWipe({ live: true });
     expect(wrapper.find('[data-testid="color-wipe-camera"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="color-wipe-corrected"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Noch nicht berechnet');
+  });
+
+  it('says that the comparison follows the capture while a correction from before exists', () => {
+    const wrapper = mountWipe({ live: true, model: IDENTITY_MODEL });
     expect(wrapper.text()).toContain('Vergleich nach der Aufnahme');
   });
 
