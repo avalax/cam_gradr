@@ -1,7 +1,7 @@
 name: Preview
 
-# Builds the current main for GitHub Pages under main/, and every pull request under
-# pr-preview/pr-<number>/, whose build is removed when the pull request is closed. The builds are
+# Builds the current main for GitHub Pages under main/, and every pull request under pull/<number>/
+# (as its address on GitHub), whose build is removed when the pull request is closed. The builds are
 # kept on the branch pr-previews; the Pages workflow publishes them next to the released app.
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         !startsWith(github.head_ref, 'release-please--'))
     runs-on: ubuntu-latest
     env:
-      DIR: ${{ github.event_name == 'push' && 'main' || format('pr-preview/pr-{0}', github.event.number) }}
+      DIR: ${{ github.event_name == 'push' && 'main' || format('pull/{0}', github.event.number) }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
@@ -60,6 +60,8 @@ jobs:
               lease=$(git rev-parse FETCH_HEAD)
               git read-tree -u --reset FETCH_HEAD
             fi
+            # The branch holds the previews of main and of the pull requests, nothing else.
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name main ! -name pull -exec rm -rf {} +
             rm -rf "$DIR"
             if [ "$ACTION" != closed ]; then
               mkdir -p "$DIR"
@@ -76,14 +78,22 @@ jobs:
             sleep $((attempt * 5))
           done
           exit 1
+      # One comment per pull request; when its text changes (a new address), it is updated.
       - name: Link the preview in the pull request
         if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        env:
+          NUMBER: ${{ github.event.number }}
         run: |
           marker='<!-- pr-preview -->'
           url="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/$DIR/"
-          if ! gh api --paginate "repos/$GITHUB_REPOSITORY/issues/${{ github.event.number }}/comments" \
-            --jq '.[].body' | grep -qF "$marker"; then
-            gh pr comment ${{ github.event.number }} --repo "$GITHUB_REPOSITORY" --body "$marker
+          body="$marker
           Preview of this pull request: $url
           It follows every push a few minutes later and is removed when the pull request is closed."
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id")
+          id=${ids%%$'\n'*}
+          if [ -z "$id" ]; then
+            gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
+          elif [ "$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$id" --jq .body)" != "$body" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" > /dev/null
           fi
