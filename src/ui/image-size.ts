@@ -21,9 +21,10 @@ export const TAB_COLUMNS =
 // The frame of the image area on the tabs with a camera image, and of its invisible copy that gives
 // the export the same height and width; its width is imageWidth. In the dark appearance the image
 // lies on its own surface with an edge; the band above the image sits flush at its top, as the bands
-// of the side columns do.
+// of the side columns do. In the light one the top edge is there too, but transparent, so that in both
+// the band starts and ends with the bands of the side columns below their edge.
 export const IMAGE_BLOCK =
-  'min-w-0 max-w-full dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:px-2.5 dark:pb-2.5';
+  'min-w-0 max-w-full border-t border-transparent dark:rounded-lg dark:border dark:border-zinc-400 dark:bg-zinc-100 dark:px-2.5 dark:pb-2.5';
 
 // The image and the column beside it, as one grid on every tab with a camera image. The column
 // follows the image right away: the row is as wide as the image (TAB_COLUMNS), and the export puts its

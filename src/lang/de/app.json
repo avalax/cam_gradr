@@ -16,10 +16,15 @@
   "footer": "{id} · Version {version} · LUT-Generator für Farbkarten.",
   "status": {
     "notMeasured": "Noch nicht gemessen",
-    "lightOk": "Licht passt",
-    "checkLight": "Licht prüfen",
+    "exposureOk": "Belichtung im Normalbereich",
     "notComputed": "Noch nicht berechnet",
     "noReport": "Ohne Bericht",
     "meanChange": "Ø {before} → {after}"
+  },
+  "rating": {
+    "veryGood": "sehr gut",
+    "good": "gut",
+    "fair": "brauchbar",
+    "poor": "schwach"
   }
 }

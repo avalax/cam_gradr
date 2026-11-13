@@ -5,7 +5,7 @@ import { expect, test } from './support/fixtures';
 
 // The column next to the image on the tabs with a camera image.
 const SIDE_COLUMNS = {
-  Graukarten: 'measure-field',
+  Graukarten: 'measure-side',
   Farbkarten: 'color-wipe',
   Vorschau: 'preview-side',
 } as const;
@@ -49,8 +49,8 @@ test.describe('Layout', () => {
       const side = await app.page.getByTestId(column).boundingBox();
       return (side?.x ?? 0) - (image?.x ?? 0) - (image?.width ?? 0);
     };
-    expect(Math.abs((await besideImage('measure-field')) - 12)).toBeLessThanOrEqual(1);
-    const grayColumn = await app.page.getByTestId('measure-field').boundingBox();
+    expect(Math.abs((await besideImage('measure-side')) - 12)).toBeLessThanOrEqual(1);
+    const grayColumn = await app.page.getByTestId('measure-side').boundingBox();
     await app.openTab('Vorschau');
     expect(Math.abs((await besideImage('preview-side')) - 12)).toBeLessThanOrEqual(1);
     expect(await app.page.getByTestId('preview-side').boundingBox()).toEqual(grayColumn);

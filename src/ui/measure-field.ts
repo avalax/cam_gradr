@@ -31,15 +31,27 @@ interface Box extends Position {
   height: number;
 }
 
-// Normal range in the middle of the field, matching the deviations the rating allows.
-const OK_HALF_WIDTH = (DEFAULT_EXPOSURE_CONFIG.contrastTolerance / CONTRAST_RANGE) * HALF;
-const OK_HALF_HEIGHT = (DEFAULT_EXPOSURE_CONFIG.tolerance / LIGHT_RANGE) * HALF;
-export const OK_BOX: Box = {
-  left: HALF - OK_HALF_WIDTH,
-  top: HALF - OK_HALF_HEIGHT,
-  width: 2 * OK_HALF_WIDTH,
-  height: 2 * OK_HALF_HEIGHT,
-};
+// Up to this multiple of the tolerances (brightness and contrast) a deviation is slight: the shot is
+// still good, as the color result of such shots shows.
+const SLIGHT_RANGE = 2;
+
+// The part of the field in which brightness and contrast deviate at most this multiple of their
+// tolerances from the target.
+function rangeBox(factor: number): Box {
+  const halfWidth = ((factor * DEFAULT_EXPOSURE_CONFIG.contrastTolerance) / CONTRAST_RANGE) * HALF;
+  const halfHeight = ((factor * DEFAULT_EXPOSURE_CONFIG.tolerance) / LIGHT_RANGE) * HALF;
+  return {
+    left: HALF - halfWidth,
+    top: HALF - halfHeight,
+    width: 2 * halfWidth,
+    height: 2 * halfHeight,
+  };
+}
+
+// Normal range in the middle of the field, matching the deviations the rating allows (very good), and
+// around it the range of slight deviations (good).
+export const OK_BOX = rangeBox(1);
+export const SLIGHT_BOX = rangeBox(SLIGHT_RANGE);
 
 function percent(value: number): string {
   return t('app.percent', { value: formatDecimal(value * 100, 0) });
@@ -86,35 +98,33 @@ export function detailRows(exposure: ExposureResult): DetailRow[] {
   ];
 }
 
-export type Edge = 'top' | 'bottom' | 'left' | 'right';
-
-// Most important message: it sits on the edge of the field towards which the measurement deviates,
-// and names the next step together with the hint.
+// Most important message: its label heads the field, the hint names the next step. `slight` is the
+// label for a slight deviation.
 interface Issue {
-  edge: Edge;
   label: string;
+  slight: string;
   hint: string;
 }
 
 // The issues are built when needed (not as constants), so they follow the current language.
 const tooDark = (): Issue => ({
-  edge: 'bottom',
   label: t('measure.issue.tooDark.label'),
+  slight: t('measure.issue.tooDark.slight'),
   hint: t('measure.issue.tooDark.hint'),
 });
 const tooBright = (): Issue => ({
-  edge: 'top',
   label: t('measure.issue.tooBright.label'),
+  slight: t('measure.issue.tooBright.slight'),
   hint: t('measure.issue.tooBright.hint'),
 });
 const lowContrast = (): Issue => ({
-  edge: 'left',
   label: t('measure.issue.lowContrast.label'),
+  slight: t('measure.issue.lowContrast.slight'),
   hint: t('measure.issue.lowContrast.hint'),
 });
 const highContrast = (hint = t('measure.issue.highContrast.hint')): Issue => ({
-  edge: 'right',
   label: t('measure.issue.highContrast.label'),
+  slight: t('measure.issue.highContrast.slight'),
   hint,
 });
 
@@ -140,11 +150,19 @@ function brightnessStep(exposure: ExposureResult): Issue | null {
   return exposure.delta > tolerance ? tooBright() : null;
 }
 
-// The problem to fix next (null in the normal range or without a measurement).
-export function mainIssue(exposure: ExposureResult | null): Issue | null {
-  if (exposure === null) {
-    return null;
-  }
+// Whether the measurement lies outside the normal range only slightly: nothing clipped and both axes
+// within SLIGHT_RANGE times their tolerances.
+export function isSlight(exposure: ExposureResult): boolean {
+  const { tolerance, contrastTolerance } = DEFAULT_EXPOSURE_CONFIG;
+  return (
+    !exposure.highlightsClipped &&
+    !exposure.shadowsCrushed &&
+    Math.abs(exposure.delta) <= SLIGHT_RANGE * tolerance &&
+    Math.abs(exposure.contrast) <= SLIGHT_RANGE * contrastTolerance
+  );
+}
+
+function nextStep(exposure: ExposureResult): Issue | null {
   const { contrastTolerance } = DEFAULT_EXPOSURE_CONFIG;
   const step = brightnessStep(exposure);
   if (step !== null) {
@@ -154,6 +172,24 @@ export function mainIssue(exposure: ExposureResult | null): Issue | null {
     return lowContrast();
   }
   return exposure.contrast > contrastTolerance ? highContrast() : null;
+}
+
+// The problem to fix next (null in the normal range or without a measurement); a slight one says so.
+export function mainIssue(exposure: ExposureResult | null): Issue | null {
+  if (exposure === null) {
+    return null;
+  }
+  const step = nextStep(exposure);
+  return step !== null && isSlight(exposure) ? { ...step, label: step.slight } : step;
+}
+
+// The line on top of the field, which is also the result in the tab: the problem to fix next, or
+// that the exposure is in the normal range.
+export function fieldTitle(exposure: ExposureResult | null): string {
+  if (exposure === null) {
+    return t('app.status.notMeasured');
+  }
+  return mainIssue(exposure)?.label ?? t('app.status.exposureOk');
 }
 
 // Hint in the popup of the field: what to change next about the camera or light.
