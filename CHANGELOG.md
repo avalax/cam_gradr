@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v2.0.0...cam-gradr-v2.1.0) (2026-11-13)
+
+
+### Features
+
+* **ui:** four-step rating in the tabs, two courts and a top line in the measuring field ([#121](https://github.com/avalax/cam_gradr/issues/121)) ([dfb44be](https://github.com/avalax/cam_gradr/commit/dfb44be2a8a4e7499c78d5c926fe36b4ef9a6401))
+* **ui:** side column grows with the image, quieter preview, direct look import ([#114](https://github.com/avalax/cam_gradr/issues/114)) ([8d2f8fa](https://github.com/avalax/cam_gradr/commit/8d2f8fafef5f12c3ac91c624cdde09e03e522147))
+
 ## [2.0.0](https://github.com/avalax/cam_gradr/compare/cam-gradr-v1.11.2...cam-gradr-v2.0.0) (2026-11-09)
 
 
