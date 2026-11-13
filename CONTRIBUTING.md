@@ -29,8 +29,9 @@ npm run readme:image # renders the picture in the README (docs/preview.png) with
    `pre-commit` lints and formats the changed files, `commit-msg` checks the message, `pre-push` runs
    `npm run verify` and blocks pushes to `main`.
 3. Push the branch and open a pull request against `main`; the template lists what to check. A
-   comment links its preview on GitHub Pages (`https://avalax.github.io/cam_gradr/pr-preview/pr-<number>/`),
-   so the change can be tried with a real camera. The preview follows every push a few minutes later
+   comment links its preview on GitHub Pages (`https://avalax.github.io/cam_gradr/pull/<number>/`, the
+   address of the pull request on GitHub with `avalax.github.io` in front), so the change can be tried
+   with a real camera. The preview follows every push a few minutes later
    and is removed when the pull request is closed. It shares the browser storage (reference sets,
    look LUTs, language, appearance) with the app.
 4. Merge with **Squash and merge**. The pull request title becomes the commit on `main` and drives the

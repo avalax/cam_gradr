@@ -1,7 +1,7 @@
 name: Pages
 
 # Publishes the app on GitHub Pages: the latest release at the root, and from the branch pr-previews
-# the preview of main under main/ and of every open pull request under pr-preview/pr-<number>/. It
+# the preview of main under main/ and of every open pull request under pull/<number>/. It
 # runs after the release workflow and after every change of a preview, always from main, because
 # only main may deploy to the github-pages environment.
 on:
@@ -46,7 +46,7 @@ jobs:
       - name: Add the previews of main and the open pull requests
         run: |
           if git fetch -q --depth 1 origin pr-previews; then
-            for dir in main pr-preview; do
+            for dir in main pull; do
               if git cat-file -e "FETCH_HEAD:$dir" 2> /dev/null; then
                 git archive FETCH_HEAD "$dir" | tar -x -C dist
               fi
