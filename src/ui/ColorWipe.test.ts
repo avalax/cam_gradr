@@ -34,7 +34,8 @@ describe('ColorWipe', () => {
     expect(
       wrapper.get('[data-testid="color-wipe-corrected"]').findAll('[data-patch]'),
     ).toHaveLength(48);
-    expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe('Noch keine Korrektur');
+    // Empty until the result comes there (a non-breaking space keeps the height of the line).
+    expect(wrapper.get('[data-testid="color-wipe-summary"]').element.textContent).toBe('\u{A0}');
     expect(camera.find('[data-patch="1A"]').attributes('title')).toBe('1A (Standardwert)');
   });
 
@@ -179,11 +180,16 @@ describe('ColorWipe', () => {
 });
 
 describe('ColorWipe with the live image', () => {
-  it('shows only the camera layer without a divider and says when the comparison comes', () => {
+  it('shows only the camera layer without a divider and, like the tab, that nothing is computed', () => {
     const wrapper = mountWipe({ live: true });
     expect(wrapper.find('[data-testid="color-wipe-camera"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="color-wipe-corrected"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="wipe"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Noch nicht berechnet');
+  });
+
+  it('says that the comparison follows the capture while a correction from before exists', () => {
+    const wrapper = mountWipe({ live: true, model: IDENTITY_MODEL });
     expect(wrapper.text()).toContain('Vergleich nach der Aufnahme');
   });
 

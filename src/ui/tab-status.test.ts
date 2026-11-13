@@ -68,7 +68,7 @@ describe('grayStatus', () => {
     const clipped = grayStatus(exposure({ verdict: 'too-bright', highlightsClipped: true }));
     expect(clipped).toMatchObject({ level: 'bad', fill: 1, rating: 'schwach' });
     const crushed = grayStatus(exposure({ verdict: 'too-dark', shadowsCrushed: true }));
-    expect(crushed).toMatchObject({ level: 'bad', fill: 1, text: 'Helligkeit zu niedrig' });
+    expect(crushed).toMatchObject({ level: 'bad', fill: 1, text: 'Kontrast zu hoch' });
   });
 
   it('follows the assessment of a real measurement', () => {

@@ -1,6 +1,6 @@
 {
   "noMeasurement": "No measurement yet.",
-  "normal": "Brightness and contrast are within the normal range.",
+  "normal": "No change needed.",
   "aria": "Brightness and contrast: {hint}",
   "caption": "Brightness of the gray patches in the image (0% black, 100% white)",
   "points": "{value} points",
@@ -22,26 +22,23 @@
     "tooDark": {
       "label": "Brightness too low",
       "slight": "Brightness slightly low",
-      "hint": "Increase the brightness (add light or raise the camera exposure). Then check the contrast."
+      "hint": "Add light or raise the camera exposure."
     },
     "tooBright": {
       "label": "Brightness too high",
       "slight": "Brightness slightly high",
-      "hint": "Reduce the brightness (dim the light or lower the camera exposure). Then check the contrast."
+      "hint": "Dim the light or lower the camera exposure."
     },
     "lowContrast": {
       "label": "Contrast too low",
       "slight": "Contrast slightly low",
-      "hint": "Brightness is fine. Increase the contrast (raise the camera contrast)."
+      "hint": "Raise the camera contrast."
     },
     "highContrast": {
       "label": "Contrast too high",
       "slight": "Contrast slightly high",
-      "hint": "Brightness is fine. Reduce the contrast (lower the camera contrast or use softer light)."
+      "hint": "Lower the camera contrast or use softer light."
     },
-    "bothClipped": "Shadows underexposed and highlights overexposed: reduce the contrast, align the light more evenly and avoid reflections on the card.",
-    "shadowsCrushed": "Shadows underexposed: first increase the brightness (add light or raise the camera exposure) until the darkest patch of the strip is no longer black. Then check the contrast.",
-    "highlightsBright": "Highlights overexposed: reduce the brightness (dim the light or lower the camera exposure). Then check the contrast.",
-    "highlightsContrast": "Highlights overexposed: reduce the contrast (lower the camera contrast or use softer light)."
+    "bothClipped": "Lower the contrast, light the card more evenly, avoid reflections on it."
   }
 }

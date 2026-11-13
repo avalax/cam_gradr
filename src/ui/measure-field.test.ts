@@ -6,11 +6,10 @@ import {
   detailRows,
   fieldHint,
   fieldPosition,
+  fieldRanges,
   fieldTitle,
   isSlight,
   mainIssue,
-  OK_BOX,
-  SLIGHT_BOX,
 } from './measure-field';
 
 const exposure: ExposureResult = {
@@ -37,23 +36,37 @@ describe('fieldPosition', () => {
     expect(low.left).toBeCloseTo(25, 6);
   });
 
-  it('stays in the field', () => {
+  it('zooms out in steps for a measurement near or beyond the edge, so that the dot stays inside', () => {
+    // Contrast +26 points, the field reaches ±25: twice the range.
+    const far = fieldPosition({ ...exposure, delta: -0.015, contrast: 0.26 });
+    expect(far.left).toBeCloseTo(76, 6);
+    expect(far.top).toBeCloseTo(51.25, 6);
+    // Up to 85 % of the half the scale stays.
+    expect(fieldPosition({ ...exposure, delta: 0, contrast: 0.21 }).left).toBeCloseTo(92, 6);
+    expect(fieldPosition({ ...exposure, delta: -0.6, contrast: 0 }).top).toBeCloseTo(75, 6);
+  });
+
+  it('stays in the field beyond the widest zoom', () => {
     expect(fieldPosition({ ...exposure, delta: 5, contrast: 5 })).toEqual({ left: 100, top: 0 });
     expect(fieldPosition({ ...exposure, delta: -5, contrast: -5 })).toEqual({ left: 0, top: 100 });
   });
 });
 
-describe('OK_BOX and SLIGHT_BOX', () => {
+describe('fieldRanges', () => {
   it('sit in the middle and match the deviations the rating allows', () => {
-    expect(OK_BOX.left).toBeCloseTo(40, 6);
-    expect(OK_BOX.top).toBeCloseTo(40, 6);
-    expect(OK_BOX.width).toBeCloseTo(20, 6);
-    expect(OK_BOX.height).toBeCloseTo(20, 6);
+    const { ok, slight } = fieldRanges(null);
+    expect(ok).toEqual({ left: 40, top: 40, width: 20, height: 20 });
     // Twice the tolerances.
-    expect(SLIGHT_BOX.left).toBeCloseTo(30, 6);
-    expect(SLIGHT_BOX.top).toBeCloseTo(30, 6);
-    expect(SLIGHT_BOX.width).toBeCloseTo(40, 6);
-    expect(SLIGHT_BOX.height).toBeCloseTo(40, 6);
+    expect(slight.left).toBeCloseTo(30, 6);
+    expect(slight.top).toBeCloseTo(30, 6);
+    expect(slight.width).toBeCloseTo(40, 6);
+    expect(slight.height).toBeCloseTo(40, 6);
+  });
+
+  it('shrink as the field zooms out', () => {
+    const { ok, slight } = fieldRanges({ ...exposure, contrast: 0.26 });
+    expect(ok).toEqual({ left: 45, top: 45, width: 10, height: 10 });
+    expect(slight.width).toBeCloseTo(20, 6);
   });
 });
 
@@ -83,46 +96,46 @@ describe('fieldHint', () => {
     expect(fieldHint(null)).toBe('Noch keine Messung.');
   });
 
-  it('confirms the normal range', () => {
-    expect(fieldHint(fine)).toBe('Helligkeit und Kontrast befinden sich im Normalbereich.');
+  it('says that nothing needs to change in the normal range', () => {
+    expect(fieldHint(fine)).toBe('Keine Änderung nötig.');
   });
 
-  it('asks for brightness first at too low or too high brightness', () => {
+  it('names only the next step, brightness first', () => {
     expect(fieldHint({ ...fine, delta: -0.2, contrast: 0.1 })).toBe(
-      'Helligkeit erhöhen (Beleuchtung verstärken oder Belichtung der Kamera erhöhen). Danach den Kontrast prüfen.',
+      'Licht verstärken oder Belichtung der Kamera erhöhen.',
     );
     expect(fieldHint({ ...fine, delta: 0.2, contrast: -0.1 })).toBe(
-      'Helligkeit verringern (Beleuchtung abschwächen oder Belichtung der Kamera verringern). Danach den Kontrast prüfen.',
+      'Licht abschwächen oder Belichtung der Kamera verringern.',
     );
   });
 
-  it('asks for more brightness first on underexposed shadows, even with too little contrast', () => {
-    expect(fieldHint({ ...fine, shadowsCrushed: true, delta: -0.1, contrast: -0.1 })).toContain(
-      'Schatten unterbelichtet: erst die Helligkeit erhöhen',
+  it('treats a cut-off end as brightness while the large patches are off towards it', () => {
+    expect(fieldHint({ ...fine, shadowsCrushed: true, delta: -0.1, contrast: -0.1 })).toBe(
+      'Licht verstärken oder Belichtung der Kamera erhöhen.',
+    );
+    expect(fieldHint({ ...fine, highlightsClipped: true, delta: 0.1 })).toBe(
+      'Licht abschwächen oder Belichtung der Kamera verringern.',
     );
   });
 
-  it('distinguishes brightness and contrast on overexposed highlights', () => {
-    expect(fieldHint({ ...fine, highlightsClipped: true, delta: 0.1 })).toContain(
-      'Helligkeit verringern',
+  it('treats a cut-off end as contrast while the brightness fits', () => {
+    const contrast = 'Kontrast der Kamera senken oder weicheres Licht verwenden.';
+    expect(fieldHint({ ...fine, shadowsCrushed: true, delta: -0.015, contrast: 0.26 })).toBe(
+      contrast,
     );
-    expect(fieldHint({ ...fine, highlightsClipped: true, delta: 0 })).toBe(
-      'Lichter überbelichtet: Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden).',
-    );
+    expect(fieldHint({ ...fine, highlightsClipped: true, delta: 0 })).toBe(contrast);
   });
 
   it('asks for less contrast and more even light at under- and overexposed ends', () => {
-    const hint = fieldHint({ ...fine, shadowsCrushed: true, highlightsClipped: true });
-    expect(hint).toContain('Kontrast verringern');
-    expect(hint).toContain('gleichmäßiger');
+    expect(fieldHint({ ...fine, shadowsCrushed: true, highlightsClipped: true })).toBe(
+      'Kontrast senken, Licht gleichmäßiger ausrichten, Reflexe auf der Karte vermeiden.',
+    );
   });
 
-  it('names the contrast only once the brightness fits', () => {
-    expect(fieldHint({ ...fine, contrast: -0.1 })).toBe(
-      'Helligkeit passt. Kontrast erhöhen (Kontrast der Kamera erhöhen).',
-    );
+  it('names the contrast once the brightness fits', () => {
+    expect(fieldHint({ ...fine, contrast: -0.1 })).toBe('Kontrast der Kamera erhöhen.');
     expect(fieldHint({ ...fine, contrast: 0.1 })).toBe(
-      'Helligkeit passt. Kontrast verringern (Kontrast der Kamera senken oder weicheres Licht verwenden).',
+      'Kontrast der Kamera senken oder weicheres Licht verwenden.',
     );
   });
 });
@@ -140,9 +153,12 @@ describe('mainIssue', () => {
     expect(mainIssue({ ...fine, delta: 0.2 })?.label).toBe('Helligkeit zu hoch');
   });
 
-  it('names too low brightness on underexposed shadows', () => {
-    expect(mainIssue({ ...fine, shadowsCrushed: true, contrast: -0.1 })?.label).toBe(
+  it('names too low brightness or too much contrast on underexposed shadows', () => {
+    expect(mainIssue({ ...fine, shadowsCrushed: true, delta: -0.1 })?.label).toBe(
       'Helligkeit zu niedrig',
+    );
+    expect(mainIssue({ ...fine, shadowsCrushed: true, contrast: 0.26 })?.label).toBe(
+      'Kontrast zu hoch',
     );
   });
 

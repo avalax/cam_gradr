@@ -24,7 +24,7 @@ export class AppPage {
   async expectNormalLight(): Promise<void> {
     await this.scale.hover();
     await expect(this.details).toBeVisible();
-    await expect(this.details).toContainText('im Normalbereich');
+    await expect(this.details).toContainText('Keine Änderung nötig');
   }
 
   async open(): Promise<void> {
