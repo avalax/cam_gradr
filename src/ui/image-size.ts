@@ -11,12 +11,12 @@ export function imageWidth(aspect: number): string {
 
 // The columns of a tab with a camera image: the image with its side column, then the text. The first
 // column is as wide as the image row needs and no wider, so that on a wide but short window image,
-// side column and text stay together and the free room collects at the right edge; on a narrow or
-// tall window it shrinks to the room there is and the image fills its track. Side column
-// (--side-column in style.css) and text column share 32 rem: what the side column takes, the text
-// column gives up, so that the image keeps its size.
+// side column and text stay together and the text column takes the free room up to the right edge;
+// on a narrow or tall window the first column shrinks to the room there is and the image fills its
+// track. Side column (--side-column in style.css) and text column share at least 32 rem: what the
+// side column takes, the text column gives up, so that the image keeps its size.
 export const TAB_COLUMNS =
-  'lg:grid lg:grid-cols-[minmax(0,max-content)_calc(32rem_-_var(--side-column))] lg:items-start lg:justify-start lg:gap-6';
+  'lg:grid lg:grid-cols-[minmax(0,max-content)_minmax(calc(32rem_-_var(--side-column)),1fr)] lg:items-start lg:gap-6';
 
 // The frame of the image area on the tabs with a camera image, and of its invisible copy that gives
 // the export the same height and width; its width is imageWidth. In the dark appearance the image
