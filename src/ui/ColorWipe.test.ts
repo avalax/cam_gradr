@@ -34,7 +34,8 @@ describe('ColorWipe', () => {
     expect(
       wrapper.get('[data-testid="color-wipe-corrected"]').findAll('[data-patch]'),
     ).toHaveLength(48);
-    expect(wrapper.get('[data-testid="color-wipe-summary"]').text()).toBe('Noch keine Korrektur');
+    // Empty until the result comes there (a non-breaking space keeps the height of the line).
+    expect(wrapper.get('[data-testid="color-wipe-summary"]').element.textContent).toBe('\u{A0}');
     expect(camera.find('[data-patch="1A"]').attributes('title')).toBe('1A (Standardwert)');
   });
 

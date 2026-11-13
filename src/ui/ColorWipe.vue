@@ -60,12 +60,13 @@ const liveCaption = computed(() =>
 );
 
 // A correction without a report (loaded from a project whose reference set is missing) says so: its
-// colors are corrected, only the deviations are unknown.
+// colors are corrected, only the deviations are unknown. Without a correction the line stays empty
+// (the band on top says that nothing is computed yet); a non-breaking space keeps its height.
 const summary = computed(() => {
   if (props.report !== null) {
     return deviationSummary(props.report);
   }
-  return t(props.model === null ? 'app.noCorrection' : 'color.wipe.noReport');
+  return props.model === null ? '\u{A0}' : t('color.wipe.noReport');
 });
 </script>
 

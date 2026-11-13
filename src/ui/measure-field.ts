@@ -8,8 +8,26 @@ const LIGHT_RANGE = 0.3;
 const CONTRAST_RANGE = 0.25;
 const HALF = 50;
 
+// A measurement that would come closer to the edge than this share of half the field makes the field
+// zoom out: it then shows twice, four or eight times the range, so that the dot stays in the field
+// and the courts shrink with it. A measurement close to the target keeps the normal range.
+const KEEP = 0.85;
+const ZOOM_STEPS = [1, 2, 4, 8];
+const MAX_ZOOM = 8;
+
 function clamp(value: number): number {
   return Math.min(Math.max(value, 0), 100);
+}
+
+function fieldZoom(exposure: ExposureResult | null): number {
+  if (exposure === null) {
+    return 1;
+  }
+  const reach = Math.max(
+    Math.abs(exposure.contrast) / CONTRAST_RANGE,
+    Math.abs(exposure.delta) / LIGHT_RANGE,
+  );
+  return ZOOM_STEPS.find((step) => reach <= KEEP * step) ?? MAX_ZOOM;
 }
 
 interface Position {
@@ -20,9 +38,10 @@ interface Position {
 // Position of the measurement in the field in percent: horizontal is contrast (right = too high),
 // vertical is brightness (top = too high).
 export function fieldPosition(exposure: ExposureResult): Position {
+  const zoom = fieldZoom(exposure);
   return {
-    left: clamp(HALF + (exposure.contrast / CONTRAST_RANGE) * HALF),
-    top: clamp(HALF - (exposure.delta / LIGHT_RANGE) * HALF),
+    left: clamp(HALF + (exposure.contrast / (CONTRAST_RANGE * zoom)) * HALF),
+    top: clamp(HALF - (exposure.delta / (LIGHT_RANGE * zoom)) * HALF),
   };
 }
 
@@ -37,9 +56,10 @@ const SLIGHT_RANGE = 2;
 
 // The part of the field in which brightness and contrast deviate at most this multiple of their
 // tolerances from the target.
-function rangeBox(factor: number): Box {
-  const halfWidth = ((factor * DEFAULT_EXPOSURE_CONFIG.contrastTolerance) / CONTRAST_RANGE) * HALF;
-  const halfHeight = ((factor * DEFAULT_EXPOSURE_CONFIG.tolerance) / LIGHT_RANGE) * HALF;
+function rangeBox(factor: number, zoom: number): Box {
+  const { contrastTolerance, tolerance } = DEFAULT_EXPOSURE_CONFIG;
+  const halfWidth = ((factor * contrastTolerance) / (CONTRAST_RANGE * zoom)) * HALF;
+  const halfHeight = ((factor * tolerance) / (LIGHT_RANGE * zoom)) * HALF;
   return {
     left: HALF - halfWidth,
     top: HALF - halfHeight,
@@ -49,9 +69,11 @@ function rangeBox(factor: number): Box {
 }
 
 // Normal range in the middle of the field, matching the deviations the rating allows (very good), and
-// around it the range of slight deviations (good).
-export const OK_BOX = rangeBox(1);
-export const SLIGHT_BOX = rangeBox(SLIGHT_RANGE);
+// around it the range of slight deviations (good), at the zoom the measurement needs.
+export function fieldRanges(exposure: ExposureResult | null): { ok: Box; slight: Box } {
+  const zoom = fieldZoom(exposure);
+  return { ok: rangeBox(1, zoom), slight: rangeBox(SLIGHT_RANGE, zoom) };
+}
 
 function percent(value: number): string {
   return t('app.percent', { value: formatDecimal(value * 100, 0) });
@@ -130,19 +152,19 @@ const highContrast = (hint = t('measure.issue.highContrast.hint')): Issue => ({
 
 // Brightness and contrast influence each other (more contrast pushes the shadows down on most
 // cameras again). So there is only ever one step: brightness first, judged by the darkest strip
-// patch and the large patches, then contrast.
+// patch and the large patches, then contrast. An end of the strip that is cut off (black shadows or
+// white highlights) is a matter of brightness while the large patches are too dark or too bright
+// towards it, otherwise of contrast.
 function brightnessStep(exposure: ExposureResult): Issue | null {
   const { tolerance } = DEFAULT_EXPOSURE_CONFIG;
   if (exposure.shadowsCrushed && exposure.highlightsClipped) {
     return highContrast(t('measure.issue.bothClipped'));
   }
   if (exposure.shadowsCrushed) {
-    return { ...tooDark(), hint: t('measure.issue.shadowsCrushed') };
+    return exposure.delta < -tolerance ? tooDark() : highContrast();
   }
   if (exposure.highlightsClipped) {
-    return exposure.delta > tolerance
-      ? { ...tooBright(), hint: t('measure.issue.highlightsBright') }
-      : highContrast(t('measure.issue.highlightsContrast'));
+    return exposure.delta > tolerance ? tooBright() : highContrast();
   }
   if (exposure.delta < -tolerance) {
     return tooDark();

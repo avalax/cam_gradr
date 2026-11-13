@@ -44,8 +44,8 @@ describe('MeasureField', () => {
     const details = wrapper.get('[data-testid="measure-details"]');
     expect(details.attributes('role')).toBe('tooltip');
     expect(details.text()).toContain('60 % (Soll 46 %)');
-    expect(wrapper.get('[data-testid="measure-hint"]').text()).toMatch(
-      /^Lichter überbelichtet: Helligkeit verringern/,
+    expect(wrapper.get('[data-testid="measure-hint"]').text()).toBe(
+      'Licht abschwächen oder Belichtung der Kamera verringern.',
     );
   });
 

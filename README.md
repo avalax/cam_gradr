@@ -28,9 +28,11 @@ Everything runs in your browser. Images and measurements never leave your comput
    on at the top right.
 2. **Gray cards: set the light.** Hold both gray cards steady where the subject will be. The app finds
    them, takes a still image and switches the camera off. A dot in the measuring field next to the image
-   shows brightness (vertical) and contrast (horizontal), the line on top of the field names the next
-   step. Change the light or the camera and start the camera again until the dot sits in the bright
-   area in the middle (the fainter area around it is still good); hover the field for details.
+   shows brightness (vertical) and contrast (horizontal), the line on top of the field names what is
+   off, and hovering the field shows the next step and the values. Change the light or the camera and
+   start the camera again until the dot sits in the bright area in the middle (the fainter area around
+   it is still good). For a shot far off the field zooms out, so that the dot stays inside; the bright
+   areas then get smaller.
 3. **Color cards: calculate the correction.** Without changing the light or the camera, hold both color
    cards in the same place. The correction is calculated by itself. A divider compares the camera
    colors with the corrected ones, and the label below gives the mean deviation before and after (hover

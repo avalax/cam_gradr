@@ -4,14 +4,7 @@ import { useI18n } from 'vue-i18n';
 
 import type { ExposureResult } from '../chart/exposure';
 
-import {
-  OK_BOX,
-  SLIGHT_BOX,
-  detailRows,
-  fieldHint,
-  fieldPosition,
-  fieldTitle,
-} from './measure-field';
+import { detailRows, fieldHint, fieldPosition, fieldRanges, fieldTitle } from './measure-field';
 import { usePopupDismiss } from './popup-dismiss';
 
 const props = defineProps<{ exposure: ExposureResult | null }>();
@@ -32,7 +25,7 @@ const BANDS = [
 const CONTRAST_SHADE =
   'linear-gradient(to right, rgba(255,255,255,.28), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,.14))';
 
-function boxStyle(box: typeof OK_BOX): Record<string, string> {
+function boxStyle(box: ReturnType<typeof fieldRanges>['ok']): Record<string, string> {
   return {
     left: `${String(box.left)}%`,
     top: `${String(box.top)}%`,
@@ -40,8 +33,9 @@ function boxStyle(box: typeof OK_BOX): Record<string, string> {
     height: `${String(box.height)}%`,
   };
 }
-const okStyle = boxStyle(OK_BOX);
-const slightStyle = boxStyle(SLIGHT_BOX);
+const ranges = computed(() => fieldRanges(props.exposure));
+const okStyle = computed(() => boxStyle(ranges.value.ok));
+const slightStyle = computed(() => boxStyle(ranges.value.slight));
 const title = computed(() => fieldTitle(props.exposure));
 const hint = computed(() => fieldHint(props.exposure));
 const markerStyle = computed(() => {
@@ -88,16 +82,15 @@ const rows = computed(() => (props.exposure === null ? [] : detailRows(props.exp
         <div class="absolute inset-0 dark:opacity-40" :style="{ background: CONTRAST_SHADE }"></div>
 
         <!-- Two lighter courts around the target: the outer one for slight deviations (good), the
-             inner, lighter one for the normal range (very good). -->
+             inner, lighter one for the normal range (very good). They shrink when the field zooms
+             out for a measurement far off. -->
         <div
           class="pointer-events-none absolute rounded-[3px] bg-white/22 dark:bg-white/7"
-          :class="{ 'opacity-40': exposure === null }"
           :style="slightStyle"
           data-testid="measure-slight-box"
         ></div>
         <div
           class="pointer-events-none absolute rounded-[3px] bg-white/60 dark:bg-white/17"
-          :class="{ 'opacity-40': exposure === null }"
           :style="okStyle"
           data-testid="measure-ok-box"
         ></div>
