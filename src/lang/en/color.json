@@ -1,6 +1,5 @@
 {
   "intro": "Here the color correction is made. Hold the color cards where the subject will be, with the light and the camera unchanged.",
-  "referenceActive": "Reference values: “{name}” with {count} patches.",
   "referenceMissing": "The correction comes from a project and was calculated with the reference set “{name}” (missing). To see the report, import that set in the settings at the top right.",
   "wipe": {
     "liveCaption": "Compare after the capture",

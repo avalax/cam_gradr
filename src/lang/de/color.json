@@ -1,6 +1,5 @@
 {
   "intro": "Hier entsteht die Farbkorrektur. Halte die Farbkarten bei unverändertem Licht und unveränderter Kamera dorthin, wo das Motiv steht.",
-  "referenceActive": "Referenzwerte: „{name}“ mit {count} Feldern.",
   "referenceMissing": "Die Korrektur stammt aus einem Projekt und wurde mit dem Referenzsatz „{name}“ (fehlt) berechnet. Für den Bericht importierst du diesen Satz in den Einstellungen oben rechts.",
   "wipe": {
     "liveCaption": "Vergleich nach der Aufnahme",
